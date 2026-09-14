@@ -1,0 +1,19 @@
+## .NET
+bin/
+obj/
+*.user
+
+## Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+
+## Data dan berkas lokal aplikasi (bukan bagian dari kode sumber)
+data/
+config/
+logs/
+backup/
+
+## Sistem operasi
+Thumbs.db
+.DS_Store

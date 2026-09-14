@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F30894BE-EC31-405A-81E2-61205EF52885}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.Domain", "src\Absensi.Domain\Absensi.Domain.csproj", "{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.Data", "src\Absensi.Data\Absensi.Data.csproj", "{F09A81FD-DBE2-4055-A933-5852117F1745}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.Telegram", "src\Absensi.Telegram\Absensi.Telegram.csproj", "{1BCF4461-0B61-49EF-980D-BC2C9941C5AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.Laporan", "src\Absensi.Laporan\Absensi.Laporan.csproj", "{4B8EFADE-95DF-40DB-94A7-E3912105D789}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.App", "src\Absensi.App\Absensi.App.csproj", "{C946C760-CF22-42C7-80D6-956BCAF92CBC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FF05A98C-9BFF-467F-8733-9CDCC946319F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Absensi.Domain.Tests", "tests\Absensi.Domain.Tests\Absensi.Domain.Tests.csproj", "{3D579D14-22CC-4F50-80D4-C98D040B4C84}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F09A81FD-DBE2-4055-A933-5852117F1745}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F09A81FD-DBE2-4055-A933-5852117F1745}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F09A81FD-DBE2-4055-A933-5852117F1745}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F09A81FD-DBE2-4055-A933-5852117F1745}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BCF4461-0B61-49EF-980D-BC2C9941C5AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BCF4461-0B61-49EF-980D-BC2C9941C5AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BCF4461-0B61-49EF-980D-BC2C9941C5AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BCF4461-0B61-49EF-980D-BC2C9941C5AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B8EFADE-95DF-40DB-94A7-E3912105D789}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B8EFADE-95DF-40DB-94A7-E3912105D789}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B8EFADE-95DF-40DB-94A7-E3912105D789}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B8EFADE-95DF-40DB-94A7-E3912105D789}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C946C760-CF22-42C7-80D6-956BCAF92CBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C946C760-CF22-42C7-80D6-956BCAF92CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C946C760-CF22-42C7-80D6-956BCAF92CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C946C760-CF22-42C7-80D6-956BCAF92CBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D579D14-22CC-4F50-80D4-C98D040B4C84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D579D14-22CC-4F50-80D4-C98D040B4C84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D579D14-22CC-4F50-80D4-C98D040B4C84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D579D14-22CC-4F50-80D4-C98D040B4C84}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{14CBC0BD-D2A4-434B-8678-8EF9DF96DCAA} = {F30894BE-EC31-405A-81E2-61205EF52885}
+		{F09A81FD-DBE2-4055-A933-5852117F1745} = {F30894BE-EC31-405A-81E2-61205EF52885}
+		{1BCF4461-0B61-49EF-980D-BC2C9941C5AD} = {F30894BE-EC31-405A-81E2-61205EF52885}
+		{4B8EFADE-95DF-40DB-94A7-E3912105D789} = {F30894BE-EC31-405A-81E2-61205EF52885}
+		{C946C760-CF22-42C7-80D6-956BCAF92CBC} = {F30894BE-EC31-405A-81E2-61205EF52885}
+		{3D579D14-22CC-4F50-80D4-C98D040B4C84} = {FF05A98C-9BFF-467F-8733-9CDCC946319F}
+	EndGlobalSection
+EndGlobal

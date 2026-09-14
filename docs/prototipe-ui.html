@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototipe UI — Aplikasi Absensi Siswa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --biru:#1B3A6B; --biru-muda:#E7EDF6; --tinta:#14181F; --abu:#5B6472;
+  --kertas:#F5F6F7; --putih:#FFFFFF; --garis:#DFE3E8;
+
+  --hadir-t:#166534; --hadir-l:#E8F5EC; --hadir-g:#B7DFC4;
+  --telat-t:#92610D; --telat-l:#FDF3E0; --telat-g:#EBD39B;
+  --izin-t:#1B3A6B;  --izin-l:#E7EDF6;  --izin-g:#BFD0E6;
+  --alpa-t:#9B2C2C;  --alpa-l:#FDEDED;  --alpa-g:#F0C0C0;
+  --netral-t:#5B6472;--netral-l:#EFF1F3;--netral-g:#DFE3E8;
+
+  --e1:0 1px 2px rgba(20,24,31,.06);
+  --e2:0 4px 12px rgba(20,24,31,.12);
+  --r-kontrol:6px; --r-kartu:10px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--kertas); color:var(--tinta);
+  font-family:"IBM Plex Sans",-apple-system,Segoe UI,Roboto,sans-serif;
+  font-size:14px; line-height:1.5;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1120px; margin:0 auto; padding:24px}
+h1{font-size:22px; font-weight:600; line-height:1.3; margin:0 0 4px}
+h2{font-size:18px; font-weight:600; line-height:1.35; margin:32px 0 12px}
+p.sub{color:var(--abu); margin:0 0 24px}
+.kartu{background:var(--putih); border:1px solid var(--garis); border-radius:var(--r-kartu); box-shadow:var(--e1); padding:16px}
+.grid{display:grid; gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.label{font-size:12px; color:var(--abu)}
+
+/* warna */
+.swatch{height:56px; border-radius:var(--r-kontrol); border:1px solid var(--garis)}
+.sw-nama{font-size:12px; margin-top:6px}
+.sw-hex{font-size:12px; color:var(--abu)}
+
+/* tombol */
+button{font-family:inherit; font-size:14px; height:36px; padding:0 16px; border-radius:var(--r-kontrol); cursor:pointer; border:1px solid transparent}
+.b-utama{background:var(--biru); color:#fff}
+.b-utama:active{box-shadow:var(--e2)}
+.b-sekunder{background:var(--putih); border-color:var(--garis); color:var(--tinta)}
+.b-bahaya{background:var(--putih); border-color:var(--alpa-g); color:var(--alpa-t)}
+.b-teks{background:transparent; color:var(--abu)}
+button:focus-visible{outline:2px solid var(--biru); outline-offset:2px}
+
+/* isian */
+.isian{display:block; width:100%; height:36px; padding:0 12px; border:1px solid var(--garis); border-radius:var(--r-kontrol); font-family:inherit; font-size:14px; background:var(--putih)}
+.isian:focus{outline:none; border-color:var(--biru); box-shadow:0 0 0 1px var(--biru)}
+.isian.salah{border-color:var(--alpa-t)}
+.pesan-salah{color:var(--alpa-t); font-size:12px; margin-top:4px}
+
+/* lencana */
+.lencana{display:inline-block; font-size:12px; padding:2px 10px; border-radius:999px; border:1px solid}
+.l-hadir{color:var(--hadir-t); background:var(--hadir-l); border-color:var(--hadir-g)}
+.l-telat{color:var(--telat-t); background:var(--telat-l); border-color:var(--telat-g)}
+.l-izin{color:var(--izin-t); background:var(--izin-l); border-color:var(--izin-g)}
+.l-alpa{color:var(--alpa-t); background:var(--alpa-l); border-color:var(--alpa-g)}
+.l-netral{color:var(--netral-t); background:var(--netral-l); border-color:var(--netral-g)}
+
+/* tabel */
+table{width:100%; border-collapse:collapse; background:var(--putih)}
+th{font-size:12px; font-weight:600; text-align:left; background:var(--kertas); padding:0 12px; height:36px; border-bottom:1px solid var(--garis)}
+td{padding:0 12px; height:40px; border-bottom:1px solid var(--garis)}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--kertas)}
+.angka{text-align:right}
+.tabel-bungkus{border:1px solid var(--garis); border-radius:var(--r-kartu); overflow:hidden; box-shadow:var(--e1)}
+
+/* dashboard */
+.app{display:grid; grid-template-columns:184px 1fr; border:1px solid var(--garis); border-radius:var(--r-kartu); overflow:hidden; box-shadow:var(--e1); background:var(--putih)}
+.topbar{grid-column:1/-1; display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--garis)}
+.logo{width:32px; height:32px; border-radius:var(--r-kontrol); background:var(--biru-muda); display:flex; align-items:center; justify-content:center; color:var(--biru); font-weight:600}
+.nav{border-right:1px solid var(--garis); padding:8px; background:var(--putih)}
+.nav a{display:block; padding:8px 12px; border-radius:var(--r-kontrol); color:var(--abu); text-decoration:none; font-size:14px}
+.nav a.aktif{background:var(--biru-muda); color:var(--biru); font-weight:500}
+.isi{padding:16px; background:var(--kertas)}
+.angka-besar{font-size:28px; font-weight:600; line-height:1.2}
+
+/* gerbang */
+.gerbang{background:var(--tinta); border-radius:var(--r-kartu); padding:16px; box-shadow:var(--e2)}
+.gerbang-kartu{border-radius:var(--r-kartu); padding:16px; text-align:center}
+.foto{aspect-ratio:3/4; border-radius:8px; background:rgba(255,255,255,.55); display:flex; align-items:center; justify-content:center; margin-bottom:12px; font-size:28px; font-weight:600}
+.g-nama{font-size:20px; font-weight:600; line-height:1.25}
+.g-id{font-size:13px; margin-top:2px}
+.g-status{font-size:17px; font-weight:600; margin-top:8px}
+.g-label{display:inline-block; font-size:12px; padding:2px 10px; border-radius:999px; background:rgba(255,255,255,.6); margin-bottom:10px}
+
+/* keadaan */
+.kosong{text-align:center; padding:32px 16px; color:var(--abu)}
+.skeleton{height:12px; border-radius:4px; background:var(--netral-l); margin-bottom:8px}
+hr{border:none; border-top:1px solid var(--garis); margin:32px 0}
+@media (max-width:720px){ .g4,.g3,.g2{grid-template-columns:1fr} .app{grid-template-columns:1fr} .nav{border-right:none; border-bottom:1px solid var(--garis)} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Prototipe UI — Aplikasi Absensi Siswa</h1>
+<p class="sub">Seluruh nilai di halaman ini diambil dari Panduan UI/UX. Ubah nilai di blok <code>:root</code> untuk mencoba arah warna lain.</p>
+
+<h2>Warna dasar</h2>
+<div class="grid g4">
+  <div><div class="swatch" style="background:#1B3A6B"></div><div class="sw-nama">Biru seragam</div><div class="sw-hex">#1B3A6B</div></div>
+  <div><div class="swatch" style="background:#E7EDF6"></div><div class="sw-nama">Biru muda</div><div class="sw-hex">#E7EDF6</div></div>
+  <div><div class="swatch" style="background:#14181F"></div><div class="sw-nama">Tinta</div><div class="sw-hex">#14181F</div></div>
+  <div><div class="swatch" style="background:#5B6472"></div><div class="sw-nama">Abu tulis</div><div class="sw-hex">#5B6472</div></div>
+  <div><div class="swatch" style="background:#F5F6F7"></div><div class="sw-nama">Kertas</div><div class="sw-hex">#F5F6F7</div></div>
+  <div><div class="swatch" style="background:#FFFFFF"></div><div class="sw-nama">Putih</div><div class="sw-hex">#FFFFFF</div></div>
+  <div><div class="swatch" style="background:#DFE3E8"></div><div class="sw-nama">Garis</div><div class="sw-hex">#DFE3E8</div></div>
+</div>
+
+<h2>Warna status</h2>
+<div class="grid g3">
+  <div class="kartu" style="background:var(--hadir-l); border-color:var(--hadir-g)"><div style="color:var(--hadir-t); font-weight:600">Hadir</div><div class="sw-hex">#166534 · #E8F5EC</div></div>
+  <div class="kartu" style="background:var(--telat-l); border-color:var(--telat-g)"><div style="color:var(--telat-t); font-weight:600">Terlambat</div><div class="sw-hex">#92610D · #FDF3E0</div></div>
+  <div class="kartu" style="background:var(--izin-l); border-color:var(--izin-g)"><div style="color:var(--izin-t); font-weight:600">Izin / Sakit</div><div class="sw-hex">#1B3A6B · #E7EDF6</div></div>
+  <div class="kartu" style="background:var(--alpa-l); border-color:var(--alpa-g)"><div style="color:var(--alpa-t); font-weight:600">Alpa</div><div class="sw-hex">#9B2C2C · #FDEDED</div></div>
+  <div class="kartu" style="background:var(--netral-l); border-color:var(--netral-g)"><div style="color:var(--netral-t); font-weight:600">Tidak lengkap</div><div class="sw-hex">#5B6472 · #EFF1F3</div></div>
+</div>
+
+<h2>Skala huruf</h2>
+<div class="kartu">
+  <div style="font-size:22px; font-weight:600; line-height:1.3">Judul halaman — 22 px</div>
+  <div style="font-size:18px; font-weight:600; line-height:1.35; margin-top:8px">Judul bagian — 18 px</div>
+  <div style="margin-top:8px">Teks utama — 14 px. Kehadiran siswa dicatat sejak kartu ditempelkan di gerbang.</div>
+  <div class="label" style="margin-top:8px">Label dan teks kecil — 12 px</div>
+  <div class="angka-besar" style="margin-top:8px">412</div>
+  <div class="label">Angka ringkasan — 28 px, angka tabular</div>
+  <div style="margin-top:12px; font-variant-numeric:tabular-nums">07.24 · 07.41 · 11.30 · 13.10 — perhatikan lebar angka yang sama</div>
+</div>
+
+<h2>Tombol</h2>
+<div class="kartu">
+  <button class="b-utama">Simpan sesi</button>
+  <button class="b-sekunder">Batal</button>
+  <button class="b-bahaya">Nonaktifkan kartu</button>
+  <button class="b-teks">Tutup</button>
+  <p class="label" style="margin:12px 0 0">Satu tombol utama per layar. Tulisan tombol menyebut tindakannya.</p>
+</div>
+
+<h2>Kolom isian</h2>
+<div class="kartu grid g2">
+  <div>
+    <div class="label" style="margin-bottom:4px">Nama lengkap</div>
+    <input class="isian" value="Ahmad Fauzi">
+  </div>
+  <div>
+    <div class="label" style="margin-bottom:4px">NISN</div>
+    <input class="isian salah" value="001234567">
+    <div class="pesan-salah">NISN harus 10 digit. Saat ini 9 digit.</div>
+  </div>
+</div>
+
+<h2>Lencana status</h2>
+<div class="kartu">
+  <span class="lencana l-hadir">Hadir</span>
+  <span class="lencana l-telat">Terlambat</span>
+  <span class="lencana l-izin">Izin</span>
+  <span class="lencana l-alpa">Alpa</span>
+  <span class="lencana l-netral">Tidak lengkap</span>
+  <p class="label" style="margin:12px 0 0">Selalu berisi kata statusnya, tidak pernah hanya titik berwarna.</p>
+</div>
+
+<h2>Bayangan</h2>
+<div class="grid g2">
+  <div class="kartu" style="box-shadow:var(--e1)"><strong>Tingkat 1</strong><div class="label">Kartu, tabel, kolom isian</div></div>
+  <div class="kartu" style="box-shadow:var(--e2)"><strong>Tingkat 2</strong><div class="label">Dialog, panel detail, menu turun</div></div>
+</div>
+
+<h2>Tabel</h2>
+<div class="tabel-bungkus">
+<table>
+  <thead><tr><th>Nama</th><th>Kelas</th><th>Status</th><th class="angka">Masuk</th><th class="angka">Pulang</th></tr></thead>
+  <tbody>
+    <tr><td>Ahmad Fauzi</td><td>7A</td><td><span class="lencana l-hadir">Hadir</span></td><td class="angka">07.24</td><td class="angka">13.15</td></tr>
+    <tr><td>Muh. Iqbal</td><td>8B</td><td><span class="lencana l-telat">Terlambat</span></td><td class="angka">07.41</td><td class="angka">13.20</td></tr>
+    <tr><td>Nur Aisyah</td><td>9C</td><td><span class="lencana l-izin">Izin</span></td><td class="angka">—</td><td class="angka">—</td></tr>
+    <tr><td>Budi Santoso</td><td>7A</td><td><span class="lencana l-alpa">Alpa</span></td><td class="angka">—</td><td class="angka">—</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Contoh layar admin</h2>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">S</div>
+    <div style="flex:1">
+      <div style="font-weight:600">UPT SMP Negeri 1 Pancarijang</div>
+      <div class="label">2026/2027 · Ganjil</div>
+    </div>
+    <div class="label" style="text-align:right">Rahmat<br>Admin</div>
+  </div>
+  <nav class="nav">
+    <a href="#" class="aktif">Dashboard</a>
+    <a href="#">Absensi</a>
+    <a href="#">Siswa</a>
+    <a href="#">Guru</a>
+    <a href="#">Kelas</a>
+    <a href="#">Koreksi</a>
+    <a href="#">Kalender</a>
+    <a href="#">Laporan</a>
+    <a href="#">Notifikasi</a>
+    <a href="#">Audit</a>
+    <a href="#">Pengaturan</a>
+  </nav>
+  <div class="isi">
+    <div style="font-weight:600">Selamat pagi, Rahmat</div>
+    <div class="label" style="margin-bottom:12px">Sabtu, 12 September 2026</div>
+
+    <div class="grid g4" style="margin-bottom:12px">
+      <div class="kartu"><div class="label">Hadir</div><div class="angka-besar">412</div></div>
+      <div class="kartu"><div class="label">Terlambat</div><div class="angka-besar">18</div></div>
+      <div class="kartu"><div class="label">Izin / Sakit</div><div class="angka-besar">9</div></div>
+      <div class="kartu"><div class="label">Alpa</div><div class="angka-besar">31</div></div>
+    </div>
+
+    <div class="kartu" style="background:var(--hadir-l); border-color:var(--hadir-g); color:var(--hadir-t); padding:12px 16px; margin-bottom:8px">Rekap 08.00 terkirim · 430 pesan</div>
+    <div class="kartu" style="background:var(--telat-l); border-color:var(--telat-g); color:var(--telat-t); padding:12px 16px; margin-bottom:12px">42 siswa belum tertaut Telegram</div>
+
+    <div class="label" style="margin-bottom:6px">Belum tap hari ini</div>
+    <div class="tabel-bungkus" style="margin-bottom:12px">
+      <table>
+        <tbody>
+          <tr><td>Budi Santoso</td><td class="angka">7A</td></tr>
+          <tr><td>Siti Aminah</td><td class="angka">8B</td></tr>
+          <tr><td>Hendra Wijaya</td><td class="angka">9C</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="b-utama">Buka koreksi status</button>
+    <button class="b-sekunder">Mode gerbang</button>
+  </div>
+</div>
+
+<h2>Contoh layar gerbang</h2>
+<p class="label" style="margin-top:-8px">Ditampilkan diperkecil. Pada layar TV 1920×1080, nama berukuran 64 px.</p>
+<div class="gerbang">
+  <div style="display:flex; justify-content:space-between; color:#fff; margin-bottom:12px">
+    <div>UPT SMP Negeri 1 Pancarijang</div>
+    <div>Sabtu, 07.24</div>
+  </div>
+  <div class="grid g4">
+    <div class="gerbang-kartu" style="background:var(--hadir-l); color:var(--hadir-t)">
+      <span class="g-label">Siswa</span>
+      <div class="foto" style="color:var(--hadir-t)">AF</div>
+      <div class="g-nama">Ahmad Fauzi</div>
+      <div class="g-id">0012345678</div>
+      <div class="g-status">Hadir 07.24</div>
+    </div>
+    <div class="gerbang-kartu" style="background:var(--hadir-l); color:var(--hadir-t)">
+      <span class="g-label">Guru</span>
+      <div class="foto" style="color:var(--hadir-t)">RH</div>
+      <div class="g-nama">Rina Hasanah</div>
+      <div class="g-id">NIP 19850312</div>
+      <div class="g-status">Masuk 07.24</div>
+    </div>
+    <div class="gerbang-kartu" style="background:var(--telat-l); color:var(--telat-t)">
+      <span class="g-label">Siswa</span>
+      <div class="foto" style="color:var(--telat-t)">MI</div>
+      <div class="g-nama">Muh. Iqbal</div>
+      <div class="g-id">0045678901</div>
+      <div class="g-status">Terlambat 07.41</div>
+    </div>
+    <div class="gerbang-kartu" style="background:var(--alpa-l); color:var(--alpa-t)">
+      <span class="g-label">Kartu</span>
+      <div class="foto" style="color:var(--alpa-t)">✕</div>
+      <div class="g-nama">Tidak terdaftar</div>
+      <div class="g-id">Lapor ke TU</div>
+      <div class="g-status">Ditolak 07.22</div>
+    </div>
+  </div>
+</div>
+
+<h2>Keadaan layar</h2>
+<div class="grid g3">
+  <div class="kartu">
+    <div class="label" style="margin-bottom:8px">Kosong</div>
+    <div class="kosong">
+      Belum ada siswa di kelas ini.<br>
+      <button class="b-utama" style="margin-top:12px">Impor dari Excel</button>
+    </div>
+  </div>
+  <div class="kartu">
+    <div class="label" style="margin-bottom:8px">Memuat</div>
+    <div class="skeleton" style="width:70%"></div>
+    <div class="skeleton" style="width:90%"></div>
+    <div class="skeleton" style="width:55%"></div>
+    <div class="skeleton" style="width:80%"></div>
+  </div>
+  <div class="kartu">
+    <div class="label" style="margin-bottom:8px">Salah</div>
+    <div class="kartu" style="background:var(--alpa-l); border-color:var(--alpa-g); color:var(--alpa-t); box-shadow:none">
+      Kartu tidak terdaftar.<br>Daftarkan lewat Absensi → Registrasi.
+    </div>
+  </div>
+</div>
+
+<hr>
+<p class="label">Prototipe ini hanya untuk menilai tampilan. Tidak ada data nyata dan tidak ada fungsi yang berjalan.</p>
+
+</div>
+</body>
+</html>
