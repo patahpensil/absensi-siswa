@@ -1,0 +1,31 @@
+<Window x:Class="Absensi.App.MasterData.AlasanTidakAktifWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tandai tidak aktif"
+        Height="240" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">
+        <StackPanel>
+            <TextBlock Text="Tandai tidak aktif?" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+            <TextBlock Text="Data tidak dihapus — hanya berhenti muncul di daftar absensi harian, riwayatnya tetap utuh."
+                       Style="{StaticResource TeksUtamaStyle}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16" />
+
+            <TextBlock Text="Alasan" Style="{StaticResource LabelKolomStyle}" />
+            <ComboBox ItemsSource="{Binding Pilihan}"
+                      SelectedItem="{Binding Alasan}"
+                      Height="{StaticResource TinggiKontrol}"
+                      Margin="0,0,0,16" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Click="TombolBatal_Click" Margin="0,0,8,0" />
+                <Button Content="Tandai tidak aktif" Style="{StaticResource TombolBahayaStyle}" Command="{Binding KonfirmasiCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,132 @@
+using Absensi.Data.Akun;
+using Absensi.Data.Repositori;
+using ClosedXML.Excel;
+using Microsoft.Data.Sqlite;
+
+namespace Absensi.Data.MasterData;
+
+// Impor Excel guru mengikuti docs/PRD.md §16.15 langkah 2, dengan pola
+// yang sama seperti ImporSiswaExcel (analisis lalu impor satu transaksi,
+// "utuh").
+public sealed class ImporGuruExcel
+{
+    private static readonly string[] KolomBaku = { "NAMA", "NIP", "PANGKAT", "JABATAN" };
+
+    private readonly RepositoriGuru _repositoriGuru = new();
+    private readonly JalurPerubahanData _jalurPerubahanData = new();
+
+    public HasilAnalisisImporGuru Analisis(SqliteConnection connection, string pathBerkas)
+    {
+        using var workbook = new XLWorkbook(pathBerkas);
+        var worksheet = workbook.Worksheets.First();
+
+        for (var kolom = 0; kolom < KolomBaku.Length; kolom++)
+        {
+            var judul = worksheet.Cell(1, kolom + 1).GetString().Trim();
+            if (!string.Equals(judul, KolomBaku[kolom], StringComparison.OrdinalIgnoreCase))
+            {
+                throw new FormatException(
+                    $"Kolom {kolom + 1} seharusnya '{KolomBaku[kolom]}', berkas ini punya '{judul}'.");
+            }
+        }
+
+        var barisTerakhir = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+        var hasil = new List<BarisImporGuru>();
+        var nipDalamBerkas = new HashSet<string>();
+
+        for (var nomorBaris = 2; nomorBaris <= barisTerakhir; nomorBaris++)
+        {
+            if (worksheet.Row(nomorBaris).IsEmpty())
+            {
+                continue;
+            }
+
+            var nama = Teks(worksheet, nomorBaris, 1);
+            var nip = Teks(worksheet, nomorBaris, 2);
+            var pangkat = Teks(worksheet, nomorBaris, 3);
+            var jabatan = Teks(worksheet, nomorBaris, 4);
+
+            var kesalahan = new List<string>();
+
+            // §16.15: NIP wajib dan unik
+            if (string.IsNullOrWhiteSpace(nip))
+            {
+                kesalahan.Add("NIP wajib diisi");
+            }
+            else if (!nipDalamBerkas.Add(nip))
+            {
+                kesalahan.Add("NIP duplikat di dalam berkas");
+            }
+
+            // §16.15: NAMA wajib
+            if (string.IsNullOrWhiteSpace(nama))
+            {
+                kesalahan.Add("Nama wajib diisi");
+            }
+
+            hasil.Add(new BarisImporGuru(
+                nomorBaris,
+                nip,
+                nama,
+                string.IsNullOrWhiteSpace(pangkat) ? null : pangkat,
+                string.IsNullOrWhiteSpace(jabatan) ? null : jabatan,
+                kesalahan,
+                SudahAdaDiDatabase: kesalahan.Count == 0 &&
+                    _repositoriGuru.CariIdBerdasarkanNip(connection, nip) is not null));
+        }
+
+        return new HasilAnalisisImporGuru(hasil);
+    }
+
+    public HasilImporGuru Impor(
+        SqliteConnection connection,
+        AkunTersimpan akun,
+        DateTime waktu,
+        IReadOnlyList<BarisImporGuru> barisTervalidasi)
+    {
+        if (barisTervalidasi.Any(b => !b.Sah))
+        {
+            throw new InvalidOperationException("Tidak bisa mengimpor selagi masih ada baris bermasalah.");
+        }
+
+        var rencana = barisTervalidasi
+            .Select(baris => (Baris: baris, IdGuruAda: _repositoriGuru.CariIdBerdasarkanNip(connection, baris.Nip!)))
+            .ToList();
+
+        var ditambah = 0;
+        var diperbarui = 0;
+
+        _jalurPerubahanData.Jalankan(
+            connection,
+            akun,
+            waktu,
+            aksi: "impor_guru",
+            entitas: "guru",
+            perubahan: transaction =>
+            {
+                foreach (var (baris, idGuruAda) in rencana)
+                {
+                    var data = new DataGuru(baris.Nip!, baris.Nama!, baris.Pangkat, baris.Jabatan);
+
+                    if (idGuruAda is { } id)
+                    {
+                        _repositoriGuru.Perbarui(connection, transaction, id, data);
+                        diperbarui++;
+                    }
+                    else
+                    {
+                        _repositoriGuru.Tambah(connection, transaction, data);
+                        ditambah++;
+                    }
+                }
+
+                return null;
+            },
+            nilaiBaru: $"{ditambah} ditambah, {diperbarui} diperbarui");
+
+        return new HasilImporGuru(ditambah, diperbarui);
+    }
+
+    private static string Teks(IXLWorksheet worksheet, int baris, int kolom) =>
+        worksheet.Cell(baris, kolom).GetString().Trim();
+}

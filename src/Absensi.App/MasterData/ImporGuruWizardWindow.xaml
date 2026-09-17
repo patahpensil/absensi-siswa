@@ -1,0 +1,132 @@
+<Window x:Class="Absensi.App.MasterData.ImporGuruWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:masterData="clr-namespace:Absensi.App.MasterData"
+        Title="Impor Excel Guru"
+        Height="620" Width="760"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource KertasBrush}">
+
+    <Window.Resources>
+        <Style x:Key="LangkahLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource LabelKecilStyle}">
+            <Setter Property="Margin" Value="0,0,24,0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Impor Excel Guru" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="1. Analisis">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static masterData:LangkahImpor.Analisis}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="2. Validasi">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static masterData:LangkahImpor.Validasi}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="3. Preview">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static masterData:LangkahImpor.Preview}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="4. Impor">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static masterData:LangkahImpor.Impor}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,16">
+            <Button Content="Pilih berkas Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding PilihBerkasCommand}" Margin="0,0,16,0" />
+            <TextBlock Text="{Binding PesanGalat}"
+                       Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,16"
+                    Visibility="{Binding SudahDianalisis, Converter={StaticResource BoolKeVisibilitas}}">
+            <TextBlock Style="{StaticResource TeksUtamaStyle}">
+                <Run Text="{Binding JumlahBaru}" FontWeight="SemiBold" /><Run Text=" baru" />
+            </TextBlock>
+            <TextBlock Text=" · " Style="{StaticResource TeksUtamaStyle}" />
+            <TextBlock Style="{StaticResource TeksUtamaStyle}">
+                <Run Text="{Binding JumlahDiperbarui}" FontWeight="SemiBold" /><Run Text=" diperbarui" />
+            </TextBlock>
+            <TextBlock Text=" · " Style="{StaticResource TeksUtamaStyle}" />
+            <TextBlock Style="{StaticResource TeksUtamaStyle}">
+                <Run Text="{Binding JumlahBermasalah}" FontWeight="SemiBold" Foreground="{StaticResource AlpaDitolakTeksBrush}" /><Run Text=" bermasalah" />
+            </TextBlock>
+        </StackPanel>
+
+        <DataGrid Grid.Row="4" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Baris}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Baris" Binding="{Binding NomorBaris}" Width="60" />
+                <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="100" />
+                <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
+                <DataGridTextColumn Header="Kesalahan" Binding="{Binding TeksKesalahan}" Width="260" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid Grid.Row="5" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Style="{StaticResource TeksUtamaStyle}"
+                       VerticalAlignment="Center"
+                       Visibility="{Binding HasilImpor, Converter={StaticResource NullKeVisibilitas}}">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}Selesai: {0} ditambah · {1} diperbarui">
+                        <Binding Path="HasilImpor.Ditambah" />
+                        <Binding Path="HasilImpor.Diperbarui" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+
+            <Button Grid.Column="1" Content="{Binding TeksTombolImpor}" Style="{StaticResource TombolUtamaStyle}" Command="{Binding ImporCommand}" />
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,174 @@
+using System.Collections.ObjectModel;
+using Absensi.App.Mvvm;
+using Absensi.Data.Akun;
+using Absensi.Data.MasterData;
+using Absensi.Data.Repositori;
+using Absensi.Domain;
+using Microsoft.Data.Sqlite;
+using Microsoft.Win32;
+
+namespace Absensi.App.MasterData;
+
+// PRD §14.4-setara untuk guru + §16.15: daftar, impor Excel, impor foto,
+// tambah/edit, dan penandaan tidak aktif.
+public sealed class GuruViewModel : ObservableObject
+{
+    private static readonly string[] AlasanTidakAktif = { "pensiun", "pindah" };
+
+    private readonly SqliteConnection _connection;
+    private readonly AkunTersimpan _akun;
+    private readonly IPenyediaWaktu _penyediaWaktu;
+    private readonly RepositoriGuru _repositoriGuru = new();
+    private readonly LayananGuru _layananGuru = new();
+
+    private string _nip = string.Empty;
+    private string _nama = string.Empty;
+    private string? _pangkat;
+    private string? _jabatan;
+    private GuruDaftar? _sedangDiedit;
+    private string? _pesanGalat;
+    private string? _pesanStatus;
+
+    public GuruViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu)
+    {
+        _connection = connection;
+        _akun = akun;
+        _penyediaWaktu = penyediaWaktu;
+
+        SimpanCommand = new RelayCommand(Simpan, () => !string.IsNullOrWhiteSpace(_nip) && !string.IsNullOrWhiteSpace(_nama));
+        EditCommand = new RelayCommand<GuruDaftar>(MulaiEdit);
+        BatalEditCommand = new RelayCommand(BatalEdit);
+        NonaktifkanCommand = new RelayCommand<GuruDaftar>(Nonaktifkan);
+        UnggahFotoCommand = new RelayCommand<GuruDaftar>(UnggahFoto);
+        ImporExcelCommand = new RelayCommand(ImporExcel);
+        ImporFotoCommand = new RelayCommand(ImporFoto);
+
+        MuatUlang();
+    }
+
+    public ObservableCollection<GuruDaftar> Daftar { get; } = new();
+
+    public string JudulFormulir => _sedangDiedit is null ? "Tambah guru" : $"Ubah guru {_sedangDiedit.Nama}";
+
+    public string Nip { get => _nip; set { if (SetField(ref _nip, value)) SimpanCommand.RaiseCanExecuteChanged(); } }
+
+    public string Nama { get => _nama; set { if (SetField(ref _nama, value)) SimpanCommand.RaiseCanExecuteChanged(); } }
+
+    public string? Pangkat { get => _pangkat; set => SetField(ref _pangkat, value); }
+
+    public string? Jabatan { get => _jabatan; set => SetField(ref _jabatan, value); }
+
+    public string? PesanGalat { get => _pesanGalat; private set => SetField(ref _pesanGalat, value); }
+
+    public string? PesanStatus { get => _pesanStatus; private set => SetField(ref _pesanStatus, value); }
+
+    public RelayCommand SimpanCommand { get; }
+
+    public RelayCommand<GuruDaftar> EditCommand { get; }
+
+    public RelayCommand BatalEditCommand { get; }
+
+    public RelayCommand<GuruDaftar> NonaktifkanCommand { get; }
+
+    public RelayCommand<GuruDaftar> UnggahFotoCommand { get; }
+
+    public RelayCommand ImporExcelCommand { get; }
+
+    public RelayCommand ImporFotoCommand { get; }
+
+    private void MulaiEdit(GuruDaftar guru)
+    {
+        _sedangDiedit = guru;
+        Nip = guru.Nip;
+        Nama = guru.Nama;
+        OnPropertyChanged(nameof(JudulFormulir));
+    }
+
+    private void BatalEdit()
+    {
+        _sedangDiedit = null;
+        Nip = string.Empty;
+        Nama = string.Empty;
+        Pangkat = null;
+        Jabatan = null;
+        PesanGalat = null;
+        OnPropertyChanged(nameof(JudulFormulir));
+    }
+
+    private void Simpan()
+    {
+        var waktu = _penyediaWaktu.Sekarang;
+        var data = new DataGuru(Nip, Nama, Pangkat, Jabatan);
+
+        if (_sedangDiedit is { } guru)
+        {
+            _layananGuru.Perbarui(_connection, _akun, waktu, guru.Id, data);
+        }
+        else
+        {
+            _layananGuru.Tambah(_connection, _akun, waktu, data);
+        }
+
+        BatalEdit();
+        MuatUlang();
+    }
+
+    private void Nonaktifkan(GuruDaftar guru)
+    {
+        var dialogViewModel = new AlasanTidakAktifViewModel(AlasanTidakAktif);
+        var dialog = new AlasanTidakAktifWindow(dialogViewModel);
+        if (dialog.ShowDialog() != true || dialog.AlasanTerpilih is null)
+        {
+            return;
+        }
+
+        _layananGuru.TandaiTidakAktif(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, dialog.AlasanTerpilih);
+        MuatUlang();
+    }
+
+    private void UnggahFoto(GuruDaftar guru)
+    {
+        var dialog = new OpenFileDialog { Filter = "Gambar|*.jpg;*.jpeg;*.png;*.bmp" };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var namaBerkasTujuan = $"{guru.Nip}.png";
+        var pathTujuan = System.IO.Path.Combine(LokasiData.FolderData, "foto", namaBerkasTujuan);
+        PengolahFoto.SimpanDiubahUkuran(dialog.FileName, pathTujuan);
+        _layananGuru.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, namaBerkasTujuan);
+        PesanStatus = $"Foto {guru.Nama} tersimpan.";
+    }
+
+    private void ImporExcel()
+    {
+        var wizard = new ImporGuruWizardWindow(new ImporGuruWizardViewModel(_connection, _akun, _penyediaWaktu));
+        wizard.ShowDialog();
+        MuatUlang();
+    }
+
+    private void ImporFoto()
+    {
+        var dialog = new OpenFolderDialog();
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var hasil = new ImporFotoGuru().Impor(_connection, _akun, _penyediaWaktu.Sekarang, dialog.FolderName);
+        PesanStatus = hasil.TidakCocok.Count == 0
+            ? $"{hasil.Cocok} foto tersimpan."
+            : $"{hasil.Cocok} foto tersimpan · {hasil.TidakCocok.Count} berkas tidak cocok NIP mana pun.";
+        MuatUlang();
+    }
+
+    private void MuatUlang()
+    {
+        Daftar.Clear();
+        foreach (var guru in _repositoriGuru.DaftarLengkap(_connection))
+        {
+            Daftar.Add(guru);
+        }
+    }
+}

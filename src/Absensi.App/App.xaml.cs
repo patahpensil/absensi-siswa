@@ -15,6 +15,7 @@ public partial class App : Application
 {
     private readonly IPenyediaWaktu _penyediaWaktu = new PenyediaWaktuSistem();
     private SqliteConnection? _connection;
+    private AkunTersimpan? _akunLogin;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -38,8 +39,13 @@ public partial class App : Application
             return;
         }
 
-        var tahunAjaranAktif = new RepositoriTahunAjaran().CariNamaAktif(_connection);
-        var mainWindowViewModel = new MainWindowViewModel(sekolah?.Nama ?? "", sekolah?.LogoPath, tahunAjaranAktif);
+        _akunLogin = loginWindow.AkunLogin;
+
+        var repositoriTahunAjaran = new RepositoriTahunAjaran();
+        var tahunAjaranId = repositoriTahunAjaran.CariIdAktif(_connection);
+        var tahunAjaranAktif = repositoriTahunAjaran.CariNamaAktif(_connection);
+        var mainWindowViewModel = new MainWindowViewModel(
+            _connection, _akunLogin, _penyediaWaktu, sekolah?.Nama ?? "", sekolah?.LogoPath, tahunAjaranAktif, tahunAjaranId);
         var mainWindow = new MainWindow(mainWindowViewModel, BukaGerbang);
 
         MainWindow = mainWindow;

@@ -142,6 +142,21 @@ internal sealed class MigratedDatabase : IDisposable
         command.ExecuteNonQuery();
     }
 
+    // Sekolah kecil untuk pengujian master data dan impor (Tugas 7): satu
+    // tahun ajaran aktif, satu kelas (7A), dan satu akun admin untuk dipakai
+    // sebagai aktor JalurPerubahanData.
+    public void SeedMasterDataUntukUji()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-07-01', '2026-12-19', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat) VALUES (1, 1, '7A', 7);
+            """);
+
+        TambahAkunDenganSandi(1, "admin1", SandiKepsek, "admin", guruId: null);
+    }
+
     public void Dispose()
     {
         Connection.Dispose();

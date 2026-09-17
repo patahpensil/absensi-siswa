@@ -2,7 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:doc="clr-namespace:System.Windows.Documents;assembly=PresentationFramework"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:gerbang="clr-namespace:Absensi.App.Gerbang">
+                    xmlns:gerbang="clr-namespace:Absensi.App.Gerbang"
+                    xmlns:conv="clr-namespace:Absensi.App.Converters"
+                    xmlns:masterData="clr-namespace:Absensi.App.MasterData">
 
     <!--
         Satu-satunya berkas sumber daya visual aplikasi (docs/PANDUAN-UI-UX.md).
@@ -13,6 +15,19 @@
     -->
 
     <BooleanToVisibilityConverter x:Key="BoolKeVisibilitas" />
+    <conv:NullKeVisibilitasConverter x:Key="NullKeVisibilitas" />
+
+    <!-- Navigasi ViewModel-first (Tugas 7): MainWindow.KontenAktif memuat
+         salah satu ViewModel ini, DataTemplate implisit memilih View-nya. -->
+    <DataTemplate DataType="{x:Type masterData:SiswaViewModel}">
+        <masterData:SiswaView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type masterData:GuruViewModel}">
+        <masterData:GuruView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type masterData:KelasViewModel}">
+        <masterData:KelasView />
+    </DataTemplate>
 
     <!-- ================= 3. Warna — Palet Dasar ================= -->
     <SolidColorBrush x:Key="BiruSeragamBrush" Color="#1B3A6B" />

@@ -51,19 +51,24 @@
                      ItemsSource="{Binding MenuItems}"
                      SelectedItem="{Binding MenuAktif, Mode=TwoWay}" />
 
-            <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="{Binding PesanKonten}"
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource AbuTulisBrush}"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,16" />
+            <Grid Grid.Column="1">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding TampilkanPlaceholder, Converter={StaticResource BoolKeVisibilitas}}">
+                    <TextBlock Text="{Binding PesanKonten}"
+                               Style="{StaticResource TeksUtamaStyle}"
+                               Foreground="{StaticResource AbuTulisBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,16" />
 
-                <Button Content="Buka layar gerbang"
-                        Style="{StaticResource TombolUtamaStyle}"
-                        Command="{Binding BukaGerbangCommand}"
-                        Visibility="{Binding TampilkanTombolGerbang, Converter={StaticResource BoolKeVisibilitas}}"
-                        HorizontalAlignment="Center" />
-            </StackPanel>
+                    <Button Content="Buka layar gerbang"
+                            Style="{StaticResource TombolUtamaStyle}"
+                            Command="{Binding BukaGerbangCommand}"
+                            Visibility="{Binding TampilkanTombolGerbang, Converter={StaticResource BoolKeVisibilitas}}"
+                            HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <ContentControl Content="{Binding KontenAktif}" />
+            </Grid>
         </Grid>
     </Grid>
 </Window>

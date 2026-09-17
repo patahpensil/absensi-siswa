@@ -23,3 +23,25 @@ public sealed class RelayCommand : ICommand
 
     public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }
+
+// Dipakai untuk aksi per baris tabel (mis. Edit, Nonaktifkan) yang butuh
+// tahu baris mana yang diklik lewat CommandParameter.
+public sealed class RelayCommand<T> : ICommand
+{
+    private readonly Action<T> _eksekusi;
+    private readonly Func<T, bool>? _bisaEksekusi;
+
+    public RelayCommand(Action<T> eksekusi, Func<T, bool>? bisaEksekusi = null)
+    {
+        _eksekusi = eksekusi;
+        _bisaEksekusi = bisaEksekusi;
+    }
+
+    public event EventHandler? CanExecuteChanged;
+
+    public bool CanExecute(object? parameter) => _bisaEksekusi?.Invoke((T)parameter!) ?? true;
+
+    public void Execute(object? parameter) => _eksekusi((T)parameter!);
+
+    public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}

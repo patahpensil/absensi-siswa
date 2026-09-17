@@ -1,0 +1,142 @@
+<UserControl x:Class="Absensi.App.MasterData.SiswaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="24" />
+            <ColumnDefinition Width="320" />
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Grid.Column="0">
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Siswa" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Impor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporExcelCommand}" Margin="0,0,8,0" />
+                    <Button Content="Impor foto" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporFotoCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock DockPanel.Dock="Top" Text="{Binding PesanStatus}" Style="{StaticResource LabelKecilStyle}" Margin="0,0,0,8" />
+
+            <!-- PRD §14.4: hitungan untuk kelas yang sedang dipilih -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ComboBox Grid.Column="0"
+                          ItemsSource="{Binding DaftarKelasFilter}"
+                          SelectedItem="{Binding KelasFilterTerpilih}"
+                          DisplayMemberPath="Nama"
+                          Width="160"
+                          Height="{StaticResource TinggiKontrol}"
+                          Margin="0,0,16,0" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding RingkasanKelas}"
+                           Style="{StaticResource LabelKecilStyle}"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding RingkasanKelas, Converter={StaticResource NullKeVisibilitas}}" />
+            </Grid>
+
+            <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Aktif}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" />
+                    <DataGridTextColumn Header="JK" Binding="{Binding JenisKelamin}" Width="40" />
+                    <DataGridTextColumn Header="Kelas" Binding="{Binding KelasNama}" Width="70" />
+                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="60" />
+                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="50" />
+                    <DataGridTextColumn Header="Alasan" Binding="{Binding AlasanNonaktif}" Width="90" />
+                    <DataGridTemplateColumn Header="" Width="220">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Ubah" Style="{StaticResource TombolTeksStyle}"
+                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="Unggah foto" Style="{StaticResource TombolTeksStyle}"
+                                            Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Content="Mutasi" Style="{StaticResource TombolTeksStyle}"
+                                            Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <Border Style="{StaticResource KartuStyle}" VerticalAlignment="Top">
+                <StackPanel>
+                    <TextBlock Text="{Binding JudulFormulir}" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="NISN" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nisn, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="Nama lengkap" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nama, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="Jenis kelamin" Style="{StaticResource LabelKolomStyle}" />
+                    <ComboBox SelectedValue="{Binding JenisKelamin}"
+                              SelectedValuePath="Content"
+                              Height="{StaticResource TinggiKontrol}"
+                              Margin="0,0,0,16">
+                        <ComboBoxItem Content="L" />
+                        <ComboBoxItem Content="P" />
+                    </ComboBox>
+
+                    <TextBlock Text="Kelas" Style="{StaticResource LabelKolomStyle}" />
+                    <ComboBox ItemsSource="{Binding DaftarKelas}"
+                              SelectedItem="{Binding KelasTerpilih}"
+                              DisplayMemberPath="Nama"
+                              Height="{StaticResource TinggiKontrol}"
+                              Margin="0,0,0,16" />
+
+                    <TextBlock Text="Tempat lahir" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TempatLahir, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="Tanggal lahir (YYYY-MM-DD)" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TanggalLahir, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="Alamat" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Alamat, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="Nama orang tua" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NamaOrtu, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="No. HP orang tua" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NoHpOrtu, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+                    <TextBlock Text="{Binding PesanGalat}"
+                               Style="{StaticResource PesanSalahKolomStyle}"
+                               Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                               Margin="0,0,0,8" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Command="{Binding BatalEditCommand}" Margin="0,0,8,0" />
+                        <Button Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
