@@ -21,6 +21,7 @@ public sealed class GerbangViewModel : ObservableObject
     private readonly IPenyediaWaktu _penyediaWaktu;
     private readonly IPemutarBunyi _pemutarBunyi;
     private readonly CacheTampilanGerbang _cache;
+    private readonly StatusModeRegistrasi _statusModeRegistrasi;
     private readonly RepositoriKartu _repositoriKartu = new();
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
     private readonly PemrosesTap _pemrosesTap = new();
@@ -35,12 +36,14 @@ public sealed class GerbangViewModel : ObservableObject
         SqliteConnection connection,
         IPenyediaWaktu penyediaWaktu,
         IPemutarBunyi pemutarBunyi,
-        CacheTampilanGerbang cache)
+        CacheTampilanGerbang cache,
+        StatusModeRegistrasi statusModeRegistrasi)
     {
         _connection = connection;
         _penyediaWaktu = penyediaWaktu;
         _pemutarBunyi = pemutarBunyi;
         _cache = cache;
+        _statusModeRegistrasi = statusModeRegistrasi;
         PerbaruiJam();
         PerbaruiRingkasanHarian();
     }
@@ -98,7 +101,7 @@ public sealed class GerbangViewModel : ObservableObject
 
         var waktu = _penyediaWaktu.Sekarang;
         var kartu = _repositoriKartu.CariAktifBerdasarkanUid(_connection, uid);
-        var keputusan = _pemrosesTap.Proses(_connection, uid, waktu, modeRegistrasiAktif: false);
+        var keputusan = _pemrosesTap.Proses(_connection, uid, waktu, _statusModeRegistrasi.Aktif);
         var info = _cache.Cari(kartu?.PemilikTipe, kartu?.PemilikId);
         var (kategori, teksStatus, berhasil) = PemetaanTampilanTap.Petakan(keputusan);
 

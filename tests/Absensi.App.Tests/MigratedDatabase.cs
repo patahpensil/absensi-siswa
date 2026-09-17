@@ -84,6 +84,38 @@ internal sealed class MigratedDatabase : IDisposable
             """);
     }
 
+    // Sekolah kecil untuk pengujian RegistrasiKartuViewModel (Tugas 8, PRD
+    // §16.5): kelas 7A dengan tiga siswa — satu sudah punya kartu, dua
+    // belum — plus satu kartu terpakai di kelas 7B lain untuk uji pesan
+    // penolakan lintas kelas (§16.5 langkah 3.4).
+    public void SeedKelasUntukRegistrasiKartu()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-07-01', '2026-12-19', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat) VALUES (1, 1, '7A', 7);
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat) VALUES (2, 1, '7B', 7);
+
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (1, '0001', 'Siswa Sudah Kartu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (2, '0002', 'Siswa Belum Satu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (3, '0003', 'Siswa Belum Dua', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (4, '0004', 'Siswa Kelas Lain', 'L', 1);
+
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (1, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (2, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (3, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (4, 2, 1);
+
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-SISWA-LAMA', 'siswa', 1, 1, '2026-09-01T00:00:00');
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-KELAS-LAIN', 'siswa', 4, 1, '2026-09-01T00:00:00');
+            """);
+
+        TambahAkun(1, "admin1", "admin", guruId: null);
+    }
+
     public void TambahSekolah(string nama)
     {
         using var command = Connection.CreateCommand();

@@ -8,10 +8,11 @@ public sealed class GerbangViewModelTests
 {
     private static readonly DateTime Waktu0729 = new(2026, 9, 17, 7, 29, 0);
 
-    private static GerbangViewModel BuatViewModel(MigratedDatabase database, PenyediaWaktuUji waktu, PemutarBunyiDiam? bunyi = null)
+    private static GerbangViewModel BuatViewModel(
+        MigratedDatabase database, PenyediaWaktuUji waktu, PemutarBunyiDiam? bunyi = null, StatusModeRegistrasi? statusModeRegistrasi = null)
     {
         var cache = CacheTampilanGerbang.Muat(database.Connection);
-        return new GerbangViewModel(database.Connection, waktu, bunyi ?? new PemutarBunyiDiam(), cache);
+        return new GerbangViewModel(database.Connection, waktu, bunyi ?? new PemutarBunyiDiam(), cache, statusModeRegistrasi ?? new StatusModeRegistrasi());
     }
 
     [Fact]
@@ -180,5 +181,32 @@ public sealed class GerbangViewModelTests
         Assert.Equal(KategoriWarnaTap.Hadir, viewModel.KartuAktif[0].KategoriWarna);
         Assert.Equal(1, bunyi.JumlahBerhasil);
         Assert.Equal(0, bunyi.JumlahGagal);
+    }
+
+    // RENCANA-TUGAS.md Tugas 8, "Selesai bila": tidak ada satu pun baris
+    // absensi tertulis selama Mode Registrasi aktif — StatusModeRegistrasi
+    // dibagi dengan layar Registrasi Kartu (CLAUDE.md §4.3 aturan 14).
+    [Fact]
+    public void ProsesTap_ModeRegistrasiAktif_TidakMenulisAbsensi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var waktu = new PenyediaWaktuUji(Waktu0729);
+        var statusModeRegistrasi = new StatusModeRegistrasi();
+        statusModeRegistrasi.Aktifkan();
+        var viewModel = BuatViewModel(database, waktu, statusModeRegistrasi: statusModeRegistrasi);
+
+        viewModel.ProsesTap("UID-1");
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status, jam_masuk FROM absensi_siswa WHERE siswa_id = 1;";
+        using var reader = command.ExecuteReader();
+        Assert.True(reader.Read());
+        Assert.Equal("alpa", reader.GetString(0));
+        Assert.True(reader.IsDBNull(1));
+
+        using var commandTapLog = database.Connection.CreateCommand();
+        commandTapLog.CommandText = "SELECT hasil FROM tap_log WHERE uid = 'UID-1';";
+        Assert.Equal("registrasi", commandTapLog.ExecuteScalar());
     }
 }

@@ -1,3 +1,4 @@
+using Absensi.App;
 using Absensi.App.MasterData;
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
@@ -19,7 +20,7 @@ public sealed class MasterDataViewModelTests
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukGerbang();
         database.TambahAkun(1, "admin1", "admin", guruId: null);
-        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), tahunAjaranId: 1);
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
         var jumlahAwal = viewModel.Daftar.Count;
 
         viewModel.Nisn = "0099999999";
@@ -38,7 +39,7 @@ public sealed class MasterDataViewModelTests
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukGerbang();
-        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), tahunAjaranId: 1)
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1)
         {
             Nisn = "0099999999",
             Nama = "Siswa Baru",
@@ -53,7 +54,7 @@ public sealed class MasterDataViewModelTests
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukGerbang();
         database.TambahAkun(1, "admin1", "admin", guruId: null);
-        var viewModel = new GuruViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu));
+        var viewModel = new GuruViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
         var jumlahAwal = viewModel.Daftar.Count;
 
         viewModel.Nip = "999999";

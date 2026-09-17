@@ -1,4 +1,5 @@
 using System.IO;
+using Absensi.App;
 using Absensi.App.MasterData;
 using Absensi.Data.Akun;
 using Absensi.Data.MasterData;
@@ -51,7 +52,7 @@ public sealed class KoreksiTugas7Tests
             VALUES ('UID-1', 'siswa', 1, 1, '2026-09-01T00:00:00');
             """);
 
-        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), tahunAjaranId: 1);
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
 
         Assert.Null(viewModel.RingkasanKelas);
 
@@ -74,7 +75,7 @@ public sealed class KoreksiTugas7Tests
 
         new LayananSiswa().TandaiTidakAktif(database.Connection, Admin, Waktu, id: 1, alasan: "pindah");
 
-        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), tahunAjaranId: 1);
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
 
         var baris = Assert.Single(viewModel.Daftar);
         Assert.False(baris.Aktif);

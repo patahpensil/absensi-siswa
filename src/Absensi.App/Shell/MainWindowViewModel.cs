@@ -10,13 +10,16 @@ namespace Absensi.App.Shell;
 // Kerangka jendela utama (RENCANA-TUGAS.md Tugas 5) + isi nyata untuk menu
 // Siswa/Guru/Kelas (Tugas 7). Sisa menu (Dashboard, Koreksi, Kalender,
 // dst.) masih menunggu tugasnya sendiri dan tetap menampilkan placeholder.
-// Menu "Absensi" tetap istimewa: satu tombol ("Buka layar gerbang") karena
-// gerbang adalah jendela fullscreen terpisah, bukan konten yang disisipkan.
+// Menu "Absensi" tetap istimewa: dua tombol ("Buka layar gerbang" ·
+// "Registrasi", persis PRD §14.3) karena keduanya jendela terpisah
+// (gerbang fullscreen, registrasi dialog per kelas — Tugas 8), bukan
+// konten yang disisipkan seperti Siswa/Guru/Kelas.
 public sealed class MainWindowViewModel : ObservableObject
 {
     private readonly SqliteConnection _connection;
     private readonly AkunTersimpan _akun;
     private readonly IPenyediaWaktu _penyediaWaktu;
+    private readonly StatusModeRegistrasi _statusModeRegistrasi;
     private readonly int? _tahunAjaranId;
 
     private string _menuAktif;
@@ -29,6 +32,7 @@ public sealed class MainWindowViewModel : ObservableObject
         SqliteConnection connection,
         AkunTersimpan akun,
         IPenyediaWaktu penyediaWaktu,
+        StatusModeRegistrasi statusModeRegistrasi,
         string namaSekolah,
         string? logoPath,
         string? tahunAjaranAktif,
@@ -37,6 +41,7 @@ public sealed class MainWindowViewModel : ObservableObject
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
+        _statusModeRegistrasi = statusModeRegistrasi;
         _tahunAjaranId = tahunAjaranId;
 
         NamaSekolah = string.IsNullOrWhiteSpace(namaSekolah) ? "Nama sekolah belum diatur" : namaSekolah;
@@ -51,10 +56,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
         _menuAktif = MenuItems[0];
         BukaGerbangCommand = new RelayCommand(() => BukaGerbangDiminta?.Invoke(this, EventArgs.Empty));
+        BukaRegistrasiKartuCommand = new RelayCommand(() => BukaRegistrasiKartuDiminta?.Invoke(this, EventArgs.Empty));
         PerbaruiKontenAktif();
     }
 
     public event EventHandler? BukaGerbangDiminta;
+
+    public event EventHandler? BukaRegistrasiKartuDiminta;
 
     public string NamaSekolah { get; }
 
@@ -66,6 +74,8 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public RelayCommand BukaGerbangCommand { get; }
 
+    public RelayCommand BukaRegistrasiKartuCommand { get; }
+
     public string MenuAktif
     {
         get => _menuAktif;
@@ -74,13 +84,13 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetField(ref _menuAktif, value))
             {
                 OnPropertyChanged(nameof(PesanKonten));
-                OnPropertyChanged(nameof(TampilkanTombolGerbang));
+                OnPropertyChanged(nameof(TampilkanTombolAbsensi));
                 PerbaruiKontenAktif();
             }
         }
     }
 
-    public bool TampilkanTombolGerbang => MenuAktif == "Absensi";
+    public bool TampilkanTombolAbsensi => MenuAktif == "Absensi";
 
     public string PesanKonten => _tahunAjaranId is null
         ? "Tahun ajaran aktif belum diatur."
@@ -113,8 +123,8 @@ public sealed class MainWindowViewModel : ObservableObject
 
         KontenAktif = MenuAktif switch
         {
-            "Siswa" => _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
-            "Guru" => _guruViewModel ??= new GuruViewModel(_connection, _akun, _penyediaWaktu),
+            "Siswa" => _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
+            "Guru" => _guruViewModel ??= new GuruViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
             "Kelas" => _kelasViewModel ??= new KelasViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             _ => null,
         };

@@ -157,6 +157,42 @@ internal sealed class MigratedDatabase : IDisposable
         TambahAkunDenganSandi(1, "admin1", SandiKepsek, "admin", guruId: null);
     }
 
+    // Sekolah kecil untuk pengujian Registrasi Kartu (Tugas 8, PRD §16.5/
+    // §16.11/§17.9): kelas 7A dengan tiga siswa — satu sudah punya kartu
+    // (Siswa Sudah Kartu), dua belum (Siswa Belum Satu/Dua) — plus satu
+    // guru tanpa kartu (untuk uji akses §17.10) dan satu guru YANG SUDAH
+    // punya kartu di master lain (Guru Sudah Kartu, UID-GURU-LAMA) untuk
+    // uji penolakan UID lintas master.
+    public void SeedKelasUntukRegistrasiKartu()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-07-01', '2026-12-19', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat, wali_guru_id) VALUES (1, 1, '7A', 7, NULL);
+
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (1, '0001', 'Siswa Sudah Kartu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (2, '0002', 'Siswa Belum Satu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (3, '0003', 'Siswa Belum Dua', 'L', 1);
+
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (1, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (2, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (3, 1, 1);
+
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-SISWA-LAMA', 'siswa', 1, 1, '2026-09-01T00:00:00');
+
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (1, '111', 'Guru Belum Kartu', 1);
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (2, '222', 'Guru Sudah Kartu', 1);
+
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-GURU-LAMA', 'guru', 2, 1, '2026-09-01T00:00:00');
+            """);
+
+        TambahAkunDenganSandi(1, "admin1", SandiKepsek, "admin", guruId: null);
+        TambahAkunDenganSandi(2, "wali_a", SandiKepsek, "wali_kelas", guruId: 1);
+    }
+
     public void Dispose()
     {
         Connection.Dispose();

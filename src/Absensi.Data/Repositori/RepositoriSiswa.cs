@@ -36,6 +36,30 @@ public sealed class RepositoriSiswa
         return daftar;
     }
 
+    // Dipakai LayananRegistrasiKartu untuk pesan penolakan UID terpakai
+    // (PRD §16.5 langkah 3.4) — perlu nama dan kelas pemilik, bukan hanya id.
+    public (string Nama, string? KelasNama) CariNamaDanKelas(SqliteConnection connection, int siswaId, int tahunAjaranId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT s.nama, k.nama
+            FROM siswa s
+            LEFT JOIN siswa_kelas sk ON sk.siswa_id = s.id AND sk.tahun_ajaran_id = $tahunAjaranId
+            LEFT JOIN kelas k ON k.id = sk.kelas_id
+            WHERE s.id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", siswaId);
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            throw new InvalidOperationException($"Siswa {siswaId} tidak ditemukan.");
+        }
+
+        return (reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1));
+    }
+
     public int? CariIdBerdasarkanNisn(SqliteConnection connection, string nisn)
     {
         using var command = connection.CreateCommand();

@@ -60,11 +60,19 @@
                                HorizontalAlignment="Center"
                                Margin="0,0,0,16" />
 
-                    <Button Content="Buka layar gerbang"
-                            Style="{StaticResource TombolUtamaStyle}"
-                            Command="{Binding BukaGerbangCommand}"
-                            Visibility="{Binding TampilkanTombolGerbang, Converter={StaticResource BoolKeVisibilitas}}"
-                            HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding TampilkanTombolAbsensi, Converter={StaticResource BoolKeVisibilitas}}">
+                        <!-- PRD §14.3: "Tombol | Buka layar gerbang · Registrasi" -->
+                        <Button Content="Buka layar gerbang"
+                                Style="{StaticResource TombolUtamaStyle}"
+                                Command="{Binding BukaGerbangCommand}"
+                                Margin="0,0,8,0" />
+
+                        <Button Content="Registrasi"
+                                Style="{StaticResource TombolSekunderStyle}"
+                                Command="{Binding BukaRegistrasiKartuCommand}" />
+                    </StackPanel>
                 </StackPanel>
 
                 <ContentControl Content="{Binding KontenAktif}" />

@@ -19,6 +19,18 @@ public sealed class RepositoriGuru
         return daftar;
     }
 
+    // Dipakai LayananRegistrasiKartu untuk pesan penolakan UID terpakai
+    // (PRD §16.5 langkah 3.4).
+    public string CariNama(SqliteConnection connection, int guruId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT nama FROM guru WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", guruId);
+
+        var hasil = command.ExecuteScalar();
+        return hasil is null ? throw new InvalidOperationException($"Guru {guruId} tidak ditemukan.") : (string)hasil;
+    }
+
     public bool IsAktif(SqliteConnection connection, int guruId)
     {
         using var command = connection.CreateCommand();

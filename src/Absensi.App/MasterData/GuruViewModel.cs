@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using Absensi.App.Mvvm;
+using Absensi.App.RegistrasiKartu;
 using Absensi.Data.Akun;
 using Absensi.Data.MasterData;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Domain.Akun;
+using Absensi.Domain.Kehadiran;
 using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
 
@@ -18,6 +21,8 @@ public sealed class GuruViewModel : ObservableObject
     private readonly SqliteConnection _connection;
     private readonly AkunTersimpan _akun;
     private readonly IPenyediaWaktu _penyediaWaktu;
+    private readonly StatusModeRegistrasi _statusModeRegistrasi;
+    private readonly int _tahunAjaranId;
     private readonly RepositoriGuru _repositoriGuru = new();
     private readonly LayananGuru _layananGuru = new();
 
@@ -29,11 +34,18 @@ public sealed class GuruViewModel : ObservableObject
     private string? _pesanGalat;
     private string? _pesanStatus;
 
-    public GuruViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu)
+    public GuruViewModel(
+        SqliteConnection connection,
+        AkunTersimpan akun,
+        IPenyediaWaktu penyediaWaktu,
+        StatusModeRegistrasi statusModeRegistrasi,
+        int tahunAjaranId)
     {
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
+        _statusModeRegistrasi = statusModeRegistrasi;
+        _tahunAjaranId = tahunAjaranId;
 
         SimpanCommand = new RelayCommand(Simpan, () => !string.IsNullOrWhiteSpace(_nip) && !string.IsNullOrWhiteSpace(_nama));
         EditCommand = new RelayCommand<GuruDaftar>(MulaiEdit);
@@ -42,6 +54,11 @@ public sealed class GuruViewModel : ObservableObject
         UnggahFotoCommand = new RelayCommand<GuruDaftar>(UnggahFoto);
         ImporExcelCommand = new RelayCommand(ImporExcel);
         ImporFotoCommand = new RelayCommand(ImporFoto);
+
+        // PRD §17.10: registrasi/ganti kartu guru hanya TU/Admin/Kepala
+        // Sekolah — wali kelas tidak berwenang (ditegakkan juga di
+        // LayananRegistrasiKartu; ini cuma menyembunyikan tombolnya).
+        KartuCommand = new RelayCommand<GuruDaftar>(BukaDialogKartu, _ => _akun.Peran != PeranAkun.WaliKelas);
 
         MuatUlang();
     }
@@ -71,6 +88,8 @@ public sealed class GuruViewModel : ObservableObject
     public RelayCommand<GuruDaftar> NonaktifkanCommand { get; }
 
     public RelayCommand<GuruDaftar> UnggahFotoCommand { get; }
+
+    public RelayCommand<GuruDaftar> KartuCommand { get; }
 
     public RelayCommand ImporExcelCommand { get; }
 
@@ -139,6 +158,19 @@ public sealed class GuruViewModel : ObservableObject
         PengolahFoto.SimpanDiubahUkuran(dialog.FileName, pathTujuan);
         _layananGuru.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, namaBerkasTujuan);
         PesanStatus = $"Foto {guru.Nama} tersimpan.";
+    }
+
+    // Kartu pertama guru (tidak ada alur per-kelas seperti siswa — §16.5
+    // hanya menjabarkan itu untuk siswa) dan penggantian kartu hilang
+    // (§16.11) memakai dialog satu-kartu yang sama.
+    private void BukaDialogKartu(GuruDaftar guru)
+    {
+        var dialogViewModel = new TapKartuTunggalViewModel(
+            _connection, _akun, _penyediaWaktu, _statusModeRegistrasi, _tahunAjaranId,
+            JenisPemilikKartu.Guru, guru.Id, guru.Nama, modeGanti: guru.PunyaKartu);
+        var dialog = new TapKartuTunggalWindow(dialogViewModel);
+        dialog.ShowDialog();
+        MuatUlang();
     }
 
     private void ImporExcel()

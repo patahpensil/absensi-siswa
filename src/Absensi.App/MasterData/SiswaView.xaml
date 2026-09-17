@@ -63,7 +63,7 @@
                     <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="60" />
                     <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="50" />
                     <DataGridTextColumn Header="Alasan" Binding="{Binding AlasanNonaktif}" Width="90" />
-                    <DataGridTemplateColumn Header="" Width="220">
+                    <DataGridTemplateColumn Header="" Width="290">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -73,6 +73,11 @@
                                     <Button Content="Unggah foto" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}" />
+                                    <!-- PRD §16.11: hanya bermakna bila sudah punya kartu — kartu pertama lewat layar Registrasi Kartu per kelas -->
+                                    <Button Content="Ganti kartu" Style="{StaticResource TombolTeksStyle}"
+                                            Command="{Binding DataContext.GantiKartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Visibility="{Binding PunyaKartu, Converter={StaticResource BoolKeVisibilitas}}" />
                                     <Button Content="Mutasi" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}" />

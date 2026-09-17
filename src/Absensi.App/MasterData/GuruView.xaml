@@ -31,7 +31,7 @@
                     <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="70" />
                     <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="60" />
                     <DataGridTextColumn Header="Status" Binding="{Binding AlasanNonaktif}" Width="100" />
-                    <DataGridTemplateColumn Header="" Width="220">
+                    <DataGridTemplateColumn Header="" Width="290">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -40,6 +40,10 @@
                                             CommandParameter="{Binding}" />
                                     <Button Content="Unggah foto" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <!-- PRD §17.10: registrasi/ganti kartu guru hanya TU/Admin/Kepsek — KartuCommand.CanExecute menyembunyikannya untuk wali kelas -->
+                                    <Button Content="Kartu" Style="{StaticResource TombolTeksStyle}"
+                                            Command="{Binding DataContext.KartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}" />
                                     <Button Content="Nonaktifkan" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

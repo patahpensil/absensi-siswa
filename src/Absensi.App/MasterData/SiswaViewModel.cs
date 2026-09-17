@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using Absensi.App.Mvvm;
+using Absensi.App.RegistrasiKartu;
 using Absensi.Data.Akun;
 using Absensi.Data.MasterData;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Domain.Kehadiran;
 using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
 
@@ -22,6 +24,7 @@ public sealed class SiswaViewModel : ObservableObject
     private readonly SqliteConnection _connection;
     private readonly AkunTersimpan _akun;
     private readonly IPenyediaWaktu _penyediaWaktu;
+    private readonly StatusModeRegistrasi _statusModeRegistrasi;
     private readonly int _tahunAjaranId;
     private readonly RepositoriSiswa _repositoriSiswa = new();
     private readonly LayananSiswa _layananSiswa = new();
@@ -43,11 +46,17 @@ public sealed class SiswaViewModel : ObservableObject
     private string? _pesanGalat;
     private string? _pesanStatus;
 
-    public SiswaViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId)
+    public SiswaViewModel(
+        SqliteConnection connection,
+        AkunTersimpan akun,
+        IPenyediaWaktu penyediaWaktu,
+        StatusModeRegistrasi statusModeRegistrasi,
+        int tahunAjaranId)
     {
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
+        _statusModeRegistrasi = statusModeRegistrasi;
         _tahunAjaranId = tahunAjaranId;
 
         SimpanCommand = new RelayCommand(Simpan, BisaSimpan);
@@ -57,6 +66,11 @@ public sealed class SiswaViewModel : ObservableObject
         UnggahFotoCommand = new RelayCommand<SiswaDaftar>(UnggahFoto);
         ImporExcelCommand = new RelayCommand(ImporExcel);
         ImporFotoCommand = new RelayCommand(ImporFoto);
+
+        // §16.11: penggantian kartu hilang hanya bermakna bila siswa sudah
+        // punya kartu aktif — pendaftaran kartu pertama lewat layar
+        // Registrasi Kartu per kelas (§16.5), bukan di sini.
+        GantiKartuCommand = new RelayCommand<SiswaDaftar>(BukaDialogGantiKartu, s => s.PunyaKartu);
 
         DaftarKelasFilter.Add(SemuaKelas);
         foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))
@@ -130,6 +144,8 @@ public sealed class SiswaViewModel : ObservableObject
     public RelayCommand<SiswaDaftar> NonaktifkanCommand { get; }
 
     public RelayCommand<SiswaDaftar> UnggahFotoCommand { get; }
+
+    public RelayCommand<SiswaDaftar> GantiKartuCommand { get; }
 
     public RelayCommand ImporExcelCommand { get; }
 
@@ -215,6 +231,18 @@ public sealed class SiswaViewModel : ObservableObject
         PengolahFoto.SimpanDiubahUkuran(dialog.FileName, pathTujuan);
         _layananSiswa.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, siswa.Id, namaBerkasTujuan);
         PesanStatus = $"Foto {siswa.Nama} tersimpan.";
+    }
+
+    // PRD §16.11: "TU membuka Data Siswa → pilih siswa → nonaktifkan kartu
+    // lama → aktifkan Mode Registrasi → tap kartu baru" — satu dialog.
+    private void BukaDialogGantiKartu(SiswaDaftar siswa)
+    {
+        var dialogViewModel = new TapKartuTunggalViewModel(
+            _connection, _akun, _penyediaWaktu, _statusModeRegistrasi, _tahunAjaranId,
+            JenisPemilikKartu.Siswa, siswa.Id, siswa.Nama, modeGanti: true);
+        var dialog = new TapKartuTunggalWindow(dialogViewModel);
+        dialog.ShowDialog();
+        MuatUlang();
     }
 
     private void ImporExcel()
