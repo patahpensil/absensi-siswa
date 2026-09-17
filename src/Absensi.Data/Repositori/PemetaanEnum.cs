@@ -1,0 +1,94 @@
+using Absensi.Domain.Akun;
+using Absensi.Domain.Kehadiran;
+
+namespace Absensi.Data.Repositori;
+
+// Konversi antara enum Absensi.Domain dan teks yang ditegakkan CHECK
+// database (docs/SKEMA-DATABASE.md), agar kata Indonesia yang dipakai kode
+// dan yang tersimpan di database tidak diketik ulang di banyak tempat.
+internal static class PemetaanEnum
+{
+    public static JenisPemilikKartu PemilikTipeDariTeks(string teks) => teks switch
+    {
+        "siswa" => JenisPemilikKartu.Siswa,
+        "guru" => JenisPemilikKartu.Guru,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "pemilik_tipe tidak dikenal"),
+    };
+
+    public static string TeksDariPemilikTipe(JenisPemilikKartu jenis) => jenis switch
+    {
+        JenisPemilikKartu.Siswa => "siswa",
+        JenisPemilikKartu.Guru => "guru",
+        _ => throw new ArgumentOutOfRangeException(nameof(jenis), jenis, null),
+    };
+
+    public static StatusAbsensiSiswa StatusSiswaDariTeks(string teks) => teks switch
+    {
+        "alpa" => StatusAbsensiSiswa.Alpa,
+        "hadir" => StatusAbsensiSiswa.Hadir,
+        "terlambat" => StatusAbsensiSiswa.Terlambat,
+        "bolos" => StatusAbsensiSiswa.Bolos,
+        "izin" => StatusAbsensiSiswa.Izin,
+        "sakit" => StatusAbsensiSiswa.Sakit,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "status absensi_siswa tidak dikenal"),
+    };
+
+    public static string TeksDariStatusSiswa(StatusAbsensiSiswa status) => status switch
+    {
+        StatusAbsensiSiswa.Alpa => "alpa",
+        StatusAbsensiSiswa.Hadir => "hadir",
+        StatusAbsensiSiswa.Terlambat => "terlambat",
+        StatusAbsensiSiswa.Bolos => "bolos",
+        StatusAbsensiSiswa.Izin => "izin",
+        StatusAbsensiSiswa.Sakit => "sakit",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
+
+    public static StatusAbsensiGuru StatusGuruDariTeks(string teks) => teks switch
+    {
+        "alpa" => StatusAbsensiGuru.Alpa,
+        "masuk" => StatusAbsensiGuru.Masuk,
+        "hadir" => StatusAbsensiGuru.Hadir,
+        "tidak_lengkap" => StatusAbsensiGuru.TidakLengkap,
+        "izin" => StatusAbsensiGuru.Izin,
+        "sakit" => StatusAbsensiGuru.Sakit,
+        "dinas_luar" => StatusAbsensiGuru.DinasLuar,
+        "cuti" => StatusAbsensiGuru.Cuti,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "status absensi_guru tidak dikenal"),
+    };
+
+    public static string TeksDariStatusGuru(StatusAbsensiGuru status) => status switch
+    {
+        StatusAbsensiGuru.Alpa => "alpa",
+        StatusAbsensiGuru.Masuk => "masuk",
+        StatusAbsensiGuru.Hadir => "hadir",
+        StatusAbsensiGuru.TidakLengkap => "tidak_lengkap",
+        StatusAbsensiGuru.Izin => "izin",
+        StatusAbsensiGuru.Sakit => "sakit",
+        StatusAbsensiGuru.DinasLuar => "dinas_luar",
+        StatusAbsensiGuru.Cuti => "cuti",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
+
+    public static PeranAkun PeranDariTeks(string teks) => teks switch
+    {
+        "kepala_sekolah" => PeranAkun.KepalaSekolah,
+        "admin" => PeranAkun.Admin,
+        "wali_kelas" => PeranAkun.WaliKelas,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "peran akun tidak dikenal"),
+    };
+
+    public static string TeksDariPeran(PeranAkun peran) => peran switch
+    {
+        PeranAkun.KepalaSekolah => "kepala_sekolah",
+        PeranAkun.Admin => "admin",
+        PeranAkun.WaliKelas => "wali_kelas",
+        _ => throw new ArgumentOutOfRangeException(nameof(peran), peran, null),
+    };
+
+    // Guru: hanya izin/sakit/dinas_luar/cuti berarti "ditetapkan di muka"
+    // (PRD 16.8.b langkah 3). alpa/masuk/hadir/tidak_lengkap bukan status
+    // yang ditetapkan di muka.
+    public static bool AdalahStatusDitetapkanDiMuka(StatusAbsensiGuru status) => status is
+        StatusAbsensiGuru.Izin or StatusAbsensiGuru.Sakit or StatusAbsensiGuru.DinasLuar or StatusAbsensiGuru.Cuti;
+}
