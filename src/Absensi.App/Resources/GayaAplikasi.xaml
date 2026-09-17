@@ -1,0 +1,466 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:doc="clr-namespace:System.Windows.Documents;assembly=PresentationFramework"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!--
+        Satu-satunya berkas sumber daya visual aplikasi (docs/PANDUAN-UI-UX.md).
+        RENCANA-TUGAS.md Tugas 5: "seluruh nilai visual berasal dari satu
+        berkas sumber daya; tidak ada warna atau ukuran yang ditulis langsung
+        di XAML layar." Layar (Window/UserControl) hanya boleh memakai
+        StaticResource dari sini.
+    -->
+
+    <!-- ================= 3. Warna — Palet Dasar ================= -->
+    <SolidColorBrush x:Key="BiruSeragamBrush" Color="#1B3A6B" />
+    <SolidColorBrush x:Key="BiruMudaBrush" Color="#E7EDF6" />
+    <SolidColorBrush x:Key="TintaBrush" Color="#14181F" />
+    <SolidColorBrush x:Key="AbuTulisBrush" Color="#5B6472" />
+    <SolidColorBrush x:Key="KertasBrush" Color="#F5F6F7" />
+    <SolidColorBrush x:Key="PutihBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="GarisBrush" Color="#DFE3E8" />
+
+    <!-- §5.4 Overlay dialog/panel: rgba(20,24,31,0.45) -->
+    <SolidColorBrush x:Key="OverlayBrush" Color="#7314181F" />
+
+    <!--
+        §6.1 tombol "Bahaya" butuh warna merah, tapi §3 palet dasar tidak
+        mendefinisikan merah umum (hanya merah status Alpa/Ditolak, dan §3.3
+        melarang warna status dipakai untuk tombol). BELUM ADA DI PALET
+        RESMI — nilai di bawah ini pengganti sementara, tanyakan pemilik
+        proyek apakah perlu ditambahkan ke docs/PANDUAN-UI-UX.md §3.1.
+    -->
+    <SolidColorBrush x:Key="BahayaBrush" Color="#B3261E" />
+
+    <!-- ================= 3.2 Warna Status ================= -->
+    <SolidColorBrush x:Key="HadirTeksBrush" Color="#166534" />
+    <SolidColorBrush x:Key="HadirLatarBrush" Color="#E8F5EC" />
+    <SolidColorBrush x:Key="HadirGarisBrush" Color="#B7DFC4" />
+
+    <SolidColorBrush x:Key="TerlambatTeksBrush" Color="#92610D" />
+    <SolidColorBrush x:Key="TerlambatLatarBrush" Color="#FDF3E0" />
+    <SolidColorBrush x:Key="TerlambatGarisBrush" Color="#EBD39B" />
+
+    <SolidColorBrush x:Key="IzinSakitTeksBrush" Color="#1B3A6B" />
+    <SolidColorBrush x:Key="IzinSakitLatarBrush" Color="#E7EDF6" />
+    <SolidColorBrush x:Key="IzinSakitGarisBrush" Color="#BFD0E6" />
+
+    <SolidColorBrush x:Key="AlpaDitolakTeksBrush" Color="#9B2C2C" />
+    <SolidColorBrush x:Key="AlpaDitolakLatarBrush" Color="#FDEDED" />
+    <SolidColorBrush x:Key="AlpaDitolakGarisBrush" Color="#F0C0C0" />
+
+    <SolidColorBrush x:Key="TidakLengkapTeksBrush" Color="#5B6472" />
+    <SolidColorBrush x:Key="TidakLengkapLatarBrush" Color="#EFF1F3" />
+    <SolidColorBrush x:Key="TidakLengkapGarisBrush" Color="#DFE3E8" />
+
+    <!-- ================= 5.2 Sudut (tiga radius saja) ================= -->
+    <CornerRadius x:Key="RadiusKecil">6</CornerRadius>
+    <CornerRadius x:Key="RadiusSedang">10</CornerRadius>
+    <CornerRadius x:Key="RadiusPenuh">999</CornerRadius>
+
+    <!-- ================= 5.3 Bayangan (dua tingkat) ================= -->
+    <DropShadowEffect x:Key="BayanganTingkat1"
+                       Color="#14181F" Direction="270"
+                       ShadowDepth="1" BlurRadius="2" Opacity="0.06" />
+    <DropShadowEffect x:Key="BayanganTingkat2"
+                       Color="#14181F" Direction="270"
+                       ShadowDepth="4" BlurRadius="12" Opacity="0.12" />
+
+    <!-- ================= 5.1 Kisi 4 piksel ================= -->
+    <sys:Double x:Key="Spasi4">4</sys:Double>
+    <sys:Double x:Key="Spasi8">8</sys:Double>
+    <sys:Double x:Key="Spasi12">12</sys:Double>
+    <sys:Double x:Key="Spasi16">16</sys:Double>
+    <sys:Double x:Key="Spasi24">24</sys:Double>
+    <sys:Double x:Key="Spasi32">32</sys:Double>
+    <sys:Double x:Key="Spasi48">48</sys:Double>
+
+    <Thickness x:Key="PaddingTepiHalaman">24</Thickness>
+    <Thickness x:Key="PaddingKartu">16</Thickness>
+    <Thickness x:Key="PaddingTombol">16,8</Thickness>
+    <sys:Double x:Key="TinggiKontrol">36</sys:Double>
+    <sys:Double x:Key="TinggiBarisTabel">40</sys:Double>
+
+    <!-- Dimensi struktural kerangka jendela utama (PRD §14.2) -->
+    <sys:Double x:Key="TinggiHeader">64</sys:Double>
+    <sys:Double x:Key="LebarMenuSamping">240</sys:Double>
+
+    <!--
+        §4.1 IBM Plex Sans belum dibundel sebagai berkas font di proyek ini
+        (belum ada .ttf di repo) — jatuh ke Segoe UI bila IBM Plex Sans
+        tidak terpasang di PC. Membundel font sungguhan kemungkinan bagian
+        Tugas 14 (pengerasan/paket .exe self-contained).
+    -->
+    <FontFamily x:Key="FontUtama">IBM Plex Sans, Segoe UI</FontFamily>
+
+    <!-- ================= 4.2 Skala Huruf ================= -->
+    <Style x:Key="JudulHalamanStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LineHeight" Value="28.6" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+    </Style>
+
+    <Style x:Key="JudulBagianStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LineHeight" Value="24.3" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+    </Style>
+
+    <Style x:Key="TeksUtamaStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="LineHeight" Value="21" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+    </Style>
+
+    <Style x:Key="LabelKecilStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="LineHeight" Value="16.8" />
+        <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+    </Style>
+
+    <Style x:Key="AngkaRingkasanStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="28" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LineHeight" Value="33.6" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+    </Style>
+
+    <!-- ================= 6.1 Tombol ================= -->
+    <Style x:Key="TombolDasarStyle" TargetType="Button">
+        <Setter Property="Height" Value="{StaticResource TinggiKontrol}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingTombol}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="LatarTombol"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{StaticResource RadiusKecil}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="LatarTombol" Property="Effect" Value="{StaticResource BayanganTingkat2}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="LatarTombol" Property="Opacity" Value="0.9" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="LatarTombol" Property="BorderBrush" Value="{StaticResource BiruSeragamBrush}" />
+                            <Setter TargetName="LatarTombol" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="LatarTombol" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TombolUtamaStyle" TargetType="Button" BasedOn="{StaticResource TombolDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource BiruSeragamBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
+    </Style>
+
+    <Style x:Key="TombolSekunderStyle" TargetType="Button" BasedOn="{StaticResource TombolDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+    </Style>
+
+    <Style x:Key="TombolBahayaStyle" TargetType="Button" BasedOn="{StaticResource TombolDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource BahayaBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BahayaBrush}" />
+    </Style>
+
+    <Style x:Key="TombolTeksStyle" TargetType="Button" BasedOn="{StaticResource TombolDasarStyle}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- ================= 6.2 Kolom Isian ================= -->
+    <Style x:Key="KolomTeksStyle" TargetType="TextBox">
+        <Setter Property="Height" Value="{StaticResource TinggiKontrol}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="BingkaiKolom"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{StaticResource RadiusKecil}"
+                            Effect="{StaticResource BayanganTingkat1}">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="BingkaiKolom" Property="BorderBrush" Value="{StaticResource BiruSeragamBrush}" />
+                            <Setter TargetName="BingkaiKolom" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="Validation.HasError" Value="True">
+                            <Setter TargetName="BingkaiKolom" Property="BorderBrush" Value="{StaticResource AlpaDitolakTeksBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="KolomSandiStyle" TargetType="PasswordBox">
+        <Setter Property="Height" Value="{StaticResource TinggiKontrol}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border x:Name="BingkaiKolom"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{StaticResource RadiusKecil}"
+                            Effect="{StaticResource BayanganTingkat1}">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="BingkaiKolom" Property="BorderBrush" Value="{StaticResource BiruSeragamBrush}" />
+                            <Setter TargetName="BingkaiKolom" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="Validation.HasError" Value="True">
+                            <Setter TargetName="BingkaiKolom" Property="BorderBrush" Value="{StaticResource AlpaDitolakTeksBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="LabelKolomStyle" TargetType="TextBlock" BasedOn="{StaticResource LabelKecilStyle}">
+        <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style x:Key="PesanSalahKolomStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource AlpaDitolakTeksBrush}" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- ================= 6.3 Tabel ================= -->
+    <Style x:Key="KepalaTabelStyle" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource KertasBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Height" Value="{StaticResource TinggiBarisTabel}" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+
+    <Style x:Key="BarisTabelStyle" TargetType="DataGridRow">
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource KertasBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="TabelStyle" TargetType="DataGrid">
+        <Setter Property="RowHeight" Value="{StaticResource TinggiBarisTabel}" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="RowBackground" Value="{StaticResource PutihBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="CanUserAddRows" Value="False" />
+        <Setter Property="CanUserDeleteRows" Value="False" />
+        <Setter Property="CanUserReorderColumns" Value="False" />
+        <Setter Property="IsReadOnly" Value="True" />
+        <Setter Property="AutoGenerateColumns" Value="False" />
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource KepalaTabelStyle}" />
+        <Setter Property="RowStyle" Value="{StaticResource BarisTabelStyle}" />
+    </Style>
+
+    <!-- Kolom angka rata kanan, angka tabular (§4.1, §6.3) -->
+    <Style x:Key="KolomAngkaTabelStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="doc:Typography.NumeralAlignment" Value="Tabular" />
+    </Style>
+
+    <!-- ================= 6.4 Lencana Status ================= -->
+    <Style x:Key="LencanaDasarStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusPenuh}" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
+    <Style x:Key="LencanaTeksDasarStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <Style x:Key="LencanaHadirStyle" TargetType="Border" BasedOn="{StaticResource LencanaDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource HadirLatarBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource HadirGarisBrush}" />
+    </Style>
+    <Style x:Key="LencanaHadirTeksStyle" TargetType="TextBlock" BasedOn="{StaticResource LencanaTeksDasarStyle}">
+        <Setter Property="Foreground" Value="{StaticResource HadirTeksBrush}" />
+    </Style>
+
+    <Style x:Key="LencanaTerlambatStyle" TargetType="Border" BasedOn="{StaticResource LencanaDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource TerlambatLatarBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource TerlambatGarisBrush}" />
+    </Style>
+    <Style x:Key="LencanaTerlambatTeksStyle" TargetType="TextBlock" BasedOn="{StaticResource LencanaTeksDasarStyle}">
+        <Setter Property="Foreground" Value="{StaticResource TerlambatTeksBrush}" />
+    </Style>
+
+    <Style x:Key="LencanaIzinSakitStyle" TargetType="Border" BasedOn="{StaticResource LencanaDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource IzinSakitLatarBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource IzinSakitGarisBrush}" />
+    </Style>
+    <Style x:Key="LencanaIzinSakitTeksStyle" TargetType="TextBlock" BasedOn="{StaticResource LencanaTeksDasarStyle}">
+        <Setter Property="Foreground" Value="{StaticResource IzinSakitTeksBrush}" />
+    </Style>
+
+    <Style x:Key="LencanaAlpaDitolakStyle" TargetType="Border" BasedOn="{StaticResource LencanaDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource AlpaDitolakLatarBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AlpaDitolakGarisBrush}" />
+    </Style>
+    <Style x:Key="LencanaAlpaDitolakTeksStyle" TargetType="TextBlock" BasedOn="{StaticResource LencanaTeksDasarStyle}">
+        <Setter Property="Foreground" Value="{StaticResource AlpaDitolakTeksBrush}" />
+    </Style>
+
+    <Style x:Key="LencanaTidakLengkapStyle" TargetType="Border" BasedOn="{StaticResource LencanaDasarStyle}">
+        <Setter Property="Background" Value="{StaticResource TidakLengkapLatarBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource TidakLengkapGarisBrush}" />
+    </Style>
+    <Style x:Key="LencanaTidakLengkapTeksStyle" TargetType="TextBlock" BasedOn="{StaticResource LencanaTeksDasarStyle}">
+        <Setter Property="Foreground" Value="{StaticResource TidakLengkapTeksBrush}" />
+    </Style>
+
+    <!-- ================= Kartu / panel (§5.2, §5.3) ================= -->
+    <Style x:Key="KartuStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusSedang}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingKartu}" />
+        <Setter Property="Effect" Value="{StaticResource BayanganTingkat1}" />
+    </Style>
+
+    <!-- Panel/dialog yang mengambang di atas overlay memakai bayangan tingkat 2 -->
+    <Style x:Key="PanelMengambangStyle" TargetType="Border" BasedOn="{StaticResource KartuStyle}">
+        <Setter Property="Effect" Value="{StaticResource BayanganTingkat2}" />
+    </Style>
+
+    <!-- ================= Kerangka jendela utama (PRD §14.2) ================= -->
+    <Style x:Key="HeaderJendelaStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource BiruSeragamBrush}" />
+        <Setter Property="Height" Value="{StaticResource TinggiHeader}" />
+        <Setter Property="Padding" Value="24,0" />
+    </Style>
+
+    <Style x:Key="JudulHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource JudulBagianStyle}">
+        <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
+    </Style>
+
+    <Style x:Key="LabelHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource LabelKecilStyle}">
+        <Setter Property="Foreground" Value="{StaticResource BiruMudaBrush}" />
+    </Style>
+
+    <Style x:Key="ItemMenuSampingStyle" TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="LatarItem" Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="LatarItem" Property="Background" Value="{StaticResource KertasBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="LatarItem" Property="Background" Value="{StaticResource BiruMudaBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="MenuSampingStyle" TargetType="ListBox">
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="Width" Value="{StaticResource LebarMenuSamping}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource ItemMenuSampingStyle}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+
+</ResourceDictionary>

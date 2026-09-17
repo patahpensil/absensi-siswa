@@ -1,0 +1,78 @@
+<Window x:Class="Absensi.App.Login.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:Absensi.App.Converters"
+        Title="Masuk — Absensi"
+        Height="560" Width="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{StaticResource KertasBrush}">
+
+    <Window.Resources>
+        <conv:NullKeVisibilitasConverter x:Key="NullKeVisibilitas" />
+    </Window.Resources>
+
+    <Grid>
+        <Border Style="{StaticResource PanelMengambangStyle}"
+                Width="360"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+            <StackPanel>
+
+                <!-- Logo (placeholder lingkaran biru selama sekolah belum mengunggah logo lewat wizard Tugas 13) -->
+                <Ellipse Width="56" Height="56"
+                         Fill="{StaticResource BiruSeragamBrush}"
+                         HorizontalAlignment="Center"
+                         Margin="0,0,0,16" />
+
+                <TextBlock Text="{Binding NamaSekolah}"
+                           Style="{StaticResource JudulHalamanStyle}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,4" />
+
+                <TextBlock Text="Masuk untuk melanjutkan"
+                           Style="{StaticResource LabelKecilStyle}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,24" />
+
+                <TextBlock Text="Username" Style="{StaticResource LabelKolomStyle}" />
+                <TextBox x:Name="KolomUsername"
+                         Style="{StaticResource KolomTeksStyle}"
+                         Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,0,16" />
+
+                <TextBlock Text="Sandi" Style="{StaticResource LabelKolomStyle}" />
+                <PasswordBox x:Name="KolomSandi"
+                             Style="{StaticResource KolomSandiStyle}"
+                             PasswordChanged="KolomSandi_PasswordChanged"
+                             Margin="0,0,0,8" />
+
+                <TextBlock Text="{Binding PesanGalat}"
+                           Style="{StaticResource PesanSalahKolomStyle}"
+                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                           Margin="0,0,0,8" />
+
+                <Button Content="Masuk"
+                        Style="{StaticResource TombolUtamaStyle}"
+                        Command="{Binding LoginCommand}"
+                        IsDefault="True"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,8,0,24" />
+
+                <Separator Margin="0,0,0,12" Background="{StaticResource GarisBrush}" />
+
+                <TextBlock Text="Lisensi: (belum tersedia)"
+                           Style="{StaticResource LabelKecilStyle}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Style="{StaticResource LabelKecilStyle}"
+                           HorizontalAlignment="Center"
+                           Margin="0,4,0,0">
+                    <Run Text="Versi " /><Run Text="{Binding NomorVersi, Mode=OneWay}" />
+                </TextBlock>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
