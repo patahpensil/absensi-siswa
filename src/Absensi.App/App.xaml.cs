@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Windows;
+using System.Windows.Threading;
 using Absensi.App.Gerbang;
 using Absensi.App.Login;
 using Absensi.App.RegistrasiKartu;
@@ -8,6 +9,7 @@ using Absensi.Data;
 using Absensi.Data.Migrations;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Telegram;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.App;
@@ -19,6 +21,8 @@ public partial class App : Application
     private SqliteConnection? _connection;
     private AkunTersimpan? _akunLogin;
     private int? _tahunAjaranId;
+    private Penjadwal? _penjadwal;
+    private DispatcherTimer? _penjadwalTimer;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -54,6 +58,21 @@ public partial class App : Application
 
         MainWindow = mainWindow;
         mainWindow.Show();
+
+        MulaiPenjadwal();
+    }
+
+    // RENCANA-TUGAS.md Tugas 10 — rekap 08.00/batas akhir tap/finalisasi
+    // Bolos (PRD §9.2, jendela toleransi §9.4), plus memutar pengirim
+    // outbox dan penerima pairing Telegram. 30 detik dipilih supaya
+    // jendela toleransi (bawaan 15 menit) selalu tertangkap tanpa
+    // membebani — bukan nilai dari PRD.
+    private void MulaiPenjadwal()
+    {
+        _penjadwal = new Penjadwal(_connection!, _penyediaWaktu, new KlienBotTelegram());
+        _penjadwalTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _penjadwalTimer.Tick += async (_, _) => await _penjadwal.DetakAsync();
+        _penjadwalTimer.Start();
     }
 
     // "Muat seluruh foto ke memori saat layar dibuka" (RENCANA-TUGAS.md
@@ -85,6 +104,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _penjadwalTimer?.Stop();
         _connection?.Dispose();
         base.OnExit(e);
     }

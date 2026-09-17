@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Absensi.Data\Absensi.Data.csproj" />
+  </ItemGroup>
+
 </Project>

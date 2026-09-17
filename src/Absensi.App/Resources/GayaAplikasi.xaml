@@ -6,7 +6,8 @@
                     xmlns:conv="clr-namespace:Absensi.App.Converters"
                     xmlns:masterData="clr-namespace:Absensi.App.MasterData"
                     xmlns:kalender="clr-namespace:Absensi.App.Kalender"
-                    xmlns:pengaturan="clr-namespace:Absensi.App.Pengaturan">
+                    xmlns:pengaturan="clr-namespace:Absensi.App.Pengaturan"
+                    xmlns:notifikasi="clr-namespace:Absensi.App.Notifikasi">
 
     <!--
         Satu-satunya berkas sumber daya visual aplikasi (docs/PANDUAN-UI-UX.md).
@@ -36,6 +37,9 @@
     </DataTemplate>
     <DataTemplate DataType="{x:Type pengaturan:PengaturanViewModel}">
         <pengaturan:PengaturanView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type notifikasi:NotifikasiViewModel}">
+        <notifikasi:NotifikasiView />
     </DataTemplate>
 
     <!-- ================= 3. Warna — Palet Dasar ================= -->

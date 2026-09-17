@@ -1,5 +1,7 @@
+using System.Globalization;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Kehadiran;
+using Absensi.Domain.Notifikasi;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.Data;
@@ -9,6 +11,8 @@ namespace Absensi.Data;
 // bersama tap_log dalam satu transaksi (RENCANA-TUGAS.md Tugas 3).
 public sealed class PemrosesTap
 {
+    private static readonly CultureInfo BudayaIndonesia = new("id-ID");
+
     private readonly RepositoriTahunAjaran _repositoriTahunAjaran = new();
     private readonly RepositoriKalender _repositoriKalender = new();
     private readonly RepositoriJadwalHari _repositoriJadwalHari = new();
@@ -18,6 +22,8 @@ public sealed class PemrosesTap
     private readonly RepositoriGuru _repositoriGuru = new();
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
     private readonly RepositoriTapLog _repositoriTapLog = new();
+    private readonly RepositoriPairing _repositoriPairing = new();
+    private readonly RepositoriOutbox _repositoriOutbox = new();
     private readonly PenentuStatusKehadiran _penentuStatusKehadiran = new();
 
     public KeputusanTap Proses(SqliteConnection connection, string uid, DateTime waktu, bool modeRegistrasiAktif)
@@ -35,11 +41,26 @@ public sealed class PemrosesTap
         var konteks = BuatKonteks(connection, tanggal, waktu, modeRegistrasiAktif, jenisHari, kartu, tapTerakhir, jedaTapMinimal, jadwal);
         var keputusan = _penentuStatusKehadiran.Tentukan(konteks);
 
+        // PRD §16.8.a langkah 9 / §16.9: tap yang menghasilkan TERLAMBAT
+        // SETELAH jam rekap diantre real-time di sini. Tap sebelum jam
+        // rekap (Hadir maupun Terlambat) ditangani batch oleh
+        // Absensi.Data.Notifikasi.LayananNotifikasi.JalankanRekapPagi —
+        // dikonfirmasi pemilik proyek 2026-09-18. Pesan hanya diANTRE, tak
+        // pernah dikirim di sini (CLAUDE.md §4.4 aturan 15).
+        var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);
+
         using var transaction = connection.BeginTransaction();
 
         if (kartu is not null)
         {
             SimpanKeputusan(connection, transaction, tanggal, waktu, kartu, keputusan);
+        }
+
+        if (notifikasiTerlambatRealtime is { } notifikasi)
+        {
+            _repositoriOutbox.Antrekan(
+                connection, transaction, tanggal, JenisSubjekOutbox.Siswa, kartu!.PemilikId,
+                JenisNotifikasi.Terlambat, notifikasi.ChatId, notifikasi.Isi, waktu);
         }
 
         _repositoriTapLog.Catat(
@@ -120,6 +141,35 @@ public sealed class PemrosesTap
         {
             _repositoriAbsensi.SimpanKeputusanGuru(connection, transaction, tanggal, kartu.PemilikId, waktu, keputusan);
         }
+    }
+
+    private (string ChatId, string Isi)? SiapkanNotifikasiTerlambatRealtime(
+        SqliteConnection connection,
+        DateOnly tanggal,
+        DateTime waktu,
+        int tahunAjaranId,
+        KartuAktif? kartu,
+        KeputusanTap keputusan,
+        JadwalHariKonfigurasi? jadwal)
+    {
+        if (kartu?.PemilikTipe != JenisPemilikKartu.Siswa
+            || keputusan.Tindakan != JenisTindakanTap.IsiJamMasuk
+            || keputusan.StatusSiswaBaru != StatusAbsensiSiswa.Terlambat
+            || jadwal?.JamRekap is not { } jamRekap
+            || TimeOnly.FromDateTime(waktu) < jamRekap)
+        {
+            return null;
+        }
+
+        var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, kartu.PemilikId);
+        if (chatId is null)
+        {
+            return null;
+        }
+
+        var (namaSiswa, _) = _repositoriSiswa.CariNamaDanKelas(connection, kartu.PemilikId, tahunAjaranId);
+        var isi = $"Ananda {namaSiswa} tercatat TERLAMBAT hari ini, {tanggal.ToString("d MMMM yyyy", BudayaIndonesia)} pukul {TimeOnly.FromDateTime(waktu).ToString("HH:mm")}.";
+        return (chatId, isi);
     }
 
     // Memetakan keputusan ke salah satu nilai CHECK(hasil) tap_log

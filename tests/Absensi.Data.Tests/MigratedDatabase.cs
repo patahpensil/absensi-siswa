@@ -96,6 +96,9 @@ internal sealed class MigratedDatabase : IDisposable
             VALUES ('UID-GURU-1', 'guru', 1, 1, '2026-09-01T00:00:00');
             INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
             VALUES ('UID-GURU-2', 'guru', 2, 1, '2026-09-01T00:00:00');
+
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 1, 'TOKUJI1', 'tertaut', 'chat-siswa-uji', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
             """);
     }
 
@@ -191,6 +194,72 @@ internal sealed class MigratedDatabase : IDisposable
 
         TambahAkunDenganSandi(1, "admin1", SandiKepsek, "admin", guruId: null);
         TambahAkunDenganSandi(2, "wali_a", SandiKepsek, "wali_kelas", guruId: 1);
+    }
+
+    // Sekolah kecil untuk pengujian LayananNotifikasi (Tugas 10, PRD
+    // §9.2/§9.3): jadwal Kamis 07.30/08.00/12.00/13.10 (CLAUDE.md §7).
+    // Kelas 7A wali guru id=1 (tertaut Telegram). Siswa: id=1 Hadir
+    // (tertaut), id=2 Terlambat (tertaut), id=3 Alpa/belum tap (tertaut),
+    // id=4 Hadir+sudah tap pulang (tertaut, BUKAN kandidat bolos), id=5
+    // Hadir+belum tap pulang (tertaut, kandidat bolos). Guru id=2 "Guru
+    // Alpa" belum tap sama sekali, tertaut sendiri (untuk guru_tanpa_kabar).
+    public void SeedSekolahUntukNotifikasi()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-07-01', '2026-12-19', 1);
+
+            INSERT INTO jadwal_hari (tahun_ajaran_id, hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang)
+            VALUES (1, 4, 1, '07:30', '08:00', '12:00', '13:10');
+
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (1, '111', 'Wali Kelas A', 1);
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (2, '222', 'Guru Alpa', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat, wali_guru_id) VALUES (1, 1, '7A', 7, 1);
+
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (1, '0001', 'Siswa Hadir', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (2, '0002', 'Siswa Terlambat', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (3, '0003', 'Siswa Alpa', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (4, '0004', 'Siswa Sudah Pulang', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (5, '0005', 'Siswa Bolos', 'L', 1);
+
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (1, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (2, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (3, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (4, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (5, 1, 1);
+
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, sumber)
+            VALUES ('2026-09-17', 1, 1, 'hadir', '07:20', '13:15', 'tap');
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, sumber)
+            VALUES ('2026-09-17', 2, 1, 'terlambat', '07:45', NULL, 'tap');
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, sumber)
+            VALUES ('2026-09-17', 3, 1, 'alpa', NULL, NULL, 'sistem');
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, sumber)
+            VALUES ('2026-09-17', 4, 1, 'hadir', '07:20', '13:15', 'tap');
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, sumber)
+            VALUES ('2026-09-17', 5, 1, 'hadir', '07:20', NULL, 'tap');
+
+            INSERT INTO absensi_guru (tanggal, guru_id, status, sumber)
+            VALUES ('2026-09-17', 1, 'masuk', 'tap');
+            INSERT INTO absensi_guru (tanggal, guru_id, status, sumber)
+            VALUES ('2026-09-17', 2, 'alpa', 'sistem');
+
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('guru', 1, 'TOKWALI', 'tertaut', 'chat-wali-1', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('guru', 2, 'TOKGURU2', 'tertaut', 'chat-guru-2', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 1, 'TOKS1', 'tertaut', 'chat-siswa-1', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 2, 'TOKS2', 'tertaut', 'chat-siswa-2', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 3, 'TOKS3', 'tertaut', 'chat-siswa-3', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 4, 'TOKS4', 'tertaut', 'chat-siswa-4', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 5, 'TOKS5', 'tertaut', 'chat-siswa-5', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            """);
     }
 
     public void Dispose()

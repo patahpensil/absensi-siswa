@@ -90,4 +90,32 @@ public sealed class PengaturanViewModelTests
 
         Assert.Equal("Jadwal harian tersimpan.", viewModel.PesanStatus);
     }
+
+    // RENCANA-TUGAS.md Tugas 10 — PRD §16.6 langkah 2.
+    [Fact]
+    public void SimpanBotCommand_TersimpanDanBisaDibacaUlang()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database);
+        viewModel.TokenBot = "123456:ABCDEF";
+        viewModel.UsernameBot = "BotSekolahX";
+
+        viewModel.SimpanBotCommand.Execute(null);
+
+        Assert.Equal("Pengaturan bot Telegram tersimpan.", viewModel.PesanStatusBot);
+        var viewModelBaru = BuatViewModel(database);
+        Assert.Equal("123456:ABCDEF", viewModelBaru.TokenBot);
+        Assert.Equal("BotSekolahX", viewModelBaru.UsernameBot);
+    }
+
+    [Fact]
+    public void WaliKelas_SimpanBotCommandTidakBisaDieksekusi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, WaliKelas);
+
+        Assert.False(viewModel.SimpanBotCommand.CanExecute(null));
+    }
 }

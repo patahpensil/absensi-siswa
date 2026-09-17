@@ -320,6 +320,39 @@ public sealed class PenentuStatusKehadiranTests
         Assert.Equal(StatusAbsensiGuru.Hadir, statusAkhir);
     }
 
+    // RENCANA-TUGAS.md Tugas 10 — PRD §16.7/§16.9: siswa tercatat masuk
+    // tapi belum tap pulang, satu jam setelah jam pulang, ditetapkan Bolos.
+    [Theory]
+    [InlineData(StatusAbsensiSiswa.Hadir)]
+    [InlineData(StatusAbsensiSiswa.Terlambat)]
+    public void Siswa_TercatatMasukTanpaTapPulang_StatusAkhirHariBolos(StatusAbsensiSiswa statusSaatIni)
+    {
+        var statusAkhir = _penentu.TentukanStatusAkhirHariSiswa(statusSaatIni, sudahTapPulang: false);
+
+        Assert.Equal(StatusAbsensiSiswa.Bolos, statusAkhir);
+    }
+
+    [Theory]
+    [InlineData(StatusAbsensiSiswa.Hadir)]
+    [InlineData(StatusAbsensiSiswa.Terlambat)]
+    public void Siswa_TercatatMasukSudahTapPulang_StatusAkhirHariTidakBerubah(StatusAbsensiSiswa statusSaatIni)
+    {
+        var statusAkhir = _penentu.TentukanStatusAkhirHariSiswa(statusSaatIni, sudahTapPulang: true);
+
+        Assert.Equal(statusSaatIni, statusAkhir);
+    }
+
+    [Theory]
+    [InlineData(StatusAbsensiSiswa.Alpa)]
+    [InlineData(StatusAbsensiSiswa.Izin)]
+    [InlineData(StatusAbsensiSiswa.Sakit)]
+    public void Siswa_BukanTercatatMasuk_StatusAkhirHariTidakBerubahWalauBelumTapPulang(StatusAbsensiSiswa statusSaatIni)
+    {
+        var statusAkhir = _penentu.TentukanStatusAkhirHariSiswa(statusSaatIni, sudahTapPulang: false);
+
+        Assert.Equal(statusSaatIni, statusAkhir);
+    }
+
     [Fact]
     public void PenyediaWaktuTetap_MengembalikanWaktuYangDitentukan()
     {

@@ -1,5 +1,6 @@
 using Absensi.Domain.Akun;
 using Absensi.Domain.Kehadiran;
+using Absensi.Domain.Notifikasi;
 
 namespace Absensi.Data.Repositori;
 
@@ -103,6 +104,62 @@ internal static class PemetaanEnum
     {
         JenisHariKalender.Sekolah => "sekolah",
         JenisHariKalender.Libur => "libur",
+        _ => throw new ArgumentOutOfRangeException(nameof(jenis), jenis, null),
+    };
+
+    public static StatusPairing StatusPairingDariTeks(string teks) => teks switch
+    {
+        "menunggu" => StatusPairing.Menunggu,
+        "tertaut" => StatusPairing.Tertaut,
+        "dibatalkan" => StatusPairing.Dibatalkan,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "status pairing tidak dikenal"),
+    };
+
+    public static string TeksDariStatusPairing(StatusPairing status) => status switch
+    {
+        StatusPairing.Menunggu => "menunggu",
+        StatusPairing.Tertaut => "tertaut",
+        StatusPairing.Dibatalkan => "dibatalkan",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
+
+    public static JenisSubjekOutbox SubjekOutboxDariTeks(string teks) => teks switch
+    {
+        "siswa" => JenisSubjekOutbox.Siswa,
+        "guru" => JenisSubjekOutbox.Guru,
+        "kelas" => JenisSubjekOutbox.Kelas,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "subjek_tipe outbox tidak dikenal"),
+    };
+
+    public static string TeksDariSubjekOutbox(JenisSubjekOutbox subjek) => subjek switch
+    {
+        JenisSubjekOutbox.Siswa => "siswa",
+        JenisSubjekOutbox.Guru => "guru",
+        JenisSubjekOutbox.Kelas => "kelas",
+        _ => throw new ArgumentOutOfRangeException(nameof(subjek), subjek, null),
+    };
+
+    public static JenisNotifikasi JenisNotifikasiDariTeks(string teks) => teks switch
+    {
+        "hadir" => JenisNotifikasi.Hadir,
+        "terlambat" => JenisNotifikasi.Terlambat,
+        "alpa" => JenisNotifikasi.Alpa,
+        "ralat" => JenisNotifikasi.Ralat,
+        "rekap_wali_belum_tap" => JenisNotifikasi.RekapWaliBelumTap,
+        "bolos_wali" => JenisNotifikasi.BolosWali,
+        "guru_tanpa_kabar" => JenisNotifikasi.GuruTanpaKabar,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "jenis outbox tidak dikenal"),
+    };
+
+    public static string TeksDariJenisNotifikasi(JenisNotifikasi jenis) => jenis switch
+    {
+        JenisNotifikasi.Hadir => "hadir",
+        JenisNotifikasi.Terlambat => "terlambat",
+        JenisNotifikasi.Alpa => "alpa",
+        JenisNotifikasi.Ralat => "ralat",
+        JenisNotifikasi.RekapWaliBelumTap => "rekap_wali_belum_tap",
+        JenisNotifikasi.BolosWali => "bolos_wali",
+        JenisNotifikasi.GuruTanpaKabar => "guru_tanpa_kabar",
         _ => throw new ArgumentOutOfRangeException(nameof(jenis), jenis, null),
     };
 }

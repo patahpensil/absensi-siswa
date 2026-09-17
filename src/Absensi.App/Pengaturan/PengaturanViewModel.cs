@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Absensi.App.Mvvm;
 using Absensi.Data.Akun;
+using Absensi.Data.Pengaturan;
 using Absensi.Data.Repositori;
 using Absensi.Data.Waktu;
 using Absensi.Domain;
@@ -9,10 +10,11 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Pengaturan;
 
-// RENCANA-TUGAS.md Tugas 9 — hanya bagian "jadwal harian" dari layar
-// Pengaturan (PANDUAN-UI-UX.md §9: "Pengaturan | Identitas sekolah,
-// jadwal harian, tahun ajaran, token bot, backup"). Bagian lain menunggu
-// Tugas masing-masing — bukan cakupan Tugas 9.
+// RENCANA-TUGAS.md Tugas 9 — bagian "jadwal harian", dan Tugas 10 — bagian
+// "token bot" dari layar Pengaturan (PANDUAN-UI-UX.md §9: "Pengaturan |
+// Identitas sekolah, jadwal harian, tahun ajaran, token bot, backup").
+// Bagian lain (identitas sekolah, tahun ajaran, backup) menunggu Tugas
+// masing-masing — bukan cakupan Tugas 9/10.
 public sealed class PengaturanViewModel : ObservableObject
 {
     // hari: 1=Senin..7=Minggu (docs/SKEMA-DATABASE.md §4).
@@ -24,9 +26,14 @@ public sealed class PengaturanViewModel : ObservableObject
     private readonly int _tahunAjaranId;
     private readonly RepositoriJadwalHari _repositoriJadwalHari = new();
     private readonly LayananJadwalHari _layananJadwalHari = new();
+    private readonly RepositoriPengaturan _repositoriPengaturan = new();
+    private readonly LayananPengaturan _layananPengaturan = new();
 
     private string? _pesanGalat;
     private string? _pesanStatus;
+    private string? _tokenBot;
+    private string? _usernameBot;
+    private string? _pesanStatusBot;
 
     public PengaturanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId)
     {
@@ -36,11 +43,26 @@ public sealed class PengaturanViewModel : ObservableObject
         _tahunAjaranId = tahunAjaranId;
 
         SimpanJadwalCommand = new RelayCommand(SimpanJadwal, () => BolehMengubah);
+        SimpanBotCommand = new RelayCommand(SimpanBot, () => BolehMengubah);
 
         MuatJadwal();
+        MuatBot();
     }
 
     public ObservableCollection<JadwalHariBarisViewModel> JadwalHarian { get; } = new();
+
+    // PRD §16.6 langkah 2: "Admin memasukkan token bot dan username bot di
+    // menu Pengaturan" — username bot dipakai LayananPairing.BuatUrlQr,
+    // token bot dipakai Absensi.Telegram (PengirimOutbox/
+    // PemrosesPembaruanPairing) lewat RepositoriPengaturan langsung, bukan
+    // lewat ViewModel ini.
+    public string? TokenBot { get => _tokenBot; set => SetField(ref _tokenBot, value); }
+
+    public string? UsernameBot { get => _usernameBot; set => SetField(ref _usernameBot, value); }
+
+    public string? PesanStatusBot { get => _pesanStatusBot; private set => SetField(ref _pesanStatusBot, value); }
+
+    public RelayCommand SimpanBotCommand { get; }
 
     // PRD §3: pengaturan adalah kewenangan penuh (Kepala Sekolah/Admin) —
     // wali kelas tidak berwenang. Ditegakkan juga (dan sebenarnya oleh)
@@ -60,6 +82,20 @@ public sealed class PengaturanViewModel : ObservableObject
     }
 
     public RelayCommand SimpanJadwalCommand { get; }
+
+    private void MuatBot()
+    {
+        TokenBot = _repositoriPengaturan.BacaString(_connection, "token_bot");
+        UsernameBot = _repositoriPengaturan.BacaString(_connection, "username_bot");
+    }
+
+    private void SimpanBot()
+    {
+        var waktu = _penyediaWaktu.Sekarang;
+        _layananPengaturan.Simpan(_connection, _akun, waktu, "token_bot", TokenBot ?? string.Empty);
+        _layananPengaturan.Simpan(_connection, _akun, waktu, "username_bot", UsernameBot ?? string.Empty);
+        PesanStatusBot = "Pengaturan bot Telegram tersimpan.";
+    }
 
     private void MuatJadwal()
     {

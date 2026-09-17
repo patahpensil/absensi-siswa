@@ -39,6 +39,14 @@ public sealed class PenentuStatusKehadiran
             ? StatusAbsensiGuru.TidakLengkap
             : statusSaatIni;
 
+    // PRD §16.7 (14.10/Jumat 12.30, "satu jam setelah jam pulang") dan §8:
+    // siswa yang tercatat masuk (Hadir atau Terlambat — keduanya berarti
+    // "punya catatan masuk") tapi belum tap pulang ditetapkan BOLOS.
+    public StatusAbsensiSiswa TentukanStatusAkhirHariSiswa(StatusAbsensiSiswa statusSaatIni, bool sudahTapPulang) =>
+        statusSaatIni is StatusAbsensiSiswa.Hadir or StatusAbsensiSiswa.Terlambat && !sudahTapPulang
+            ? StatusAbsensiSiswa.Bolos
+            : statusSaatIni;
+
     // PRD 16.8.a — Kartu Siswa
     private static KeputusanTap TentukanUntukSiswa(DateTime waktu, KonteksTapSiswa siswa)
     {

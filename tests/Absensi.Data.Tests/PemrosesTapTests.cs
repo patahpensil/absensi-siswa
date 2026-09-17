@@ -148,6 +148,41 @@ public sealed class PemrosesTapTests
         AssertTapLogTunggal(database, hasilDiharapkan: "registrasi", pemilikTipe: "siswa", pemilikId: 1);
     }
 
+    // RENCANA-TUGAS.md Tugas 10 — PRD §16.8.a langkah 9 / §16.9: Terlambat
+    // SETELAH jam rekap diantre real-time (dikonfirmasi pemilik proyek
+    // 2026-09-18); sebelum jam rekap tidak, karena itu tugas rekap batch
+    // (Absensi.Data.Notifikasi.LayananNotifikasi.JalankanRekapPagi).
+    [Fact]
+    public void Proses_TerlambatSetelahJamRekap_DiantreRealtimeKeOrangTua()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(8, 15), modeRegistrasiAktif: false);
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT isi FROM outbox WHERE chat_id = 'chat-siswa-uji' AND jenis = 'terlambat' AND status = 'antre';";
+        var isi = command.ExecuteScalar() as string;
+        Assert.NotNull(isi);
+        Assert.Contains("Siswa Aktif", isi);
+        Assert.Contains("08:15", isi);
+    }
+
+    [Fact]
+    public void Proses_TerlambatSebelumJamRekap_TidakDiantreRealtime()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(7, 45), modeRegistrasiAktif: false);
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM outbox WHERE chat_id = 'chat-siswa-uji';";
+        Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
+    }
+
     private static void AssertTapLogTunggal(
         MigratedDatabase database,
         string hasilDiharapkan,

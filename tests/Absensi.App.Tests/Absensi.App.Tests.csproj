@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Absensi.App\Absensi.App.csproj" />
     <ProjectReference Include="..\..\src\Absensi.Data\Absensi.Data.csproj" />
     <ProjectReference Include="..\..\src\Absensi.Domain\Absensi.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Absensi.Telegram\Absensi.Telegram.csproj" />
   </ItemGroup>
 
 </Project>
