@@ -30,6 +30,74 @@ public sealed class RepositoriJadwalHari
             MulaiPulang: BacaJam(reader, 4));
     }
 
+    // PRD §7 / layar Pengaturan: ketujuh hari sekaligus, termasuk yang
+    // belum pernah disimpan (tahun ajaran baru) — diisi default supaya
+    // layar selalu menampilkan 7 baris utuh, bukan sebagian. Default
+    // mengikuti CLAUDE.md §7 ("Minggu libur", sisanya hari sekolah) —
+    // sekadar isian awal formulir, admin tetap bebas mengubahnya sebelum
+    // Simpan; bukan nilai yang ditegakkan di kode (aturan 2).
+    public IReadOnlyList<JadwalHariBaris> DaftarUntukTahunAjaran(SqliteConnection connection, int tahunAjaranId)
+    {
+        var tersimpan = new Dictionary<int, JadwalHariBaris>();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang
+            FROM jadwal_hari WHERE tahun_ajaran_id = $tahunAjaranId;
+            """;
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                var hari = reader.GetInt32(0);
+                tersimpan[hari] = new JadwalHariBaris(
+                    hari,
+                    reader.GetInt32(1) == 1,
+                    BacaJam(reader, 2), BacaJam(reader, 3), BacaJam(reader, 4), BacaJam(reader, 5));
+            }
+        }
+
+        var daftar = new List<JadwalHariBaris>();
+        for (var hari = 1; hari <= 7; hari++)
+        {
+            daftar.Add(tersimpan.TryGetValue(hari, out var baris)
+                ? baris
+                : new JadwalHariBaris(hari, HariSekolah: hari != 7, null, null, null, null));
+        }
+
+        return daftar;
+    }
+
+    // Hanya dipanggil lewat Absensi.Data.Waktu.LayananJadwalHari, yang
+    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // Upsert per hari — ketujuh baris ditulis dalam satu transaksi oleh
+    // pemanggil (PRD §7: "seluruh nilai dapat diubah per hari").
+    public void Perbarui(SqliteConnection connection, SqliteTransaction transaction, int tahunAjaranId, JadwalHariBaris data)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO jadwal_hari (tahun_ajaran_id, hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang)
+            VALUES ($tahunAjaranId, $hari, $hariSekolah, $jamMasuk, $jamRekap, $batasTapMasuk, $mulaiPulang)
+            ON CONFLICT(tahun_ajaran_id, hari) DO UPDATE SET
+                hari_sekolah = excluded.hari_sekolah,
+                jam_masuk = excluded.jam_masuk,
+                jam_rekap = excluded.jam_rekap,
+                batas_tap_masuk = excluded.batas_tap_masuk,
+                mulai_pulang = excluded.mulai_pulang;
+            """;
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+        command.Parameters.AddWithValue("$hari", data.Hari);
+        command.Parameters.AddWithValue("$hariSekolah", data.HariSekolah ? 1 : 0);
+        command.Parameters.AddWithValue("$jamMasuk", (object?)data.JamMasuk?.ToString("HH:mm") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$jamRekap", (object?)data.JamRekap?.ToString("HH:mm") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$batasTapMasuk", (object?)data.BatasTapMasuk?.ToString("HH:mm") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$mulaiPulang", (object?)data.MulaiPulang?.ToString("HH:mm") ?? DBNull.Value);
+        command.ExecuteNonQuery();
+    }
+
     private static TimeOnly? BacaJam(SqliteDataReader reader, int kolom) =>
         reader.IsDBNull(kolom) ? null : TimeOnly.Parse(reader.GetString(kolom));
 }

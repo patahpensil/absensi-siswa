@@ -1,0 +1,51 @@
+<UserControl x:Class="Absensi.App.Pengaturan.PengaturanView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <DockPanel Margin="{StaticResource PaddingTepiHalaman}">
+        <TextBlock DockPanel.Dock="Top" Text="Pengaturan" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
+
+        <!-- PANDUAN-UI-UX.md §9: identitas sekolah/tahun ajaran/token bot/
+             backup menunggu Tugas masing-masing — hanya jadwal harian
+             (PRD §7, Tugas 9) yang nyata di sini. -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
+            <StackPanel>
+                <TextBlock Text="Jadwal Harian" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah."
+                           Style="{StaticResource TeksUtamaStyle}"
+                           Foreground="{StaticResource AbuTulisBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,16" />
+
+                <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="110" IsReadOnly="True" />
+                        <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                        <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                        <DataGridTextColumn Header="Jam rekap" Binding="{Binding JamRekap, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                        <DataGridTextColumn Header="Batas akhir tap masuk" Binding="{Binding BatasTapMasuk, UpdateSourceTrigger=PropertyChanged}" Width="140" />
+                        <DataGridTextColumn Header="Mulai absen pulang" Binding="{Binding MulaiPulang, UpdateSourceTrigger=PropertyChanged}" Width="130" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock Text="{Binding PesanGalat}"
+                           Style="{StaticResource PesanSalahKolomStyle}"
+                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                           TextWrapping="Wrap"
+                           Margin="0,8,0,0" />
+
+                <TextBlock Text="{Binding PesanStatus}"
+                           Style="{StaticResource TeksUtamaStyle}"
+                           Foreground="{StaticResource HadirTeksBrush}"
+                           Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
+                           Margin="0,8,0,0" />
+
+                <Button Content="Simpan Jadwal Harian"
+                        Style="{StaticResource TombolUtamaStyle}"
+                        Command="{Binding SimpanJadwalCommand}"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0" />
+            </StackPanel>
+        </Border>
+    </DockPanel>
+</UserControl>

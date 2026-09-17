@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using Absensi.App.Kalender;
 using Absensi.App.MasterData;
 using Absensi.App.Mvvm;
+using Absensi.App.Pengaturan;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
 using Microsoft.Data.Sqlite;
@@ -27,6 +29,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private SiswaViewModel? _siswaViewModel;
     private GuruViewModel? _guruViewModel;
     private KelasViewModel? _kelasViewModel;
+    private KalenderViewModel? _kalenderViewModel;
+    private PengaturanViewModel? _pengaturanViewModel;
 
     public MainWindowViewModel(
         SqliteConnection connection,
@@ -126,6 +130,8 @@ public sealed class MainWindowViewModel : ObservableObject
             "Siswa" => _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
             "Guru" => _guruViewModel ??= new GuruViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
             "Kelas" => _kelasViewModel ??= new KelasViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
+            "Kalender" => _kalenderViewModel ??= new KalenderViewModel(_connection, _akun, _penyediaWaktu),
+            "Pengaturan" => _pengaturanViewModel ??= new PengaturanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             _ => null,
         };
     }

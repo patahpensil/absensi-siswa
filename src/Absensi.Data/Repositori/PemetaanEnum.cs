@@ -91,4 +91,18 @@ internal static class PemetaanEnum
     // yang ditetapkan di muka.
     public static bool AdalahStatusDitetapkanDiMuka(StatusAbsensiGuru status) => status is
         StatusAbsensiGuru.Izin or StatusAbsensiGuru.Sakit or StatusAbsensiGuru.DinasLuar or StatusAbsensiGuru.Cuti;
+
+    public static JenisHariKalender JenisHariDariTeks(string teks) => teks switch
+    {
+        "sekolah" => JenisHariKalender.Sekolah,
+        "libur" => JenisHariKalender.Libur,
+        _ => throw new ArgumentOutOfRangeException(nameof(teks), teks, "jenis kalender tidak dikenal"),
+    };
+
+    public static string TeksDariJenisHari(JenisHariKalender jenis) => jenis switch
+    {
+        JenisHariKalender.Sekolah => "sekolah",
+        JenisHariKalender.Libur => "libur",
+        _ => throw new ArgumentOutOfRangeException(nameof(jenis), jenis, null),
+    };
 }

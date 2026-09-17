@@ -4,7 +4,9 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:gerbang="clr-namespace:Absensi.App.Gerbang"
                     xmlns:conv="clr-namespace:Absensi.App.Converters"
-                    xmlns:masterData="clr-namespace:Absensi.App.MasterData">
+                    xmlns:masterData="clr-namespace:Absensi.App.MasterData"
+                    xmlns:kalender="clr-namespace:Absensi.App.Kalender"
+                    xmlns:pengaturan="clr-namespace:Absensi.App.Pengaturan">
 
     <!--
         Satu-satunya berkas sumber daya visual aplikasi (docs/PANDUAN-UI-UX.md).
@@ -16,6 +18,7 @@
 
     <BooleanToVisibilityConverter x:Key="BoolKeVisibilitas" />
     <conv:NullKeVisibilitasConverter x:Key="NullKeVisibilitas" />
+    <conv:TanggalLiburMultiConverter x:Key="TanggalLiburKeBool" />
 
     <!-- Navigasi ViewModel-first (Tugas 7): MainWindow.KontenAktif memuat
          salah satu ViewModel ini, DataTemplate implisit memilih View-nya. -->
@@ -27,6 +30,12 @@
     </DataTemplate>
     <DataTemplate DataType="{x:Type masterData:KelasViewModel}">
         <masterData:KelasView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type kalender:KalenderViewModel}">
+        <kalender:KalenderView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pengaturan:PengaturanViewModel}">
+        <pengaturan:PengaturanView />
     </DataTemplate>
 
     <!-- ================= 3. Warna — Palet Dasar ================= -->
