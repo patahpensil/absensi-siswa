@@ -5,7 +5,11 @@ namespace Absensi.App.Shell;
 
 // Kerangka jendela utama (RENCANA-TUGAS.md Tugas 5): header + menu samping
 // sesuai PRD §14.2. Belum ada layar sungguhan di balik tiap menu — itu
-// tugas-tugas berikutnya (Absensi = Tugas 6, Siswa = Tugas 7, dst).
+// tugas-tugas berikutnya (Siswa = Tugas 7, dst). Menu "Absensi" sudah punya
+// satu tombol nyata ("Buka layar gerbang") karena itu satu-satunya cara
+// menjangkau layar gerbang yang dibangun di Tugas 6 — sisa isi menu
+// Absensi (PRD §14.3: status reader, pencarian, daftar harian) masih
+// menunggu tugasnya sendiri.
 public sealed class MainWindowViewModel : ObservableObject
 {
     private string _menuAktif;
@@ -23,7 +27,10 @@ public sealed class MainWindowViewModel : ObservableObject
         };
 
         _menuAktif = MenuItems[0];
+        BukaGerbangCommand = new RelayCommand(() => BukaGerbangDiminta?.Invoke(this, EventArgs.Empty));
     }
+
+    public event EventHandler? BukaGerbangDiminta;
 
     public string NamaSekolah { get; }
 
@@ -33,6 +40,8 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public ObservableCollection<string> MenuItems { get; }
 
+    public RelayCommand BukaGerbangCommand { get; }
+
     public string MenuAktif
     {
         get => _menuAktif;
@@ -41,9 +50,12 @@ public sealed class MainWindowViewModel : ObservableObject
             if (SetField(ref _menuAktif, value))
             {
                 OnPropertyChanged(nameof(PesanKonten));
+                OnPropertyChanged(nameof(TampilkanTombolGerbang));
             }
         }
     }
+
+    public bool TampilkanTombolGerbang => MenuAktif == "Absensi";
 
     public string PesanKonten => $"Layar \"{MenuAktif}\" belum dibangun.";
 }

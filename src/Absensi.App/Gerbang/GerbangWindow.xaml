@@ -1,0 +1,172 @@
+<Window x:Class="Absensi.App.Gerbang.GerbangWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Absensi — Gerbang"
+        WindowStyle="None"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
+        Topmost="True"
+        Cursor="None"
+        Background="{StaticResource TintaBrush}">
+
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: logo + nama sekolah + jam besar (PRD §14.1, PANDUAN §8.2 "jam besar di pojok") -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Width="48" Height="48"
+                    Background="{StaticResource PutihBrush}"
+                    CornerRadius="{StaticResource RadiusKecil}"
+                    Margin="0,0,12,0">
+                <Image Source="{Binding Logo}" Stretch="Uniform" Margin="4" />
+            </Border>
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding NamaSekolah}"
+                       Style="{StaticResource JudulHalamanStyle}"
+                       Foreground="{StaticResource PutihBrush}"
+                       VerticalAlignment="Center" />
+
+            <TextBlock Grid.Column="2"
+                       Text="{Binding JamSekarangTeks}"
+                       Style="{StaticResource GerbangStatusJamStyle}"
+                       Foreground="{StaticResource PutihBrush}"
+                       VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- Ringkasan harian (PRD §14.1): Hadir / Terlambat / Belum tap / Guru -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,24">
+            <StackPanel.Resources>
+                <Style TargetType="TextBlock" x:Key="RingkasanAngkaStyle" BasedOn="{StaticResource AngkaRingkasanStyle}">
+                    <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                </Style>
+                <Style TargetType="TextBlock" x:Key="RingkasanLabelStyle" BasedOn="{StaticResource LabelKecilStyle}">
+                    <Setter Property="Foreground" Value="{StaticResource BiruMudaBrush}" />
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                </Style>
+                <Style TargetType="StackPanel" x:Key="RingkasanItemStyle">
+                    <Setter Property="Margin" Value="0,0,32,0" />
+                </Style>
+            </StackPanel.Resources>
+
+            <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                <TextBlock Text="{Binding RingkasanHadir}" Style="{StaticResource RingkasanAngkaStyle}" />
+                <TextBlock Text="Hadir" Style="{StaticResource RingkasanLabelStyle}" />
+            </StackPanel>
+            <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                <TextBlock Text="{Binding RingkasanTerlambat}" Style="{StaticResource RingkasanAngkaStyle}" />
+                <TextBlock Text="Terlambat" Style="{StaticResource RingkasanLabelStyle}" />
+            </StackPanel>
+            <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                <TextBlock Text="{Binding RingkasanBelumTap}" Style="{StaticResource RingkasanAngkaStyle}" />
+                <TextBlock Text="Belum tap" Style="{StaticResource RingkasanLabelStyle}" />
+            </StackPanel>
+            <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                <TextBlock Text="{Binding RingkasanGuru}" Style="{StaticResource RingkasanAngkaStyle}" />
+                <TextBlock Text="Guru" Style="{StaticResource RingkasanLabelStyle}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Sampai empat kartu tap aktif (PANDUAN-UI-UX.md §8.2) -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding KartuAktif}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="4" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource KartuGerbangBesarStyle}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding LabelJenis}"
+                                       Style="{StaticResource GerbangLabelJenisStyle}"
+                                       Foreground="{StaticResource PutihBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,8" />
+
+                            <Border Width="{StaticResource GerbangFotoLebar}"
+                                    Height="{StaticResource GerbangFotoTinggi}"
+                                    Background="{StaticResource PutihBrush}"
+                                    CornerRadius="{StaticResource RadiusKecil}"
+                                    Margin="0,0,0,16">
+                                <Image Source="{Binding Foto}" Stretch="UniformToFill" />
+                            </Border>
+
+                            <TextBlock Text="{Binding Nama}"
+                                       Style="{StaticResource GerbangNamaStyle}"
+                                       Foreground="{StaticResource PutihBrush}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center" />
+
+                            <TextBlock Text="{Binding NisnAtauNip}"
+                                       Style="{StaticResource GerbangNisnNipStyle}"
+                                       Foreground="{StaticResource PutihBrush}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,4,0,16" />
+
+                            <TextBlock HorizontalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GerbangStatusJamStyle}">
+                                        <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
+                                    </Style>
+                                </TextBlock.Style>
+                                <Run Text="{Binding TeksStatus}" /><Run Text=" · " /><Run Text="{Binding TeksJam}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Kartu lama turun ke daftar ringkas -->
+        <Border Grid.Row="3" Background="{StaticResource PutihBrush}"
+                CornerRadius="{StaticResource RadiusSedang}"
+                Padding="{StaticResource PaddingKartu}"
+                Margin="0,24,0,0">
+            <ItemsControl ItemsSource="{Binding Ringkasan}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource KartuGerbangRingkasStyle}">
+                            <TextBlock Style="{StaticResource TeksUtamaStyle}" Foreground="{StaticResource PutihBrush}">
+                                <Run Text="{Binding Nama}" FontWeight="SemiBold" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding TeksStatus}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding TeksJam}" />
+                            </TextBlock>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- Penangkap masukan reader (USB keyboard-emulation): selalu fokus, tak terlihat -->
+        <TextBox x:Name="KolomTap"
+                 Width="1" Height="1"
+                 Opacity="0"
+                 BorderThickness="0"
+                 Background="Transparent"
+                 Foreground="Transparent"
+                 CaretBrush="Transparent"
+                 PreviewKeyDown="KolomTap_PreviewKeyDown"
+                 LostFocus="KolomTap_LostFocus" />
+    </Grid>
+</Window>

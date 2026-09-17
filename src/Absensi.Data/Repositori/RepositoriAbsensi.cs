@@ -168,6 +168,31 @@ public sealed class RepositoriAbsensi
         }
     }
 
+    // Ringkasan harian layar gerbang (PRD §14.1: "Hadir / Terlambat / Belum
+    // tap / Guru").
+    public int HitungSiswaBerdasarkanStatus(SqliteConnection connection, DateOnly tanggal, StatusAbsensiSiswa status)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM absensi_siswa WHERE tanggal = $tanggal AND status = $status;";
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+        command.Parameters.AddWithValue("$status", PemetaanEnum.TeksDariStatusSiswa(status));
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    // "Guru" pada ringkasan harian gerbang berarti guru yang sudah tap
+    // masuk hari ini (status masuk atau hadir) — PRD tidak memecah guru
+    // per status seperti siswa, hanya satu angka.
+    public int HitungGuruSudahTapMasuk(SqliteConnection connection, DateOnly tanggal)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*) FROM absensi_guru
+            WHERE tanggal = $tanggal AND status IN ('masuk', 'hadir');
+            """;
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
     private static void Eksekusi(
         SqliteConnection connection,
         SqliteTransaction transaction,

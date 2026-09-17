@@ -1,6 +1,6 @@
-using System.IO;
 using System.Reflection;
 using System.Windows;
+using Absensi.App.Gerbang;
 using Absensi.App.Login;
 using Absensi.App.Shell;
 using Absensi.Data;
@@ -20,8 +20,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        var pathDatabase = Path.Combine(AppContext.BaseDirectory, "absensi.db");
-        _connection = SqliteConnectionFactory.Open(pathDatabase);
+        LokasiData.PastikanFolderDataAda();
+        _connection = SqliteConnectionFactory.Open(LokasiData.PathDatabase);
         new MigrationRunner().Run(_connection);
         JalankanPembukaanHariBilaSudahDikonfigurasi();
 
@@ -40,10 +40,21 @@ public partial class App : Application
 
         var tahunAjaranAktif = new RepositoriTahunAjaran().CariNamaAktif(_connection);
         var mainWindowViewModel = new MainWindowViewModel(sekolah?.Nama ?? "", sekolah?.LogoPath, tahunAjaranAktif);
-        var mainWindow = new MainWindow(mainWindowViewModel);
+        var mainWindow = new MainWindow(mainWindowViewModel, BukaGerbang);
 
         MainWindow = mainWindow;
         mainWindow.Show();
+    }
+
+    // "Muat seluruh foto ke memori saat layar dibuka" (RENCANA-TUGAS.md
+    // Tugas 6) — cache (termasuk nama sekolah + logo, PRD §14.1) dimuat
+    // ulang setiap layar gerbang dibuka, bukan sekali saat aplikasi start,
+    // supaya selalu mengikuti data siswa/guru aktif terbaru.
+    private Window BukaGerbang()
+    {
+        var cache = CacheTampilanGerbang.Muat(_connection!);
+        var gerbangViewModel = new GerbangViewModel(_connection!, _penyediaWaktu, new PemutarBunyiSistem(), cache);
+        return new GerbangWindow(gerbangViewModel, _connection!);
     }
 
     protected override void OnExit(ExitEventArgs e)

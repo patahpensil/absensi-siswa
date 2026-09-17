@@ -28,4 +28,25 @@ public sealed class RepositoriGuru
         var aktif = command.ExecuteScalar();
         return aktif is not null && Convert.ToInt32(aktif) == 1;
     }
+
+    // Dipakai layar gerbang (Tugas 6) untuk memuat seluruh nama/NIP/foto
+    // guru aktif ke memori sekali saat layar dibuka.
+    public IReadOnlyList<GuruRingkas> DaftarAktifRingkas(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, nama, nip, foto_path FROM guru WHERE aktif = 1;";
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<GuruRingkas>();
+        while (reader.Read())
+        {
+            daftar.Add(new GuruRingkas(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.IsDBNull(3) ? null : reader.GetString(3)));
+        }
+
+        return daftar;
+    }
 }
