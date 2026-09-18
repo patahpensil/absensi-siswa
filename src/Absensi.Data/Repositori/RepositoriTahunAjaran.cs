@@ -39,4 +39,29 @@ public sealed class RepositoriTahunAjaran
 
         return (DateOnly.Parse(reader.GetString(0)), DateOnly.Parse(reader.GetString(1)));
     }
+
+    // Hanya dipanggil dari Absensi.Data.Wizard.LayananWizard (langkah 3
+    // wizard, PRD §16.1). Belum ada layar "Kenaikan Tahun Ajaran" (PRD
+    // §16.14) di versi ini, jadi ini satu-satunya jalur baris tahun_ajaran
+    // pertama dibuat — ditandai aktif langsung karena wizard hanya berjalan
+    // saat belum ada tahun ajaran apa pun.
+    public int Tambah(SqliteConnection connection, SqliteTransaction transaction, string nama, string semester, DateOnly tglMulai, DateOnly tglSelesai)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO tahun_ajaran (nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES ($nama, $semester, $tglMulai, $tglSelesai, 1);
+            """;
+        command.Parameters.AddWithValue("$nama", nama);
+        command.Parameters.AddWithValue("$semester", semester);
+        command.Parameters.AddWithValue("$tglMulai", tglMulai.ToString("yyyy-MM-dd"));
+        command.Parameters.AddWithValue("$tglSelesai", tglSelesai.ToString("yyyy-MM-dd"));
+        command.ExecuteNonQuery();
+
+        using var commandId = connection.CreateCommand();
+        commandId.Transaction = transaction;
+        commandId.CommandText = "SELECT last_insert_rowid();";
+        return Convert.ToInt32(commandId.ExecuteScalar());
+    }
 }

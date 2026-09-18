@@ -1,5 +1,7 @@
+using System.Windows.Media.Imaging;
 using Absensi.App.Mvvm;
 using Absensi.Data.Akun;
+using Absensi.Data.Lisensi;
 using Absensi.Data.Repositori;
 using Microsoft.Data.Sqlite;
 
@@ -13,11 +15,16 @@ public sealed class LoginViewModel : ObservableObject
     private string _sandi = string.Empty;
     private string? _pesanGalat;
 
-    public LoginViewModel(SqliteConnection connection, string nomorVersi, string? namaSekolah)
+    public LoginViewModel(SqliteConnection connection, string nomorVersi, string? namaSekolah, string? logoPath, StatusLisensi? statusLisensi)
     {
         _connection = connection;
         NomorVersi = nomorVersi;
         NamaSekolah = string.IsNullOrWhiteSpace(namaSekolah) ? "Nama sekolah belum diatur" : namaSekolah;
+        // PANDUAN-UI-UX.md §9 (layar Login): "Logo, nama sekolah, ... status
+        // lisensi" — RENCANA-TUGAS.md Tugas 13 mengisi keduanya, sebelumnya
+        // logo selalu placeholder lingkaran biru dan lisensi "(belum tersedia)".
+        Logo = PemuatGambar.MuatDariFolder(LokasiData.FolderData, logoPath);
+        TeksStatusLisensi = statusLisensi is { Aktif: true } ? "Lisensi: Aktif" : "Lisensi: (belum tersedia)";
         LoginCommand = new RelayCommand(Login, BisaLogin);
     }
 
@@ -26,6 +33,12 @@ public sealed class LoginViewModel : ObservableObject
     public string NomorVersi { get; }
 
     public string NamaSekolah { get; }
+
+    public BitmapImage? Logo { get; }
+
+    public bool TampilkanPlaceholderLogo => Logo is null;
+
+    public string TeksStatusLisensi { get; }
 
     public string Username
     {

@@ -6,6 +6,7 @@ using Absensi.App.MasterData;
 using Absensi.App.Mvvm;
 using Absensi.App.Notifikasi;
 using Absensi.App.Pengaturan;
+using Absensi.Data.Backup;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
 using Microsoft.Data.Sqlite;
@@ -26,6 +27,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly IPenyediaWaktu _penyediaWaktu;
     private readonly StatusModeRegistrasi _statusModeRegistrasi;
     private readonly int? _tahunAjaranId;
+    private readonly LayananBackup _layananBackup;
 
     private string _menuAktif;
     private object? _kontenAktif;
@@ -46,13 +48,15 @@ public sealed class MainWindowViewModel : ObservableObject
         string namaSekolah,
         string? logoPath,
         string? tahunAjaranAktif,
-        int? tahunAjaranId)
+        int? tahunAjaranId,
+        LayananBackup layananBackup)
     {
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
         _statusModeRegistrasi = statusModeRegistrasi;
         _tahunAjaranId = tahunAjaranId;
+        _layananBackup = layananBackup;
 
         NamaSekolah = string.IsNullOrWhiteSpace(namaSekolah) ? "Nama sekolah belum diatur" : namaSekolah;
         LogoPath = logoPath;
@@ -73,6 +77,12 @@ public sealed class MainWindowViewModel : ObservableObject
     public event EventHandler? BukaGerbangDiminta;
 
     public event EventHandler? BukaRegistrasiKartuDiminta;
+
+    // RENCANA-TUGAS.md Tugas 13 — PRD §18.4: diteruskan dari PengaturanViewModel.
+    // App.xaml.cs yang menutup koneksi, menimpa berkas database, dan menutup
+    // aplikasi (bukan di sini — jendela utama tidak memegang siklus hidup
+    // koneksi/aplikasi).
+    public event EventHandler<byte[]>? RestoreSelesaiPerluTutupAplikasi;
 
     public string NamaSekolah { get; }
 
@@ -137,11 +147,18 @@ public sealed class MainWindowViewModel : ObservableObject
             "Guru" => _guruViewModel ??= new GuruViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
             "Kelas" => _kelasViewModel ??= new KelasViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Kalender" => _kalenderViewModel ??= new KalenderViewModel(_connection, _akun, _penyediaWaktu),
-            "Pengaturan" => _pengaturanViewModel ??= new PengaturanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
+            "Pengaturan" => _pengaturanViewModel ??= BuatPengaturanViewModel(tahunAjaranId),
             "Notifikasi" => _notifikasiViewModel ??= new NotifikasiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Koreksi" => _koreksiViewModel ??= new KoreksiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Laporan" => _laporanViewModel ??= new LaporanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             _ => null,
         };
+    }
+
+    private PengaturanViewModel BuatPengaturanViewModel(int tahunAjaranId)
+    {
+        var viewModel = new PengaturanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId, _layananBackup);
+        viewModel.RestoreSelesaiPerluTutupAplikasi += (_, data) => RestoreSelesaiPerluTutupAplikasi?.Invoke(this, data);
+        return viewModel;
     }
 }

@@ -1,0 +1,330 @@
+<Window x:Class="Absensi.App.Wizard.WizardInstalasiWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wizard="clr-namespace:Absensi.App.Wizard"
+        Title="Instalasi Pertama — Absensi"
+        Height="640" Width="720"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="SingleBorderWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <Window.Resources>
+        <Style x:Key="LangkahLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource LabelKecilStyle}">
+            <Setter Property="Margin" Value="0,0,20,0" />
+        </Style>
+        <Style x:Key="LangkahAktifStyle" TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+            <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="LangkahPanelStyle" TargetType="StackPanel">
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Instalasi Pertama" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
+
+        <!-- PRD §13.2/§16.1: enam langkah, kemajuan di atas (PANDUAN-UI-UX.md §9). -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="1. Lisensi">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.AktivasiLisensi}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="2. Sekolah">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.IdentitasSekolah}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="3. Tahun Ajaran">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.TahunAjaran}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="4. Jadwal">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.JadwalHarian}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="5. Kepala Sekolah">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.AkunKepalaSekolah}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="6. Selesai">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource LangkahLabelStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.Selesai}">
+                                <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </StackPanel>
+
+        <!-- Langkah 1: Aktivasi Lisensi -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource LangkahPanelStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.AktivasiLisensi}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="Masukkan kunci lisensi sekolah, lalu pilih salah satu di bawah. Aktivasi memerlukan koneksi internet."
+                       Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" Margin="0,0,0,16" />
+
+            <TextBlock Text="Kunci lisensi" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}"
+                     Text="{Binding KunciLisensi, UpdateSourceTrigger=PropertyChanged}"
+                     Margin="0,0,0,16" />
+
+            <TextBlock Text="{Binding PesanGalat}" Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       TextWrapping="Wrap" Margin="0,0,0,16" />
+
+            <!-- PRD §18.3: dua cabang eksplisit — pemasangan pertama, atau
+                 pindah ke PC baru menggunakan backup cloud sekolah ini. -->
+            <Border Style="{StaticResource KartuStyle}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Instalasi Baru" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                    <TextBlock Text="Sekolah ini belum pernah dipasang sebelumnya. Lanjutkan mengisi identitas sekolah, tahun ajaran, jadwal harian, dan akun Kepala Sekolah."
+                               Style="{StaticResource TeksUtamaStyle}"
+                               Foreground="{StaticResource AbuTulisBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12" />
+                    <Button Content="Instalasi Baru" Style="{StaticResource TombolUtamaStyle}" Command="{Binding InstalasiBaruCommand}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource KartuStyle}">
+                <StackPanel>
+                    <TextBlock Text="Pulihkan dari PC Lama" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                    <TextBlock Text="PC lama rusak atau diganti. Backup terakhir sekolah ini akan diambil dari cloud — identitas sekolah, tahun ajaran, jadwal, dan akun terisi otomatis, melompati langkah 2-5."
+                               Style="{StaticResource TeksUtamaStyle}"
+                               Foreground="{StaticResource AbuTulisBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12" />
+                    <Button Content="Pulihkan dari PC Lama" Style="{StaticResource TombolSekunderStyle}" Command="{Binding PulihkanDariPcLamaCommand}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- Langkah 2: Identitas Sekolah -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource LangkahPanelStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.IdentitasSekolah}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="Nama sekolah" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NamaSekolah, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="NPSN" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Npsn, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Alamat" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Alamat, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Logo" Style="{StaticResource LabelKolomStyle}" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <Button Content="Pilih berkas logo" Style="{StaticResource TombolSekunderStyle}" Command="{Binding PilihLogoCommand}" Margin="0,0,12,0" />
+                <TextBlock Text="{Binding NamaBerkasLogo}" Style="{StaticResource TeksUtamaStyle}" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Button Content="Lanjut" Style="{StaticResource TombolUtamaStyle}" Command="{Binding LanjutKeTahunAjaranCommand}" HorizontalAlignment="Left" />
+        </StackPanel>
+
+        <!-- Langkah 3: Tahun Ajaran -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource LangkahPanelStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.TahunAjaran}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="Nama tahun ajaran (mis. 2026/2027)" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NamaTahunAjaran, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Semester" Style="{StaticResource LabelKolomStyle}" />
+            <ComboBox SelectedValue="{Binding Semester}" SelectedValuePath="Tag" Height="{StaticResource TinggiKontrol}"
+                      HorizontalAlignment="Left" Width="200" Margin="0,0,0,16">
+                <ComboBoxItem Content="Ganjil" Tag="ganjil" />
+                <ComboBoxItem Content="Genap" Tag="genap" />
+            </ComboBox>
+
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Tanggal mulai" Style="{StaticResource LabelKolomStyle}" />
+                    <DatePicker SelectedDate="{Binding TglMulaiTahunAjaran}" Height="{StaticResource TinggiKontrol}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Tanggal selesai" Style="{StaticResource LabelKolomStyle}" />
+                    <DatePicker SelectedDate="{Binding TglSelesaiTahunAjaran}" Height="{StaticResource TinggiKontrol}" />
+                </StackPanel>
+            </Grid>
+
+            <Button Content="Lanjut" Style="{StaticResource TombolUtamaStyle}" Command="{Binding LanjutKeJadwalCommand}" HorizontalAlignment="Left" />
+        </StackPanel>
+
+        <!-- Langkah 4: Jadwal Harian -->
+        <Grid Grid.Row="2">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.JadwalHarian}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Jadwal harian — kosongkan jam pada hari yang bukan hari sekolah." Style="{StaticResource TeksUtamaStyle}" Margin="0,0,0,12" />
+
+            <DataGrid Grid.Row="1" Style="{StaticResource TabelStyle}" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="90" IsReadOnly="True" />
+                    <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                    <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                    <DataGridTextColumn Header="Jam rekap" Binding="{Binding JamRekap, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                    <DataGridTextColumn Header="Batas akhir tap masuk" Binding="{Binding BatasTapMasuk, UpdateSourceTrigger=PropertyChanged}" Width="140" />
+                    <DataGridTextColumn Header="Mulai absen pulang" Binding="{Binding MulaiPulang, UpdateSourceTrigger=PropertyChanged}" Width="130" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <TextBlock Grid.Row="2" Text="{Binding PesanGalat}" Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       TextWrapping="Wrap" Margin="0,8,0,0" />
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Content="Kembali" Style="{StaticResource TombolSekunderStyle}" Command="{Binding KembaliCommand}" Margin="0,0,12,0" />
+                <Button Content="Lanjut" Style="{StaticResource TombolUtamaStyle}" Command="{Binding LanjutKeAkunCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Langkah 5: Akun Kepala Sekolah -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource LangkahPanelStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.AkunKepalaSekolah}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="Buat akun Kepala Sekolah. Akun ini nanti membuat akun Admin, yang lalu membuat akun Wali Kelas."
+                       Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" Margin="0,0,0,16" />
+
+            <TextBlock Text="Username" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding UsernameKepalaSekolah, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Sandi" Style="{StaticResource LabelKolomStyle}" />
+            <PasswordBox x:Name="KolomSandi" Style="{StaticResource KolomSandiStyle}" PasswordChanged="KolomSandi_PasswordChanged" Margin="0,0,0,16" />
+
+            <TextBlock Text="Konfirmasi sandi" Style="{StaticResource LabelKolomStyle}" />
+            <PasswordBox x:Name="KolomKonfirmasiSandi" Style="{StaticResource KolomSandiStyle}" PasswordChanged="KolomKonfirmasiSandi_PasswordChanged" Margin="0,0,0,16" />
+
+            <TextBlock Text="{Binding PesanGalat}" Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       TextWrapping="Wrap" Margin="0,0,0,16" />
+
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Kembali" Style="{StaticResource TombolSekunderStyle}" Command="{Binding KembaliCommand}" Margin="0,0,12,0" />
+                <Button Content="Selesaikan Instalasi" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SelesaikanCommand}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Langkah 6: Selesai -->
+        <StackPanel Grid.Row="2" HorizontalAlignment="Stretch">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel" BasedOn="{StaticResource LangkahPanelStyle}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding LangkahSaatIni}" Value="{x:Static wizard:LangkahWizard.Selesai}">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="Instalasi selesai." Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,8" />
+            <TextBlock Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" Margin="0,0,0,16">
+                <Run Text="Akun Kepala Sekolah " /><Run Text="{Binding AkunKepalaSekolahDibuat.Username, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" siap dipakai untuk masuk." />
+            </TextBlock>
+            <Button Content="Buka Halaman Masuk" Style="{StaticResource TombolUtamaStyle}" Click="TombolSelesai_Click" HorizontalAlignment="Left" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -41,4 +41,18 @@ public sealed class LokasiDataTests
         Assert.Null(pengecualian);
         Assert.True(Directory.Exists(LokasiData.FolderData));
     }
+
+    // RENCANA-TUGAS.md Tugas 13 — PRD §13.3: backup/ sebelah data/, bukan
+    // di dalamnya.
+    [Fact]
+    public void FolderBackup_SebelahFolderDataBukanDiDalamnya()
+    {
+        Assert.Equal(Path.Combine(AppContext.BaseDirectory, "backup"), LokasiData.FolderBackup);
+    }
+
+    [Fact]
+    public void FolderBackupCloudStub_BeradaDiDalamFolderBackup()
+    {
+        Assert.Equal(Path.Combine(LokasiData.FolderBackup, "cloud-stub"), LokasiData.FolderBackupCloudStub);
+    }
 }

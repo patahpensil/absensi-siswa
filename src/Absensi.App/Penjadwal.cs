@@ -1,4 +1,6 @@
 using Absensi.Data;
+using Absensi.Data.Backup;
+using Absensi.Data.Lisensi;
 using Absensi.Data.Notifikasi;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
@@ -30,22 +32,26 @@ public sealed class Penjadwal
     private readonly RepositoriKalender _repositoriKalender = new();
     private readonly RepositoriPengaturan _repositoriPengaturan = new();
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
+    private readonly RepositoriLisensi _repositoriLisensi = new();
     private readonly PembukaanHari _pembukaanHari = new();
     private readonly PenentuStatusKehadiran _penentuStatusKehadiran = new();
     private readonly PengirimOutbox _pengirimOutbox;
     private readonly PemrosesPembaruanPairing _pemrosesPembaruanPairing;
+    private readonly LayananBackup _layananBackup;
 
     private DateOnly? _tanggalTerakhirDiproses;
     private bool _rekapSudahDiproses;
     private bool _batasAkhirSudahDiproses;
     private bool _bolosSudahDiproses;
+    private bool _backupBatasAkhirSudahDiproses;
 
-    public Penjadwal(SqliteConnection connection, IPenyediaWaktu penyediaWaktu, IKlienBotTelegram klienBotTelegram)
+    public Penjadwal(SqliteConnection connection, IPenyediaWaktu penyediaWaktu, IKlienBotTelegram klienBotTelegram, LayananBackup layananBackup)
     {
         _connection = connection;
         _penyediaWaktu = penyediaWaktu;
         _pengirimOutbox = new PengirimOutbox(klienBotTelegram);
         _pemrosesPembaruanPairing = new PemrosesPembaruanPairing(klienBotTelegram);
+        _layananBackup = layananBackup;
     }
 
     // Dipanggil DispatcherTimer App.xaml.cs secara berkala (mis. tiap 30
@@ -70,11 +76,12 @@ public sealed class Penjadwal
             _rekapSudahDiproses = false;
             _batasAkhirSudahDiproses = false;
             _bolosSudahDiproses = false;
+            _backupBatasAkhirSudahDiproses = false;
 
             JalankanPembukaanHariBilaSudahDikonfigurasi(tanggal);
         }
 
-        JalankanBatchBilaSaatnya(tanggal, sekarang);
+        await JalankanBatchBilaSaatnyaAsync(tanggal, sekarang);
 
         await _pengirimOutbox.KirimAntreanAsync(_connection, _penyediaWaktu);
         await _pemrosesPembaruanPairing.ProsesPembaruanAsync(_connection, _penyediaWaktu);
@@ -109,7 +116,7 @@ public sealed class Penjadwal
         }
     }
 
-    private void JalankanBatchBilaSaatnya(DateOnly tanggal, DateTime sekarang)
+    private async Task JalankanBatchBilaSaatnyaAsync(DateOnly tanggal, DateTime sekarang)
     {
         if (_repositoriTahunAjaran.CariIdAktif(_connection) is not { } tahunAjaranId)
         {
@@ -140,6 +147,8 @@ public sealed class Penjadwal
 
         CobaJalankan(ref _bolosSudahDiproses, TambahSatuJam(jadwal.MulaiPulang), sekarang, toleransi,
             () => _layananNotifikasi.JalankanFinalisasiBolos(_connection, tanggal, sekarang));
+
+        await JalankanBackupBatasAkhirBilaSaatnyaAsync(jadwal.BatasTapMasuk, sekarang);
     }
 
     // PRD §9.4: jadwal yang sudah lewat lebih dari toleransi dibuang tanpa
@@ -163,6 +172,22 @@ public sealed class Penjadwal
         {
             jalankan();
         }
+    }
+
+    // PRD §18.1 titik ke-2 ("setelah batas akhir tap masuk"). CLAUDE.md §7:
+    // "Backup dikejar bila terlewat, notifikasi tidak" — berbeda sengaja
+    // dari CobaJalankan di atas, titik ini TIDAK dibuang walau aplikasi
+    // baru dibuka jauh melewati jam batas tap harinya.
+    private async Task JalankanBackupBatasAkhirBilaSaatnyaAsync(TimeOnly? batasTapMasuk, DateTime sekarang)
+    {
+        if (_backupBatasAkhirSudahDiproses || batasTapMasuk is not { } jam || TimeOnly.FromDateTime(sekarang) < jam)
+        {
+            return;
+        }
+
+        _backupBatasAkhirSudahDiproses = true;
+        var kunciLisensi = _repositoriLisensi.BacaStatus(_connection)?.Kunci;
+        await _layananBackup.JalankanAsync(_connection, sekarang, kunciLisensi);
     }
 
     private static TimeOnly? TambahSatuJam(TimeOnly? jam) => jam?.Add(TimeSpan.FromHours(1));

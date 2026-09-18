@@ -4,7 +4,11 @@ namespace Absensi.App.Shell;
 
 public partial class MainWindow : Window
 {
-    public MainWindow(MainWindowViewModel viewModel, Func<Window> bukaGerbang, Func<Window> bukaRegistrasiKartu)
+    public MainWindow(
+        MainWindowViewModel viewModel,
+        Func<Window> bukaGerbang,
+        Func<Window> bukaRegistrasiKartu,
+        Action<byte[]> restoreSelesaiPerluTutupAplikasi)
     {
         InitializeComponent();
         DataContext = viewModel;
@@ -19,5 +23,7 @@ public partial class MainWindow : Window
             jendela.Owner = this;
             jendela.ShowDialog();
         };
+
+        viewModel.RestoreSelesaiPerluTutupAplikasi += (_, data) => restoreSelesaiPerluTutupAplikasi(data);
     }
 }

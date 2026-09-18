@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Absensi.App.Mvvm;
 using Absensi.Data.Akun;
+using Absensi.Data.Backup;
 using Absensi.Data.Pengaturan;
 using Absensi.Data.Repositori;
 using Absensi.Data.Waktu;
@@ -10,11 +11,12 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Pengaturan;
 
-// RENCANA-TUGAS.md Tugas 9 — bagian "jadwal harian", dan Tugas 10 — bagian
-// "token bot" dari layar Pengaturan (PANDUAN-UI-UX.md §9: "Pengaturan |
-// Identitas sekolah, jadwal harian, tahun ajaran, token bot, backup").
-// Bagian lain (identitas sekolah, tahun ajaran, backup) menunggu Tugas
-// masing-masing — bukan cakupan Tugas 9/10.
+// RENCANA-TUGAS.md Tugas 9 — bagian "jadwal harian", Tugas 10 — bagian
+// "token bot", dan Tugas 13 — bagian "backup" dari layar Pengaturan
+// (PANDUAN-UI-UX.md §9: "Pengaturan | Identitas sekolah, jadwal harian,
+// tahun ajaran, token bot, backup"). Identitas sekolah/tahun ajaran hanya
+// diisi lewat wizard (Tugas 13) — belum ada layar untuk mengubahnya lagi
+// setelahnya, di luar cakupan Tugas 13 (lihat RENCANA-TUGAS.md).
 public sealed class PengaturanViewModel : ObservableObject
 {
     // hari: 1=Senin..7=Minggu (docs/SKEMA-DATABASE.md §4).
@@ -28,6 +30,7 @@ public sealed class PengaturanViewModel : ObservableObject
     private readonly LayananJadwalHari _layananJadwalHari = new();
     private readonly RepositoriPengaturan _repositoriPengaturan = new();
     private readonly LayananPengaturan _layananPengaturan = new();
+    private readonly LayananBackup _layananBackup;
 
     private string? _pesanGalat;
     private string? _pesanStatus;
@@ -35,18 +38,54 @@ public sealed class PengaturanViewModel : ObservableObject
     private string? _usernameBot;
     private string? _pesanStatusBot;
 
-    public PengaturanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId)
+    public PengaturanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId, LayananBackup layananBackup)
     {
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
         _tahunAjaranId = tahunAjaranId;
+        _layananBackup = layananBackup;
 
         SimpanJadwalCommand = new RelayCommand(SimpanJadwal, () => BolehMengubah);
         SimpanBotCommand = new RelayCommand(SimpanBot, () => BolehMengubah);
+        RestoreCommand = new RelayCommand<BerkasBackupTampilan>(Restore, _ => BolehMengubah);
 
         MuatJadwal();
         MuatBot();
+        MuatDaftarBackup();
+    }
+
+    // PRD §18.4 langkah 2: "restore hanya dapat dilakukan akun berwenang
+    // penuh" — pemanggil (App.xaml.cs) menutup koneksi dan aplikasi setelah
+    // ini terpicu, karena berkas database diganti di bawah koneksi yang
+    // sedang berjalan.
+    public event EventHandler<byte[]>? RestoreSelesaiPerluTutupAplikasi;
+
+    public ObservableCollection<BerkasBackupTampilan> DaftarBackup { get; } = new();
+
+    public RelayCommand<BerkasBackupTampilan> RestoreCommand { get; }
+
+    private void MuatDaftarBackup()
+    {
+        DaftarBackup.Clear();
+        var sekarang = _penyediaWaktu.Sekarang;
+        foreach (var berkas in _layananBackup.DaftarBackupLokal())
+        {
+            DaftarBackup.Add(new BerkasBackupTampilan(berkas, berkas.HariDataYangHilangJikaDipulihkan(sekarang)));
+        }
+    }
+
+    private void Restore(BerkasBackupTampilan tampilan)
+    {
+        var dialogViewModel = new KonfirmasiRestoreViewModel(tampilan.Berkas, tampilan.HariDataHilang);
+        var dialog = new KonfirmasiRestoreWindow(dialogViewModel);
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var data = _layananBackup.SiapkanRestore(_connection, _akun, _penyediaWaktu.Sekarang, tampilan.Berkas);
+        RestoreSelesaiPerluTutupAplikasi?.Invoke(this, data);
     }
 
     public ObservableCollection<JadwalHariBarisViewModel> JadwalHarian { get; } = new();

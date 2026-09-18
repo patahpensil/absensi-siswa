@@ -8,11 +8,15 @@ obj/
 .idea/
 *.suo
 
-## Data dan berkas lokal aplikasi (bukan bagian dari kode sumber)
-data/
-config/
-logs/
-backup/
+## Data dan berkas lokal aplikasi (bukan bagian dari kode sumber). Diberi
+## akhiran root (/) supaya HANYA cocok di akar repo — pola tanpa itu juga
+## menelan folder kode sumber bernama sama di kedalaman mana pun (mis.
+## src/Absensi.Data/Backup/, yang tanpa sengaja tertelan pola "backup/"
+## sebelum perbaikan ini, RENCANA-TUGAS.md Tugas 13).
+/data/
+/config/
+/logs/
+/backup/
 
 ## Sistem operasi
 Thumbs.db

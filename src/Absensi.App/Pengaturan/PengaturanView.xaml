@@ -75,5 +75,38 @@
                         Margin="0,16,0,0" />
             </StackPanel>
         </Border>
+
+        <!-- RENCANA-TUGAS.md Tugas 13 — PRD §18: dua titik backup otomatis
+             (pembukaan aplikasi, batas akhir tap masuk) berjalan sendiri di
+             latar belakang; di sini hanya daftar berkas lokal + restore. -->
+        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch" Margin="0,16,0,0">
+            <StackPanel>
+                <TextBlock Text="Backup" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                <TextBlock Text="Backup berjalan otomatis setiap aplikasi dibuka dan setelah batas akhir tap masuk (PRD §18.1). Tujuh berkas terakhir disimpan di folder backup/."
+                           Style="{StaticResource TeksUtamaStyle}"
+                           Foreground="{StaticResource AbuTulisBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,16" />
+
+                <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarBackup}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Berkas" Binding="{Binding NamaBerkas}" Width="200" />
+                        <DataGridTextColumn Header="Dibuat" Binding="{Binding WaktuDibuat}" Width="160" />
+                        <DataGridTextColumn Header="Hari data hilang jika dipulihkan" Binding="{Binding HariDataHilang}" Width="200" />
+                        <DataGridTemplateColumn Header="" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Pulihkan"
+                                            Style="{StaticResource TombolSekunderStyle}"
+                                            Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            HorizontalAlignment="Left" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
+        </Border>
     </StackPanel>
 </UserControl>

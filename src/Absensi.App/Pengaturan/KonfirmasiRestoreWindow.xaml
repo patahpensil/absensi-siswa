@@ -1,0 +1,29 @@
+<Window x:Class="Absensi.App.Pengaturan.KonfirmasiRestoreWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pulihkan dari backup"
+        Height="320" Width="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">
+        <StackPanel>
+            <TextBlock Text="{Binding TeksJudul}" Style="{StaticResource JudulBagianStyle}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+            <TextBlock Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" Margin="0,0,0,8">
+                <Run Text="Data saat ini akan dicadangkan otomatis lebih dulu (PRD §18.4). Sekitar " /><Run Text="{Binding HariDataHilang}" FontWeight="SemiBold" /><Run Text=" hari data setelah tanggal itu akan hilang." />
+            </TextBlock>
+
+            <TextBlock Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,16">
+                <Run Text="Setelah pulih, aplikasi akan tertutup — buka kembali untuk melanjutkan dengan data yang dipulihkan." />
+            </TextBlock>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Click="TombolBatal_Click" Margin="0,0,8,0" />
+                <Button Content="Pulihkan" Style="{StaticResource TombolBahayaStyle}" Command="{Binding KonfirmasiCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

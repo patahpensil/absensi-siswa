@@ -19,11 +19,20 @@
                 HorizontalAlignment="Center">
             <StackPanel>
 
-                <!-- Logo (placeholder lingkaran biru selama sekolah belum mengunggah logo lewat wizard Tugas 13) -->
+                <!-- PANDUAN-UI-UX.md §9: logo sekolah dari wizard (PRD §16.1
+                     langkah 3.2). Placeholder lingkaran biru hanya tampil
+                     selama sekolah belum mengunggah logo. -->
+                <Image Source="{Binding Logo}"
+                       Width="56" Height="56"
+                       Stretch="UniformToFill"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,16"
+                       Visibility="{Binding Logo, Converter={StaticResource NullKeVisibilitas}}" />
                 <Ellipse Width="56" Height="56"
                          Fill="{StaticResource BiruSeragamBrush}"
                          HorizontalAlignment="Center"
-                         Margin="0,0,0,16" />
+                         Margin="0,0,0,16"
+                         Visibility="{Binding TampilkanPlaceholderLogo, Converter={StaticResource BoolKeVisibilitas}}" />
 
                 <TextBlock Text="{Binding NamaSekolah}"
                            Style="{StaticResource JudulHalamanStyle}"
@@ -63,7 +72,7 @@
 
                 <Separator Margin="0,0,0,12" Background="{StaticResource GarisBrush}" />
 
-                <TextBlock Text="Lisensi: (belum tersedia)"
+                <TextBlock Text="{Binding TeksStatusLisensi}"
                            Style="{StaticResource LabelKecilStyle}"
                            HorizontalAlignment="Center" />
                 <TextBlock Style="{StaticResource LabelKecilStyle}"

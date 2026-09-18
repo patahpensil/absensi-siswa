@@ -23,4 +23,21 @@ public sealed class RepositoriSekolah
             reader.IsDBNull(1) ? null : reader.GetString(1),
             reader.IsDBNull(2) ? null : reader.GetString(2));
     }
+
+    // Hanya dipanggil dari Absensi.Data.Wizard.LayananWizard. Baris id=1 ini
+    // menjadi penanda "wizard sudah selesai" (App.xaml.cs) — begitu ada,
+    // wizard tidak pernah dijalankan ulang (PRD §16.1).
+    public void Simpan(SqliteConnection connection, SqliteTransaction transaction, string nama, string? npsn, string? alamat, string? logoPath)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO sekolah (id, nama, npsn, alamat, logo_path) VALUES (1, $nama, $npsn, $alamat, $logoPath);
+            """;
+        command.Parameters.AddWithValue("$nama", nama);
+        command.Parameters.AddWithValue("$npsn", (object?)npsn ?? DBNull.Value);
+        command.Parameters.AddWithValue("$alamat", (object?)alamat ?? DBNull.Value);
+        command.Parameters.AddWithValue("$logoPath", (object?)logoPath ?? DBNull.Value);
+        command.ExecuteNonQuery();
+    }
 }

@@ -39,14 +39,14 @@ public sealed class CacheTampilanGerbang
     public static CacheTampilanGerbang Muat(SqliteConnection connection)
     {
         var siswa = new RepositoriSiswa().DaftarAktifRingkas(connection)
-            .ToDictionary(s => s.Id, s => new InfoTampilanPemilik(s.Nama, s.Nisn, MuatDariFolder(FolderFoto, s.FotoPath)));
+            .ToDictionary(s => s.Id, s => new InfoTampilanPemilik(s.Nama, s.Nisn, PemuatGambar.MuatDariFolder(FolderFoto, s.FotoPath)));
 
         var guru = new RepositoriGuru().DaftarAktifRingkas(connection)
-            .ToDictionary(g => g.Id, g => new InfoTampilanPemilik(g.Nama, g.Nip, MuatDariFolder(FolderFoto, g.FotoPath)));
+            .ToDictionary(g => g.Id, g => new InfoTampilanPemilik(g.Nama, g.Nip, PemuatGambar.MuatDariFolder(FolderFoto, g.FotoPath)));
 
         var sekolah = new RepositoriSekolah().CariSatuSatunya(connection);
         var namaSekolah = string.IsNullOrWhiteSpace(sekolah?.Nama) ? "Nama sekolah belum diatur" : sekolah.Nama;
-        var logo = MuatDariFolder(LokasiData.FolderData, sekolah?.LogoPath);
+        var logo = PemuatGambar.MuatDariFolder(LokasiData.FolderData, sekolah?.LogoPath);
 
         return new CacheTampilanGerbang(siswa, guru, namaSekolah, logo);
     }
@@ -60,27 +60,5 @@ public sealed class CacheTampilanGerbang
 
         var kamus = tipe == JenisPemilikKartu.Siswa ? _siswa : _guru;
         return kamus.GetValueOrDefault(id.Value);
-    }
-
-    private static BitmapImage? MuatDariFolder(string folder, string? namaBerkas)
-    {
-        if (string.IsNullOrWhiteSpace(namaBerkas))
-        {
-            return null;
-        }
-
-        var pathLengkap = Path.IsPathRooted(namaBerkas) ? namaBerkas : Path.Combine(folder, namaBerkas);
-        if (!File.Exists(pathLengkap))
-        {
-            return null;
-        }
-
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.UriSource = new Uri(pathLengkap, UriKind.Absolute);
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.EndInit();
-        bitmap.Freeze();
-        return bitmap;
     }
 }

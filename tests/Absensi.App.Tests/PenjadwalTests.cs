@@ -1,3 +1,6 @@
+using System.IO;
+using Absensi.Data.Backup;
+
 namespace Absensi.App.Tests;
 
 // RENCANA-TUGAS.md Tugas 10 — Penjadwal (PRD §9.2 titik pengiriman batch,
@@ -7,6 +10,13 @@ public sealed class PenjadwalTests
     private static readonly DateOnly HariKamis = new(2026, 9, 17);
 
     private static DateTime Waktu(int jam, int menit) => HariKamis.ToDateTime(new TimeOnly(jam, menit));
+
+    // Backup (RENCANA-TUGAS.md Tugas 13) bukan fokus pengujian di berkas
+    // ini — folder sementara acak per Penjadwal supaya tidak saling
+    // bertabrakan antar pengujian.
+    private static LayananBackup BuatLayananBackup() => new(
+        Path.Combine(Path.GetTempPath(), $"absensi-test-backup-{Guid.NewGuid():N}"),
+        new PenyimpanCloudBackupLokal(Path.Combine(Path.GetTempPath(), $"absensi-test-cloud-{Guid.NewGuid():N}")));
 
     private static void SeedPairingSiswaSatu(MigratedDatabase database) => database.Execute("""
         INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
@@ -20,7 +30,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
         var waktu = new PenyediaWaktuUji(Waktu(11, 55));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
 
         await penjadwal.DetakAsync();
 
@@ -36,7 +46,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
         var waktu = new PenyediaWaktuUji(Waktu(12, 5));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
 
         await penjadwal.DetakAsync();
 
@@ -53,7 +63,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
         var waktu = new PenyediaWaktuUji(Waktu(12, 20));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
 
         await penjadwal.DetakAsync();
 
@@ -69,7 +79,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
         var waktu = new PenyediaWaktuUji(Waktu(12, 5));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
 
         await penjadwal.DetakAsync();
         waktu.Sekarang = Waktu(12, 6);
@@ -92,7 +102,7 @@ public sealed class PenjadwalTests
             VALUES ('2026-09-17', 'libur', 'Libur uji', '2026-09-01T00:00:00');
             """);
         var waktu = new PenyediaWaktuUji(Waktu(12, 5));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
 
         await penjadwal.DetakAsync();
 
@@ -110,7 +120,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         database.Execute("UPDATE absensi_guru SET status = 'masuk' WHERE guru_id = 1 AND tanggal = '2026-09-17';");
         var waktu = new PenyediaWaktuUji(Waktu(23, 0));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
         await penjadwal.DetakAsync();
 
         waktu.Sekarang = new DateTime(2026, 9, 18, 0, 5, 0);
@@ -128,7 +138,7 @@ public sealed class PenjadwalTests
         database.SeedSekolahUntukGerbang();
         database.Execute("UPDATE absensi_guru SET status = 'masuk' WHERE guru_id = 1 AND tanggal = '2026-09-17';");
         var waktu = new PenyediaWaktuUji(Waktu(20, 0));
-        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
         await penjadwal.DetakAsync();
 
         waktu.Sekarang = Waktu(23, 0);
