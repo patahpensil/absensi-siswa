@@ -31,6 +31,28 @@ public sealed class RepositoriGuru
         return hasil is null ? throw new InvalidOperationException($"Guru {guruId} tidak ditemukan.") : (string)hasil;
     }
 
+    // Dipakai LayananLaporan (Tugas 12) untuk kartu Laporan Guru (PRD §17.8:
+    // "mengikuti format laporan siswa" — termasuk foto).
+    public string? CariFotoPath(SqliteConnection connection, int guruId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT foto_path FROM guru WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", guruId);
+        return command.ExecuteScalar() as string;
+    }
+
+    // Dipakai LayananLaporan (Tugas 12) untuk identitas kartu Laporan Guru
+    // walau guru itu tidak punya baris absensi di rentang laporan.
+    public (string Nama, string Nip)? CariIdentitasUntukLaporan(SqliteConnection connection, int guruId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT nama, nip FROM guru WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", guruId);
+
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? (reader.GetString(0), reader.GetString(1)) : null;
+    }
+
     public bool IsAktif(SqliteConnection connection, int guruId)
     {
         using var command = connection.CreateCommand();

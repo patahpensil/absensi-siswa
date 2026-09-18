@@ -94,4 +94,52 @@ public sealed class RepositoriKalender
 
         return daftar;
     }
+
+    // RENCANA-TUGAS.md Tugas 12 (PRD §11.2/§11.4): dipakai laporan
+    // (hari efektif, kolom terarsir grid bulanan, catatan kaki alasan
+    // libur mendadak) untuk satu rentang tanggal sekaligus — dua kueri
+    // (kalender + jadwal_hari), bukan satu kueri per tanggal seperti
+    // TentukanJenisHari, supaya rentang semester (~180 hari) tetap murah.
+    public IReadOnlyDictionary<DateOnly, JenisHariInfo> DaftarJenisHariUntukRentang(
+        SqliteConnection connection, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    {
+        var overrideKalender = new Dictionary<DateOnly, (string Jenis, string? Keterangan)>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT tanggal, jenis, keterangan FROM kalender
+                WHERE tanggal BETWEEN $awal AND $akhir;
+                """;
+            command.Parameters.AddWithValue("$awal", tanggalAwal.ToString("yyyy-MM-dd"));
+            command.Parameters.AddWithValue("$akhir", tanggalAkhir.ToString("yyyy-MM-dd"));
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                overrideKalender[DateOnly.Parse(reader.GetString(0))] =
+                    (reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2));
+            }
+        }
+
+        var jadwalPerHari = _repositoriJadwalHari.DaftarUntukTahunAjaran(connection, tahunAjaranId)
+            .ToDictionary(j => j.Hari);
+
+        var hasil = new Dictionary<DateOnly, JenisHariInfo>();
+        for (var tanggal = tanggalAwal; tanggal <= tanggalAkhir; tanggal = tanggal.AddDays(1))
+        {
+            if (overrideKalender.TryGetValue(tanggal, out var over))
+            {
+                hasil[tanggal] = new JenisHariInfo(
+                    over.Jenis == "libur" ? JenisHariKalender.Libur : JenisHariKalender.Sekolah,
+                    over.Jenis == "libur" ? over.Keterangan : null);
+                continue;
+            }
+
+            var hariSekolah = jadwalPerHari.TryGetValue(HariKalender.DariTanggal(tanggal), out var jadwal)
+                && jadwal.HariSekolah;
+            hasil[tanggal] = new JenisHariInfo(hariSekolah ? JenisHariKalender.Sekolah : JenisHariKalender.Libur, null);
+        }
+
+        return hasil;
+    }
 }

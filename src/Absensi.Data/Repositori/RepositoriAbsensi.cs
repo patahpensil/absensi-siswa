@@ -393,6 +393,83 @@ public sealed class RepositoriAbsensi
             ("$guruId", guruId));
     }
 
+    // RENCANA-TUGAS.md Tugas 12: sumber baris mentah untuk seluruh jenis
+    // laporan siswa (Harian/Mingguan/Bulanan/Per Siswa/Semester). Diambil
+    // langsung dari absensi_siswa, bukan dari roster siswa aktif — supaya
+    // siswa yang sudah mutasi/lulus tetap muncul di laporan periode saat
+    // dia masih aktif (PRD §5.3: riwayat tetap utuh). kelasId null berarti
+    // seluruh kelas.
+    public IReadOnlyList<BarisAbsensiSiswaMentah> DaftarSiswaUntukRentang(
+        SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir, int? kelasId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT a.tanggal, a.siswa_id, s.nama, s.nisn, a.kelas_id, k.nama, a.status, a.jam_masuk, a.jam_pulang, a.keterangan
+            FROM absensi_siswa a
+            JOIN siswa s ON s.id = a.siswa_id
+            JOIN kelas k ON k.id = a.kelas_id
+            WHERE a.tanggal BETWEEN $awal AND $akhir
+              AND ($kelasId IS NULL OR a.kelas_id = $kelasId)
+            ORDER BY a.tanggal, k.nama, s.nama;
+            """;
+        command.Parameters.AddWithValue("$awal", TanggalTeks(tanggalAwal));
+        command.Parameters.AddWithValue("$akhir", TanggalTeks(tanggalAkhir));
+        command.Parameters.AddWithValue("$kelasId", (object?)kelasId ?? DBNull.Value);
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<BarisAbsensiSiswaMentah>();
+        while (reader.Read())
+        {
+            daftar.Add(new BarisAbsensiSiswaMentah(
+                DateOnly.Parse(reader.GetString(0)),
+                reader.GetInt32(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetInt32(4),
+                reader.GetString(5),
+                PemetaanEnum.StatusSiswaDariTeks(reader.GetString(6)),
+                BacaJam(reader, 7),
+                BacaJam(reader, 8),
+                reader.IsDBNull(9) ? null : reader.GetString(9)));
+        }
+
+        return daftar;
+    }
+
+    // Guru tidak dikelompokkan per kelas (§17.7/§17.8 tidak menyebut
+    // pengelompokan) — selalu seluruh guru yang punya baris di rentang itu.
+    public IReadOnlyList<BarisAbsensiGuruMentah> DaftarGuruUntukRentang(
+        SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT a.tanggal, a.guru_id, g.nama, g.nip, a.status, a.jam_masuk, a.jam_pulang, a.keterangan
+            FROM absensi_guru a
+            JOIN guru g ON g.id = a.guru_id
+            WHERE a.tanggal BETWEEN $awal AND $akhir
+            ORDER BY a.tanggal, g.nama;
+            """;
+        command.Parameters.AddWithValue("$awal", TanggalTeks(tanggalAwal));
+        command.Parameters.AddWithValue("$akhir", TanggalTeks(tanggalAkhir));
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<BarisAbsensiGuruMentah>();
+        while (reader.Read())
+        {
+            daftar.Add(new BarisAbsensiGuruMentah(
+                DateOnly.Parse(reader.GetString(0)),
+                reader.GetInt32(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                PemetaanEnum.StatusGuruDariTeks(reader.GetString(4)),
+                BacaJam(reader, 5),
+                BacaJam(reader, 6),
+                reader.IsDBNull(7) ? null : reader.GetString(7)));
+        }
+
+        return daftar;
+    }
+
     private static void Eksekusi(
         SqliteConnection connection,
         SqliteTransaction transaction,

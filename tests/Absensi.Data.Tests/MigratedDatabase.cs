@@ -302,6 +302,71 @@ internal sealed class MigratedDatabase : IDisposable
         TambahAkunDenganSandi(4, "wali_b", SandiKepsek, "wali_kelas", guruId: 2);
     }
 
+    // Sekolah kecil untuk pengujian LayananLaporan (Tugas 12, PRD §11):
+    // tahun ajaran 1-30 September 2026 (dipersempit jadi semenjana supaya
+    // batas semester gampang diuji), jadwal Senin-Sabtu hari sekolah
+    // (CLAUDE.md §7), satu kalender override 17 September (Kamis) jadi
+    // libur mendadak. Baris absensi_siswa/absensi_guru SENGAJA tidak
+    // diisi untuk 17 September — meniru PembukaanHari yang melewati hari
+    // libur — supaya hari efektif (dihitung dari kalender) dan jumlah
+    // baris absensi (dihitung dari data) tetap konsisten satu sama lain.
+    // 14-19 Sept = Senin..Sabtu, 6 hari sekolah - 1 libur mendadak = 5
+    // hari efektif; siswa1 5 baris (Hadir,Terlambat,Sakit,Bolos,Hadir),
+    // siswa2 5 baris (Alpa,Hadir,Hadir,Hadir,Izin), guru1 5 baris
+    // (Hadir,DinasLuar,Hadir,TidakLengkap,Cuti).
+    public void SeedSekolahUntukLaporan()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-09-01', '2026-09-30', 1);
+
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (1, '111', 'Wali A', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat, wali_guru_id) VALUES (1, 1, '7A', 7, 1);
+
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (1, '0001', 'Siswa Satu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (2, '0002', 'Siswa Dua', 'P', 1);
+
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (1, 1, 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (2, 1, 1);
+
+            INSERT INTO kalender (tanggal, jenis, keterangan, dibuat_pada)
+            VALUES ('2026-09-17', 'libur', 'Libur mendadak banjir', '2026-09-16T18:00:00');
+
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, keterangan, sumber) VALUES
+                ('2026-09-14', 1, 1, 'hadir', '07:20', '13:10', NULL, 'tap'),
+                ('2026-09-15', 1, 1, 'terlambat', '07:52', '13:10', NULL, 'tap'),
+                ('2026-09-16', 1, 1, 'sakit', NULL, NULL, 'Demam', 'koreksi'),
+                ('2026-09-18', 1, 1, 'bolos', '07:20', NULL, NULL, 'sistem'),
+                ('2026-09-19', 1, 1, 'hadir', '07:15', '11:20', NULL, 'tap'),
+                ('2026-09-14', 2, 1, 'alpa', NULL, NULL, NULL, 'sistem'),
+                ('2026-09-15', 2, 1, 'hadir', '07:10', '13:10', NULL, 'tap'),
+                ('2026-09-16', 2, 1, 'hadir', '07:10', '13:10', NULL, 'tap'),
+                ('2026-09-18', 2, 1, 'hadir', '07:10', '13:10', NULL, 'tap'),
+                ('2026-09-19', 2, 1, 'izin', NULL, NULL, 'Acara keluarga', 'koreksi');
+
+            INSERT INTO absensi_guru (tanggal, guru_id, status, jam_masuk, jam_pulang, keterangan, sumber) VALUES
+                ('2026-09-14', 1, 'hadir', '07:00', '14:00', NULL, 'tap'),
+                ('2026-09-15', 1, 'dinas_luar', NULL, NULL, 'Rapat dinas', 'koreksi'),
+                ('2026-09-16', 1, 'hadir', '07:00', '14:00', NULL, 'tap'),
+                ('2026-09-18', 1, 'tidak_lengkap', '07:00', NULL, NULL, 'sistem'),
+                ('2026-09-19', 1, 'cuti', NULL, NULL, 'Cuti tahunan', 'koreksi');
+            """);
+
+        for (var hari = 1; hari <= 7; hari++)
+        {
+            var hariSekolah = hari == 7 ? 0 : 1;
+            using var command = Connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO jadwal_hari (tahun_ajaran_id, hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang)
+                VALUES (1, $hari, $hariSekolah, '07:30', '08:00', '12:00', '13:10');
+                """;
+            command.Parameters.AddWithValue("$hari", hari);
+            command.Parameters.AddWithValue("$hariSekolah", hariSekolah);
+            command.ExecuteNonQuery();
+        }
+    }
+
     public void Dispose()
     {
         Connection.Dispose();

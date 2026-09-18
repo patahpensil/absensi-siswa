@@ -14,6 +14,16 @@ public sealed class RepositoriSiswa
         return aktif is not null && Convert.ToInt32(aktif) == 1;
     }
 
+    // Dipakai LayananLaporan (Tugas 12) untuk kartu Laporan Per Siswa
+    // (PRD §11.3: "Identitas (nama, NISN, kelas, foto)").
+    public string? CariFotoPath(SqliteConnection connection, int siswaId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT foto_path FROM siswa WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", siswaId);
+        return command.ExecuteScalar() as string;
+    }
+
     // Dipakai layar gerbang (Tugas 6) untuk memuat seluruh nama/NISN/foto
     // siswa aktif ke memori sekali saat layar dibuka, supaya tiap tap tidak
     // menunggu kueri database untuk menampilkan kartu.
@@ -34,6 +44,32 @@ public sealed class RepositoriSiswa
         }
 
         return daftar;
+    }
+
+    // Dipakai LayananLaporan (Tugas 12) untuk identitas kartu Per Siswa
+    // (PRD §11.3) walau siswa itu tidak punya baris absensi sama sekali di
+    // rentang laporan (mis. rentang sebelum dia terdaftar) — null berarti
+    // id-nya sendiri tidak ada, beda dari "tidak ikut kelas manapun".
+    public (string Nama, string Nisn, string? KelasNama)? CariIdentitasUntukLaporan(SqliteConnection connection, int siswaId, int tahunAjaranId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT s.nama, s.nisn, k.nama
+            FROM siswa s
+            LEFT JOIN siswa_kelas sk ON sk.siswa_id = s.id AND sk.tahun_ajaran_id = $tahunAjaranId
+            LEFT JOIN kelas k ON k.id = sk.kelas_id
+            WHERE s.id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", siswaId);
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return (reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2));
     }
 
     // Dipakai LayananRegistrasiKartu untuk pesan penolakan UID terpakai

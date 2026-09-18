@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Absensi.Data\Absensi.Data.csproj" />
     <ProjectReference Include="..\Absensi.Telegram\Absensi.Telegram.csproj" />
+    <ProjectReference Include="..\Absensi.Laporan\Absensi.Laporan.csproj" />
   </ItemGroup>
 
   <ItemGroup>

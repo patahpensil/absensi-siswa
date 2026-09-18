@@ -10,7 +10,7 @@ public sealed class RepositoriSekolah
     public SekolahTersimpan? CariSatuSatunya(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
-        command.CommandText = "SELECT nama, logo_path FROM sekolah WHERE id = 1;";
+        command.CommandText = "SELECT nama, logo_path, npsn FROM sekolah WHERE id = 1;";
 
         using var reader = command.ExecuteReader();
         if (!reader.Read())
@@ -18,6 +18,9 @@ public sealed class RepositoriSekolah
             return null;
         }
 
-        return new SekolahTersimpan(reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1));
+        return new SekolahTersimpan(
+            reader.GetString(0),
+            reader.IsDBNull(1) ? null : reader.GetString(1),
+            reader.IsDBNull(2) ? null : reader.GetString(2));
     }
 }

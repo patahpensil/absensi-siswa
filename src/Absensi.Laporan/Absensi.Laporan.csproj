@@ -6,4 +6,22 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Absensi.Domain\Absensi.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
+    <!--
+      QuestPDF Community license (set via QuestPDF.Settings.License in
+      PenulisPdfLaporan's static constructor) is free ONLY while this
+      app's vendor (not the school buying it) keeps annual gross revenue
+      under $1,000,000 USD, or qualifies as non-profit/personal use.
+      Above that threshold, QuestPDF Enterprise is required. Revisit this
+      choice if the business grows past that line (dikonfirmasi pemilik
+      proyek 2026-09-18, RENCANA-TUGAS.md Tugas 12).
+    -->
+    <PackageReference Include="QuestPDF" Version="2026.9.0" />
+  </ItemGroup>
+
 </Project>
