@@ -12,6 +12,7 @@ public sealed class LayananKalender
 {
     private readonly RepositoriKalender _repositoriKalender = new();
     private readonly RepositoriOutbox _repositoriOutbox = new();
+    private readonly RepositoriKuncimBulan _repositoriKuncimBulan = new();
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     // Menandai satu tanggal atau satu rentang tanggal sekaligus, satu
@@ -47,6 +48,15 @@ public sealed class LayananKalender
         if (jenis == JenisHariKalender.Libur && string.IsNullOrWhiteSpace(keterangan))
         {
             throw new ArgumentException("Keterangan wajib diisi saat menandai tanggal sebagai libur (PRD §6).", nameof(keterangan));
+        }
+
+        // PRD §10/§16.13: "bulan itu beku, tidak dapat diubah siapa pun" —
+        // ditegakkan di lapisan layanan (dikonfirmasi pemilik proyek
+        // 2026-09-18), bukan hanya UI. Seluruh bulan yang disentuh rentang
+        // ini diperiksa, bukan cuma bulan tanggalAwal.
+        if (_repositoriKuncimBulan.CariPertamaDalamRentang(connection, tanggalAwal, tanggalAkhir) is { } terkunci)
+        {
+            throw new InvalidOperationException(terkunci.PesanGalat);
         }
 
         var jumlahHari = tanggalAkhir.DayNumber - tanggalAwal.DayNumber + 1;

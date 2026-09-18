@@ -115,6 +115,35 @@ public sealed class LayananNotifikasi
         }
     }
 
+    // RENCANA-TUGAS.md Tugas 11 — PRD §16.9 langkah 3 / §16.10 langkah
+    // 7.2-7.3, dipanggil Absensi.Data.Koreksi.LayananKoreksi setelah koreksi
+    // disimpan: notifikasi normal bila siswa belum pernah dinotifikasi hari
+    // itu, atau PESAN RALAT (jenis 'ralat', boleh berkali-kali — dikecualikan
+    // dari ix_outbox_sekali) bila sudah — supaya orang tua tidak menerima
+    // dua pesan berlainan tanpa penjelasan.
+    public void AntrekanNotifikasiKoreksi(SqliteConnection connection, DateOnly tanggal, int siswaId, string namaSiswa, StatusAbsensiSiswa statusBaru, TimeOnly? jamMasuk, DateTime waktu)
+    {
+        var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, siswaId);
+        if (chatId is null)
+        {
+            return;
+        }
+
+        if (_repositoriOutbox.SudahPernahAdaUntukSubjek(connection, tanggal, JenisSubjekOutbox.Siswa, siswaId))
+        {
+            var isiRalat = $"Koreksi: Ananda {namaSiswa} tercatat {TeksStatusSiswa(statusBaru)} hari ini, {FormatTanggal(tanggal)}.";
+            _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, JenisNotifikasi.Ralat, chatId, isiRalat, waktu);
+            return;
+        }
+
+        if (BuatPesanOrangTua(namaSiswa, statusBaru, jamMasuk, tanggal) is not { } pesan)
+        {
+            return;
+        }
+
+        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, pesan.Jenis, chatId, pesan.Isi, waktu);
+    }
+
     private void AntrekanNotifikasiOrangTua(SqliteConnection connection, DateOnly tanggal, AbsensiSiswaUntukNotifikasi siswa, DateTime waktu)
     {
         var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, siswa.SiswaId);
@@ -123,24 +152,29 @@ public sealed class LayananNotifikasi
             return;
         }
 
-        (JenisNotifikasi Jenis, string Isi)? pesan = siswa.Status switch
-        {
-            StatusAbsensiSiswa.Hadir => (JenisNotifikasi.Hadir,
-                $"Ananda {siswa.NamaSiswa} tercatat HADIR hari ini, {FormatTanggal(tanggal)} pukul {siswa.JamMasuk?.ToString("HH:mm")}."),
-            StatusAbsensiSiswa.Terlambat => (JenisNotifikasi.Terlambat,
-                $"Ananda {siswa.NamaSiswa} tercatat TERLAMBAT hari ini, {FormatTanggal(tanggal)} pukul {siswa.JamMasuk?.ToString("HH:mm")}."),
-            StatusAbsensiSiswa.Alpa => (JenisNotifikasi.Alpa,
-                $"Ananda {siswa.NamaSiswa} belum tercatat hadir tanpa keterangan hari ini, {FormatTanggal(tanggal)}."),
-            _ => null,
-        };
-
-        if (pesan is not { } p)
+        if (BuatPesanOrangTua(siswa.NamaSiswa, siswa.Status, siswa.JamMasuk, tanggal) is not { } pesan)
         {
             return;
         }
 
-        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswa.SiswaId, p.Jenis, chatId, p.Isi, waktu);
+        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswa.SiswaId, pesan.Jenis, chatId, pesan.Isi, waktu);
     }
+
+    // PRD §9.1: notifikasi hanya terkirim bila status sudah berubah dari
+    // ALPA — status lain yang tidak dikenal di sini (mis. Izin/Sakit/Bolos
+    // lewat koreksi langsung tanpa lebih dulu Hadir/Terlambat) sengaja
+    // tidak punya pesan "normal" — PRD tidak menjabarkan notifikasi
+    // pertama untuk kasus itu, hanya jalur ralat yang menyebutkannya.
+    private static (JenisNotifikasi Jenis, string Isi)? BuatPesanOrangTua(string namaSiswa, StatusAbsensiSiswa status, TimeOnly? jamMasuk, DateOnly tanggal) => status switch
+    {
+        StatusAbsensiSiswa.Hadir => (JenisNotifikasi.Hadir,
+            $"Ananda {namaSiswa} tercatat HADIR hari ini, {FormatTanggal(tanggal)} pukul {jamMasuk?.ToString("HH:mm")}."),
+        StatusAbsensiSiswa.Terlambat => (JenisNotifikasi.Terlambat,
+            $"Ananda {namaSiswa} tercatat TERLAMBAT hari ini, {FormatTanggal(tanggal)} pukul {jamMasuk?.ToString("HH:mm")}."),
+        StatusAbsensiSiswa.Alpa => (JenisNotifikasi.Alpa,
+            $"Ananda {namaSiswa} belum tercatat hadir tanpa keterangan hari ini, {FormatTanggal(tanggal)}."),
+        _ => null,
+    };
 
     private void AntrekanPesanWaliKelas(SqliteConnection connection, DateOnly tanggal, int kelasId, JenisNotifikasi jenis, string isi, DateTime waktu)
     {
@@ -159,4 +193,15 @@ public sealed class LayananNotifikasi
     }
 
     private static string FormatTanggal(DateOnly tanggal) => tanggal.ToString("d MMMM yyyy", BudayaIndonesia);
+
+    private static string TeksStatusSiswa(StatusAbsensiSiswa status) => status switch
+    {
+        StatusAbsensiSiswa.Hadir => "HADIR",
+        StatusAbsensiSiswa.Terlambat => "TERLAMBAT",
+        StatusAbsensiSiswa.Alpa => "ALPA",
+        StatusAbsensiSiswa.Izin => "IZIN",
+        StatusAbsensiSiswa.Sakit => "SAKIT",
+        StatusAbsensiSiswa.Bolos => "BOLOS",
+        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+    };
 }

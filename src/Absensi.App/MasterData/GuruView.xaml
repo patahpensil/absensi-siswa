@@ -1,8 +1,11 @@
 <UserControl x:Class="Absensi.App.MasterData.GuruView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:koreksi="clr-namespace:Absensi.App.Koreksi">
 
-    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+    <TabControl Margin="{StaticResource PaddingTepiHalaman}">
+    <TabItem Header="Data Guru">
+    <Grid Margin="16,16,0,0">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="24" />
@@ -84,4 +87,10 @@
             </StackPanel>
         </Border>
     </Grid>
+    </TabItem>
+
+    <TabItem Header="Kehadiran">
+        <koreksi:StatusGuruView DataContext="{Binding StatusGuru}" />
+    </TabItem>
+    </TabControl>
 </UserControl>

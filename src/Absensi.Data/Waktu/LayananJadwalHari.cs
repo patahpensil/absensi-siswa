@@ -12,6 +12,8 @@ namespace Absensi.Data.Waktu;
 public sealed class LayananJadwalHari
 {
     private readonly RepositoriJadwalHari _repositoriJadwalHari = new();
+    private readonly RepositoriTahunAjaran _repositoriTahunAjaran = new();
+    private readonly RepositoriKuncimBulan _repositoriKuncimBulan = new();
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     // PRD §7: "seluruh nilai dapat diubah per hari" — ketujuh baris
@@ -25,6 +27,16 @@ public sealed class LayananJadwalHari
         if (akun.Peran == PeranAkun.WaliKelas)
         {
             throw new InvalidOperationException("Wali kelas tidak berwenang mengubah jadwal harian (PRD §3).");
+        }
+
+        // PRD §10/§16.13: jadwal_hari berdampak retroaktif ke seluruh
+        // bulan tahun ajaran ini (dikonfirmasi pemilik proyek 2026-09-18),
+        // jadi ditolak kalau ADA bulan yang sudah terkunci di sepanjang
+        // rentang tahun ajaran itu, bukan cuma bulan berjalan.
+        if (_repositoriTahunAjaran.CariRentang(connection, tahunAjaranId) is { } rentang
+            && _repositoriKuncimBulan.CariPertamaDalamRentang(connection, rentang.TglMulai, rentang.TglSelesai) is { } terkunci)
+        {
+            throw new InvalidOperationException(terkunci.PesanGalat);
         }
 
         _jalurPerubahanData.Jalankan(

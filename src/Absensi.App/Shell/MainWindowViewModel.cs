@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Absensi.App.Kalender;
+using Absensi.App.Koreksi;
 using Absensi.App.MasterData;
 using Absensi.App.Mvvm;
 using Absensi.App.Notifikasi;
@@ -33,6 +34,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private KalenderViewModel? _kalenderViewModel;
     private PengaturanViewModel? _pengaturanViewModel;
     private NotifikasiViewModel? _notifikasiViewModel;
+    private KoreksiViewModel? _koreksiViewModel;
 
     public MainWindowViewModel(
         SqliteConnection connection,
@@ -135,6 +137,7 @@ public sealed class MainWindowViewModel : ObservableObject
             "Kalender" => _kalenderViewModel ??= new KalenderViewModel(_connection, _akun, _penyediaWaktu),
             "Pengaturan" => _pengaturanViewModel ??= new PengaturanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Notifikasi" => _notifikasiViewModel ??= new NotifikasiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
+            "Koreksi" => _koreksiViewModel ??= new KoreksiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             _ => null,
         };
     }

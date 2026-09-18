@@ -262,6 +262,46 @@ internal sealed class MigratedDatabase : IDisposable
             """);
     }
 
+    // Sekolah kecil untuk pengujian Koreksi/Kunci Bulan/Status Guru (Tugas
+    // 11, PRD §10, §16.10, §16.17): kelas 7A wali guru id=1 (tertaut,
+    // chat-wali-1), kelas 7B wali guru id=2 (TIDAK tertaut — untuk uji
+    // pesan ralat/notifikasi yang gagal karena belum ada chat_id). Siswa 1
+    // (kelas 7A, Terlambat, tertaut chat-siswa-1), siswa 2 (kelas 7B, Alpa,
+    // tidak tertaut). Akun: admin1(1)/kepsek(2) kewenangan penuh,
+    // wali_a(3, guru_id=1)/wali_b(4, guru_id=2) masing-masing wali kelasnya.
+    public void SeedSekolahUntukKoreksi()
+    {
+        Execute("""
+            INSERT INTO tahun_ajaran (id, nama, semester, tgl_mulai, tgl_selesai, aktif)
+            VALUES (1, '2026/2027', 'ganjil', '2026-07-01', '2026-12-19', 1);
+
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (1, '111', 'Wali A', 1);
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (2, '222', 'Wali B', 1);
+            INSERT INTO guru (id, nip, nama, aktif) VALUES (3, '333', 'Guru Biasa', 1);
+
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat, wali_guru_id) VALUES (1, 1, '7A', 7, 1);
+            INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat, wali_guru_id) VALUES (2, 1, '7B', 7, 2);
+
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (1, '0001', 'Siswa Satu', 'L', 1);
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (2, '0002', 'Siswa Dua', 'L', 1);
+
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, sumber)
+            VALUES ('2026-09-17', 1, 1, 'terlambat', '07:45', 'tap');
+            INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, sumber)
+            VALUES ('2026-09-17', 2, 2, 'alpa', 'sistem');
+
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('siswa', 1, 'TOKS1', 'tertaut', 'chat-siswa-1', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+            VALUES ('guru', 1, 'TOKW1', 'tertaut', 'chat-wali-1', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+            """);
+
+        TambahAkunDenganSandi(1, "admin1", SandiKepsek, "admin", guruId: null);
+        TambahAkunDenganSandi(2, "kepsek", SandiKepsek, "kepala_sekolah", guruId: null);
+        TambahAkunDenganSandi(3, "wali_a", SandiKepsek, "wali_kelas", guruId: 1);
+        TambahAkunDenganSandi(4, "wali_b", SandiKepsek, "wali_kelas", guruId: 2);
+    }
+
     public void Dispose()
     {
         Connection.Dispose();

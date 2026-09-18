@@ -71,7 +71,21 @@ public partial class App : Application
     {
         _penjadwal = new Penjadwal(_connection!, _penyediaWaktu, new KlienBotTelegram());
         _penjadwalTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
-        _penjadwalTimer.Tick += async (_, _) => await _penjadwal.DetakAsync();
+        _penjadwalTimer.Tick += async (_, _) =>
+        {
+            // Satu detak yang gagal (mis. tahun ajaran belum diatur, galat
+            // jaringan sesaat) tidak boleh mematikan aplikasi absensi
+            // gerbang yang sedang dipakai — dicoba lagi detak berikutnya,
+            // bukan ditelan diam-diam selamanya.
+            try
+            {
+                await _penjadwal.DetakAsync();
+            }
+            catch (Exception galat)
+            {
+                System.Diagnostics.Debug.WriteLine($"Penjadwal.DetakAsync gagal: {galat}");
+            }
+        };
         _penjadwalTimer.Start();
     }
 

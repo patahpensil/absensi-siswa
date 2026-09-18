@@ -1,0 +1,25 @@
+<Window x:Class="Absensi.App.Koreksi.KonfirmasiKunciBulanWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Kunci bulan"
+        Height="260" Width="440"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">
+        <StackPanel>
+            <TextBlock Text="{Binding NamaBulan, StringFormat='Kunci bulan {0}?'}" Style="{StaticResource JudulBagianStyle}" TextWrapping="Wrap" Margin="0,0,0,4" />
+            <TextBlock Text="Setelah dikunci, seluruh koreksi status untuk bulan ini tidak bisa diubah lagi oleh siapa pun. Tindakan ini tidak bisa dibatalkan lewat aplikasi (PRD §10)."
+                       Style="{StaticResource TeksUtamaStyle}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Click="TombolBatal_Click" Margin="0,0,8,0" />
+                <Button Content="Kunci Bulan Ini" Style="{StaticResource TombolBahayaStyle}" Command="{Binding KonfirmasiCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

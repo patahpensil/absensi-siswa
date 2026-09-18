@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Absensi.App.Koreksi;
 using Absensi.App.Mvvm;
 using Absensi.App.RegistrasiKartu;
 using Absensi.Data.Akun;
@@ -13,7 +14,9 @@ using Microsoft.Win32;
 namespace Absensi.App.MasterData;
 
 // PRD §14.4-setara untuk guru + §16.15: daftar, impor Excel, impor foto,
-// tambah/edit, dan penandaan tidak aktif.
+// tambah/edit, dan penandaan tidak aktif. Tab "Kehadiran" (Tugas 11, PRD
+// §16.17) memakai ViewModel terpisah (StatusGuru) — layar Data Guru dan
+// Kehadiran berdiri sendiri-sendiri, cuma berbagi jendela yang sama.
 public sealed class GuruViewModel : ObservableObject
 {
     private static readonly string[] AlasanTidakAktif = { "pensiun", "pindah" };
@@ -60,10 +63,14 @@ public sealed class GuruViewModel : ObservableObject
         // LayananRegistrasiKartu; ini cuma menyembunyikan tombolnya).
         KartuCommand = new RelayCommand<GuruDaftar>(BukaDialogKartu, _ => _akun.Peran != PeranAkun.WaliKelas);
 
+        StatusGuru = new StatusGuruViewModel(connection, akun, penyediaWaktu);
+
         MuatUlang();
     }
 
     public ObservableCollection<GuruDaftar> Daftar { get; } = new();
+
+    public StatusGuruViewModel StatusGuru { get; }
 
     public string JudulFormulir => _sedangDiedit is null ? "Tambah guru" : $"Ubah guru {_sedangDiedit.Nama}";
 

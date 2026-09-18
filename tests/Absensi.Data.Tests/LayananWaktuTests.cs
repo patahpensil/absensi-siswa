@@ -1,4 +1,5 @@
 using Absensi.Data.Akun;
+using Absensi.Data.Koreksi;
 using Absensi.Data.Repositori;
 using Absensi.Data.Waktu;
 using Absensi.Domain.Akun;
@@ -150,6 +151,73 @@ public sealed class LayananWaktuTests
         var entri = Assert.Single(new RepositoriKalender().DaftarUntukBulan(database.Connection, 2026, 7));
         Assert.Equal(JenisHariKalender.Sekolah, entri.Jenis);
         Assert.Equal("MPLS", entri.Keterangan);
+    }
+
+    // ---------- Kunci bulan (celah ditemukan saat tinjauan Tugas 11) ----------
+    // PRD §10/§16.13: "bulan itu beku, tidak dapat diubah siapa pun" —
+    // ditegakkan di lapisan layanan, bukan hanya UI (dikonfirmasi pemilik
+    // proyek 2026-09-18).
+
+    [Fact]
+    public void TandaiRentang_BulanTerkunci_DitolakDenganPesanMenyebutBulanPenguncian()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+        new LayananKuncimBulan().KunciBulan(database.Connection, Admin, new DateTime(2026, 10, 3, 9, 0, 0), 2026, 9);
+        var layanan = new LayananKalender();
+        var tanggal = new DateOnly(2026, 9, 20);
+
+        var galat = Assert.Throws<InvalidOperationException>(() =>
+            layanan.TandaiRentang(database.Connection, Admin, Waktu, tanggal, tanggal, JenisHariKalender.Libur, "x"));
+
+        Assert.Equal("Tidak bisa mengubah. Bulan September 2026 sudah dikunci pada 3 Oktober oleh admin1.", galat.Message);
+        Assert.Empty(new RepositoriKalender().DaftarUntukBulan(database.Connection, 2026, 9));
+    }
+
+    [Fact]
+    public void TandaiRentang_RentangMenyentuhBulanTerkunciDiUjung_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+        new LayananKuncimBulan().KunciBulan(database.Connection, Admin, new DateTime(2026, 8, 1, 9, 0, 0), 2026, 7);
+        var layanan = new LayananKalender();
+
+        Assert.Throws<InvalidOperationException>(() => layanan.TandaiRentang(
+            database.Connection, Admin, Waktu, new DateOnly(2026, 7, 28), new DateOnly(2026, 8, 2), JenisHariKalender.Libur, "x"));
+    }
+
+    [Fact]
+    public void TandaiRentang_BulanLainTerkunci_TidakTerpengaruh()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+        new LayananKuncimBulan().KunciBulan(database.Connection, Admin, new DateTime(2026, 8, 1, 9, 0, 0), 2026, 7);
+        var layanan = new LayananKalender();
+        var tanggal = new DateOnly(2026, 9, 20);
+
+        layanan.TandaiRentang(database.Connection, Admin, Waktu, tanggal, tanggal, JenisHariKalender.Libur, "x");
+
+        Assert.Single(new RepositoriKalender().DaftarUntukBulan(database.Connection, 2026, 9));
+    }
+
+    // jadwal_hari berdampak retroaktif ke seluruh bulan tahun ajaran —
+    // satu bulan terkunci di mana pun dalam rentangnya cukup untuk menolak,
+    // bukan cuma bulan berjalan.
+    [Fact]
+    public void JadwalHari_Perbarui_AdaBulanTerkunciDalamTahunAjaran_DitolakDenganPesanMenyebutBulanPenguncian()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+        new LayananKuncimBulan().KunciBulan(database.Connection, Admin, new DateTime(2026, 10, 3, 9, 0, 0), 2026, 9);
+        var layanan = new LayananJadwalHari();
+
+        var galat = Assert.Throws<InvalidOperationException>(() =>
+            layanan.Perbarui(database.Connection, Admin, Waktu, tahunAjaranId: 1, BuatJadwalStandar()));
+
+        Assert.Equal("Tidak bisa mengubah. Bulan September 2026 sudah dikunci pada 3 Oktober oleh admin1.", galat.Message);
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM jadwal_hari WHERE tahun_ajaran_id = 1;";
+        Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
     }
 
     // ---------- LayananJadwalHari ----------

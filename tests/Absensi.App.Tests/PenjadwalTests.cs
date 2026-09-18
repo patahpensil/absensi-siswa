@@ -100,4 +100,42 @@ public sealed class PenjadwalTests
         command.CommandText = "SELECT COUNT(*) FROM outbox;";
         Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
     }
+
+    // RENCANA-TUGAS.md Tugas 11 — PRD §16.16: guru tap masuk saja, begitu
+    // tanggal berganti, menjadi Tidak Lengkap.
+    [Fact]
+    public async Task DetakAsync_TanggalBerganti_GuruMasukSajaJadiTidakLengkap()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        database.Execute("UPDATE absensi_guru SET status = 'masuk' WHERE guru_id = 1 AND tanggal = '2026-09-17';");
+        var waktu = new PenyediaWaktuUji(Waktu(23, 0));
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        await penjadwal.DetakAsync();
+
+        waktu.Sekarang = new DateTime(2026, 9, 18, 0, 5, 0);
+        await penjadwal.DetakAsync();
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status FROM absensi_guru WHERE guru_id = 1 AND tanggal = '2026-09-17';";
+        Assert.Equal("tidak_lengkap", command.ExecuteScalar());
+    }
+
+    [Fact]
+    public async Task DetakAsync_HariSamaBerulang_GuruMasukTidakDifinalisasi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        database.Execute("UPDATE absensi_guru SET status = 'masuk' WHERE guru_id = 1 AND tanggal = '2026-09-17';");
+        var waktu = new PenyediaWaktuUji(Waktu(20, 0));
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu());
+        await penjadwal.DetakAsync();
+
+        waktu.Sekarang = Waktu(23, 0);
+        await penjadwal.DetakAsync();
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status FROM absensi_guru WHERE guru_id = 1 AND tanggal = '2026-09-17';";
+        Assert.Equal("masuk", command.ExecuteScalar());
+    }
 }

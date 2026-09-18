@@ -259,6 +259,140 @@ public sealed class RepositoriAbsensi
             ("$siswaId", siswaId));
     }
 
+    // RENCANA-TUGAS.md Tugas 11 — layar Koreksi (PRD §16.10): satu kelas,
+    // satu tanggal, sekaligus jam tap dan keterangan untuk ditampilkan.
+    public IReadOnlyList<SiswaUntukKoreksi> DaftarUntukKoreksi(SqliteConnection connection, DateOnly tanggal, int kelasId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT s.id, s.nisn, s.nama, a.status, a.jam_masuk, a.jam_pulang, a.keterangan
+            FROM absensi_siswa a
+            JOIN siswa s ON s.id = a.siswa_id
+            WHERE a.tanggal = $tanggal AND a.kelas_id = $kelasId
+            ORDER BY s.nama;
+            """;
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+        command.Parameters.AddWithValue("$kelasId", kelasId);
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<SiswaUntukKoreksi>();
+        while (reader.Read())
+        {
+            daftar.Add(new SiswaUntukKoreksi(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                PemetaanEnum.StatusSiswaDariTeks(reader.GetString(3)),
+                BacaJam(reader, 4),
+                BacaJam(reader, 5),
+                reader.IsDBNull(6) ? null : reader.GetString(6)));
+        }
+
+        return daftar;
+    }
+
+    // Hanya dipanggil lewat Absensi.Data.Koreksi.LayananKoreksi, yang
+    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // jam_masuk/jam_pulang sengaja tidak disentuh — riwayat tap asli tetap
+    // utuh, hanya status+keterangan yang berubah (PRD §16.10 langkah 5).
+    public void KoreksiStatusSiswa(SqliteConnection connection, SqliteTransaction transaction, DateOnly tanggal, int siswaId, StatusAbsensiSiswa status, string? keterangan)
+    {
+        Eksekusi(connection, transaction, """
+            UPDATE absensi_siswa SET status = $status, keterangan = $keterangan, sumber = 'koreksi'
+            WHERE tanggal = $tanggal AND siswa_id = $siswaId;
+            """,
+            ("$status", PemetaanEnum.TeksDariStatusSiswa(status)),
+            ("$keterangan", (object?)keterangan ?? DBNull.Value),
+            ("$tanggal", TanggalTeks(tanggal)),
+            ("$siswaId", siswaId));
+    }
+
+    // RENCANA-TUGAS.md Tugas 11 — layar Guru→Kehadiran (PRD §16.17). LEFT
+    // JOIN karena tanggal mendatang belum tentu punya baris (pembukaan hari
+    // belum berjalan untuk tanggal itu) — status null di situ wajar.
+    public IReadOnlyList<GuruUntukKehadiran> DaftarGuruUntukKehadiran(SqliteConnection connection, DateOnly tanggal)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT g.id, g.nip, g.nama, a.status, a.keterangan
+            FROM guru g
+            LEFT JOIN absensi_guru a ON a.guru_id = g.id AND a.tanggal = $tanggal
+            WHERE g.aktif = 1
+            ORDER BY g.nama;
+            """;
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<GuruUntukKehadiran>();
+        while (reader.Read())
+        {
+            daftar.Add(new GuruUntukKehadiran(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.IsDBNull(3) ? null : PemetaanEnum.StatusGuruDariTeks(reader.GetString(3)),
+                reader.IsDBNull(4) ? null : reader.GetString(4)));
+        }
+
+        return daftar;
+    }
+
+    // Hanya dipanggil lewat Absensi.Data.Koreksi.LayananStatusGuru. Upsert
+    // (bukan UPDATE biasa) karena menaungi DUA ARAH PRD §16.17: "DI MUKA"
+    // untuk tanggal mendatang (belum ada baris — pembukaan hari belum
+    // berjalan) memasukkan baris baru; "SETELAH" untuk tanggal yang
+    // sudah punya baris memperbaruinya. jam_masuk/jam_pulang tidak
+    // disentuh saat baris sudah ada, supaya tap asli (kalau ada) tetap utuh.
+    public void TetapkanStatusGuru(SqliteConnection connection, SqliteTransaction transaction, DateOnly tanggal, int guruId, StatusAbsensiGuru status, string? keterangan)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO absensi_guru (tanggal, guru_id, status, keterangan, sumber)
+            VALUES ($tanggal, $guruId, $status, $keterangan, 'koreksi')
+            ON CONFLICT(tanggal, guru_id) DO UPDATE SET
+                status = excluded.status,
+                keterangan = excluded.keterangan,
+                sumber = 'koreksi';
+            """;
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+        command.Parameters.AddWithValue("$guruId", guruId);
+        command.Parameters.AddWithValue("$status", PemetaanEnum.TeksDariStatusGuru(status));
+        command.Parameters.AddWithValue("$keterangan", (object?)keterangan ?? DBNull.Value);
+        command.ExecuteNonQuery();
+    }
+
+    // RENCANA-TUGAS.md Tugas 11 — PRD §16.16 (24.00, akhir hari): guru
+    // dengan tap masuk saja menjadi Tidak Lengkap. Dipanggil Absensi.App
+    // .Penjadwal saat mendeteksi pergantian tanggal, untuk tanggal yang
+    // BARU SAJA berakhir — bukan lewat LayananStatusGuru (bukan tindakan
+    // Kepala Sekolah, tidak diaudit, sama seperti PembukaanHari).
+    public IReadOnlyList<int> DaftarGuruMasukTanpaPulang(SqliteConnection connection, DateOnly tanggal)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT guru_id FROM absensi_guru WHERE tanggal = $tanggal AND status = 'masuk';";
+        command.Parameters.AddWithValue("$tanggal", TanggalTeks(tanggal));
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<int>();
+        while (reader.Read())
+        {
+            daftar.Add(reader.GetInt32(0));
+        }
+
+        return daftar;
+    }
+
+    public void FinalisasiAkhirHariGuru(SqliteConnection connection, SqliteTransaction transaction, DateOnly tanggal, int guruId, StatusAbsensiGuru status)
+    {
+        Eksekusi(connection, transaction, """
+            UPDATE absensi_guru SET status = $status WHERE tanggal = $tanggal AND guru_id = $guruId;
+            """,
+            ("$status", PemetaanEnum.TeksDariStatusGuru(status)),
+            ("$tanggal", TanggalTeks(tanggal)),
+            ("$guruId", guruId));
+    }
+
     private static void Eksekusi(
         SqliteConnection connection,
         SqliteTransaction transaction,

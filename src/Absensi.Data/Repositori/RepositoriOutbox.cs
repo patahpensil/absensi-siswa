@@ -107,6 +107,23 @@ public sealed class RepositoriOutbox
         command.ExecuteNonQuery();
     }
 
+    // PRD §16.9 langkah 3 / §16.10 langkah 7.2-7.3: "periksa penanda sudah
+    // terkirim" — dipakai LayananKoreksi untuk memutuskan antara notifikasi
+    // normal (belum pernah) atau PESAN RALAT (sudah pernah). 'ralat'
+    // dikecualikan karena bukan penanda "sudah pernah dinotifikasi normal".
+    public bool SudahPernahAdaUntukSubjek(SqliteConnection connection, DateOnly tanggal, JenisSubjekOutbox subjekTipe, int subjekId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT COUNT(*) FROM outbox
+            WHERE tanggal = $tanggal AND subjek_tipe = $subjekTipe AND subjek_id = $subjekId AND jenis <> 'ralat';
+            """;
+        command.Parameters.AddWithValue("$tanggal", tanggal.ToString("yyyy-MM-dd"));
+        command.Parameters.AddWithValue("$subjekTipe", PemetaanEnum.TeksDariSubjekOutbox(subjekTipe));
+        command.Parameters.AddWithValue("$subjekId", subjekId);
+        return Convert.ToInt32(command.ExecuteScalar()) > 0;
+    }
+
     // Layar Notifikasi (PANDUAN-UI-UX.md §9: "riwayat kirim").
     public IReadOnlyList<OutboxBaris> DaftarRiwayat(SqliteConnection connection, int maksimal = 200)
     {
