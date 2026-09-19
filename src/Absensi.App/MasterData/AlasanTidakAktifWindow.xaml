@@ -5,7 +5,8 @@
         Height="240" Width="480"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
+        WindowStyle="SingleBorderWindow"
+        ShowInTaskbar="False"
         Background="{StaticResource KertasBrush}">
 
     <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">

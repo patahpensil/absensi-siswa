@@ -6,7 +6,8 @@
         Height="320" Width="480"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
+        WindowStyle="SingleBorderWindow"
+        ShowInTaskbar="False"
         Background="{StaticResource KertasBrush}">
 
     <Window.Resources>

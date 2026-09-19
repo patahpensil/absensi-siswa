@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
 using Absensi.App.Kalender;
 using Absensi.App.Koreksi;
 using Absensi.App.Laporan;
@@ -96,6 +97,15 @@ public sealed class MainWindowViewModel : ObservableObject
     public string NamaSekolah { get; }
 
     public string? LogoPath { get; }
+
+    // Bug UX pasca serah terima: MainWindow tidak punya Icon di title bar
+    // sama sekali. Sumbernya logo sekolah yang sama dipakai LoginWindow
+    // (PemuatGambar/LokasiData sudah dipakai di sana, pola sama di sini).
+    public BitmapImage? Logo => PemuatGambar.MuatDariFolder(LokasiData.FolderData, LogoPath);
+
+    // Bug UX pasca serah terima: title bar asli Windows selalu menampilkan
+    // "Absensi" statis, tidak menyebut sekolah mana yang sedang dibuka.
+    public string TitleJendela => $"Absensi - {NamaSekolah}";
 
     public string TahunAjaranAktif { get; }
 

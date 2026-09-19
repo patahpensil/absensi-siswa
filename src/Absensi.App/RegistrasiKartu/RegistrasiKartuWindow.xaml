@@ -5,7 +5,8 @@
         Height="480" Width="560"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        WindowStyle="ToolWindow"
+        WindowStyle="SingleBorderWindow"
+        ShowInTaskbar="False"
         Background="{StaticResource KertasBrush}">
 
     <Grid>

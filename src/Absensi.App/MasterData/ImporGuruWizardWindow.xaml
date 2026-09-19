@@ -5,6 +5,9 @@
         Title="Impor Excel Guru"
         Height="620" Width="760"
         WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
         Background="{StaticResource KertasBrush}">
 
     <Window.Resources>

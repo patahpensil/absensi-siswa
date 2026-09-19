@@ -85,6 +85,78 @@ RENCANA-TUGAS.md Tugas 14 menemukan bug nyata yang **lolos dari 318 unit test**:
 3. Pilih berkas Excel yang valid, sampai ke langkah Preview (ringkasan "X baru · Y diperbarui · Z bermasalah" tampil).
 4. **Harap:** tidak ada crash di langkah mana pun.
 
+## Skenario 9 — Windowing Controls per Jendela
+
+Bug UX pasca serah terima: sebelum perbaikan ini, `LoginWindow`/`WizardInstalasiWindow`
+(`ResizeMode="NoResize"` tanpa `WindowStyle` eksplisit atau dengan `WindowStyle="SingleBorderWindow"`)
+menyembunyikan tombol Minimize SEKALIGUS Maximize (perilaku bawaan WPF —
+`NoResize` menyembunyikan keduanya, bukan cuma Maximize), dan seluruh
+dialog modal memakai `WindowStyle="ToolWindow"` yang secara visual mirip
+kotak dialog kecil tak lazim. TU melaporkan tidak bisa meminimalkan atau
+menutup aplikasi lewat tombol standar Windows.
+
+Jalankan checklist ini di SETIAP jendela terdaftar, di `.exe` hasil publish
+(bukan `dotnet run`, supaya font/tema non-client area sama seperti yang
+dilihat TU sungguhan). Untuk tiap jendela: lihat tombol yang tampil di
+title bar, klik Minimize (kalau ada) → **harap** jendela meng-kecil ke
+taskbar tanpa crash → klik ikon taskbar untuk kembalikan → klik Close (X)
+→ **harap** perilaku sesuai kolom "Perilaku Close".
+
+| Jendela | Minimize | Maximize | Perilaku Close | Muncul di taskbar? |
+|---|---|---|---|---|
+| `LoginWindow` | Ada, aktif | Ada, **non-aktif** (abu-abu — WPF tidak punya mode "Minimize+Close tanpa tombol Maximize sama sekali", lihat catatan di `LoginWindow.xaml`) | Menutup aplikasi (jalur `Shutdown()` yang sama seperti tombol "Keluar" di layar ini, kalau ada, atau menutup window biasa) | Ya |
+| `MainWindow` (Shell utama) | Ada, aktif | Ada, aktif — bisa restore ke ukuran normal dan kembali maximize | Menutup aplikasi (`MainWindow.xaml.cs` memanggil `Application.Current.Shutdown()` dari `Closed`) | Ya |
+| `WizardInstalasiWindow` (langkah 1-5) | Ada, aktif | Ada, non-aktif (sama seperti Login) | Memicu dialog konfirmasi "Batalkan instalasi? Semua isian sejauh ini akan hilang." — pilih **Tidak** → wizard TETAP TERBUKA, isian tidak hilang; pilih **Ya** → wizard tertutup DAN aplikasi keluar (instalasi belum tertulis ke database) | Ya |
+| `WizardInstalasiWindow` (langkah 6, "Selesai") | Ada, aktif | Ada, non-aktif | Menutup TANPA dialog konfirmasi (instalasi sudah tertulis ke database sejak langkah 5) — setara klik "Buka Halaman Masuk", lanjut ke `LoginWindow` | Ya |
+| Semua dialog modal (`KonfirmasiTutupWindow`, `KonfirmasiKunciBulanWindow`, `AlasanTidakAktifWindow`, `ImporGuruWizardWindow`, `ImporSiswaWizardWindow`, `QrWindow`, `KonfirmasiRestoreWindow`, `ResetSandiWindow`, `TambahAkunWindow`, `RegistrasiKartuWindow`, `TapKartuTunggalWindow`) | **Tidak ada** (disengaja — pola dialog standar) | **Tidak ada** (disengaja) | Hanya tombol Close (X) di title bar, plus tombol Batal/Tutup di dalam dialog itu sendiri (perilaku masing-masing tidak berubah oleh perbaikan windowing ini) | **Tidak** — `ShowInTaskbar="False"` |
+| `GerbangWindow` | **SENGAJA TIDAK DISENTUH** — tetap `WindowStyle="None"`, fullscreen, tanpa title bar/tombol sama sekali sesuai PRD §14.1 ("tidak bisa ditutup tanpa sandi") | — | — | — |
+
+**Hasil smoke-test build ini:** build berhasil (`dotnet build`, 0 error),
+seluruh 336 unit test hijau (termasuk 3 test baru `MainWindowViewModelTests`
+untuk `Logo`/`TitleJendela`), dan tabel di atas sudah diverifikasi lewat
+`.exe` hasil publish sungguhan (Windows UI Automation `WindowPattern` +
+pesan `WM_SYSCOMMAND`/`SC_CLOSE` asli — simulasi paling setia dari klik
+tombol X sungguhan, bukan sekadar memanggil `Window.Close()` dari kode):
+
+- `LoginWindow`: `CanMinimize=True`, `CanMaximize=False` terkonfirmasi;
+  Minimize → taskbar → restore berjalan normal, proses tetap hidup.
+- `MainWindow`: `CanMinimize=True`, `CanMaximize=True` terkonfirmasi;
+  terbuka dalam kondisi `Maximized` secara default; siklus penuh
+  Maximize → Normal → Maximize → Minimize → Maximize berjalan tanpa
+  masalah; judul terkonfirmasi tampil sebagai "Absensi - SMP Final Test"
+  (mengikuti nama sekolah sungguhan, bukan teks statis "Absensi"); tutup
+  lewat X mematikan seluruh aplikasi seperti diharapkan.
+- `WizardInstalasiWindow`: `CanMinimize=True`, `CanMaximize=False`
+  terkonfirmasi di langkah 1 maupun langkah 6. Tutup lewat X di langkah 1
+  memicu dialog "Batalkan instalasi?" — ditekan **Tidak** (lewat ESC,
+  yang secara baku dipetakan ke tombol No pada `MessageBoxButton.YesNo`)
+  → wizard TETAP TERBUKA, proses tetap hidup, judul tidak berubah; ditekan
+  **Ya** → wizard tertutup DAN aplikasi keluar sepenuhnya. Tutup lewat X
+  di langkah 6 ("Selesai") TIDAK memicu dialog apa pun — langsung lanjut
+  ke `LoginWindow` (judul berubah jadi "Masuk — Absensi"), persis seperti
+  klik "Buka Halaman Masuk", proses tetap hidup. **Bug ditemukan &
+  diperbaiki dalam sesi yang sama** selagi memverifikasi ini: mengisi
+  `DialogResult` langsung di dalam event `Closing` melempar
+  `InvalidOperationException` yang diserap diam-diam oleh WPF (X jadi
+  tidak bereaksi sama sekali, tanpa crash terlihat) — diperbaiki dengan
+  membatalkan penutupan yang sedang berjalan (`e.Cancel = true`) lalu
+  menjadwalkan `DialogResult = true; Close();` lewat
+  `Dispatcher.BeginInvoke`, persis seperti alur tombol "Buka Halaman
+  Masuk". Dikonfirmasi lewat log diagnostik sementara (dihapus lagi
+  setelah terverifikasi) bahwa urutan Closing → e.Cancel → BeginInvoke →
+  Closing ulang (DialogResult sudah true) → Close berjalan tepat seperti
+  dirancang.
+- Dialog modal: perubahan `WindowStyle`/`ResizeMode`/`ShowInTaskbar` di
+  seluruh 11 jendela bersifat deklaratif murni (atribut XAML, sama persis
+  dengan pola `ResizeMode="NoResize"` yang sudah terverifikasi
+  menghasilkan `CanMinimize=False`/`CanMaximize=False` di jendela lain
+  pada sesi yang sama) — tidak diuji klik manual satu per satu karena
+  sesi interaktif ini sempat terganggu aktivitas latar tak terduga di
+  desktop bersama (jendela "Save As" muncul sendiri di tengah pengujian,
+  bukan hasil skrip pengujian — lihat catatan di riwayat sesi). Tester
+  disarankan tetap mengecek sekali secara visual sebelum serah terima,
+  tapi risikonya rendah karena tidak ada logika kode kustom di baliknya.
+
 ---
 
 ## Hasil Smoke-Test Terakhir
@@ -101,3 +173,6 @@ RENCANA-TUGAS.md Tugas 14 menemukan bug nyata yang **lolos dari 318 unit test**:
 | 2026-09-19 (percobaan 3) | 7 (Gerbang: Tap Kartu) — **PALING KRITIS** | ✅ Lulus setelah perbaikan | **Sebelum diperbaiki, ini akan crash pada TAP PERTAMA di sekolah manapun yang memasang aplikasi** — layar gerbang adalah layar yang berjalan sepanjang hari, setiap hari. Setelah `Mode=OneWay` ditambahkan ke `TeksStatus`/`TeksJam`/`Nama` (dua lokasi: kartu besar dan daftar ringkas), diuji dengan 4 tap kartu tak dikenal beruntun: kartu "Kartu tidak dikenal · Ditolak · [jam]" tampil benar di kartu besar, lalu turun ke daftar ringkas setelah 8 detik — proses tetap hidup dan responsif di kedua kondisi. |
 | 2026-09-19 (percobaan 3) | 8 (Impor Excel Guru, setelah perbaikan) | ✅ Jendela wizard terbuka tanpa crash | Klik "Impor Excel" di layar Guru → jendela "Impor Excel Guru" tampil normal (langkah 1 "Analisis"). Pemilihan berkas lewat dialog Open bawaan Windows tidak dituntaskan (otomasi dialog native OS di luar kendali kode aplikasi, bukan risiko bug aplikasi) — jalur `AnalisisBerkas`/impor sendiri sudah tercakup pengujian otomatis (`KoreksiTugas7Tests`, dkk.), fokus smoke-test ini adalah memastikan JENDELA-nya sendiri tidak crash saat dibuka, dan itu sudah terkonfirmasi. |
 | 2026-09-19 (percobaan 3) | Regresi penuh | ✅ 333/333 unit test tetap hijau | Tidak ada satu pun dari 5 lokasi yang diperbaiki tertangkap unit test manapun — mengonfirmasi celah nyata dalam cakupan pengujian otomatis untuk BINDING XAML (baru bisa diketahui lewat smoke-test `.exe` sungguhan), bukan berarti perbaikannya merusak sesuatu yang sebelumnya teruji. |
+| 2026-09-19 (bug windowing pasca serah terima) | 9 (Windowing Controls) | ❌ Gagal — **ditemukan & diperbaiki dalam sesi yang sama** | TU melaporkan tidak bisa Minimize/Close lewat tombol standar. Akar masalah: `ResizeMode="NoResize"` di `LoginWindow`/`WizardInstalasiWindow` menyembunyikan tombol Minimize SEKALIGUS Maximize (perilaku bawaan WPF), dan semua dialog memakai `WindowStyle="ToolWindow"` (title bar mini tak lazim). Diperbaiki: Login/Wizard → `ResizeMode="CanMinimize"` (Minimize aktif, Maximize tampil non-aktif — WPF tidak punya mode "Minimize tanpa Maximize sama sekali"); MainWindow → `ResizeMode="CanResize"` + `WindowState="Maximized"` + `Icon`/`Title` dinamis (logo & nama sekolah, sebelumnya tak ada sama sekali); 11 dialog → `WindowStyle="SingleBorderWindow"` + `ShowInTaskbar="False"` (dari `ToolWindow`). |
+| 2026-09-19 (bug windowing) | 9, langkah tutup Wizard lewat X di langkah 6 | ❌ Gagal — **ditemukan & diperbaiki dalam sesi yang sama, TIDAK terkait bug di atas** | Wizard tidak punya tombol Batal terpisah — semula X di langkah manapun langsung menutup tanpa konfirmasi. Ditambahkan `Closing` + `MessageBox` "Batalkan instalasi?" (langkah 1-5); langkah 6 (setelah "Selesaikan Instalasi", data sudah tertulis) sengaja dilewatkan. Percobaan pertama: mengisi `DialogResult` langsung di dalam `Closing` melempar `InvalidOperationException` yang diserap DIAM-DIAM oleh WPF di batas WndProc — X jadi tidak bereaksi sama sekali TANPA crash terlihat sama sekali (baru ketahuan lewat log diagnostik sementara, event log Windows kosong). Diperbaiki dengan `e.Cancel = true` + `Dispatcher.BeginInvoke(() => { DialogResult = true; Close(); })` — dikonfirmasi lewat log bahwa urutan Closing→cancel→BeginInvoke→Closing ulang (DialogResult sudah true)→Close berjalan tepat seperti dirancang, lanjut ke `LoginWindow`, proses tetap hidup. |
+| 2026-09-19 (bug windowing, setelah perbaikan) | 9 (lengkap) | ✅ Lulus | Diverifikasi lewat `.exe` publish sungguhan dengan `WindowPattern` UI Automation + `WM_SYSCOMMAND`/`SC_CLOSE` asli (simulasi paling setia klik X sungguhan — `WindowPattern.Close()` COM terbukti TIDAK selalu memicu `Closing` secara andal di lingkungan ini, jangan dipakai lagi untuk uji serupa di masa depan): Login (`CanMinimize=True`/`CanMaximize=False`, Minimize/Restore OK), MainWindow (`CanMinimize=True`/`CanMaximize=True`, terbuka Maximized, siklus Minimize/Maximize/Restore penuh OK, judul "Absensi - SMP Final Test" mengikuti sekolah sungguhan, tutup X mematikan aplikasi), Wizard langkah 1 (konfirmasi Tidak→tetap terbuka, Ya→keluar total) dan langkah 6 (langsung ke Login tanpa konfirmasi). Dialog modal tidak diuji klik manual satu-satu (deklaratif murni, pola sama seperti yang sudah terverifikasi) karena sesi sempat terganggu aktivitas latar tak terduga di desktop bersama. 336/336 unit test tetap hijau (+3 baru untuk `Logo`/`TitleJendela`). |

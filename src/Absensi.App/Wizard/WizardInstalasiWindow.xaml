@@ -5,8 +5,9 @@
         Title="Instalasi Pertama — Absensi"
         Height="640" Width="720"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize"
+        ResizeMode="CanMinimize"
         WindowStyle="SingleBorderWindow"
+        Closing="Window_Closing"
         Background="{StaticResource KertasBrush}">
 
     <Window.Resources>
