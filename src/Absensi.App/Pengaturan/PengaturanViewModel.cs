@@ -49,11 +49,18 @@ public sealed class PengaturanViewModel : ObservableObject
         SimpanJadwalCommand = new RelayCommand(SimpanJadwal, () => BolehMengubah);
         SimpanBotCommand = new RelayCommand(SimpanBot, () => BolehMengubah);
         RestoreCommand = new RelayCommand<BerkasBackupTampilan>(Restore, _ => BolehMengubah);
+        Akun = new AkunViewModel(connection, akun, penyediaWaktu);
 
         MuatJadwal();
         MuatBot();
         MuatDaftarBackup();
     }
+
+    // RENCANA-TUGAS.md Tugas 14 — sub-tab "Akun" (Pengaturan → Akun).
+    // Wali kelas tidak diberi tab ini sama sekali (PengaturanView.xaml
+    // menyembunyikan TabItem-nya lewat AkunViewModel.BolehAkses) — bukan
+    // hanya menonaktifkan tombol di dalamnya.
+    public AkunViewModel Akun { get; }
 
     // PRD §18.4 langkah 2: "restore hanya dapat dilakukan akun berwenang
     // penuh" — pemanggil (App.xaml.cs) menutup koneksi dan aplikasi setelah

@@ -18,6 +18,9 @@ obj/
 /logs/
 /backup/
 
+## Hasil `dotnet publish` (Tugas 14) — build output, bukan kode sumber.
+/publish/
+
 ## Sistem operasi
 Thumbs.db
 .DS_Store

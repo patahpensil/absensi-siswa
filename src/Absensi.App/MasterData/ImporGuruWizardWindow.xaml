@@ -87,15 +87,22 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,16"
                     Visibility="{Binding SudahDianalisis, Converter={StaticResource BoolKeVisibilitas}}">
             <TextBlock Style="{StaticResource TeksUtamaStyle}">
-                <Run Text="{Binding JumlahBaru}" FontWeight="SemiBold" /><Run Text=" baru" />
+                <Run Text="{Binding JumlahBaru, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" baru" />
             </TextBlock>
             <TextBlock Text=" · " Style="{StaticResource TeksUtamaStyle}" />
             <TextBlock Style="{StaticResource TeksUtamaStyle}">
-                <Run Text="{Binding JumlahDiperbarui}" FontWeight="SemiBold" /><Run Text=" diperbarui" />
+                <Run Text="{Binding JumlahDiperbarui, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" diperbarui" />
             </TextBlock>
             <TextBlock Text=" · " Style="{StaticResource TeksUtamaStyle}" />
             <TextBlock Style="{StaticResource TeksUtamaStyle}">
-                <Run Text="{Binding JumlahBermasalah}" FontWeight="SemiBold" Foreground="{StaticResource AlpaDitolakTeksBrush}" /><Run Text=" bermasalah" />
+                <!-- Mode=OneWay wajib di ketiga Run ini: Run.Text TwoWay
+                     secara bawaan, tapi JumlahBaru/Diperbarui/Bermasalah
+                     tidak punya setter — tanpa ini WPF melempar
+                     InvalidOperationException begitu jendela pertama kali
+                     resize/layout (ditemukan lewat smoke-test .exe Tugas 14,
+                     bug lama sejak Tugas 7, tidak tertangkap unit test
+                     karena tak ada yang benar-benar merender XAML ini). -->
+                <Run Text="{Binding JumlahBermasalah, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource AlpaDitolakTeksBrush}" /><Run Text=" bermasalah" />
             </TextBlock>
         </StackPanel>
 

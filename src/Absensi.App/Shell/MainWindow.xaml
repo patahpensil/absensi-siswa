@@ -20,6 +20,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Ellipse Grid.Column="0"
@@ -37,6 +38,17 @@
                            Text="{Binding TahunAjaranAktif}"
                            Style="{StaticResource LabelHeaderStyle}"
                            VerticalAlignment="Center" />
+
+                <!-- Tugas 14: App.xaml ShutdownMode="OnExplicitShutdown" —
+                     tombol ini satu-satunya jalur menu untuk keluar (jendela
+                     ini juga menutup aplikasi bila ditutup lewat tombol X,
+                     lihat MainWindow.xaml.cs). -->
+                <Button Grid.Column="3"
+                        Content="Keluar"
+                        Style="{StaticResource TombolTeksStyle}"
+                        Foreground="{StaticResource PutihBrush}"
+                        Command="{Binding KeluarCommand}"
+                        Margin="16,0,0,0" />
             </Grid>
         </Border>
 

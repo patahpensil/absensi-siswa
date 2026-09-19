@@ -19,4 +19,12 @@
     <Version>0.1.0</Version>
   </PropertyGroup>
 
+  <!-- Tugas 14 — hanya untuk build Release/publish yang dikirim ke sekolah:
+       tanpa .pdb (debug symbol tidak berguna untuk TU, sekadar menambah
+       ukuran folder terkirim). Build Debug sehari-hari tetap dapat .pdb
+       untuk debugging di IDE. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
 </Project>

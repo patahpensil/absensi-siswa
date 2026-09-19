@@ -1,10 +1,17 @@
 <UserControl x:Class="Absensi.App.Pengaturan.PengaturanView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pengaturan="clr-namespace:Absensi.App.Pengaturan">
 
-    <StackPanel Margin="{StaticResource PaddingTepiHalaman}">
-        <TextBlock Text="Pengaturan" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
+    <DockPanel Margin="{StaticResource PaddingTepiHalaman}">
+        <TextBlock DockPanel.Dock="Top" Text="Pengaturan" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
 
+        <!-- RENCANA-TUGAS.md Tugas 14: sub-tab "Akun" ditambahkan di sini.
+             Disembunyikan sepenuhnya untuk wali kelas (bukan hanya tombol
+             di dalamnya) — PRD §3: "tidak bisa akses menu ini sama sekali". -->
+        <TabControl>
+        <TabItem Header="Umum">
+    <StackPanel Margin="16,16,0,0">
         <!-- PRD §16.6 langkah 2: "Admin memasukkan token bot dan username
              bot di menu Pengaturan" (Tugas 10). Identitas sekolah/tahun
              ajaran/backup menunggu Tugas masing-masing. -->
@@ -109,4 +116,11 @@
             </StackPanel>
         </Border>
     </StackPanel>
+        </TabItem>
+
+        <TabItem Header="Akun" Visibility="{Binding Akun.BolehAkses, Converter={StaticResource BoolKeVisibilitas}}">
+            <pengaturan:AkunView DataContext="{Binding Akun}" />
+        </TabItem>
+        </TabControl>
+    </DockPanel>
 </UserControl>

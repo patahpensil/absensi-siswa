@@ -17,6 +17,19 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App;
 
+// Tugas 14 (pengerasan): App.xaml mengatur ShutdownMode="OnExplicitShutdown"
+// — WPF TIDAK LAGI mematikan aplikasi otomatis begitu jendela terakhir
+// tertutup. Sebelum ini, wizard instalasi pertama (Tugas 13) menabrak
+// bawaan WPF ShutdownMode="OnLastWindowClose": begitu jendela wizard
+// tertutup, WPF mendeteksi nol jendela terbuka dan langsung mematikan
+// Application SEBELUM baris kode di bawah sempat membuka LoginWindow —
+// aplikasi keluar diam-diam tanpa pernah menampilkan layar Masuk. Celah ini
+// tidak pernah muncul sebelum Tugas 13 karena LoginWindow dulu selalu jadi
+// jendela PERTAMA yang dibuka (tidak pernah ada momen "nol jendela terbuka"
+// di tengah OnStartup). Konsekuensinya sekarang: SETIAP titik yang memang
+// harus mengakhiri aplikasi wajib memanggil Shutdown() secara eksplisit
+// (lihat titik-titik itu di bawah dan di MainWindow.xaml.cs) — tidak ada
+// lagi jaring pengaman otomatis dari WPF.
 public partial class App : Application
 {
     private readonly IPenyediaWaktu _penyediaWaktu = new PenyediaWaktuSistem();

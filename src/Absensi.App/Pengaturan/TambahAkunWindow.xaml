@@ -1,0 +1,55 @@
+<Window x:Class="Absensi.App.Pengaturan.TambahAkunWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tambah Akun"
+        Height="480" Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="ToolWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">
+        <StackPanel>
+            <TextBlock Text="Tambah Akun" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Peran" Style="{StaticResource LabelKolomStyle}" />
+            <ComboBox ItemsSource="{Binding PeranTersedia}"
+                      SelectedItem="{Binding PeranTerpilih}"
+                      DisplayMemberPath="Teks"
+                      Height="{StaticResource TinggiKontrol}"
+                      Margin="0,0,0,16" />
+
+            <TextBlock Text="Username" Style="{StaticResource LabelKolomStyle}" />
+            <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+
+            <TextBlock Text="Sandi" Style="{StaticResource LabelKolomStyle}" />
+            <PasswordBox x:Name="KolomSandi" Style="{StaticResource KolomSandiStyle}" PasswordChanged="KolomSandi_PasswordChanged" Margin="0,0,0,16" />
+
+            <TextBlock Text="Konfirmasi sandi" Style="{StaticResource LabelKolomStyle}" />
+            <PasswordBox x:Name="KolomKonfirmasiSandi" Style="{StaticResource KolomSandiStyle}" PasswordChanged="KolomKonfirmasiSandi_PasswordChanged" Margin="0,0,0,16" />
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Guru terkait" Style="{StaticResource LabelKolomStyle}" />
+                <TextBlock Text=" (wajib untuk Wali Kelas)"
+                           Style="{StaticResource LabelKolomStyle}"
+                           Visibility="{Binding GuruWajib, Converter={StaticResource BoolKeVisibilitas}}" />
+            </StackPanel>
+            <ComboBox ItemsSource="{Binding DaftarGuru}"
+                      SelectedItem="{Binding GuruTerpilih}"
+                      DisplayMemberPath="Nama"
+                      Height="{StaticResource TinggiKontrol}"
+                      Margin="0,0,0,16" />
+
+            <TextBlock Text="{Binding PesanGalat}"
+                       Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,16" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Click="TombolBatal_Click" Margin="0,0,8,0" />
+                <Button Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

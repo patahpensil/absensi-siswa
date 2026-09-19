@@ -107,19 +107,26 @@
                 <TextBlock Text="{Binding KartuTerpilih.Identitas, StringFormat='Identitas: {0}'}" Margin="0,0,0,4" />
                 <TextBlock Text="{Binding KartuTerpilih.Kelas, StringFormat='Kelas: {0}'}" Margin="0,0,0,8"
                            Visibility="{Binding KartuTerpilih.Kelas, Converter={StaticResource NullKeVisibilitas}}" />
+                <!-- Mode=OneWay di seluruh Run di bawah: Run.Text TwoWay
+                     bawaan; RekapKehadiran (record positional) punya
+                     properti { get; init; } yang WPF bisa "tulis" lewat
+                     refleksi tanpa melempar galat seperti properti
+                     get-only murni, tapi tetap tidak seharusnya bisa
+                     ditulis dari tampilan — dikunci eksplisit demi
+                     konsistensi dengan perbaikan Run.Text lain di Tugas 14. -->
                 <TextBlock Margin="0,0,0,16">
-                    <Run Text="Hadir" /><Run Text="{Binding KartuTerpilih.Rekap.Hadir}" />
-                    <Run Text=" · Sakit" /><Run Text="{Binding KartuTerpilih.Rekap.Sakit}" />
-                    <Run Text=" · Izin" /><Run Text="{Binding KartuTerpilih.Rekap.Izin}" />
-                    <Run Text=" · Alpa" /><Run Text="{Binding KartuTerpilih.Rekap.Alpa}" />
-                    <Run Text=" · Terlambat" /><Run Text="{Binding KartuTerpilih.Rekap.Terlambat}" />
-                    <Run Text=" · Bolos" /><Run Text="{Binding KartuTerpilih.Rekap.Bolos}" />
-                    <Run Text=" · Tidak lengkap" /><Run Text="{Binding KartuTerpilih.Rekap.TidakLengkap}" />
-                    <Run Text=" · Dinas luar" /><Run Text="{Binding KartuTerpilih.Rekap.DinasLuar}" />
-                    <Run Text=" · Cuti" /><Run Text="{Binding KartuTerpilih.Rekap.Cuti}" />
+                    <Run Text="Hadir" /><Run Text="{Binding KartuTerpilih.Rekap.Hadir, Mode=OneWay}" />
+                    <Run Text=" · Sakit" /><Run Text="{Binding KartuTerpilih.Rekap.Sakit, Mode=OneWay}" />
+                    <Run Text=" · Izin" /><Run Text="{Binding KartuTerpilih.Rekap.Izin, Mode=OneWay}" />
+                    <Run Text=" · Alpa" /><Run Text="{Binding KartuTerpilih.Rekap.Alpa, Mode=OneWay}" />
+                    <Run Text=" · Terlambat" /><Run Text="{Binding KartuTerpilih.Rekap.Terlambat, Mode=OneWay}" />
+                    <Run Text=" · Bolos" /><Run Text="{Binding KartuTerpilih.Rekap.Bolos, Mode=OneWay}" />
+                    <Run Text=" · Tidak lengkap" /><Run Text="{Binding KartuTerpilih.Rekap.TidakLengkap, Mode=OneWay}" />
+                    <Run Text=" · Dinas luar" /><Run Text="{Binding KartuTerpilih.Rekap.DinasLuar, Mode=OneWay}" />
+                    <Run Text=" · Cuti" /><Run Text="{Binding KartuTerpilih.Rekap.Cuti, Mode=OneWay}" />
                     <LineBreak />
-                    <Run Text="Kehadiran " /><Run Text="{Binding KartuTerpilih.Rekap.Persentase, StringFormat={}{0:0.0}%}" />
-                    <Run Text=" dari " /><Run Text="{Binding KartuTerpilih.Rekap.HariEfektif}" /><Run Text=" hari efektif" />
+                    <Run Text="Kehadiran " /><Run Text="{Binding KartuTerpilih.Rekap.Persentase, Mode=OneWay, StringFormat={}{0:0.0}%}" />
+                    <Run Text=" dari " /><Run Text="{Binding KartuTerpilih.Rekap.HariEfektif, Mode=OneWay}" /><Run Text=" hari efektif" />
                 </TextBlock>
 
                 <TextBlock Text="Rincian hari tidak hadir dan terlambat" Style="{StaticResource LabelKolomStyle}" Margin="0,0,0,4" />

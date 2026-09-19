@@ -71,12 +71,21 @@ public sealed class MainWindowViewModel : ObservableObject
         _menuAktif = MenuItems[0];
         BukaGerbangCommand = new RelayCommand(() => BukaGerbangDiminta?.Invoke(this, EventArgs.Empty));
         BukaRegistrasiKartuCommand = new RelayCommand(() => BukaRegistrasiKartuDiminta?.Invoke(this, EventArgs.Empty));
+        KeluarCommand = new RelayCommand(() => KeluarDiminta?.Invoke(this, EventArgs.Empty));
         PerbaruiKontenAktif();
     }
 
     public event EventHandler? BukaGerbangDiminta;
 
     public event EventHandler? BukaRegistrasiKartuDiminta;
+
+    // Tugas 14 — App.xaml sekarang ShutdownMode="OnExplicitShutdown" (lihat
+    // catatan di App.xaml.cs), jadi menutup jendela utama TIDAK LAGI
+    // otomatis mematikan aplikasi. MainWindow.xaml.cs memanggil
+    // Application.Current.Shutdown() dari event Closed-nya sendiri (jadi
+    // berlaku juga saat jendela ditutup lewat tombol X, tidak hanya lewat
+    // tombol Keluar ini).
+    public event EventHandler? KeluarDiminta;
 
     // RENCANA-TUGAS.md Tugas 13 — PRD §18.4: diteruskan dari PengaturanViewModel.
     // App.xaml.cs yang menutup koneksi, menimpa berkas database, dan menutup
@@ -95,6 +104,8 @@ public sealed class MainWindowViewModel : ObservableObject
     public RelayCommand BukaGerbangCommand { get; }
 
     public RelayCommand BukaRegistrasiKartuCommand { get; }
+
+    public RelayCommand KeluarCommand { get; }
 
     public string MenuAktif
     {

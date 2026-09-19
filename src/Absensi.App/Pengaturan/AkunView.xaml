@@ -1,0 +1,65 @@
+<UserControl x:Class="Absensi.App.Pengaturan.AkunView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel Margin="16,16,0,0">
+        <TextBlock Text="Akun" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+        <TextBlock Text="Kepala Sekolah bisa membuat akun Admin dan Wali Kelas. Admin hanya bisa membuat akun Wali Kelas (PRD §3.1)."
+                   Style="{StaticResource TeksUtamaStyle}"
+                   Foreground="{StaticResource AbuTulisBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,16" />
+
+        <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarAkun}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="160" />
+                <DataGridTextColumn Header="Peran" Binding="{Binding TeksPeran}" Width="140" />
+                <DataGridTextColumn Header="Guru terkait" Binding="{Binding GuruTerkait}" Width="180" />
+                <!-- Mode=OneWay wajib: AkunDaftarTampilan.Aktif tidak
+                     punya setter (dibungkus AkunDaftar, Absensi.Data) —
+                     tanpa ini, DataGridCheckBoxColumn bawaannya TwoWay dan
+                     WPF melempar InvalidOperationException saat kolom ini
+                     pertama kali dirender (ditemukan lewat smoke-test .exe,
+                     bukan unit test — tidak ada satu pun test yang benar-
+                     benar merender XAML ini). -->
+                <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Aktif, Mode=OneWay}" Width="60" />
+                <DataGridTemplateColumn Header="" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Reset sandi"
+                                        Style="{StaticResource TombolTeksStyle}"
+                                        Command="{Binding DataContext.ResetSandiCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Margin="0,0,8,0" />
+                                <Button Content="Nonaktifkan"
+                                        Style="{StaticResource TombolTeksStyle}"
+                                        Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Visibility="{Binding Aktif, Converter={StaticResource BoolKeVisibilitas}}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Text="{Binding PesanGalat}"
+                   Style="{StaticResource PesanSalahKolomStyle}"
+                   Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                   TextWrapping="Wrap"
+                   Margin="0,8,0,0" />
+
+        <TextBlock Text="{Binding PesanStatus}"
+                   Style="{StaticResource TeksUtamaStyle}"
+                   Foreground="{StaticResource HadirTeksBrush}"
+                   Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
+                   Margin="0,8,0,0" />
+
+        <Button Content="Tambah Akun"
+                Style="{StaticResource TombolUtamaStyle}"
+                Command="{Binding TambahAkunCommand}"
+                HorizontalAlignment="Right"
+                Margin="0,16,16,0" />
+    </StackPanel>
+</UserControl>

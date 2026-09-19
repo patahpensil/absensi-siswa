@@ -123,7 +123,16 @@
                                         <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
                                     </Style>
                                 </TextBlock.Style>
-                                <Run Text="{Binding TeksStatus}" /><Run Text=" · " /><Run Text="{Binding TeksJam}" />
+                                <!-- Mode=OneWay wajib: Run.Text TwoWay secara
+                                     bawaan, tapi TeksStatus/TeksJam
+                                     (KartuTapViewModel) tidak punya setter —
+                                     tanpa ini WPF crash total begitu KARTU
+                                     PERTAMA DI-TAP (ditemukan lewat
+                                     smoke-test .exe Tugas 14; bug sejak
+                                     Tugas 6, tidak tertangkap unit test
+                                     karena tak ada yang benar-benar
+                                     merender XAML ini). -->
+                                <Run Text="{Binding TeksStatus, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TeksJam, Mode=OneWay}" />
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -145,12 +154,14 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource KartuGerbangRingkasStyle}">
+                            <!-- Mode=OneWay wajib di ketiganya — lihat catatan
+                                 di ItemTemplate kartu besar di atas. -->
                             <TextBlock Style="{StaticResource TeksUtamaStyle}" Foreground="{StaticResource PutihBrush}">
-                                <Run Text="{Binding Nama}" FontWeight="SemiBold" />
+                                <Run Text="{Binding Nama, Mode=OneWay}" FontWeight="SemiBold" />
                                 <Run Text=" · " />
-                                <Run Text="{Binding TeksStatus}" />
+                                <Run Text="{Binding TeksStatus, Mode=OneWay}" />
                                 <Run Text=" · " />
-                                <Run Text="{Binding TeksJam}" />
+                                <Run Text="{Binding TeksJam, Mode=OneWay}" />
                             </TextBlock>
                         </Border>
                     </DataTemplate>

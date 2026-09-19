@@ -65,6 +65,58 @@ public sealed class RepositoriAkun
         return Convert.ToInt32(commandId.ExecuteScalar());
     }
 
+    // RENCANA-TUGAS.md Tugas 14 — layar Manajemen Akun (Pengaturan → Akun).
+    // LEFT JOIN guru supaya akun Admin tanpa guru_id (opsional untuknya)
+    // tetap tampil, bukan hilang dari daftar.
+    public IReadOnlyList<AkunDaftar> DaftarSemua(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT akun.id, akun.username, akun.peran, akun.guru_id, guru.nama, akun.aktif
+            FROM akun
+            LEFT JOIN guru ON guru.id = akun.guru_id
+            ORDER BY akun.username;
+            """;
+
+        using var reader = command.ExecuteReader();
+        var daftar = new List<AkunDaftar>();
+        while (reader.Read())
+        {
+            daftar.Add(new AkunDaftar(
+                Id: reader.GetInt32(0),
+                Username: reader.GetString(1),
+                Peran: PemetaanEnum.PeranDariTeks(reader.GetString(2)),
+                GuruId: reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                NamaGuru: reader.IsDBNull(4) ? null : reader.GetString(4),
+                Aktif: reader.GetInt32(5) == 1));
+        }
+
+        return daftar;
+    }
+
+    // Hanya dipanggil lewat Absensi.Data.Akun.LayananAkun — bukan
+    // penghapusan (CLAUDE.md §4.2 aturan 8), sesuai pola nonaktifkan siswa
+    // guru/kartu di tugas-tugas sebelumnya.
+    public void Nonaktifkan(SqliteConnection connection, SqliteTransaction transaction, int id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "UPDATE akun SET aktif = 0 WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
+    // Hanya dipanggil lewat Absensi.Data.Akun.LayananAkun.
+    public void PerbaruiSandi(SqliteConnection connection, SqliteTransaction transaction, int id, string sandiHashBaru)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "UPDATE akun SET sandi_hash = $sandiHash WHERE id = $id;";
+        command.Parameters.AddWithValue("$sandiHash", sandiHashBaru);
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
     private static AkunTersimpan Petakan(SqliteDataReader reader) => new(
         Id: reader.GetInt32(0),
         Username: reader.GetString(1),
@@ -73,3 +125,5 @@ public sealed class RepositoriAkun
         GuruId: reader.IsDBNull(4) ? null : reader.GetInt32(4),
         Aktif: reader.GetInt32(5) == 1);
 }
+
+public sealed record AkunDaftar(int Id, string Username, PeranAkun Peran, int? GuruId, string? NamaGuru, bool Aktif);
