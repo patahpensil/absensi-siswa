@@ -194,7 +194,7 @@ public sealed class PengaturanViewModel : ObservableObject
 
         if (!TimeOnly.TryParse(teks, out var jam))
         {
-            PesanGalat = $"{namaHari}: format {namaKolom} tidak valid — pakai HH:mm, misalnya 07:30.";
+            PesanGalat = $"{namaHari}: format {namaKolom} tidak valid. Gunakan format 24 jam HH:mm.";
             return false;
         }
 
