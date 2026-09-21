@@ -417,6 +417,14 @@ System.Security.Cryptography.AuthenticationTagMismatchException: The computed au
 
 Tidak tersentuh (sesuai batasan eksplisit sesi ini): database, `TerapkanRestore`/`SelesaikanRestoreDanTutup`, Wizard (kode — hanya DIPAKAI lewat UI untuk pengujian, tidak diubah), XAML/UI mana pun, `TODO-VERSI-BERIKUTNYA.md`, `BACKLOG-REDESAIN-UIUX.md`, `PANDUAN-UI-UX.md`. Tidak ada commit dibuat.
 
+### 6.7.7 Penutupan Item 6 / Master Bug & UI/UX Register A-13 (2026-09-22)
+
+**Status akhir: DITERIMA SEBAGAI BATAS VERIFIKASI — bukan diperbaiki lewat coding, bukan diverifikasi dinamis penuh.** Dicatat di sini tanpa mengubah satu kata pun di §4.3/§6.7.5/§8 di atas — bagian ini murni menambahkan kesimpulan atas apa yang sudah tertulis, bukan menulis ulang temuan lama.
+
+Audit ulang (2026-09-22) mengonfirmasi: **Tahap D (§8) TIDAK memicu kondisi reentrant** yang jadi alasan flag `_sedangMenanganiGalatFatal` ada. Reproduksi D-2 di §8 membuktikan alur NORMAL satu-episode-crash menghasilkan satu dialog — itu benar dan berguna, tapi mekanismenya berbeda dari yang dijaga flag ini: `AppDomain.UnhandledException` (handler KEDUA pada rantai D-2) secara desain **tidak pernah** menampilkan `MessageBox` sama sekali (§4.3, "TIDAK ADA MessageBox"), independen dari flag apa pun — jadi "tanpa dialog berulang" yang teramati §8 tidak membuktikan flag-nya bekerja, hanya membuktikan sesuatu yang sudah pasti benar by design. Skenario sempit yang sebenarnya perlu diamati — `DispatcherUnhandledException` terpanggil ulang selagi memproses exception SEBELUMNYA (mis. `MessageBox.Show` sendiri memicu dispatch exception baru sebelum yang pertama selesai) — **tidak pernah terjadi di Tahap D maupun sesi manapun sesudahnya**, dan tetap hanya diverifikasi lewat pembacaan kode, persis seperti status yang dicatat §6.7.5.
+
+Kondisi ini dinilai sangat jarang, tidak punya jalur reproduksi alami yang aman untuk dipicu tanpa mengarang skenario buatan (larangan yang sama seperti §6.7.5), dan bukan bug perilaku yang dialami pengguna. **Tidak ada perubahan kode atau test yang dilakukan untuk menutup item ini.** Verifikasi dinamis atas skenario reentrant tetap terbuka secara oportunistik — hanya dilakukan kalau kondisi itu suatu saat benar-benar teramati sendiri di aplikasi berjalan, bukan dipaksakan. Rincian lengkap: `docs/MASTER-BUG-UIUX-REGISTER.md` A-13.
+
 ---
 
 ## 7. Daftar Bug — sumber `BUG-REPORT-UAT-2026-09-20.md`
