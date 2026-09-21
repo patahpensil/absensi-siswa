@@ -171,4 +171,117 @@ public sealed class ImporGuruExcelTests
             File.Delete(path);
         }
     }
+
+    // A-12 (Master Bug & UI/UX Register, docs/PRD.md §16.2 langkah 3):
+    // template Excel siap-isi, header dari ImporGuruExcel.KolomBaku --
+    // assert di bawah membandingkan ke KolomBaku itu sendiri (sumber
+    // kebenaran), bukan menyalin ulang daftar kolom sebagai literal baru.
+
+    [Fact]
+    public void BuatTemplate_HasilTidakKosong()
+    {
+        var isi = _importir.BuatTemplate();
+
+        Assert.NotEmpty(isi);
+    }
+
+    [Fact]
+    public void BuatTemplate_BisaDibukaUlangSebagaiWorkbookValid()
+    {
+        var isi = _importir.BuatTemplate();
+
+        using var stream = new MemoryStream(isi);
+        using var workbook = new XLWorkbook(stream);
+
+        Assert.Single(workbook.Worksheets);
+    }
+
+    [Fact]
+    public void BuatTemplate_SatuWorksheetBernamaGuru()
+    {
+        var isi = _importir.BuatTemplate();
+
+        using var stream = new MemoryStream(isi);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = Assert.Single(workbook.Worksheets);
+
+        Assert.Equal("Guru", worksheet.Name);
+    }
+
+    [Fact]
+    public void BuatTemplate_HeaderSamaPersisKolomBaku()
+    {
+        var isi = _importir.BuatTemplate();
+
+        using var stream = new MemoryStream(isi);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheets.Single();
+
+        var headerAktual = Enumerable.Range(1, ImporGuruExcel.KolomBaku.Count)
+            .Select(kolom => worksheet.Cell(1, kolom).GetString())
+            .ToArray();
+
+        Assert.Equal(ImporGuruExcel.KolomBaku, headerAktual);
+    }
+
+    // A-12: Array.AsReadOnly (bukan sekadar deklarasi tipe IReadOnlyList di
+    // atas array mentah) supaya objek RUNTIME KolomBaku sendiri menolak
+    // mutasi -- deklarasi tipe saja hanya membatasi di compile time.
+    [Fact]
+    public void KolomBaku_TidakBisaDimutasiSecaraRuntime()
+    {
+        var asli = ImporGuruExcel.KolomBaku.ToArray();
+
+        Assert.IsNotType<string[]>(ImporGuruExcel.KolomBaku);
+
+        var sebagaiIList = (IList<string>)ImporGuruExcel.KolomBaku;
+        Assert.True(sebagaiIList.IsReadOnly);
+
+        Assert.Throws<NotSupportedException>(() => sebagaiIList[0] = "DIUBAH");
+        Assert.Throws<NotSupportedException>(() => sebagaiIList.Add("KOLOM_BARU"));
+        Assert.Throws<NotSupportedException>(() => sebagaiIList.RemoveAt(0));
+
+        Assert.Equal(asli, ImporGuruExcel.KolomBaku);
+
+        using var stream = new MemoryStream(_importir.BuatTemplate());
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheets.Single();
+        var headerTemplate = Enumerable.Range(1, ImporGuruExcel.KolomBaku.Count)
+            .Select(kolom => worksheet.Cell(1, kolom).GetString())
+            .ToArray();
+
+        Assert.Equal(asli, headerTemplate);
+    }
+
+    [Fact]
+    public void BuatTemplate_TidakAdaBarisDataContoh()
+    {
+        var isi = _importir.BuatTemplate();
+
+        using var stream = new MemoryStream(isi);
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheets.Single();
+
+        Assert.Equal(1, worksheet.LastRowUsed()?.RowNumber() ?? 1);
+    }
+
+    [Fact]
+    public void BuatTemplate_LolosValidasiHeaderAnalisisTanpaFormatException()
+    {
+        using var database = new MigratedDatabase();
+        var isi = _importir.BuatTemplate();
+        var path = Path.Combine(Path.GetTempPath(), $"template-guru-uji-{Guid.NewGuid():N}.xlsx");
+        File.WriteAllBytes(path, isi);
+
+        try
+        {
+            var exception = Record.Exception(() => _importir.Analisis(database.Connection, path));
+
+            Assert.Null(exception);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

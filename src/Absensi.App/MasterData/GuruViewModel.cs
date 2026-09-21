@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using Absensi.App.Koreksi;
 using Absensi.App.Mvvm;
 using Absensi.App.RegistrasiKartu;
@@ -28,6 +29,7 @@ public sealed class GuruViewModel : ObservableObject
     private readonly int _tahunAjaranId;
     private readonly RepositoriGuru _repositoriGuru = new();
     private readonly LayananGuru _layananGuru = new();
+    private readonly ImporGuruExcel _importirGuru = new();
 
     private string _nip = string.Empty;
     private string _nama = string.Empty;
@@ -55,6 +57,7 @@ public sealed class GuruViewModel : ObservableObject
         BatalEditCommand = new RelayCommand(BatalEdit);
         NonaktifkanCommand = new RelayCommand<GuruDaftar>(Nonaktifkan);
         UnggahFotoCommand = new RelayCommand<GuruDaftar>(UnggahFoto);
+        UnduhTemplateCommand = new RelayCommand(UnduhTemplate);
         ImporExcelCommand = new RelayCommand(ImporExcel);
         ImporFotoCommand = new RelayCommand(ImporFoto);
 
@@ -97,6 +100,8 @@ public sealed class GuruViewModel : ObservableObject
     public RelayCommand<GuruDaftar> UnggahFotoCommand { get; }
 
     public RelayCommand<GuruDaftar> KartuCommand { get; }
+
+    public RelayCommand UnduhTemplateCommand { get; }
 
     public RelayCommand ImporExcelCommand { get; }
 
@@ -179,6 +184,54 @@ public sealed class GuruViewModel : ObservableObject
         dialog.ShowDialog();
         MuatUlang();
     }
+
+    // A-12 (Master Bug & UI/UX Register, docs/PRD.md §16.2 langkah 3):
+    // template diunduh sebelum Impor Excel, mengikuti urutan kerja
+    // "Unduh Template → isi berkas → Impor Excel".
+    private void UnduhTemplate()
+    {
+        var dialog = new SaveFileDialog
+        {
+            FileName = "template_import_guru.xlsx",
+            Filter = "Berkas Excel (*.xlsx)|*.xlsx",
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        SimpanTemplateKeBerkas(dialog.FileName);
+    }
+
+    // Dipisah dari UnduhTemplate supaya bisa diuji tanpa SaveFileDialog
+    // sungguhan -- pola sama seperti AnalisisBerkas (Tugas 7) dan
+    // LaporanViewModel.SimpanKeBerkas (Tugas 12). A-8: kegagalan tulis yang
+    // bisa dipulihkan pengguna (akses ditolak, berkas terkunci aplikasi
+    // lain) dipetakan ke pesan Indonesia yang jelas -- bukan ex.Message
+    // mentah -- sementara kegagalan lain dibiarkan lolos ke handler global
+    // (App.xaml.cs/PencatatGalat), bukan ditelan di sini.
+    public void SimpanTemplateKeBerkas(string path)
+    {
+        try
+        {
+            File.WriteAllBytes(path, _importirGuru.BuatTemplate());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            PesanGalat = PesanUntukKegagalanSimpanTemplate(ex);
+            return;
+        }
+
+        PesanGalat = null;
+        PesanStatus = $"Template tersimpan di {path}.";
+    }
+
+    private static string PesanUntukKegagalanSimpanTemplate(Exception ex) => ex switch
+    {
+        UnauthorizedAccessException => "Berkas tidak bisa disimpan karena akses ditolak. Pilih lokasi lain atau periksa izin berkas.",
+        IOException => "Berkas sedang dipakai aplikasi lain (mis. Excel). Tutup berkasnya, lalu coba lagi.",
+        _ => ex.Message,
+    };
 
     private void ImporExcel()
     {

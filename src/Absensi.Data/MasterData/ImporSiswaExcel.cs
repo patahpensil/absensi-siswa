@@ -15,11 +15,20 @@ namespace Absensi.Data.MasterData;
 public sealed class ImporSiswaExcel
 {
     // docs/PRD.md §5.4: sembilan kolom baku, urutan tetap.
-    private static readonly string[] KolomBaku =
+    // A-12: internal (bukan public) + IReadOnlyList (bukan string[]) --
+    // pembuat template (PembuatTemplateExcel) ada di assembly yang sama,
+    // dan test (Absensi.Data.Tests) diberi akses lewat
+    // [assembly: InternalsVisibleTo] di AssemblyInfo.cs, bukan dengan
+    // melebarkan visibilitas jadi public. Array.AsReadOnly (bukan sekadar
+    // deklarasi tipe IReadOnlyList di atas array mentah) supaya objek
+    // RUNTIME-nya sendiri (ReadOnlyCollection<T>) menolak mutasi lewat
+    // NotSupportedException walau di-cast ke IList<string> -- deklarasi
+    // tipe saja hanya membatasi di compile time, tidak di runtime.
+    internal static readonly IReadOnlyList<string> KolomBaku = Array.AsReadOnly(new[]
     {
         "NISN", "NAMA_LENGKAP", "JENIS_KELAMIN", "TEMPAT_LAHIR",
         "TANGGAL_LAHIR", "ALAMAT", "KELAS", "NAMA_ORANG_TUA", "NO_HP_ORANG_TUA",
-    };
+    });
 
     private static readonly Regex PolaTanggal = new(@"^\d{4}-\d{2}-\d{2}$", RegexOptions.Compiled);
     private static readonly Regex PolaNoHp = new(@"^\+?[0-9]{9,15}$", RegexOptions.Compiled);
@@ -43,7 +52,7 @@ public sealed class ImporSiswaExcel
         var worksheet = workbook.Worksheets.FirstOrDefault()
             ?? throw new FormatException("Berkas Excel ini tidak punya lembar kerja (sheet) sama sekali.");
 
-        for (var kolom = 0; kolom < KolomBaku.Length; kolom++)
+        for (var kolom = 0; kolom < KolomBaku.Count; kolom++)
         {
             var judul = worksheet.Cell(1, kolom + 1).GetString().Trim();
             if (!string.Equals(judul, KolomBaku[kolom], StringComparison.OrdinalIgnoreCase))
@@ -211,6 +220,10 @@ public sealed class ImporSiswaExcel
 
         return new HasilImporSiswa(ditambah, diperbarui);
     }
+
+    // A-12: template siap-isi, header persis KolomBaku -- satu sumber
+    // kebenaran yang sama dipakai Analisis di atas untuk validasi.
+    public byte[] BuatTemplate() => PembuatTemplateExcel.Bangun("Siswa", KolomBaku);
 
     private static string Teks(IXLWorksheet worksheet, int baris, int kolom) =>
         worksheet.Cell(baris, kolom).GetString().Trim();
