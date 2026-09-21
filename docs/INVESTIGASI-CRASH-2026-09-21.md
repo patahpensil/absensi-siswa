@@ -449,3 +449,36 @@ Tidak tersentuh (sesuai batasan eksplisit sesi ini): database, `TerapkanRestore`
 ### 7.4 Yang dibutuhkan untuk melanjutkan §7
 
 Isi lengkap atau path `BUG-REPORT-UAT-2026-09-20.md` — khususnya Bug #1, #2, #8, #9, #10.
+
+---
+
+## 8. Tahap D — Reproduksi Terkontrol (2026-09-21, ringkas — detail lengkap & log mentah tersimpan di luar repo, `C:\AbsensiSekolah-TahapD\catatan\`, tidak disalin ke sini)
+
+Dijalankan sesuai rancangan §5 Tahap D: baseline (hash commit `2f65f75f5c6a93c6591f3773dede83f1c269b7bc`, hash executable `1511681acdaaf82c52007d89534b0c3fc974d5c9f5011934c81429222c013cdc`), konfigurasi WER LocalDumps khusus `Absensi.App.exe` (DumpType=2, DumpCount=3, `C:\AbsensiSekolah-TahapD\dumps\`, di luar repo), lalu matriks reproduksi Kelompok 1-3.
+
+**D-2 — TERBUKTI.** Direproduksi 1× (tutup `GerbangWindow` → konfirmasi "Ya"): `InvalidOperationException` dari `Window.VerifyNotClosing()` di `GerbangWindow.OnClosing`, cocok persis dengan pola historis (Application Error `0xe0434352`→`0xc000041d`, event ".NET Runtime" Id=1026). Rantai `DispatcherUnhandledException` → `AppDomain.UnhandledException` terverifikasi dinamis lengkap: satu log per handler, satu dialog (tanpa detail teknis), proses berhenti terkendali, tanpa dialog berulang, tanpa exception kedua dari logging itu sendiri.
+
+**D-1 (`STATUS_STACK_OVERFLOW`) — BELUM TEREPRODUKSI.** Diuji menyeluruh: Impor Excel Guru (normal/kosong/format tidak valid/rusak/besar/terkunci/tutup-saat-proses/ulang 3×), Impor Excel Siswa (skenario yang sama, termasuk dengan data kolom yang benar), Laporan (data kosong dan data uji realistis, ekspor Excel/PDF, batal, ulang 3×, pindah halaman saat proses), dan pola operasional Kelompok 3 (Simpan tunggal/ganda/berulang, ubah input setelah Simpan, pindah halaman saat menyimpan, dialog berulang, validasi gagal lalu diperbaiki). Nol gejala stack overflow di seluruh cakupan ini. Tidak ada root cause yang dikarang — status tetap terbuka.
+
+## 9. Bug Baru — `GantiKartuCommand` `NullReferenceException` — **TERBUKTI — BELUM DIPERBAIKI**
+
+Ditemukan tidak sengaja selama persiapan skenario D2.18 (Tahap D), bukan bagian dari cakupan investigasi D-1/D-2 semula. **Sengaja tidak diperbaiki di sesi ini** — dijadwalkan Tahap E-2 terpisah.
+
+- **File:** `src/Absensi.App/MasterData/SiswaViewModel.cs`
+- **Lokasi:** sekitar baris 73 pada checkpoint `2f65f75` — `GantiKartuCommand = new RelayCommand<SiswaDaftar>(BukaDialogGantiKartu, s => s.PunyaKartu);`
+- **Penyebab:** predikat `CanExecute` (`s => s.PunyaKartu`) tidak menjaga kemungkinan `s == null`. `RelayCommand<T>.CanExecute` (`Mvvm/RelayCommand.cs`) melakukan `(T)parameter!` — untuk `T` bertipe referensi, cast `null` tidak melempar, sehingga predikat dipanggil dengan `s = null` dan `s.PunyaKartu` melempar `NullReferenceException`.
+- **Pemicu:** WPF `ButtonBase.UpdateCanExecute()` dapat memanggil `CanExecute(null)` secara transien saat `DataGrid` melakukan re-layout (di sini: tepat setelah `ItemsSource` berubah karena impor siswa baru), sebelum binding `CommandParameter` per baris "settle" ke instance `SiswaDaftar` yang benar.
+- **Bukti crash:** `logs/20260921.log` (3 entri `DispatcherUnhandledException`×2 + `AppDomain.UnhandledException`, semua `19:09:14`, exception & stack sama persis); Event Viewer "Application Error" (`0xe0434352`) + "Windows Error Reporting" (2 event APPCRASH) — beda dari D-2, kali ini WER penuh aktif dan menghasilkan dump.
+- **Dump:** `Absensi.App.exe.7020.dmp`, **677.026.712 byte**, SHA-256 `d1d711bf172f72a76e724621743ee28dd09db1ea5d461d1f0a98695a91ee238c`. **Disimpan di `C:\AbsensiSekolah-TahapD\dumps\`, DI LUAR repositori** — tidak pernah disalin/dipindah ke repo.
+- **Keyakinan:** TINGGI — lokasi kode, jenis exception, dan pemicu semuanya konsisten dan bisa direproduksi ulang dengan langkah yang sama (impor siswa baru → grid Siswa re-render).
+- **Rencana:** perbaikan (guard `s is not null` atau `s?.PunyaKartu ?? false`) dan pengujiannya dikerjakan di **Tahap E-2 terpisah**, tidak digabung dengan perbaikan D-2 ini.
+
+## 10. Tahap E-1 — Perbaikan D-2 (`GerbangWindow.OnClosing`) — **DITERAPKAN, MENUNGGU PERSETUJUAN COMMIT**
+
+**Ruang lingkup:** satu berkas, `src/Absensi.App/Gerbang/GerbangWindow.xaml.cs`, method `OnClosing`. Tidak ada berkas lain yang diubah untuk perbaikan ini (`SiswaViewModel`/`GantiKartuCommand`/database/Wizard/Restore/XAML/logging/Telegram/Laporan/Impor Excel semuanya tidak tersentuh).
+
+**Pola yang dipakai:** identik dengan pola Wizard cabang "Selesai" (`e2ec306`) — `Close()` yang sebelumnya dipanggil SINKRON di dalam `OnClosing` yang sedang berjalan (melanggar `Window.VerifyNotClosing()`) diganti dengan `Dispatcher.BeginInvoke(() => Close())`, dijalankan SETELAH `OnClosing` pertama selesai `return`. `OnClosing` KEDUA (dipicu `Close()` terjadwal) langsung lolos lewat cabang `_diizinkanTutup` yang sudah ada — tanpa dialog kedua, tanpa rekursi.
+
+**Guard dialog ganda:** TIDAK ditambah kode baru — `Window.ShowDialog()` (dipakai `KonfirmasiTutupWindow`) sudah otomatis men-disable window pemilik selama modal aktif (mekanisme WPF bawaan, sama seperti yang membuat cabang `MessageBox.Show` Wizard juga tidak butuh guard eksplisit), jadi permintaan tutup kedua saat dialog konfirmasi masih terbuka sudah tercegah secara native tanpa perlu ditambah apa pun.
+
+**Pengujian:** tidak ada unit test baru ditambahkan — siklus hidup `Window`/`Dispatcher` WPF sungguhan tidak bisa diuji otomatis tanpa merusak sisa test suite (keterbatasan yang sama persis dengan yang mendasari perbaikan Wizard `e2ec306`, didokumentasikan `PANDUAN-TESTER.md` baris 3, dan dikonfirmasi ulang lewat riwayat Event Viewer sesi ini yang menunjukkan percobaan test WPF `Application` sungguhan pernah membuat `testhost.exe` crash di masa lalu). Verifikasi dilakukan lewat regresi 351/351 unit test (Debug & Release) + 5 skenario manual E1.1-E1.5 pada `.exe` Release sungguhan — rincian di laporan sesi chat.

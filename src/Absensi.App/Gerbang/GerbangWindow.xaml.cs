@@ -45,8 +45,17 @@ public partial class GerbangWindow : Window
         var dialog = new KonfirmasiTutupWindow(new KonfirmasiTutupViewModel(_connection)) { Owner = this };
         if (dialog.ShowDialog() == true)
         {
+            // docs/INVESTIGASI-CRASH-2026-09-21.md — Crash D-2 (TERBUKTI):
+            // memanggil Close() sinkron di sini (masih di dalam OnClosing
+            // yang sedang berjalan untuk permintaan tutup PERTAMA) melanggar
+            // Window.VerifyNotClosing() -> InvalidOperationException lolos
+            // sampai batas WndProc. Sama persis pola bug Wizard yang sudah
+            // diperbaiki di commit e2ec306: jadwalkan Close() lewat
+            // Dispatcher.BeginInvoke supaya jalan SETELAH OnClosing ini
+            // selesai — OnClosing KEDUA (dipicu Close() terjadwal) langsung
+            // lolos lewat cabang _diizinkanTutup di atas, tanpa dialog lagi.
             _diizinkanTutup = true;
-            Close();
+            Dispatcher.BeginInvoke(() => Close());
         }
         else
         {
