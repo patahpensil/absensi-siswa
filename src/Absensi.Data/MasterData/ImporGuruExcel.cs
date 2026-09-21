@@ -18,7 +18,14 @@ public sealed class ImporGuruExcel
     public HasilAnalisisImporGuru Analisis(SqliteConnection connection, string pathBerkas)
     {
         using var workbook = new XLWorkbook(pathBerkas);
-        var worksheet = workbook.Worksheets.First();
+        // Master Bug & UI/UX Register A-8: .First() bawaan Linq melempar
+        // InvalidOperationException generik -- tipe yang sama juga bisa
+        // muncul dari kegagalan internal tak terkait (mis. state koneksi
+        // SQLite), sehingga tidak aman ditangkap berdasarkan tipe semata di
+        // pemanggil. FormatException di sini konsisten dengan validasi
+        // header di bawah -- keduanya sama-sama "berkas ini tidak valid".
+        var worksheet = workbook.Worksheets.FirstOrDefault()
+            ?? throw new FormatException("Berkas Excel ini tidak punya lembar kerja (sheet) sama sekali.");
 
         for (var kolom = 0; kolom < KolomBaku.Length; kolom++)
         {

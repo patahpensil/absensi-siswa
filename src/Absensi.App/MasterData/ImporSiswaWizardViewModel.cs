@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using Absensi.App.Mvvm;
 using Absensi.Data.Akun;
 using Absensi.Data.MasterData;
@@ -108,14 +109,43 @@ public sealed class ImporSiswaWizardViewModel : ObservableObject
             PesanGalat = null;
             LangkahSaatIni = LangkahImpor.Preview;
         }
-        catch (Exception ex)
+        // TODO-VERSI-BERIKUTNYA.md A.3.2 / Master Bug & UI/UX Register A-8:
+        // catch semula "catch (Exception ex)" terlalu luas -- menampilkan
+        // ex.Message mentah (bahasa Inggris, kadang menyingkap path berkas
+        // lengkap) untuk exception apa pun, termasuk kegagalan internal
+        // yang seharusnya tidak tertelan diam-diam. Jenis di bawah
+        // diverifikasi langsung lewat percobaan nyata terhadap ClosedXML
+        // 0.105.1 (bukan tebakan): berkas tidak ada -> FileNotFoundException
+        // (turunan IOException), berkas terkunci proses lain -> IOException,
+        // berkas 0-byte/bukan xlsx sah / 0 worksheet -> FileFormatException
+        // atau FormatException (lihat juga ImporSiswaExcel.Analisis, yang
+        // sengaja TIDAK lagi melempar InvalidOperationException generik
+        // bawaan Linq -- tipe itu tidak aman ditangkap di sini karena bisa
+        // juga berasal dari kegagalan internal tak terkait). Di luar jenis
+        // ini (mis. SqliteException dari lapisan data) dibiarkan lolos ke
+        // handler global (App.xaml.cs/PencatatGalat) yang sudah mencatat
+        // detail teknis lengkap dan menampilkan pesan generik -- bukan
+        // ditelan di sini.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
         {
             _analisis = null;
-            PesanGalat = ex.Message;
+            PesanGalat = PesanUntukKegagalanBerkas(ex);
         }
 
         NotifikasiSemuaBerubah();
     }
+
+    private static string PesanUntukKegagalanBerkas(Exception ex) => ex switch
+    {
+        FileNotFoundException => "Berkas tidak ditemukan. Pastikan lokasinya masih benar, lalu pilih berkas lagi.",
+        UnauthorizedAccessException => "Berkas tidak bisa dibaca karena akses ditolak. Periksa izin berkas, lalu coba lagi.",
+        IOException => "Berkas sedang dipakai aplikasi lain (mis. Excel). Tutup berkasnya, lalu coba lagi.",
+        FileFormatException => "Berkas ini bukan berkas Excel (.xlsx) yang sah, atau isinya rusak. Periksa kembali berkasnya.",
+        // FormatException dari validasi kolom header atau worksheet kosong
+        // (ImporSiswaExcel.Analisis) -- pesannya sendiri sudah jelas dan
+        // Bahasa Indonesia.
+        _ => ex.Message,
+    };
 
     private void Impor()
     {
