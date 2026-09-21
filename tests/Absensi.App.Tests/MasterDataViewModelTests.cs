@@ -48,6 +48,60 @@ public sealed class MasterDataViewModelTests
         Assert.False(viewModel.SimpanCommand.CanExecute(null));
     }
 
+    // Tahap E-2 (docs/INVESTIGASI-CRASH-2026-09-21.md §9): GantiKartuCommand
+    // melempar NullReferenceException saat WPF memanggil CanExecute(null)
+    // sesaat DataGrid Siswa re-layout — predikat sekarang menjaga s is not
+    // null sebelum mengakses PunyaKartu.
+    [Fact]
+    public void SiswaViewModel_GantiKartuCommand_CanExecuteNull_KembalikanFalseTanpaMelempar()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+
+        var exception = Record.Exception(() => viewModel.GantiKartuCommand.CanExecute(null));
+
+        Assert.Null(exception);
+        Assert.False(viewModel.GantiKartuCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void SiswaViewModel_GantiKartuCommand_SiswaPunyaKartu_CanExecuteTrue()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswaPunyaKartu = viewModel.Daftar.Single(s => s.Id == 1);
+
+        Assert.True(siswaPunyaKartu.PunyaKartu);
+        Assert.True(viewModel.GantiKartuCommand.CanExecute(siswaPunyaKartu));
+    }
+
+    [Fact]
+    public void SiswaViewModel_GantiKartuCommand_SiswaBelumPunyaKartu_CanExecuteFalse()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswaBelumKartu = viewModel.Daftar.Single(s => s.Nama == "Siswa Belum Satu");
+
+        Assert.False(siswaBelumKartu.PunyaKartu);
+        Assert.False(viewModel.GantiKartuCommand.CanExecute(siswaBelumKartu));
+    }
+
+    [Fact]
+    public void SiswaViewModel_GantiKartuCommand_TransisiValidNullValid_TidakMelemparDanHasilKonsisten()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswaPunyaKartu = viewModel.Daftar.Single(s => s.Id == 1);
+
+        Assert.True(viewModel.GantiKartuCommand.CanExecute(siswaPunyaKartu));
+        Assert.False(viewModel.GantiKartuCommand.CanExecute(null));
+        Assert.True(viewModel.GantiKartuCommand.CanExecute(siswaPunyaKartu));
+    }
+
     [Fact]
     public void GuruViewModel_Tambah_MunculDiDaftar()
     {

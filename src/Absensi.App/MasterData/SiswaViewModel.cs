@@ -70,7 +70,7 @@ public sealed class SiswaViewModel : ObservableObject
         // §16.11: penggantian kartu hilang hanya bermakna bila siswa sudah
         // punya kartu aktif — pendaftaran kartu pertama lewat layar
         // Registrasi Kartu per kelas (§16.5), bukan di sini.
-        GantiKartuCommand = new RelayCommand<SiswaDaftar>(BukaDialogGantiKartu, s => s.PunyaKartu);
+        GantiKartuCommand = new RelayCommand<SiswaDaftar>(BukaDialogGantiKartu, s => s is not null && s.PunyaKartu);
 
         DaftarKelasFilter.Add(SemuaKelas);
         foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))

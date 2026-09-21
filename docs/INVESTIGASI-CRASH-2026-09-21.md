@@ -482,3 +482,34 @@ Ditemukan tidak sengaja selama persiapan skenario D2.18 (Tahap D), bukan bagian 
 **Guard dialog ganda:** TIDAK ditambah kode baru — `Window.ShowDialog()` (dipakai `KonfirmasiTutupWindow`) sudah otomatis men-disable window pemilik selama modal aktif (mekanisme WPF bawaan, sama seperti yang membuat cabang `MessageBox.Show` Wizard juga tidak butuh guard eksplisit), jadi permintaan tutup kedua saat dialog konfirmasi masih terbuka sudah tercegah secara native tanpa perlu ditambah apa pun.
 
 **Pengujian:** tidak ada unit test baru ditambahkan — siklus hidup `Window`/`Dispatcher` WPF sungguhan tidak bisa diuji otomatis tanpa merusak sisa test suite (keterbatasan yang sama persis dengan yang mendasari perbaikan Wizard `e2ec306`, didokumentasikan `PANDUAN-TESTER.md` baris 3, dan dikonfirmasi ulang lewat riwayat Event Viewer sesi ini yang menunjukkan percobaan test WPF `Application` sungguhan pernah membuat `testhost.exe` crash di masa lalu). Verifikasi dilakukan lewat regresi 351/351 unit test (Debug & Release) + 5 skenario manual E1.1-E1.5 pada `.exe` Release sungguhan — rincian di laporan sesi chat.
+
+---
+
+## 11. Temuan Baru — Bug Aksesibilitas Terpisah: Rekursi Fokus WPF Lewat UI Automation — **TERBUKTI SEBAGAI BUG TERPISAH, BELUM DIPERBAIKI**
+
+Ditemukan tidak sengaja selama verifikasi manual Tahap E-2 (skenario E2.5, menutup dialog "Ganti kartu" yang didorong lewat `System.Windows.Automation` dari skrip PowerShell) — **bukan** bagian dari cakupan perbaikan `GantiKartuCommand`, dan **bukan** diagnosis ulang Crash D-1. Dump dianalisis dengan `dotnet-dump` (versi `10.0.745401`, dipasang khusus untuk sesi ini) — alat pertama dan satu-satunya yang dipakai; WinDbg **tidak** dipasang, belum diperlukan pada tahap ini.
+
+### 11.1 Fakta dari dump (terverifikasi langsung, bukan dugaan)
+
+- **Dump:** `C:\AbsensiSekolah-TahapD\dumps\Absensi.App.exe.10108.dmp`, 520.917.274 byte, SHA-256 `DBE823A1DEBC114234925CD75F8E0D3A5311C28ED819BA3C0DD83634DB01E2B4` (dihitung ulang 3× secara konsisten). Tersimpan di luar repositori, tidak dipindah/dihapus.
+- **Exception:** `System.StackOverflowException`, HResult `0x800703e9`, pada thread UI/Dispatcher utama (native OS thread `0x1a4`/420 — thread yang sama ditandai WER sebagai current/faulting).
+- **Managed stack berisi 7.973 frame.** Di dalamnya ada satu blok 14-frame WPF-internal (`KeyboardDevice.Focus` → `ChangeFocus` → `InputManager.ProcessStagingArea` → `FocusManager.OnFocusedElementChanged` → `FrameworkElement.OnGotKeyboardFocus` → `SetValueCommon` → `UpdateEffectiveValue` → `NotifyPropertyChange` → `OnPropertyChanged` ×2 varian → `EventRoute.InvokeHandlersImpl` → `RaiseEventImpl` → kembali ke `KeyboardDevice.Focus`) yang **berulang persis 522-523 kali**, seluruhnya kode `System.Windows.*` — **tidak ada satu pun frame `Absensi.App` di dalam blok berulang ini.**
+- **Jalur sebelum blok berulang (dari dasar stack):** `Absensi.App.App.Main()` → `Application.RunDispatcher` (pump utama) → `ButtonAutomationPeer.<IInvokeProvider.Invoke>` → `Button.OnClick()` → `SiswaViewModel.BukaDialogGantiKartu` → `Window.ShowDialog()` (pump bersarang milik dialog) → **`MS.Internal.Automation.ElementProxy.InContextSetFocus()`** — jalur kode WPF yang hanya aktif saat **klien UI Automation eksternal** meminta `SetFocus`/`Invoke` pada elemen, bukan klik mouse/keyboard fisik biasa.
+- **Jalur setelah blok berulang (menuju puncak/titik crash):** frame `Absensi.App.RegistrasiKartu.TapKartuTunggalWindow.KolomTap_LostFocus(...)` muncul **tepat satu kali** → memanggil `UIElement.Focus()` → `MS.Internal.Interop.TipTsfHelper.Show(...)` → `InputPane.TryShow()` (COM interop, Windows Input Panel) — di titik inilah stack benar-benar habis.
+- **Grep menyeluruh terhadap seluruh 7.973 baris stack untuk `CanExecute`, `RelayCommand`, `GantiKartuCommand`, `CommandManager` — nol hasil.** Perbaikan §12 di bawah (predikat `GantiKartuCommand`) **tidak terlibat sama sekali** dalam crash ini — dialog sudah terbuka lewat jalur `Execute` sebelum crash terjadi di langkah berikutnya.
+- Transkrip lengkap analisis (`crashinfo`, `threads`, `clrthreads`, `clrstack` penuh, `pe`, `modules`) disimpan di luar repositori: `C:\AbsensiSekolah-TahapD\catatan\analisis-dump-10108-dotnet-dump.txt`.
+
+### 11.2 Dugaan (belum terbukti, ditandai jelas sebagai dugaan)
+
+- **`KolomTap_LostFocus` BUKAN terbukti sebagai akar langsung 522 iterasi rekursi** — method ini hanya muncul **satu kali** di stack, sedangkan rekursi 522× terjadi di kode WPF internal murni sebelum mencapainya. Penjelasan paling masuk akal — **dugaan, belum diverifikasi lewat pemeriksaan objek per frame** — adalah pertarungan fokus antara permintaan `SetFocus` UI Automation dan pola "selalu fokuskan ulang kolom tap" yang sudah dipakai di tiga jendela (`GerbangWindow`/`RegistrasiKartuWindow`/`TapKartuTunggalWindow`, dicatat sebagai pola berisiko-belum-terbukti di §1.6 dokumen ini). Mekanisme PERSIS mengapa WPF-internal reentrant 522× sebelum mencapai kode aplikasi **tidak dibuktikan** pada sesi ini.
+- Dampak nyata bagi pengguna pembaca layar/assistive technology (yang memakai UI Automation lewat jalur identik) **masuk akal tapi belum diuji** lewat skenario aksesibilitas sungguhan.
+
+### 11.3 Klasifikasi
+
+**KHUSUS UI AUTOMATION / BUG AKSESIBILITAS TERPISAH.** Titik masuk rekursi (`ElementProxy.InContextSetFocus`) adalah jalur kode yang hanya aktif untuk klien UI Automation eksternal. **Tidak ada bukti** — baik dari dump ini maupun dari Event Log historis D-1 (yang sama sekali tidak punya stack untuk dibandingkan) — bahwa interaksi pengguna normal (mouse/keyboard langsung) menghasilkan pola yang sama.
+
+**Keputusan pemilik proyek (2026-09-21), mengikat untuk sesi-sesi berikutnya:**
+- Bug ini **TIDAK dinyatakan sebagai root cause Crash D-1**.
+- **Status D-1 tetap: BELUM TEREPRODUKSI melalui interaksi pengguna normal** — tidak berubah oleh temuan ini.
+- Bug aksesibilitas ini sendiri berstatus **TERBUKTI (sebagai gejala terpisah) — BELUM DIPERBAIKI**, dijadwalkan sebagai pekerjaan terpisah, bukan bagian Tahap E-2. Perbaikan pola fokus/`LostFocus`/`InputPane`/UI Automation eksplisit **tidak dikerjakan** pada Tahap E-2.
+- WinDbg **belum dipasang, belum diperlukan** untuk klasifikasi ini — baru relevan bila kelak dibutuhkan native stack C++ WPF atau pemeriksaan objek `DependencyObject` per frame untuk membuktikan/menyangkal dugaan di §11.2.
