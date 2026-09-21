@@ -601,7 +601,10 @@ Wizard tidak dapat dijalankan ulang setelah selesai.
 2. Admin membuka Kalender Pendidikan
    2.1  Input tanggal libur satu per satu atau per rentang
    2.2  Tandai hari kegiatan (MPLS, Sumatif) sebagai hari sekolah biasa
-3. Admin mengunduh template_import_siswa.xlsx dari folder templates/
+3. Admin mengunduh template lewat tombol "Unduh Template" pada layar Siswa
+   atau Guru — dibuatkan aplikasi saat diminta, bukan diambil dari folder
+   statis (nama berkas default: template_import_siswa.xlsx /
+   template_import_guru.xlsx)
 4. Operator mengisi template dari data sekolah
 5. Impor siswa (lihat 16.3)
 6. Impor foto (lihat 16.4)

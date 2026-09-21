@@ -70,7 +70,9 @@ Notifikasi ke orang tua dan guru dikirim lewat bot Telegram milik sekolah sendir
 
 ### Siapkan berkas Excel dulu
 
-Buat berkas Excel (`.xlsx`) dengan kolom **persis** seperti ini (huruf besar semua, urutan sesuai):
+Cara termudah: klik **"Unduh Template"** di layar **Siswa** atau **Guru**, lalu isi data sekolah ke dalamnya **tanpa mengubah nama atau urutan kolom header**. Setelah terisi, lanjut ke bagian "Impor lewat aplikasi" di bawah.
+
+Kalau membuat berkas sendiri dari nol, buat berkas Excel (`.xlsx`) dengan kolom **persis** seperti ini (huruf besar semua, urutan sesuai):
 
 **Untuk siswa** (9 kolom):
 `NISN | NAMA_LENGKAP | JENIS_KELAMIN | TEMPAT_LAHIR | TANGGAL_LAHIR | ALAMAT | KELAS | NAMA_ORANG_TUA | NO_HP_ORANG_TUA`

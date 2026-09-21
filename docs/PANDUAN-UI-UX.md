@@ -247,9 +247,9 @@ Tanda ✓ berarti rancangannya sudah dibahas; sisanya mengikuti pola komponen di
 | Dashboard ✓ | Ringkasan harian, status rekap, peringatan pairing, daftar belum tap |
 | Absensi ✓ | Status reader, mode aktif, daftar harian, tombol layar gerbang |
 | Layar gerbang ✓ | Kartu tap, ringkasan harian |
-| Siswa ✓ | Daftar, Impor Excel, Impor Foto, Mutasi |
+| Siswa ✓ | Daftar, Unduh Template, Impor Excel, Impor Foto, Mutasi |
 | Panel detail siswa ✓ | Identitas, kartu, pairing, rekap, riwayat |
-| Guru | Daftar, impor, kehadiran, penetapan status oleh kepala sekolah |
+| Guru | Daftar, Unduh Template, impor, kehadiran, penetapan status oleh kepala sekolah |
 | Kelas | Daftar kelas, tingkat, wali kelas (pilih dari daftar guru) |
 | Koreksi | Pilih kelas dan tanggal, ubah status, kolom "atas permintaan" |
 | Kalender | Tampilan bulanan, blok tanggal libur, kolom alasan |

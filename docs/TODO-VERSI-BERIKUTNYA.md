@@ -49,6 +49,7 @@ Perbaikan: buat brush "sukses"/"gagal" generik terpisah dari palet status kehadi
 ## Fitur yang PRD sebut tapi belum pernah dibangun (bukan regresi Tugas 14)
 
 - **`template_import_siswa.xlsx`** (PRD §16.2 langkah 3, folder `templates/`) — tidak pernah ada fitur unduh-template di aplikasi manapun sejak Tugas 0-14. `docs/PANDUAN-PEMASANGAN.md` sudah ditulis berdasarkan kolom yang benar-benar divalidasi kode (`ImporSiswaExcel.KolomBaku`/`ImporGuruExcel.KolomBaku`), bukan berdasar berkas template yang tidak ada. Pertimbangkan menambah tombol "Unduh Template" di layar Siswa/Guru pada versi berikutnya.
+   **STATUS: SELESAI — commit `a1862e25fb0b77f9857c7e5fdaa7ff393ae91819`.** Solusi akhir **membangkitkan template secara dinamis dari aplikasi** (bukan berkas statis di folder `templates/` seperti disebut PRD §16.2 semula) — tombol "Unduh Template" tersedia untuk **Siswa dan Guru**. Rincian di `docs/MASTER-BUG-UIUX-REGISTER.md` A-12.
 
 ## Nama aksesibilitas ComboBox "Peran" (Pengaturan → Akun → Tambah Akun)
 
