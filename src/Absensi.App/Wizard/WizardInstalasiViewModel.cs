@@ -4,6 +4,7 @@ using Absensi.App.MasterData;
 using Absensi.App.Mvvm;
 using Absensi.App.Pengaturan;
 using Absensi.Data.Backup;
+using Absensi.Data.Diagnostik;
 using Absensi.Data.Lisensi;
 using Absensi.Data.Repositori;
 using Absensi.Data.Wizard;
@@ -190,7 +191,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
         catch (Exception galat)
         {
             data = null;
-            System.Diagnostics.Debug.WriteLine($"Pengambilan backup cloud gagal: {galat}");
+            PencatatGalat.Catat(galat, sumber: "WizardInstalasiViewModel.PulihkanDariPcLama", level: "ERROR");
         }
 
         if (data is null)

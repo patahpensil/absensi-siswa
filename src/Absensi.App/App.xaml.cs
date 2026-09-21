@@ -8,6 +8,7 @@ using Absensi.App.Shell;
 using Absensi.App.Wizard;
 using Absensi.Data;
 using Absensi.Data.Backup;
+using Absensi.Data.Diagnostik;
 using Absensi.Data.Lisensi;
 using Absensi.Data.Migrations;
 using Absensi.Data.Repositori;
@@ -41,11 +42,26 @@ public partial class App : Application
     private DispatcherTimer? _penjadwalTimer;
     private LayananBackup? _layananBackup;
 
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §4.3 langkah 4: mencegah dialog
+    // galat bertumpuk/rekursi kalau MessageBox.Show di
+    // DispatcherUnhandledException sendiri memicu exception baru yang
+    // terdispatch ulang ke handler yang sama.
+    private bool _sedangMenanganiGalatFatal;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
+        // docs/INVESTIGASI-CRASH-2026-09-21.md §4.2/§4.3: didaftarkan
+        // paling awal, sebelum baris apa pun yang bisa melempar (termasuk
+        // membuka koneksi database di bawah ini), supaya exception sedini
+        // mungkin pun tertangkap dan tercatat.
+        DispatcherUnhandledException += App_DispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += App_AppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += App_UnobservedTaskException;
+
         LokasiData.PastikanFolderDataAda();
+        LokasiData.PastikanFolderLogAda();
         _connection = SqliteConnectionFactory.Open(LokasiData.PathDatabase);
         new MigrationRunner().Run(_connection);
 
@@ -118,7 +134,7 @@ public partial class App : Application
             }
             catch (Exception galat)
             {
-                System.Diagnostics.Debug.WriteLine($"Penjadwal.DetakAsync gagal: {galat}");
+                PencatatGalat.Catat(galat, sumber: "Penjadwal.DetakAsync", level: "ERROR");
             }
         };
         _penjadwalTimer.Start();
@@ -153,9 +169,80 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        DispatcherUnhandledException -= App_DispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= App_AppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException -= App_UnobservedTaskException;
+
         _penjadwalTimer?.Stop();
         _connection?.Dispose();
         base.OnExit(e);
+    }
+
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §4.3: jaring pengaman terakhir
+    // untuk exception yang lolos dari SEMUA command/event handler UI thread
+    // (mis. dugaan §2.1 — GerbangViewModel.ProsesTap yang berjalan sinkron
+    // di dalam PreviewKeyDown tanpa try/catch). Whitelist pemulihan SENGAJA
+    // kosong pada rilis pertama (§4.4) — TIDAK ADA cabang di sini yang
+    // menyatakan sebuah jenis exception "aman dilanjutkan" tanpa bukti per
+    // kasus, jadi e.Handled TIDAK PERNAH diubah jadi true oleh kode ini.
+    // Exception dibiarkan lanjut ke jalur default .NET (proses berhenti,
+    // Windows tetap mencatat APPCRASH seperti sebelumnya) — bedanya
+    // sekarang sudah ada baris log kita sendiri DENGAN stack trace sebelum
+    // proses benar-benar berhenti.
+    private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        PencatatGalat.Catat(e.Exception, sumber: "DispatcherUnhandledException", level: "FATAL");
+
+        if (_sedangMenanganiGalatFatal)
+        {
+            // Handler ini terpanggil lagi selagi exception SEBELUMNYA masih
+            // diproses (mis. MessageBox.Show di bawah sendiri memicu
+            // exception baru yang terdispatch ulang ke sini) — jangan
+            // tampilkan dialog kedua, exception baru ini tetap sudah
+            // tercatat oleh baris di atas.
+            return;
+        }
+
+        _sedangMenanganiGalatFatal = true;
+        try
+        {
+            MessageBox.Show(
+                "Aplikasi mengalami galat tak terduga dan perlu ditutup. Rincian teknis sudah dicatat di folder 'logs'. Buka kembali aplikasi untuk melanjutkan.",
+                "Absensi", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch
+        {
+            // Exception aslinya sudah tercatat di atas — kegagalan
+            // menampilkan dialog tidak boleh menggantikan/menutupi
+            // penanganan exception yang sebenarnya.
+        }
+    }
+
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §4.3: best-effort logging SAJA.
+    // TIDAK ADA MessageBox, operasi database, atau pemicuan backup di sini
+    // — proses ada kemungkinan sedang IsTerminating=true dan tidak aman
+    // menjalankan apa pun selain menulis satu baris log. API
+    // UnhandledExceptionEventArgs sendiri memang tidak punya cara
+    // membatalkan terminasi, jadi tidak ada jalur "coba lanjutkan" di sini.
+    private void App_AppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception galat)
+        {
+            PencatatGalat.Catat(galat, sumber: $"AppDomain.UnhandledException (IsTerminating={e.IsTerminating})", level: "FATAL");
+        }
+    }
+
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §4.3: exception dari Task yang
+    // tidak pernah di-await (mis. kalau suatu saat async void lain lupa
+    // try/catch sendiri seperti MulaiPenjadwal/JalankanBackupPembukaanAplikasi
+    // di atas). SetObserved() HANYA mencegah exception yang SUDAH tercatat
+    // di baris sebelumnya ikut mematikan proses lewat finalizer thread —
+    // BUKAN perbaikan akar masalah, dan bukan alasan berhenti mencari kenapa
+    // Task itu sampai tidak pernah diperiksa.
+    private void App_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        PencatatGalat.Catat(e.Exception, sumber: "TaskScheduler.UnobservedTaskException", level: "FATAL");
+        e.SetObserved();
     }
 
     // PRD §16.7 & RENCANA-TUGAS.md Tugas 3: pembukaan hari berjalan "saat
@@ -218,7 +305,7 @@ public partial class App : Application
         }
         catch (Exception galat)
         {
-            System.Diagnostics.Debug.WriteLine($"Backup pembukaan aplikasi gagal: {galat}");
+            PencatatGalat.Catat(galat, sumber: "JalankanBackupPembukaanAplikasi", level: "ERROR");
         }
     }
 

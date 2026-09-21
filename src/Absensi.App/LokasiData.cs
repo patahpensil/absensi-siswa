@@ -1,4 +1,5 @@
 using System.IO;
+using Absensi.Data.Diagnostik;
 
 namespace Absensi.App;
 
@@ -24,5 +25,15 @@ public static class LokasiData
     // tidak ikut kena rotasi/hitungan PRD §18.2.
     public static string FolderBackupCloudStub => Path.Combine(FolderBackup, "cloud-stub");
 
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §4.1: sumber kebenarannya sengaja
+    // di Absensi.Data (PencatatGalat.FolderLogBawaan), bukan didefinisikan
+    // ulang di sini — supaya Absensi.Telegram (yang tidak boleh
+    // mereferensikan Absensi.App) tetap memakai jalur yang sama persis
+    // tanpa referensi baru. Properti ini sekadar alias yang sejajar dengan
+    // FolderData/FolderBackup di atas untuk kenyamanan baca App.xaml.cs.
+    public static string FolderLog => PencatatGalat.FolderLogBawaan;
+
     public static void PastikanFolderDataAda() => Directory.CreateDirectory(FolderData);
+
+    public static void PastikanFolderLogAda() => Directory.CreateDirectory(FolderLog);
 }

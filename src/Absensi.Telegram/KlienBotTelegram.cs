@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using Absensi.Data.Diagnostik;
 
 namespace Absensi.Telegram;
 
@@ -34,12 +35,19 @@ public sealed class KlienBotTelegram : IKlienBotTelegram
             var hasil = await respons.Content.ReadFromJsonAsync<ResponsTelegram>();
             return hasil?.Ok ?? false;
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException galat)
         {
+            // TODO-VERSI-BERIKUTNYA.md A.3.1 / docs/INVESTIGASI-CRASH-2026-09-21.md
+            // §4.2: dulu ditelan tanpa jejak sama sekali — kegagalan yang
+            // MENETAP (mis. token salah permanen) tidak pernah kelihatan.
+            // Level ERROR (bukan FATAL): kegagalan satu kali kirim tidak
+            // menghentikan aplikasi, PRD §9.4 tetap "antre, coba lagi".
+            PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.KirimPesanAsync", level: "ERROR");
             return false;
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException galat)
         {
+            PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.KirimPesanAsync", level: "ERROR");
             return false;
         }
     }
@@ -67,12 +75,14 @@ public sealed class KlienBotTelegram : IKlienBotTelegram
                 .Select(u => new PembaruanTelegram(u.UpdateId, u.Message!.Chat.Id.ToString(), u.Message.Text!))
                 .ToList();
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException galat)
         {
+            PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.AmbilPembaruanAsync", level: "ERROR");
             return Array.Empty<PembaruanTelegram>();
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException galat)
         {
+            PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.AmbilPembaruanAsync", level: "ERROR");
             return Array.Empty<PembaruanTelegram>();
         }
     }
