@@ -14,6 +14,7 @@ Pesan validasi format jam memuat contoh literal `"...misalnya 07:30."`. Bukan ni
 **Berkas:** `src/Absensi.Data/Migrations/MigrationRunner.cs:46`
 
 `DateTime.UtcNow.ToString("o")` dipakai langsung untuk mengisi `skema_versi.diterapkan`, memotong `IPenyediaWaktu`. Tidak ada pengujian yang bergantung padanya saat ini. Perbaikan: `MigrationRunner.Run` menerima `IPenyediaWaktu` sebagai parameter.
+   **STATUS: DITUTUP SEBAGAI PENYIMPANGAN SENGAJA (bukan coding).** `skema_versi.diterapkan` adalah metadata audit teknis, bukan waktu bisnis — tidak pernah dibaca balik oleh kode maupun test manapun. Komentar penjelas ditambahkan langsung di `MigrationRunner.cs`. Rincian dan preseden di `docs/MASTER-BUG-UIUX-REGISTER.md` A-11 (2026-09-22).
 
 ## A.3 — Logging dan catch luas
 

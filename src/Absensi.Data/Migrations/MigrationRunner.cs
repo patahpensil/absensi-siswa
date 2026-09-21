@@ -43,6 +43,13 @@ public sealed class MigrationRunner
             recordVersionCommand.CommandText =
                 "INSERT INTO skema_versi (versi, diterapkan) VALUES ($versi, $diterapkan);";
             recordVersionCommand.Parameters.AddWithValue("$versi", migration.Number);
+            // Master Bug & UI/UX Register A-11: skema_versi.diterapkan adalah
+            // metadata audit teknis (kapan migrasi ini dijalankan), bukan
+            // waktu bisnis/domain -- tidak pernah dibaca balik oleh logika
+            // aplikasi. Sengaja memakai UTC sistem langsung, bukan
+            // IPenyediaWaktu, konsisten dengan kebijakan timestamp
+            // diagnostik proyek (lihat PencatatGalat.cs / INVESTIGASI-CRASH
+            // §6.5 poin 4 untuk preseden serupa).
             recordVersionCommand.Parameters.AddWithValue("$diterapkan", DateTime.UtcNow.ToString("o"));
             recordVersionCommand.ExecuteNonQuery();
         }
