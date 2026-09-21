@@ -262,17 +262,28 @@ Unit test (§4.8) tidak membuktikan ini — berjalan di konfigurasi Debug, bukan
 
 ## 5. Urutan Kerja (Tahap A–G)
 
+**Catatan 2026-09-22: status di bawah ini ditulis sebelum Tahap D-G berjalan — dipertahankan apa adanya sebagai catatan historis (tidak dihapus), masing-masing diberi penanda SUPERSEDED dan status nyata terkini berdasarkan bukti di bagian dokumen ini yang ditulis belakangan (§6.7.4, §8, §9-11) serta riwayat commit di luar dokumen ini (E-1/E-2/E-3). Lihat juga Master Bug & UI/UX Register untuk status per-item yang lebih rinci.**
+
 - **Tahap A — review rancangan logging dan exception handling.** ✅ **DITUTUP** — pemilik proyek memilih Opsi 1 (§4.1) dan menyetujui retensi 30 berkas (§4.7.4).
 - **Tahap B — implementasi logging Release paling kecil dan aman.** ✅ **SELESAI** — lingkup §4.2 dan §4.8 dikerjakan persis sesuai rancangan. Rincian lengkap (berkas, ringkasan perubahan, hasil test) di §6.
-- **Tahap C — build Release/self-contained dan buktikan log benar-benar tercipta.** ✅ **SELESAI SEBAGIAN** — lihat §6 untuk apa yang sudah dibuktikan lewat `.exe` Release sungguhan vs apa yang masih perlu klik manual sebagai tindak lanjut.
-- **Tahap D — reproduksi crash secara terkontrol.** ⛔ **BELUM DIMULAI** — sesuai arahan eksplisit, berhenti setelah Tahap C.
-- **Tahap E — identifikasi serta perbaiki root cause.** ⛔ Belum dimulai.
-- **Tahap F — pengujian first-run.** ⛔ Belum dimulai.
-- **Tahap G — perbaiki Bug #1, #2, #8/#9/#10.** ⛔ Belum dimulai.
+- **Tahap C — build Release/self-contained dan buktikan log benar-benar tercipta.** ⚠️ **SELESAI SEBAGIAN** *(tertulis saat itu)* — lihat §6 untuk apa yang sudah dibuktikan lewat `.exe` Release sungguhan vs apa yang masih perlu klik manual sebagai tindak lanjut. **[SUPERSEDED 2026-09-22]** → ✅ **SELESAI SECARA SUBSTANSI** — §6.7.4 (sesi hardening kedua) menutup celah verifikasi item 2 yang tersisa lewat `.exe` Release sungguhan didorong UI Automation nyata; seluruh 7 syarat §6.7.4 bagian B terpenuhi ✅.
+- **Tahap D — reproduksi crash secara terkontrol.** ⛔ **BELUM DIMULAI** *(tertulis saat itu)* — sesuai arahan eksplisit, berhenti setelah Tahap C. **[SUPERSEDED 2026-09-22]** → ✅ **SELESAI** — lihat §8: D-2 TERBUKTI dan direproduksi; D-1 diuji menyeluruh (Impor Excel Guru/Siswa, Laporan, pola operasional Kelompok 3) — tidak tereproduksi, status tetap terbuka dan dicatat jujur, bukan diklaim selesai.
+- **Tahap E — identifikasi serta perbaiki root cause.** ⛔ Belum dimulai *(tertulis saat itu)*. **[SUPERSEDED 2026-09-22]** → ✅ **SELESAI untuk bug yang berhasil direproduksi** — lihat §9-11 dokumen ini serta riwayat commit `3a097ca` (E-1, perbaikan D-2), `38def7a` (E-2, perbaikan `GantiKartuCommand` NullReferenceException), `22d1923` (E-3, perbaikan bug aksesibilitas rekursi fokus UI Automation). Root cause D-1 (STATUS_STACK_OVERFLOW) **tetap tidak teridentifikasi** — tidak termasuk cakupan "selesai" ini, lihat Master Bug & UI/UX Register A-7.
+- **Tahap F — pengujian first-run.** ⛔ Belum dimulai *(tertulis saat itu)*. **[SUPERSEDED 2026-09-22]** → ✅ **SELESAI SECARA SUBSTANSI** — §6.7.4 bagian "Bonus": seluruh alur Wizard Instalasi 6 langkah dituntaskan penuh lewat UI Automation sungguhan sampai `MainWindow` tampil dan login berhasil, nol exception selama alur normal.
+- **Tahap G — perbaiki Bug #1, #2, #8/#9/#10.** ⛔ Belum dimulai *(tertulis saat itu).* **STATUS INI MASIH BENAR HARI INI (2026-09-22) — TIDAK superseded.** Dikonfirmasi ulang lewat Master Bug & UI/UX Register A-1 s/d A-6: kelima bug ini **masih terblokir sepenuhnya** karena `BUG-REPORT-UAT-2026-09-20.md` (sumber asli langkah reproduksi) tidak pernah ditemukan di repositori ini. **Bug #1/#2/#8/#9/#10 tidak boleh ditebak atau direkonstruksi tanpa sumber aslinya** — menunggu pemilik proyek memulihkan berkas itu atau menuliskan ulang langkah reproduksinya secara langsung.
 
 **Tidak termasuk di tahap manapun** (arahan yang masih berlaku): refactor besar, perubahan UI massal, perubahan skema database, perbaikan jalur Restore. Bug #3–#6 dan #7 ditunda ke versi 1.1/berikutnya.
 
-**Status saat ini: BERHENTI setelah Tahap B/C sesuai arahan eksplisit pemilik proyek — menunggu hasil diperiksa sebelum Tahap D dimulai.**
+**Status lama** *("BERHENTI setelah Tahap B/C sesuai arahan eksplisit pemilik proyek — menunggu hasil diperiksa sebelum Tahap D dimulai")* **[SUPERSEDED 2026-09-22]** — sudah tidak akurat, dipertahankan di sini hanya sebagai riwayat, jangan dibaca sebagai status terkini.
+
+**Status nyata per 2026-09-22: Tahap A–F selesai (sebagian secara substansi, lihat penanda di atas masing-masing tahap). Tahap G BELUM selesai — satu-satunya tahap yang masih menahan penutupan seluruh urutan A–G.**
+
+### Catatan tentang Master Bug & UI/UX Register A-14 (Redesain UI/UX)
+
+- **A-14 masih berlaku sepenuhnya** sebagai definisi/cakupan program redesain — tidak ada bagian dari `BACKLOG-REDESAIN-UIUX.md` yang sudah usang atau salah terhadap kode saat ini (diverifikasi ulang 2026-09-22).
+- **A-14 belum siap dimulai** — `BACKLOG-REDESAIN-UIUX.md` §1 sendiri mensyaratkan seluruh Tahap A–G selesai lebih dulu, dan Tahap G (baris di atas) masih terbuka.
+- **A-14 tidak ditutup, tidak dianggap selesai, dan belum diimplementasikan** — status di Master Bug & UI/UX Register tetap "KEPUTUSAN DICATAT, BELUM DIKERJAKAN", tidak diubah oleh pembaruan dokumen ini.
+- **Referensi visual (foto seragam sekolah) yang jadi dasar arah palet navy di §2 `BACKLOG-REDESAIN-UIUX.md` tidak tersimpan di repositori** — hanya pernah ditunjukkan langsung ke asisten di sesi percakapan lama. Perlu diberikan ulang oleh pemilik proyek sebelum implementasi A-14 dimulai.
 
 ---
 
