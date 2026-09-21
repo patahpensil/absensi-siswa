@@ -1,0 +1,62 @@
+# Master Bug & UI/UX Register — Absensi SMP1 (.NET/WPF)
+
+Disusun 2026-09-21 dari seluruh `docs/*.md` dan `git log` penuh repositori ini (`72cbfb8`…`22d1923`), ditambah audit kode langsung untuk 5 item lama (lihat Bagian C). Dokumen ini **menambah**, bukan menggantikan, `TODO-VERSI-BERIKUTNYA.md`, `BACKLOG-REDESAIN-UIUX.md`, dan `INVESTIGASI-CRASH-2026-09-21.md` — sumber aslinya tetap berlaku, dokumen ini hanya mengumpulkan semuanya jadi satu daftar kerja dengan status/prioritas/urutan.
+
+---
+
+## Bagian A — ITEM TERBUKA (butuh keputusan/pengerjaan)
+
+| ID | Item | Sumber | Status | Prioritas | Urutan Pengerjaan |
+|---|---|---|---|---|---|
+| **A-1** | **`BUG-REPORT-UAT-2026-09-20.md` hilang dari repo** — berkas sumber Bug #1/#2/#3-7/#8/#9/#10 tidak pernah ditemukan | `INVESTIGASI-CRASH-2026-09-21.md` §7 | Info hilang | **Tinggi** (memblokir triase A-2/A-3) | **#1 — kerjakan lebih dulu dari semua item lain.** Minta pemilik proyek memulihkan berkas atau menuliskan ulang langkah reproduksi Bug #1/#2/#8/#10. |
+| **A-2** | **Bug #1 — Tombol Simpan tidak reaktif** (dugaan: `RaiseCanExecuteChanged()` tidak dipanggil di suatu jalur validasi) | INVESTIGASI-CRASH §7.1 | TERBUKTI (via UAT) tapi lokasi/repro tidak diketahui | **Tinggi** (kalau nyata: blocker operasional TU) | Setelah A-1. |
+| **A-3** | **Bug #2 — Aplikasi hang setelah simpan berulang** (dugaan: koneksi SQLite tunggal, transaksi tidak selalu tertutup bersih di jalur galat) | INVESTIGASI-CRASH §7.1, §4.5 | TERBUKTI (via UAT) tapi tidak diketahui jumlah pengulangan/layar | **Tinggi** | Setelah A-1. Kalau terkonfirmasi nyata: reproduksi terkontrol dulu (pola sama seperti D-1), jangan langsung tebak perbaikan. |
+| **A-4** | **Bug #8** — "perlu direproduksi dan diperbaiki", tanpa detail lain | INVESTIGASI-CRASH §7.2 | Info tidak cukup | Belum bisa dinilai | Setelah A-1. |
+| **A-5** | **Bug #9** — "aksi keluar harus terlihat dan dapat ditemukan pengguna" | INVESTIGASI-CRASH §7.2 | Mungkin sudah teratasi oleh perbaikan windowing (`e2ec306`/`72af709`, tombol "Keluar" di header `MainWindow`) — belum dikonfirmasi eksplisit | Rendah–Sedang | Verifikasi manual singkat untuk menutup, bukan pekerjaan baru. |
+| **A-6** | **Bug #10** — "area tindakan harus tetap terjangkau, pesan validasi harus tetap terlihat" | INVESTIGASI-CRASH §7.2 | Info tidak cukup | Belum bisa dinilai | Setelah A-1. |
+| **A-7** | **Crash D-1 — `STATUS_STACK_OVERFLOW` (0xc00000fd)** | INVESTIGASI-CRASH §1.1, §2.2, §8, §11 | BELUM TEREPRODUKSI meski diuji luas (Tahap D) | Tinggi (crash nyata) tapi tidak actionable tanpa bukti baru | **Tidak dikerjakan aktif** — pantau, jangan mengarang akar masalah. |
+| **A-8** | **`catch (Exception ex)` terlalu luas di `ImporGuruWizardViewModel`/`ImporSiswaWizardViewModel`**, berisiko pesan teknis mentah ke pengguna, TIDAK melewati `PencatatGalat` | TODO-VERSI-BERIKUTNYA A.3.2 | Terbuka | **Sedang–Tinggi** (ditemukan ulang 2×) | Kandidat pertama setelah A-1..A-6. |
+| **A-9** | **4 `catch` di `KlienBotTelegram` tanpa logging** untuk kegagalan permanen | TODO-VERSI-BERIKUTNYA A.3.1 | Terbuka | Sedang | Setelah A-8. |
+| **A-10** | **Jam literal `"...misalnya 07:30."`** di 2 pesan validasi | TODO-VERSI-BERIKUTNYA A.1 | Terbuka, kosmetik | Rendah | Kapan saja, mekanis. |
+| **A-11** | **`MigrationRunner` pakai `DateTime.UtcNow` langsung**, bukan `IPenyediaWaktu` | TODO-VERSI-BERIKUTNYA A.2 | Terbuka | Rendah | Kapan saja. |
+| **A-12** | **`template_import_siswa.xlsx` (PRD §16.2 langkah 3) tidak pernah dibangun** | TODO-VERSI-BERIKUTNYA | Terbuka (gap fitur) | Rendah–Sedang | Independen. |
+| **A-13** | **Dialog galat berulang — BELUM TERVERIFIKASI DINAMIS** | INVESTIGASI-CRASH §4.3/§6.7.5 | Verification gap | Rendah | Oportunistik saat ada exception global aman untuk dipicu. |
+| **A-14** | **MASTER PROGRAM: Redesain UI/UX** — palet navy/putih, audit kontras WCAG; menyerap B.2 (dua tombol utama Pengaturan), "Reuse warna status" (7 XAML), aksesibilitas `ComboBox` Peran, **dan sejak audit 2026-09-21 juga A-16/A-17/A-18 di bawah** | `BACKLOG-REDESAIN-UIUX.md` | KEPUTUSAN DICATAT, BELUM DIKERJAKAN | Program tersendiri | **Terakhir** — dijadwalkan mulai setelah seluruh Tahap A–G stabilitas selesai (ditulis eksplisit di dokumennya sendiri). |
+| **A-15** | **`tap_log.hasil` CHECK tanpa nilai untuk "pemilik tidak aktif" / "tap pulang tanpa catatan masuk"** — dipetakan ke nilai `ditolak_*` terdekat, alasan lengkap tetap di kolom `catatan` | Audit 2026-09-21 (lihat Bagian C) | **TERVERIFIKASI** — masih berlaku | Rendah (tidak ada laporan yang butuh granularitas ini) | Kalau dikerjakan: migrasi baru menambah nilai CHECK, bukan mengubah yang ada (CLAUDE.md §4.1 aturan 5). Tidak mendesak. |
+| **A-16** | **Warna tombol "Bahaya" (`BahayaBrush #B3261E`) belum resmi di `PANDUAN-UI-UX.md` §3.1** | Audit 2026-09-21 (lihat Bagian C) | **TERVERIFIKASI** — masih berlaku | Rendah, diserap A-14 | Dikerjakan bersama A-14 (redesain), sudah masuk cakupan "tombol berbahaya" di `BACKLOG-REDESAIN-UIUX.md` §4. |
+| **A-17** | **Font IBM Plex Sans belum dibundel** (`.ttf` tidak ada di repo), fallback Segoe UI aktif | Audit 2026-09-21 (lihat Bagian C) | **TERVERIFIKASI** — masih berlaku | Rendah, diserap A-14 | Dikerjakan bersama A-14 (redesain, cakupan tipografi §4). |
+| **A-18** | **`MainWindowViewModel.MenuItems` menampilkan 11 item sidebar ke semua peran tanpa filter** — pembatasan baru terjadi di lapisan servis/ViewModel setelah diklik, bukan di sidebar itu sendiri | Audit 2026-09-21 (lihat Bagian C) | **TERVERIFIKASI** — masih berlaku | **Sedang** (bukan lubang keamanan — CLAUDE.md §4.5 aturan 19 tetap ditegakkan di servis — tapi UX membingungkan untuk peran terbatas) | Bisa dikerjakan terpisah dari A-14 sebagai audit kecil tersendiri (per-item MenuItems vs tabel akses §3 PRD), atau digabung ke cakupan "Sidebar serta navigasi aktif" di `BACKLOG-REDESAIN-UIUX.md` §4 — pemilik proyek memutuskan mana yang lebih efisien. |
+
+## Bagian B — SUDAH SELESAI (riwayat, untuk kelengkapan register)
+
+| ID | Item | Commit | Diverifikasi lewat |
+|---|---|---|---|
+| **B-1** | Rekursi fokus WPF via UI Automation (`KolomTap_LostFocus` di 3 jendela) → `StackOverflowException` | `22d1923` (Tahap E-3) | 355/355 test + reproduksi UI Automation identik 3/3 sukses |
+| **B-2** | `GantiKartuCommand.CanExecute(null)` → `NullReferenceException` | `38def7a` (Tahap E-2) | 355/355 test + verifikasi manual E2.1 |
+| **B-3** | `GerbangWindow.OnClosing` — `Close()` sinkron di dalam `OnClosing` → `InvalidOperationException` (Crash D-2) | `3a097ca` (Tahap E-1) | 351/351 test + 5 skenario manual |
+| **B-4** | Tidak ada jaring pengaman exception + `Debug.WriteLine` terhapus kompiler di Release | `2f65f75` (Tahap B/C) | 15 unit test `PencatatGalatTests` + verifikasi UI Automation nyata |
+| **B-5** | Windowing rusak: Minimize/Maximize/Close hilang di `LoginWindow`/`WizardInstalasiWindow`/11 dialog modal | `e2ec306` | UI Automation `WindowPattern` + `WM_SYSCOMMAND` asli |
+| **B-6** | Wizard langkah 6, tombol X tidak bereaksi (`InvalidOperationException` diserap diam-diam WndProc) | `e2ec306` | Log diagnostik sementara |
+| **B-7** | Wizard→Login: aplikasi keluar diam-diam setelah instalasi selesai | `72af709` (Tugas 14) | Skenario 1 PANDUAN-TESTER |
+| **B-8** | `Run.Text`/`DataGridCheckBoxColumn` TwoWay-bawaan → crash render (6 lokasi, termasuk **kartu tap pertama di GerbangWindow**) | `72af709` (Tugas 14) | Grep menyeluruh, 0 sisa tanpa `Mode=OneWay` |
+| **B-9** | **Status lisensi di layar Masuk masih placeholder statis "(belum tersedia)"** | `dce314e` (Tugas 13) | `LoginViewModel.cs:27` sekarang dibaca dari `StatusLisensi` (record nyata, `src/Absensi.Data/Lisensi/StatusLisensi.cs`) via `RepositoriLisensi`/`LayananLisensiLokal` — **TIDAK BERLAKU LAGI**, lihat Bagian C |
+
+---
+
+## Bagian C — Audit Ulang 5 Item Lama (2026-09-21)
+
+Lima item ini pernah dicatat di sesi kerja sebelumnya (Tugas 0-12) tapi **tidak pernah masuk ke dokumentasi resmi repo** (bukan di `TODO-VERSI-BERIKUTNYA.md` atau dokumen lain manapun) — sehingga sebelumnya tidak dimasukkan ke Bagian A/B karena tidak ada jejak tertulis di repo. Diminta diverifikasi ulang langsung terhadap kode saat ini (bukan diasumsikan dari catatan lama). Metodologi: baca kode sumber langsung + grep, tidak menyimpulkan dari ingatan sesi lama.
+
+| Item lama | Hasil Audit | Bukti |
+|---|---|---|
+| `tap_log.hasil` CHECK tanpa nilai untuk "pemilik tidak aktif" | **TERVERIFIKASI** | `Migration001CreateSchema.cs:130-133` — daftar CHECK 11 nilai tidak memuat nilai untuk kasus ini. `PemrosesTap.cs:181-202` (`TentukanHasilTapLog`) memetakan `AlasanTap.PemilikTidakAktif`→`"ditolak_tidak_terdaftar"` dan `AlasanTap.BelumPunyaCatatanMasuk`→`"ditolak_lewat_batas"` (nilai terdekat), dengan komentar kode eksplisit di baris 175-180 yang **sudah** mendokumentasikan gap ini di dalam kode itu sendiri. |
+| Status lisensi di layar Masuk masih placeholder statis | **TIDAK BERLAKU** | `LoginViewModel.cs:18,27` — parameter `StatusLisensi? statusLisensi` sungguhan, `TeksStatusLisensi` dihitung dari `statusLisensi.Aktif`. `src/Absensi.Data/Lisensi/` (5 berkas: `StatusLisensi.cs`, `RepositoriLisensi.cs`, `LayananLisensiLokal.cs`, `ILayananLisensi.cs`, `HasilAktivasiLisensi.cs`) sudah ada sejak commit `dce314e` (Tugas 13 — wizard instalasi & aktivasi lisensi lokal). Komentar kode di `LoginViewModel.cs:23-25` mengonfirmasi eksplisit: "Tugas 13 mengisi keduanya, sebelumnya ... lisensi '(belum tersedia)'". |
+| Warna tombol "Bahaya" belum ada di palet resmi | **TERVERIFIKASI** | `GayaAplikasi.xaml:65-72` — `BahayaBrush = #B3261E` masih ditandai eksplisit dalam komentar sebagai "BELUM ADA DI PALET RESMI ... nilai pengganti sementara". `PANDUAN-UI-UX.md` §3.1 "Palet Dasar" (baris 39-49) dikonfirmasi masih hanya berisi 7 warna non-merah — tidak ada token merah/bahaya resmi. |
+| Font IBM Plex Sans belum dibundel | **TERVERIFIKASI** | `find . -iname "*.ttf" -o -iname "*.otf"` di seluruh repo (di luar `bin/`/`obj/`) — nol hasil. `GayaAplikasi.xaml:128-133` komentar kode + `FontFamily x:Key="FontUtama"` masih literal `"IBM Plex Sans, Segoe UI"` (fallback CSS-style, bukan font ter-embed). `PANDUAN-UI-UX.md:79` tetap menyatakan font ini seharusnya "dibundel bersama `.exe`". |
+| Menu sidebar berdasarkan peran belum diaudit | **TERVERIFIKASI** | `MainWindowViewModel.cs:66-70` — `MenuItems` adalah `ObservableCollection<string>` statis berisi seluruh 11 item, dibuat di constructor tanpa satu pun referensi ke `_akun`/`akun.Peran`. Pembatasan akses yang ada (mis. `LaporanViewModel.BolehAkses`, tab "Akun" tersembunyi untuk Wali Kelas — `PANDUAN-TESTER.md` Skenario 6 langkah 9) terjadi di lapisan konten/servis setelah menu diklik, bukan di sidebar itu sendiri. |
+
+**Ringkasan:** 4 dari 5 item lama masih berlaku persis seperti yang dicatat sebelumnya (sekarang resmi masuk register sebagai A-15/A-16/A-17/A-18), 1 item (status lisensi) sudah selesai dikerjakan sejak Tugas 13 dan ditandai TIDAK BERLAKU (B-9).
+
+---
+
+**Catatan cakupan sumber:** Bagian A dan B disusun dari `docs/*.md` dan `git log` penuh repositori ini. Bagian C adalah audit kode langsung, bukan asumsi dari catatan sesi lama — 4 dari 5 klaim lama terbukti masih akurat, 1 sudah usang.
