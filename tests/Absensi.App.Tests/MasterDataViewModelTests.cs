@@ -48,6 +48,32 @@ public sealed class MasterDataViewModelTests
         Assert.False(viewModel.SimpanCommand.CanExecute(null));
     }
 
+    // A-2 (Bug #1, docs/BUG-REPORT-UAT-2026-09-20.md): urutan pengisian field
+    // di UAT adalah NISN -> Nama -> Kelas (Kelas terakhir). KelasTerpilih
+    // sebelumnya tidak memicu RaiseCanExecuteChanged, sehingga WPF tidak
+    // pernah requery tombol Simpan walau BisaSimpan() sudah true -- tombol
+    // tetap tampak nonaktif. Test ini menutup celah yang membuat 389 test
+    // lama tetap hijau meski bug ini nyata (test lain memanggil
+    // Execute/CanExecute langsung, tidak lewat siklus CanExecuteChanged).
+    [Fact]
+    public void SiswaViewModel_KelasDipilihTerakhir_SimpanCommandCanExecuteChangedTerpicu()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+
+        var terpicu = false;
+        viewModel.SimpanCommand.CanExecuteChanged += (_, _) => terpicu = true;
+
+        viewModel.Nisn = "0099999999";
+        viewModel.Nama = "Siswa Baru";
+        // Kelas dipilih terakhir -- persis urutan reproduksi UAT.
+        viewModel.KelasTerpilih = viewModel.DaftarKelas.Single();
+
+        Assert.True(terpicu, "KelasTerpilih setter harus memicu SimpanCommand.RaiseCanExecuteChanged().");
+        Assert.True(viewModel.SimpanCommand.CanExecute(null));
+    }
+
     // Tahap E-2 (docs/INVESTIGASI-CRASH-2026-09-21.md §9): GantiKartuCommand
     // melempar NullReferenceException saat WPF memanggil CanExecute(null)
     // sesaat DataGrid Siswa re-layout — predikat sekarang menjaga s is not

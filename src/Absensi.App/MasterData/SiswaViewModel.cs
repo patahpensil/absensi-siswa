@@ -132,7 +132,13 @@ public sealed class SiswaViewModel : ObservableObject
 
     public string? NoHpOrtu { get => _noHpOrtu; set => SetField(ref _noHpOrtu, value); }
 
-    public KelasDaftar? KelasTerpilih { get => _kelasTerpilih; set => SetField(ref _kelasTerpilih, value); }
+    // A-2 (Master Bug & UI/UX Register): BisaSimpan() mensyaratkan KelasTerpilih
+    // tidak null, tapi setter ini tidak pernah memberi tahu SimpanCommand untuk
+    // requery -- RelayCommand.CanExecuteChanged murni manual, bukan
+    // CommandManager.RequerySuggested. Bila Kelas dipilih terakhir (urutan di
+    // BUG-REPORT-UAT-2026-09-20.md §Bug #1), tombol Simpan tetap tampak
+    // nonaktif walau BisaSimpan() sebenarnya sudah true.
+    public KelasDaftar? KelasTerpilih { get => _kelasTerpilih; set { if (SetField(ref _kelasTerpilih, value)) SimpanCommand.RaiseCanExecuteChanged(); } }
 
     public string? PesanGalat { get => _pesanGalat; private set => SetField(ref _pesanGalat, value); }
 
