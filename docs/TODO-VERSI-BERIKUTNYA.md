@@ -7,6 +7,7 @@ Ditemukan lewat audit pengerasan Tugas 14 (RENCANA-TUGAS.md). Pemilik proyek mem
 **Berkas:** `src/Absensi.App/Wizard/WizardInstalasiViewModel.cs:322`, `src/Absensi.App/Pengaturan/PengaturanViewModel.cs:190`
 
 Pesan validasi format jam memuat contoh literal `"...misalnya 07:30."`. Bukan nilai yang dipakai untuk keputusan apa pun (sekadar contoh format di hint), tapi secara harfiah melanggar CLAUDE.md §4.1 aturan 2 ("Tidak boleh ada angka 07:30 ... di dalam kode"). Perbaikan: ganti dengan contoh generik yang tidak menyerupai jam sekolah sungguhan (mis. "HH:mm").
+   **STATUS: SELESAI — commit `4a291cfac36a0a3f6e95e24e1ca464d87bfa0943`.** Kedua pesan diganti jadi `"... tidak valid. Gunakan format 24 jam HH:mm."` (bukan literal `07:30` maupun jam contoh lain apa pun). Dikonfirmasi di `docs/MASTER-BUG-UIUX-REGISTER.md` A-10 (2026-09-22).
 
 ## A.2 — Timestamp migrasi tidak lewat IPenyediaWaktu
 
