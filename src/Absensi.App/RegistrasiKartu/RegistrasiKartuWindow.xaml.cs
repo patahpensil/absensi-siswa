@@ -6,6 +6,7 @@ namespace Absensi.App.RegistrasiKartu;
 public partial class RegistrasiKartuWindow : Window
 {
     private readonly RegistrasiKartuViewModel _viewModel;
+    private bool _fokusUlangDijadwalkan;
 
     public RegistrasiKartuWindow(RegistrasiKartuViewModel viewModel)
     {
@@ -44,7 +45,26 @@ public partial class RegistrasiKartuWindow : Window
         }
     }
 
-    private void KolomTap_LostFocus(object sender, RoutedEventArgs e) => FokusKolomTap();
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §11: Focus() SINKRON di sini bisa
+    // memicu rekursi WPF-internal sampai StackOverflowException kalau
+    // sesuatu di luar (mis. klien UI Automation) ikut memperebutkan fokus.
+    // Dispatcher.BeginInvoke memutus rantai panggilan sinkron itu (pola sama
+    // seperti perbaikan Crash D-2 di GerbangWindow.OnClosing); flag mencegah
+    // penjadwalan tertunda menumpuk.
+    private void KolomTap_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_fokusUlangDijadwalkan)
+        {
+            return;
+        }
+
+        _fokusUlangDijadwalkan = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _fokusUlangDijadwalkan = false;
+            FokusKolomTap();
+        });
+    }
 
     private void FokusKolomTap() => KolomTap.Focus();
 

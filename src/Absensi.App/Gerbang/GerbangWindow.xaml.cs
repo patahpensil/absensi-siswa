@@ -12,6 +12,7 @@ public partial class GerbangWindow : Window
     private readonly SqliteConnection _connection;
     private readonly DispatcherTimer _timer;
     private bool _diizinkanTutup;
+    private bool _fokusUlangDijadwalkan;
 
     public GerbangWindow(GerbangViewModel viewModel, SqliteConnection connection)
     {
@@ -81,7 +82,29 @@ public partial class GerbangWindow : Window
     }
 
     // PANDUAN-UI-UX.md §10: fokus tidak boleh lepas dari kolom pembaca kartu.
-    private void KolomTap_LostFocus(object sender, RoutedEventArgs e) => FokusKolomTap();
+    // docs/INVESTIGASI-CRASH-2026-09-21.md §11: memanggil Focus() SINKRON di
+    // sini bisa memicu rekursi WPF-internal (KeyboardDevice.Focus ->
+    // ChangeFocus -> ... -> GotKeyboardFocus -> ... -> LostFocus lagi) sampai
+    // StackOverflowException saat sesuatu di luar (mis. klien UI Automation)
+    // ikut memperebutkan fokus pada saat yang sama. Menjadwalkan lewat
+    // Dispatcher.BeginInvoke memutus rantai panggilan SINKRON itu (pola yang
+    // sama seperti perbaikan Crash D-2 di OnClosing) -- flag mencegah lebih
+    // dari satu penjadwalan tertunda menumpuk kalau LostFocus terpicu lagi
+    // sebelum yang tertunda sempat berjalan.
+    private void KolomTap_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_fokusUlangDijadwalkan)
+        {
+            return;
+        }
+
+        _fokusUlangDijadwalkan = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _fokusUlangDijadwalkan = false;
+            FokusKolomTap();
+        });
+    }
 
     private void FokusKolomTap() => KolomTap.Focus();
 }

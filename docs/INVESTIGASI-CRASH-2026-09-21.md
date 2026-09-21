@@ -485,7 +485,7 @@ Ditemukan tidak sengaja selama persiapan skenario D2.18 (Tahap D), bukan bagian 
 
 ---
 
-## 11. Temuan Baru — Bug Aksesibilitas Terpisah: Rekursi Fokus WPF Lewat UI Automation — **TERBUKTI SEBAGAI BUG TERPISAH, BELUM DIPERBAIKI**
+## 11. Temuan Baru — Bug Aksesibilitas Terpisah: Rekursi Fokus WPF Lewat UI Automation — **TERBUKTI — DIPERBAIKI DAN DIVERIFIKASI** (lihat §11.4, Tahap E-3)
 
 Ditemukan tidak sengaja selama verifikasi manual Tahap E-2 (skenario E2.5, menutup dialog "Ganti kartu" yang didorong lewat `System.Windows.Automation` dari skrip PowerShell) — **bukan** bagian dari cakupan perbaikan `GantiKartuCommand`, dan **bukan** diagnosis ulang Crash D-1. Dump dianalisis dengan `dotnet-dump` (versi `10.0.745401`, dipasang khusus untuk sesi ini) — alat pertama dan satu-satunya yang dipakai; WinDbg **tidak** dipasang, belum diperlukan pada tahap ini.
 
@@ -511,5 +511,28 @@ Ditemukan tidak sengaja selama verifikasi manual Tahap E-2 (skenario E2.5, menut
 **Keputusan pemilik proyek (2026-09-21), mengikat untuk sesi-sesi berikutnya:**
 - Bug ini **TIDAK dinyatakan sebagai root cause Crash D-1**.
 - **Status D-1 tetap: BELUM TEREPRODUKSI melalui interaksi pengguna normal** — tidak berubah oleh temuan ini.
-- Bug aksesibilitas ini sendiri berstatus **TERBUKTI (sebagai gejala terpisah) — BELUM DIPERBAIKI**, dijadwalkan sebagai pekerjaan terpisah, bukan bagian Tahap E-2. Perbaikan pola fokus/`LostFocus`/`InputPane`/UI Automation eksplisit **tidak dikerjakan** pada Tahap E-2.
-- WinDbg **belum dipasang, belum diperlukan** untuk klasifikasi ini — baru relevan bila kelak dibutuhkan native stack C++ WPF atau pemeriksaan objek `DependencyObject` per frame untuk membuktikan/menyangkal dugaan di §11.2.
+- Bug aksesibilitas ini sendiri berstatus **TERBUKTI (sebagai gejala terpisah) — DIPERBAIKI DAN DIVERIFIKASI di Tahap E-3, lihat §11.4**. Perbaikan pola fokus/`LostFocus`/`InputPane`/UI Automation eksplisit **tidak dikerjakan** pada Tahap E-2 — dijadwalkan dan dikerjakan terpisah di Tahap E-3.
+- WinDbg **belum dipasang, tidak diperlukan** untuk memperbaiki bug ini — perbaikan Tahap E-3 tidak bergantung pada pembuktian mekanisme PERSIS 522 iterasi WPF-internal (§11.2 tetap berstatus dugaan, tidak diverifikasi lebih lanjut — lihat §11.4 soal kenapa itu tidak menghalangi perbaikan).
+
+### 11.4 Tahap E-3 — Perbaikan dan Verifikasi (2026-09-21)
+
+**Audit:** ketiga jendela yang dicurigai di §1.6 (`GerbangWindow`, `RegistrasiKartuWindow`, `TapKartuTunggalWindow`) dikonfirmasi punya kode `KolomTap_LostFocus` yang **identik**: memanggil `FokusKolomTap()` → `KolomTap.Focus()` secara **sinkron, tanpa guard apa pun** — persis pola yang §11.1 tunjukkan sebagai titik masuk aplikasi ke rekursi WPF-internal.
+
+**Perbaikan (identik di ketiga berkas, `src/Absensi.App/Gerbang/GerbangWindow.xaml.cs`, `src/Absensi.App/RegistrasiKartu/RegistrasiKartuWindow.xaml.cs`, `src/Absensi.App/RegistrasiKartu/TapKartuTunggalWindow.xaml.cs`):** `KolomTap_LostFocus` sekarang dijaga field `_fokusUlangDijadwalkan` dan menjadwalkan `FokusKolomTap()` lewat `Dispatcher.BeginInvoke` alih-alih memanggilnya sinkron di dalam handler — memutus rantai panggilan reentrant SINKRON yang §11.1 buktikan sebagai jalur ke stack overflow. Pola ini identik dengan perbaikan Crash D-2 (`GerbangWindow.OnClosing`, Tahap E-1) — sudah ada preseden terpercaya di proyek ini untuk kelas masalah yang sama ("jangan panggil operasi UI yang bisa memicu ulang event yang sama secara sinkron di dalam handler event itu sendiri"). Tidak ada perubahan XAML, `Loaded`/`Activated`, atau perilaku UX lain (kolom tap tetap otomatis ambil fokus ulang — hanya jalur pemanggilannya yang diubah dari sinkron ke terjadwal).
+
+**Kenapa perbaikan ini valid walau §11.2 (mekanisme PERSIS 522 iterasi) tetap berstatus dugaan:** perbaikan tidak bergantung pada mekanisme detail WPF-internal — cukup memastikan `Absensi.App` sendiri tidak pernah memanggil `Focus()` secara sinkron di dalam `LostFocus`-nya sendiri, menghilangkan kontribusi kode aplikasi pada rantai reentrant apa pun yang WPF mungkin bentuk secara internal. Diverifikasi langsung lewat pengujian §11.4.2 di bawah — bukan hanya penalaran.
+
+**Pengujian otomatis:** **tidak ditambahkan**, keputusan eksplisit pemilik proyek — mengikuti preseden Tahap E-1/D-2: `System.Windows.Application` singleton per proses (`docs/PANDUAN-TESTER.md` baris 3), test yang menjalankan siklus hidup `Window` WPF sungguhan berisiko merusak seluruh test suite lain dalam proses yang sama.
+
+**11.4.1 Regresi otomatis:** `dotnet test Absensi.sln` — **355/355 lulus di Debug dan Release**, tidak ada test yang berubah.
+
+**11.4.2 Verifikasi Release — reproduksi ulang skenario E2.5 PERSIS, 3×:** publish Release/self-contained baru (SHA-256 exe `7DFBC102DA7B4BD7D658F3E425BD696FB5E18FDF2177222BB286D8ECE45A37CB`), didorong `System.Windows.Automation` (izin eksplisit pemilik proyek KHUSUS untuk memverifikasi ulang mekanisme UI Automation yang menyebabkan crash asli — bukan pelonggaran kebijakan umum): login → menu Siswa → **buka dialog "Ganti kartu" (`Invoke` pada tombol) → tutup lewat "Batal" (`Invoke`) — diulang 3× berturut-turut dalam satu sesi**.
+
+**Hasil: 3/3 berhasil.** Setiap percobaan: dialog terbuka normal ("Ganti kartu — Siswa Uji Satu"), `Process.Responding=True` sebelum dan sesudah tutup dialog, jendela utama tetap "Absensi - Sekolah Uji Tahap D" setelahnya. Setelah 3 percobaan: proses masih hidup (`HasExited=False`), `Responding=True`.
+
+**Pemeriksaan pasca-verifikasi (read-only):**
+- `logs/` (di `C:\AbsensiSekolah-TahapE2\`) ada tapi **0 berkas/entri** — tidak ada FATAL/ERROR baru.
+- Event Viewer (`Application Error`/`Windows Error Reporting`) — event terbaru masih dari crash lama `2026-09-21 20:12:xx` (Tahap E-2), **tidak ada event baru** sejak verifikasi Tahap E-3.
+- Folder dump `C:\AbsensiSekolah-TahapD\dumps\` — masih persis 2 berkas lama (`Absensi.App.exe.7020.dmp`, `Absensi.App.exe.10108.dmp`), **tidak ada dump baru**. Registry `LocalDumps` tidak disentuh.
+
+**Kesimpulan Tahap E-3:** skenario UI Automation yang membuktikan bug di §11.1 (`InContextSetFocus` → rekursi WPF-internal → `KolomTap_LostFocus` → `Focus()` → COM → `StackOverflowException`) **tidak lagi menghasilkan crash setelah perbaikan**, diverifikasi lewat reproduksi persis 3× pada `.exe` Release sungguhan, tanpa regresi pada 355 test otomatis. Status bug aksesibilitas: **TERBUKTI — DIPERBAIKI DAN DIVERIFIKASI**. Status Crash D-1 **tidak berubah** oleh perbaikan ini (tetap BELUM TEREPRODUKSI melalui interaksi pengguna normal, sesuai keputusan §11.3 — perbaikan §11.4 hanya menutup jalur UI-Automation-spesifik, bukan klaim menyelesaikan D-1).
