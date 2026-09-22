@@ -5,10 +5,16 @@
         WindowStyle="None"
         WindowState="Maximized"
         ResizeMode="NoResize"
-        Topmost="True"
         Cursor="None"
         Background="{StaticResource TintaBrush}">
 
+    <!-- UAT 2026-09-22: Topmost="True" dihapus — PRD §14.1 hanya meminta
+         "fullscreen, tanpa menu, tanpa mouse", tidak meminta jendela ini
+         menutupi Task Manager/Start/Alt+Tab. Topmost membuat operator
+         hampir terjebak: jendela lain (termasuk Task Manager) tidak bisa
+         naik di atasnya. WindowState="Maximized" + WindowStyle="None"
+         sudah cukup untuk tampilan fullscreen tanpa memblokir shortcut
+         sistem. -->
     <Grid Margin="{StaticResource PaddingTepiHalaman}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

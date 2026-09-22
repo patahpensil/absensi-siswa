@@ -3,13 +3,26 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:conv="clr-namespace:Absensi.App.Converters"
         Title="Tutup layar gerbang"
-        Height="320" Width="480"
+        Width="480"
+        SizeToContent="Height"
+        MinHeight="320"
+        MaxHeight="700"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
         ShowInTaskbar="False"
         Background="{StaticResource KertasBrush}">
 
+    <!-- UAT 2026-09-22: Height fixa 320 lebih kecil dari konten sungguhan
+         (judul + deskripsi + 2 kolom + pesan galat + baris tombol), jadi
+         baris tombol "Batal"/"Tutup layar gerbang" TERPOTONG di luar area
+         jendela pada kombinasi font/DPI tertentu — bukan kosong tanpa teks,
+         tombolnya memang ada tapi tidak pernah ter-render di area yang
+         terlihat. SizeToContent="Height" membuat jendela selalu menyesuaikan
+         tinggi konten sungguhan (termasuk saat PesanGalat muncul dan
+         menambah tinggi), jadi tombol dan pesan validasi selalu terlihat
+         di 1366x768 maupun skala DPI 100-150% tanpa bergantung metrik
+         font yang dipakai saat render. -->
     <Window.Resources>
         <conv:NullKeVisibilitasConverter x:Key="NullKeVisibilitas" />
     </Window.Resources>
@@ -43,6 +56,7 @@
                 <Button Content="Batal"
                         Style="{StaticResource TombolTeksStyle}"
                         Click="TombolBatal_Click"
+                        IsCancel="True"
                         Margin="0,0,8,0" />
                 <Button Content="Tutup layar gerbang"
                         Style="{StaticResource TombolUtamaStyle}"

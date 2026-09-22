@@ -77,4 +77,47 @@ public sealed class KonfirmasiTutupViewModelTests
         Assert.False(JalankanKonfirmasi(viewModel));
         Assert.Equal("Username atau sandi salah.", viewModel.PesanGalat);
     }
+
+    // UAT 2026-09-22: mengonfirmasi keadaan awal dialog yang menopang
+    // perbaikan layar gerbang — tombol "Tutup layar gerbang" harus lahir
+    // nonaktif (Username/Sandi kosong) dan pesan galat harus lahir kosong
+    // (TextBlock-nya baru tampil lewat NullKeVisibilitasConverter saat
+    // PesanGalat terisi, lihat KonfirmasiTutupWindow.xaml).
+    [Fact]
+    public void KonfirmasiCommand_Awal_TidakBisaDieksekusi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new KonfirmasiTutupViewModel(database.Connection);
+
+        Assert.False(viewModel.KonfirmasiCommand.CanExecute(null));
+        Assert.Null(viewModel.PesanGalat);
+    }
+
+    [Fact]
+    public void KonfirmasiCommand_HanyaUsernameTerisi_TidakBisaDieksekusi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new KonfirmasiTutupViewModel(database.Connection)
+        {
+            Username = "kepsek",
+        };
+
+        Assert.False(viewModel.KonfirmasiCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void KonfirmasiCommand_UsernameDanSandiTerisi_BisaDieksekusi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new KonfirmasiTutupViewModel(database.Connection)
+        {
+            Username = "kepsek",
+        };
+        viewModel.AturSandi("apa-saja");
+
+        Assert.True(viewModel.KonfirmasiCommand.CanExecute(null));
+    }
 }

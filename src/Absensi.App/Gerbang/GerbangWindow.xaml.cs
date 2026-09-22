@@ -13,6 +13,7 @@ public partial class GerbangWindow : Window
     private readonly DispatcherTimer _timer;
     private bool _diizinkanTutup;
     private bool _fokusUlangDijadwalkan;
+    private bool _dialogTutupSedangTerbuka;
 
     public GerbangWindow(GerbangViewModel viewModel, SqliteConnection connection)
     {
@@ -43,24 +44,42 @@ public partial class GerbangWindow : Window
 
         e.Cancel = true;
 
-        var dialog = new KonfirmasiTutupWindow(new KonfirmasiTutupViewModel(_connection)) { Owner = this };
-        if (dialog.ShowDialog() == true)
+        if (_dialogTutupSedangTerbuka)
         {
-            // docs/INVESTIGASI-CRASH-2026-09-21.md — Crash D-2 (TERBUKTI):
-            // memanggil Close() sinkron di sini (masih di dalam OnClosing
-            // yang sedang berjalan untuk permintaan tutup PERTAMA) melanggar
-            // Window.VerifyNotClosing() -> InvalidOperationException lolos
-            // sampai batas WndProc. Sama persis pola bug Wizard yang sudah
-            // diperbaiki di commit e2ec306: jadwalkan Close() lewat
-            // Dispatcher.BeginInvoke supaya jalan SETELAH OnClosing ini
-            // selesai — OnClosing KEDUA (dipicu Close() terjadwal) langsung
-            // lolos lewat cabang _diizinkanTutup di atas, tanpa dialog lagi.
-            _diizinkanTutup = true;
-            Dispatcher.BeginInvoke(() => Close());
+            // UAT 2026-09-22: cegah dialog konfirmasi dobel kalau Close()
+            // terpanggil lagi (mis. Alt+F4 ganda) selagi dialog PERTAMA
+            // masih terbuka — pola flag yang sama seperti
+            // _sedangMenanganiGalatFatal di App.xaml.cs untuk masalah
+            // sejenis (mencegah tumpukan dialog).
+            return;
         }
-        else
+
+        _dialogTutupSedangTerbuka = true;
+        try
         {
-            FokusKolomTap();
+            var dialog = new KonfirmasiTutupWindow(new KonfirmasiTutupViewModel(_connection)) { Owner = this };
+            if (dialog.ShowDialog() == true)
+            {
+                // docs/INVESTIGASI-CRASH-2026-09-21.md — Crash D-2 (TERBUKTI):
+                // memanggil Close() sinkron di sini (masih di dalam OnClosing
+                // yang sedang berjalan untuk permintaan tutup PERTAMA) melanggar
+                // Window.VerifyNotClosing() -> InvalidOperationException lolos
+                // sampai batas WndProc. Sama persis pola bug Wizard yang sudah
+                // diperbaiki di commit e2ec306: jadwalkan Close() lewat
+                // Dispatcher.BeginInvoke supaya jalan SETELAH OnClosing ini
+                // selesai — OnClosing KEDUA (dipicu Close() terjadwal) langsung
+                // lolos lewat cabang _diizinkanTutup di atas, tanpa dialog lagi.
+                _diizinkanTutup = true;
+                Dispatcher.BeginInvoke(() => Close());
+            }
+            else
+            {
+                FokusKolomTap();
+            }
+        }
+        finally
+        {
+            _dialogTutupSedangTerbuka = false;
         }
     }
 

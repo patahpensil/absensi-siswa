@@ -13,6 +13,10 @@ public partial class KonfirmasiTutupWindow : Window
             DialogResult = true;
             Close();
         };
+
+        // UAT 2026-09-22: operator harus langsung bisa mengetik username
+        // tanpa klik dulu (layar gerbang tidak pakai mouse, PRD §14.1).
+        Loaded += (_, _) => KolomUsername.Focus();
     }
 
     private void KolomSandi_PasswordChanged(object sender, RoutedEventArgs e)
