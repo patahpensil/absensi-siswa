@@ -146,7 +146,9 @@ Ditambahkan setelah UAT melaporkan dialog "Tutup layar gerbang?" nyaris tidak bi
 
 **Yang DIUJI otomatis (bukan manual)** untuk sesi ini: `KonfirmasiTutupViewModelTests` — keadaan awal `KonfirmasiCommand.CanExecute` (nonaktif saat kosong, aktif saat Username+Sandi terisi) dan `PesanGalat` kosong di awal. Logika autentikasi (peran/sandi benar-salah) sudah dites sebelumnya dan **tidak berubah** di sesi ini.
 
-## Skenario A — Registrasi Kartu membaca kelas (UAT Bug #11, 2026-09-22, diperbarui 2026-09-23 x3)
+## Skenario A — Registrasi Kartu membaca kelas (UAT Bug #11, 2026-09-22, ditutup 2026-09-23)
+
+**STATUS AKHIR: ✅ SELESAI — LULUS UAT (2026-09-23).** Operator mengonfirmasi Registrasi Kartu berfungsi normal secara menyeluruh: dropdown Kelas terbuka dan dapat dipilih, siswa kelas terpilih tampil, tap RFID diproses. Bug #11 ditutup — lihat A-30 di `MASTER-BUG-UIUX-REGISTER.md`. Riwayat 4 putaran investigasi di bawah dipertahankan apa adanya.
 
 **Putaran keempat (2026-09-23) — AKAR MASALAH SEBENARNYA ditemukan lewat logging produksi sungguhan (bukan harness):** `KolomTap_LostFocus` merebut fokus balik dari ComboBox Kelas SETIAP kali operator klik untuk membuka dropdown-nya — menutup paksa dropdown itu sebelum sempat memilih apa pun. Terbukti dari `logs/20260923.log` nyata: `ComboBox.DropDownOpened` tercatat puluhan kali berturut-turut dalam ~5 detik, `SelectedItem` selalu `(null)` — pola loop buka-tutup paksa, bukan interaksi normal. Diperbaiki: `KolomTap_LostFocus` tidak lagi merebut fokus selama `ComboBox.IsDropDownOpen`, dan `ComboBox.DropDownClosed` (baru) yang mengembalikan fokus ke `KolomTap` setelah operator selesai memilih. Jembatan `PresentationTraceSources.DataBindingSource` → `PencatatGalat` (`App.xaml.cs`) **dipertahankan permanen** — kegagalan binding WPF di layar mana pun sekarang tercatat di `logs/`. Lihat A-30 di `MASTER-BUG-UIUX-REGISTER.md` untuk detail lengkap.
 
@@ -173,9 +175,11 @@ Ditambahkan setelah UAT melaporkan dialog "Tutup layar gerbang?" nyaris tidak bi
 15. **Kasus tambahan — tahun ajaran aktif tanpa kelas sama sekali** (instalasi baru sebelum kelas dibuat): buka Registrasi Kartu → **harap:** pesan "Tahun ajaran aktif ini belum mempunyai kelas. Tambahkan kelas dulu di menu Kelas." tampil jelas di dalam dialog, bukan dropdown kosong tanpa penjelasan.
 16. **Kasus tambahan (baru 2026-09-23) — kelas yang belum punya siswa sama sekali:** buat kelas baru di panel Kelas TANPA memasukkan siswa apa pun ke dalamnya (baik manual maupun impor) → buka Registrasi Kartu → pilih kelas itu → **harap:** kartu "Siswa sekarang" menampilkan teks "Kelas ini belum punya siswa terdaftar di sistem." (BUKAN "Seluruh siswa di kelas ini sudah terdaftar.") — dan kelas itu **tetap ada** di dropdown Kelas, tidak hilang.
 
-## Skenario A2 — Panel Siswa membaca kelas baru tanpa restart (UAT Bug #3, 2026-09-23)
+## Skenario A2 — Panel Siswa membaca kelas baru tanpa restart (UAT Bug #3, 2026-09-23, ditutup 2026-09-23)
 
-**Status: Implemented — menunggu UAT manual pengguna.** Akar masalah dikonfirmasi lewat pembacaan kode: `SiswaViewModel` di-cache oleh `MainWindowViewModel` (`_siswaViewModel ??= new SiswaViewModel(...)`) — constructor-nya (termasuk pemuatan daftar kelas) hanya jalan sekali per sesi. Diperbaiki: `SiswaViewModel.MuatUlangDaftarKelas()` (method baru) dipanggil `MainWindowViewModel` setiap kali menu "Siswa" dipilih, bukan hanya sekali. Diverifikasi otomatis lewat 3 unit test baru (`MasterDataViewModelTests`) — TAPI perilaku WPF `SelectedItem`/navigasi menu sungguhan tetap perlu diverifikasi manual.
+**STATUS AKHIR: ✅ SELESAI — LULUS UAT (2026-09-23).** Bug #3 ditutup — lihat A-27 di `MASTER-BUG-UIUX-REGISTER.md`.
+
+Akar masalah dikonfirmasi lewat pembacaan kode: `SiswaViewModel` di-cache oleh `MainWindowViewModel` (`_siswaViewModel ??= new SiswaViewModel(...)`) — constructor-nya (termasuk pemuatan daftar kelas) hanya jalan sekali per sesi. Diperbaiki: `SiswaViewModel.MuatUlangDaftarKelas()` (method baru) dipanggil `MainWindowViewModel` setiap kali menu "Siswa" dipilih, bukan hanya sekali. Diverifikasi otomatis lewat 3 unit test baru (`MasterDataViewModelTests`) — TAPI perilaku WPF `SelectedItem`/navigasi menu sungguhan tetap perlu diverifikasi manual.
 
 1. Buka panel Siswa sekali (supaya `SiswaViewModel` ter-cache), catat daftar kelas yang tersedia di dropdown filter (atas tabel) dan dropdown form Tambah Siswa.
 2. TANPA restart, buka panel Kelas → tambah kelas baru (mis. `9X-Test`) → simpan.
@@ -187,9 +191,11 @@ Ditambahkan setelah UAT melaporkan dialog "Tutup layar gerbang?" nyaris tidak bi
 8. Ulangi langkah 2-4 sekali lagi dengan kelas KEDUA (mis. `9Y-Test`).
 9. **Harap:** dropdown menampilkan KEDUA kelas baru (`9X-Test` dan `9Y-Test`), TIDAK ADA duplikat entri kelas lama.
 
-## Skenario B — Stabilitas tabel Siswa/Guru setelah navigasi (UAT Bug #12, 2026-09-22)
+## Skenario B — Stabilitas tabel Siswa/Guru setelah navigasi (UAT Bug #12, 2026-09-22, ditutup 2026-09-23)
 
-**Status: Implemented — menunggu UAT manual pengguna.** Diperbaiki: `MasterData/SiswaView.xaml` dan `MasterData/GuruView.xaml` — `MinWidth` ditambahkan ke SETIAP kolom `DataGrid` (nilai sama dengan `Width` yang sudah ada, tidak ada perubahan visual/angka lain), mencegah kolom (termasuk kolom tindakan Ubah/Unggah foto/Ganti kartu/Mutasi) menyempit di bawah ukuran itu berapa pun hasil pengukuran ulang WPF saat View dibuat ulang oleh navigasi menu. `Resources/GayaAplikasi.xaml` (`TabelStyle`, dipakai 12 layar lain) **TIDAK disentuh** — audit mengonfirmasi bug ini murni soal definisi kolom per-layar, bukan gaya bersama. Diverifikasi otomatis lewat `SiswaGuruTabelKolomTests` (6 test baru, jalan di thread STA manual) yang membuktikan `InitializeComponent()` menghasilkan jumlah/urutan kolom identik dan `MinWidth` benar-benar terpasang setiap View dibuat ulang — TAPI tes ini TIDAK bisa mereproduksi pengukuran layout WPF sungguhan (`Measure`/`Arrange` di jendela nyata dengan ukuran berubah bertahap), jadi verifikasi visual di bawah tetap wajib.
+**STATUS AKHIR: ✅ SELESAI — LULUS UAT (2026-09-23).** Bug #12 ditutup — lihat A-26 di `MASTER-BUG-UIUX-REGISTER.md`.
+
+Diperbaiki: `MasterData/SiswaView.xaml` dan `MasterData/GuruView.xaml` — `MinWidth` ditambahkan ke SETIAP kolom `DataGrid` (nilai sama dengan `Width` yang sudah ada, tidak ada perubahan visual/angka lain), mencegah kolom (termasuk kolom tindakan Ubah/Unggah foto/Ganti kartu/Mutasi) menyempit di bawah ukuran itu berapa pun hasil pengukuran ulang WPF saat View dibuat ulang oleh navigasi menu. `Resources/GayaAplikasi.xaml` (`TabelStyle`, dipakai 12 layar lain) **TIDAK disentuh** — audit mengonfirmasi bug ini murni soal definisi kolom per-layar, bukan gaya bersama. Diverifikasi otomatis lewat `SiswaGuruTabelKolomTests` (6 test baru, jalan di thread STA manual) yang membuktikan `InitializeComponent()` menghasilkan jumlah/urutan kolom identik dan `MinWidth` benar-benar terpasang setiap View dibuat ulang — TAPI tes ini TIDAK bisa mereproduksi pengukuran layout WPF sungguhan (`Measure`/`Arrange` di jendela nyata dengan ukuran berubah bertahap), jadi verifikasi visual di bawah tetap wajib.
 
 1. Buka menu Siswa, periksa seluruh kolom (Nama, NISN, JK, Kelas, Kartu, TG, Alasan, tombol tindakan) — catat lebar/urutan sebagai baseline.
 2. Pindah Siswa → Guru → Siswa sebanyak 10 siklus klik menu.
