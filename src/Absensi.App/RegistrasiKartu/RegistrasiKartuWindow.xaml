@@ -5,7 +5,7 @@
         Width="560"
         SizeToContent="Height"
         MinHeight="480"
-        MaxHeight="700"
+        MaxHeight="760"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow"
@@ -13,10 +13,14 @@
         Background="{StaticResource KertasBrush}">
 
     <!-- UAT Bug #11 (2026-09-22): Height tetap diganti SizeToContent="Height"
-         supaya 2 pesan baru (empty-state kelas kosong / gagal muat) tidak
-         berisiko terpotong seperti bug KonfirmasiTutupWindow (Layar Gerbang,
-         2026-09-22) — lihat komentar di berkas itu untuk akar masalah yang
-         sama persis (Height tetap lebih kecil dari konten sungguhan). -->
+         supaya pesan-pesan dinamis tidak berisiko terpotong seperti bug
+         KonfirmasiTutupWindow (Layar Gerbang, 2026-09-22).
+
+         UAT Bug #11 (2026-09-23, REDESAIN FUNDAMENTAL): alur antrean
+         otomatis lama (kursor lompat sendiri ke siswa berikutnya) diganti
+         alur eksplisit satu-siswa-satu-kartu — lihat komentar di
+         RegistrasiKartuViewModel.cs untuk detail lengkap dan PRD §16.5
+         (direvisi) untuk keputusan produk. -->
     <Grid>
         <Border Style="{StaticResource PanelMengambangStyle}" Margin="12">
             <StackPanel>
@@ -28,11 +32,6 @@
                            Margin="0,0,0,16" />
 
                 <TextBlock Text="Kelas" Style="{StaticResource LabelKolomStyle}" />
-                <!-- UAT 2026-09-23: Mode=TwoWay dieksplisitkan atas permintaan
-                     audit (default WPF untuk Selector.SelectedItem memang
-                     sudah TwoWay — BindsTwoWayByDefault=true di metadata
-                     dependency property-nya — jadi ini tidak mengubah
-                     perilaku, hanya menghilangkan keraguan). -->
                 <ComboBox x:Name="KolomKelas"
                           ItemsSource="{Binding DaftarKelas}"
                           SelectedItem="{Binding KelasTerpilih, Mode=TwoWay}"
@@ -40,56 +39,66 @@
                           Height="{StaticResource TinggiKontrol}"
                           Margin="0,0,0,8" />
 
-                <!-- UAT Bug #11: dibedakan dari PesanGalat (dipicu tap) —
-                     tampil begitu dialog dibuka kalau tahun ajaran aktif
-                     memang belum punya kelas sama sekali. -->
                 <TextBlock Text="Tahun ajaran aktif ini belum mempunyai kelas. Tambahkan kelas dulu di menu Kelas."
                            Style="{StaticResource PesanSalahKolomStyle}"
                            Visibility="{Binding TahunAjaranTanpaKelas, Converter={StaticResource BoolKeVisibilitas}}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,8" />
 
-                <!-- UAT Bug #11: kegagalan QUERY (bukan kelas kosong) —
-                     dibedakan supaya operator tahu ini masalah teknis,
-                     bukan memang belum ada kelas. -->
                 <TextBlock Text="{Binding PesanMuatKelasGagal}"
                            Style="{StaticResource PesanSalahKolomStyle}"
                            Visibility="{Binding PesanMuatKelasGagal, Converter={StaticResource NullKeVisibilitas}}"
                            TextWrapping="Wrap"
                            Margin="0,0,0,8" />
 
-                <TextBlock Text="{Binding ProgresTeks}"
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Margin="0,0,0,16" />
+                <!-- UAT 2026-09-23: dropdown BARU — admin memilih SATU siswa
+                     secara eksplisit, menggantikan kursor otomatis. -->
+                <TextBlock Text="Nama siswa" Style="{StaticResource LabelKolomStyle}" />
+                <ComboBox x:Name="KolomSiswa"
+                          ItemsSource="{Binding DaftarSiswaKelas}"
+                          SelectedItem="{Binding SiswaTerpilih, Mode=TwoWay}"
+                          DisplayMemberPath="Nama"
+                          Height="{StaticResource TinggiKontrol}"
+                          Margin="0,0,0,8" />
 
+                <TextBlock Text="Kelas ini belum punya siswa aktif."
+                           Style="{StaticResource PesanSalahKolomStyle}"
+                           Visibility="{Binding KelasBelumPunyaSiswa, Converter={StaticResource BoolKeVisibilitas}}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8" />
+
+                <!-- "Siswa sekarang": nama, NISN, kelas, status kartu siswa
+                     TERPILIH (bukan lagi "siswa berikutnya yang belum
+                     terdaftar" — itu konsep antrean lama). -->
                 <Border Background="{StaticResource BiruMudaBrush}"
                         CornerRadius="{StaticResource RadiusSedang}"
                         Padding="16"
-                        Margin="0,0,0,16">
+                        Margin="0,0,0,16"
+                        Visibility="{Binding SiswaTerpilih, Converter={StaticResource NullKeVisibilitas}}">
                     <StackPanel>
                         <TextBlock Text="Siswa sekarang" Style="{StaticResource LabelKolomStyle}" />
+                        <TextBlock Text="{Binding SiswaTerpilih.Nama}" Style="{StaticResource JudulBagianStyle}" />
+                        <TextBlock Text="{Binding SiswaTerpilih.Nisn}" Style="{StaticResource TeksUtamaStyle}" />
+                        <TextBlock Text="{Binding SiswaTerpilih.KelasNama}" Style="{StaticResource TeksUtamaStyle}" />
+                        <TextBlock Style="{StaticResource TeksUtamaStyle}" Margin="0,8,0,0">
+                            <Run Text="Status kartu: " FontWeight="SemiBold" />
+                            <Run Text="{Binding StatusKartuSiswaTerpilih, Mode=OneWay}" />
+                        </TextBlock>
 
-                        <!-- UAT 2026-09-23: dulu satu TextBlock dengan
-                             TargetNullValue statis yang salah untuk kelas
-                             yang MEMANG belum punya siswa (bukan "sudah
-                             terdaftar semua") — dipecah jadi dua blok yang
-                             saling eksklusif lewat PesanSiswaKosong/
-                             TidakAdaSiswaSekarang (RegistrasiKartuViewModel),
-                             supaya kondisi "belum ada siswa" jelas beda
-                             dari "seluruh siswa sudah terdaftar". Kelas itu
-                             sendiri TETAP ada di dropdown Kelas — hanya
-                             kartu "Siswa sekarang" ini yang berubah. -->
-                        <StackPanel Visibility="{Binding TidakAdaSiswaSekarang, Converter={StaticResource BoolKeVisibilitas}}">
-                            <TextBlock Text="{Binding PesanSiswaKosong}" Style="{StaticResource JudulBagianStyle}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <StackPanel Visibility="{Binding SiswaSekarang, Converter={StaticResource NullKeVisibilitas}}">
-                            <TextBlock Text="{Binding SiswaSekarang.Nama}" Style="{StaticResource JudulBagianStyle}" />
-                            <TextBlock Text="{Binding SiswaSekarang.Nisn}" Style="{StaticResource TeksUtamaStyle}" />
-                            <TextBlock Text="Tempelkan kartu pada reader untuk mendaftarkan"
-                                       Style="{StaticResource LabelKecilStyle}"
-                                       Foreground="{StaticResource AbuTulisBrush}"
-                                       Margin="0,8,0,0" />
-                        </StackPanel>
+                        <!-- UID sementara — data BELUM tersimpan, hanya
+                             hasil tap yang menunggu Simpan ditekan. -->
+                        <TextBlock Text="{Binding UidSementara, StringFormat='Kartu terdeteksi: {0} (belum disimpan)'}"
+                                   Style="{StaticResource TeksUtamaStyle}"
+                                   Foreground="{StaticResource TerlambatTeksBrush}"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding UidSementara, Converter={StaticResource NullKeVisibilitas}}"
+                                   Margin="0,8,0,0" />
+
+                        <TextBlock Text="Tempelkan kartu pada reader untuk mendaftarkan siswa ini"
+                                   Style="{StaticResource LabelKecilStyle}"
+                                   Foreground="{StaticResource AbuTulisBrush}"
+                                   Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>
 
@@ -99,15 +108,19 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,8" />
 
+                <!-- Hanya tampil SETELAH transaksi commit dan diverifikasi
+                     ulang (RegistrasiKartuViewModel.Simpan) — bukan
+                     langsung setelah tap. -->
                 <TextBlock Text="{Binding PesanStatus}"
                            Style="{StaticResource TeksUtamaStyle}"
                            Foreground="{StaticResource HadirTeksBrush}"
+                           TextWrapping="Wrap"
                            Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
                            Margin="0,0,0,8" />
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                     <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Click="TombolBatal_Click" Margin="0,0,8,0" />
-                    <Button Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" />
+                    <Button x:Name="TombolSimpan" Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" Click="TombolSimpan_Click" />
                 </StackPanel>
             </StackPanel>
         </Border>

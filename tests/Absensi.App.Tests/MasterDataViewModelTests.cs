@@ -1,5 +1,8 @@
+using System.IO;
+using System.Windows.Media.Imaging;
 using Absensi.App;
 using Absensi.App.MasterData;
+using Absensi.Data;
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
@@ -221,5 +224,128 @@ public sealed class MasterDataViewModelTests
 
         Assert.Contains(viewModel.Daftar, k => k.Nama == "9Y");
         Assert.DoesNotContain(viewModel.Daftar, k => k.Nama == "9Z");
+    }
+
+    // UAT 2026-09-23 (Panel Siswa — perbaikan Unggah foto): sebelumnya
+    // UnggahFoto sama sekali tidak punya try/catch -- kegagalan menyalin
+    // atau mengubah ukuran gambar melempar exception tak tertangani sampai
+    // handler global, dan tidak ada bukti eksplisit bahwa database BENAR
+    // diperbarui sebelum pesan berhasil ditampilkan. UnggahFotoDariBerkas
+    // dipisah dari UnggahFoto (yang membuka OpenFileDialog) supaya bisa
+    // diuji langsung, pola sama seperti SimpanTemplateKeBerkas (A-8).
+    private static string BuatBerkasGambarSementara()
+    {
+        var bitmap = new WriteableBitmap(8, 8, 96, 96, System.Windows.Media.PixelFormats.Bgr32, null);
+        var path = Path.Combine(Path.GetTempPath(), $"foto-uji-{Guid.NewGuid():N}.png");
+        using var stream = File.Create(path);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        encoder.Save(stream);
+        return path;
+    }
+
+    [Fact]
+    public void SiswaViewModel_UnggahFotoDariBerkas_Berhasil_PesanJelasDanFotoTersimpanDiDatabase()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        database.TambahAkun(1, "admin1", "admin", guruId: null);
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswa = viewModel.Daftar.Single(s => s.Id == 1);
+        var pathSumber = BuatBerkasGambarSementara();
+        var pathTujuan = Path.Combine(LokasiData.FolderData, "foto", $"{siswa.Nisn}.png");
+
+        try
+        {
+            viewModel.UnggahFotoDariBerkas(siswa, pathSumber);
+
+            Assert.Null(viewModel.PesanGalat);
+            Assert.Equal($"Foto {siswa.Nama} berhasil diunggah.", viewModel.PesanStatus);
+            Assert.True(File.Exists(pathTujuan));
+
+            // Query ULANG database (bukan cuma percaya pesan sukses) --
+            // memastikan foto_path benar-benar ditulis, bukan cuma tampil
+            // berhasil di UI.
+            var fotoPathDb = new RepositoriSiswa().CariFotoPath(database.Connection, siswa.Id);
+            Assert.Equal($"{siswa.Nisn}.png", fotoPathDb);
+        }
+        finally
+        {
+            File.Delete(pathSumber);
+            File.Delete(pathTujuan);
+        }
+    }
+
+    [Fact]
+    public void SiswaViewModel_UnggahFotoDariBerkas_BerkasSumberBukanGambarValid_PesanGagalJelasTanpaSukses()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswa = viewModel.Daftar.Single(s => s.Id == 1);
+        var pathSumber = Path.Combine(Path.GetTempPath(), $"foto-uji-rusak-{Guid.NewGuid():N}.jpg");
+        File.WriteAllBytes(pathSumber, new byte[] { 1, 2, 3, 4, 5 });
+        var pathTujuan = Path.Combine(LokasiData.FolderData, "foto", $"{siswa.Nisn}.png");
+        var fotoPathSebelum = new RepositoriSiswa().CariFotoPath(database.Connection, siswa.Id);
+
+        try
+        {
+            viewModel.UnggahFotoDariBerkas(siswa, pathSumber);
+
+            Assert.NotNull(viewModel.PesanGalat);
+            Assert.Null(viewModel.PesanStatus);
+
+            // Database TIDAK boleh berubah kalau pengolahan gambar gagal.
+            var fotoPathSesudah = new RepositoriSiswa().CariFotoPath(database.Connection, siswa.Id);
+            Assert.Equal(fotoPathSebelum, fotoPathSesudah);
+        }
+        finally
+        {
+            File.Delete(pathSumber);
+            if (File.Exists(pathTujuan))
+            {
+                File.Delete(pathTujuan);
+            }
+        }
+    }
+
+    // "Pastikan foto tetap tersimpan setelah aplikasi ditutup dan dibuka
+    // kembali" -- menutup koneksi yang menulis, membuka KONEKSI BARU ke
+    // BERKAS yang sama (persis restart aplikasi), baru query ulang. Pola
+    // sama seperti durabilitas Registrasi Kartu
+    // (RegistrasiKartuViewModelTests.Simpan_SetelahKoneksiDitutupDanDibukaUlang...).
+    [Fact]
+    public void SiswaViewModel_UnggahFotoDariBerkas_Berhasil_BertahanSetelahKoneksiDitutupDanDibukaUlang()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        database.TambahAkun(1, "admin1", "admin", guruId: null);
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        var siswa = viewModel.Daftar.Single(s => s.Id == 1);
+        var pathSumber = BuatBerkasGambarSementara();
+        var pathTujuan = Path.Combine(LokasiData.FolderData, "foto", $"{siswa.Nisn}.png");
+
+        try
+        {
+            viewModel.UnggahFotoDariBerkas(siswa, pathSumber);
+
+            var pathBerkas = database.PathBerkas;
+            database.Connection.Dispose();
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+            using var koneksiBaru = SqliteConnectionFactory.Open(pathBerkas);
+            var fotoPathDb = new RepositoriSiswa().CariFotoPath(koneksiBaru, siswa.Id);
+
+            Assert.Equal($"{siswa.Nisn}.png", fotoPathDb);
+            Assert.True(File.Exists(pathTujuan));
+        }
+        finally
+        {
+            File.Delete(pathSumber);
+            if (File.Exists(pathTujuan))
+            {
+                File.Delete(pathTujuan);
+            }
+        }
     }
 }

@@ -14,6 +14,13 @@ internal sealed class MigratedDatabase : IDisposable
 
     public SqliteConnection Connection { get; }
 
+    // UAT Bug #11 (2026-09-23): dibutuhkan untuk tes durabilitas — membuka
+    // KONEKSI BARU ke berkas .db yang SAMA supaya bisa membuktikan data
+    // benar-benar tertulis ke disk (bukan cuma terlihat di koneksi yang
+    // sama yang menulisnya). Nama BUKAN "Path" supaya tidak bentrok dengan
+    // System.IO.Path yang sudah di-`using` di seluruh berkas ini.
+    public string PathBerkas => _path;
+
     public MigratedDatabase()
     {
         _path = Path.Combine(Path.GetTempPath(), $"absensi-app-test-{Guid.NewGuid():N}.db");

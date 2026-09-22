@@ -18,8 +18,7 @@
                 <TextBlock Grid.Column="0" Text="Siswa" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="Unduh Template" Style="{StaticResource TombolSekunderStyle}" Command="{Binding UnduhTemplateCommand}" Margin="0,0,8,0" />
-                    <Button Content="Impor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporExcelCommand}" Margin="0,0,8,0" />
-                    <Button Content="Impor foto" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporFotoCommand}" />
+                    <Button Content="Impor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporExcelCommand}" />
                 </StackPanel>
             </Grid>
 
@@ -58,38 +57,73 @@
                  sempit dari ini apa pun hasil pengukuran sementaranya. -->
             <DataGrid x:Name="TabelSiswa" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" MinWidth="180">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Aktif}" Value="False">
-                                        <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" MinWidth="110" />
+                    <!-- UAT 2026-09-23: kolom TG dan Alasan (dedicated,
+                         hampir selalu kosong untuk siswa aktif) dihapus dari
+                         tabel ini atas instruksi eksplisit — audit
+                         mengonfirmasi TertautTelegram dan AlasanNonaktif
+                         TETAP dipakai modul lain (Notifikasi, Mutasi/PRD
+                         §14.4) sehingga field/database TIDAK dihapus, hanya
+                         tampilannya di sini. Syarat PRD §14.4 "siswa tidak
+                         aktif tetap muncul dengan nama redup dan alasannya"
+                         tetap dipenuhi lewat teks alasan yang tampil INLINE
+                         di sebelah nama (bukan kolom terpisah) — lihat
+                         DataGridTemplateColumn "Nama" di bawah. -->
+                    <DataGridTemplateColumn Header="Nama" Width="*" MinWidth="200" SortMemberPath="Nama">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Nama}" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Aktif}" Value="False">
+                                                        <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding AlasanNonaktif, StringFormat=' ({0})'}"
+                                               Foreground="{StaticResource AbuTulisBrush}"
+                                               FontStyle="Italic"
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding AlasanNonaktif, Converter={StaticResource NullKeVisibilitas}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="100" MinWidth="100" />
                     <DataGridTextColumn Header="JK" Binding="{Binding JenisKelamin}" Width="40" MinWidth="40" />
                     <DataGridTextColumn Header="Kelas" Binding="{Binding KelasNama}" Width="70" MinWidth="70" />
-                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="60" MinWidth="60" />
-                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="50" MinWidth="50" />
-                    <DataGridTextColumn Header="Alasan" Binding="{Binding AlasanNonaktif}" Width="90" MinWidth="90" />
-                    <DataGridTemplateColumn Header="" Width="290" MinWidth="290">
+                    <!-- UAT Bug #11 (2026-09-23): dulu Binding="{Binding PunyaKartu}"
+                         menampilkan True/False mentah — sekarang UID
+                         sebenarnya lewat KartuUidKeTeksConverter, atau
+                         "Belum terdaftar". -->
+                    <DataGridTextColumn Header="Kartu" Binding="{Binding KartuUid, Converter={StaticResource KartuUidKeTeks}}" Width="110" MinWidth="110" />
+                    <!-- UAT 2026-09-23: dilebarkan dari 290 ke 400 (MinWidth
+                         sama) — empat tombol teks ("Unggah foto"/"Ganti
+                         kartu" khususnya) tidak muat penuh di 290px dengan
+                         gaya tombol yang dipakai (padding 16,8 + font 14px),
+                         berisiko terpotong/berhimpitan. Margin 0,0,6,0 antar
+                         tombol ditambahkan supaya jarak konsisten -->
+                    <DataGridTemplateColumn Header="" Width="400" MinWidth="400">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="Ubah" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding}"
+                                            Margin="0,0,6,0" />
                                     <Button Content="Unggah foto" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding}"
+                                            Margin="0,0,6,0" />
                                     <!-- PRD §16.11: hanya bermakna bila sudah punya kartu — kartu pertama lewat layar Registrasi Kartu per kelas -->
                                     <Button Content="Ganti kartu" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.GantiKartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Visibility="{Binding PunyaKartu, Converter={StaticResource BoolKeVisibilitas}}" />
+                                            Visibility="{Binding PunyaKartu, Converter={StaticResource BoolKeVisibilitas}}"
+                                            Margin="0,0,6,0" />
                                     <Button Content="Mutasi" Style="{StaticResource TombolTeksStyle}"
                                             Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}" />

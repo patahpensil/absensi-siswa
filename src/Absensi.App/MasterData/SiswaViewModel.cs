@@ -12,8 +12,13 @@ using Microsoft.Win32;
 
 namespace Absensi.App.MasterData;
 
-// PRD §14.4: daftar (dengan penanda Kartu/TG), impor Excel, impor foto,
-// tambah/edit, dan mutasi (tidak aktif).
+// PRD §14.4: daftar (dengan penanda Kartu), impor Excel, unggah foto per
+// siswa, tambah/edit, dan mutasi (tidak aktif). UAT 2026-09-23: tombol impor
+// foto massal (folder dicocokkan ke NISN, §16.4) dihapus dari panel ini atas
+// instruksi eksplisit -- ImporFotoSiswa.cs TETAP ADA (tidak dihapus, PRD
+// §16.4 masih mendokumentasikan alurnya) tapi untuk saat ini tidak ada
+// entry point UI yang memanggilnya. Kolom TG (TertautTelegram) dihapus dari
+// tabel Daftar juga -- fieldnya tetap dipakai menu Notifikasi.
 public sealed class SiswaViewModel : ObservableObject
 {
     private static readonly string[] AlasanTidakAktif = { "lulus", "pindah", "keluar" };
@@ -68,7 +73,6 @@ public sealed class SiswaViewModel : ObservableObject
         UnggahFotoCommand = new RelayCommand<SiswaDaftar>(UnggahFoto);
         UnduhTemplateCommand = new RelayCommand(UnduhTemplate);
         ImporExcelCommand = new RelayCommand(ImporExcel);
-        ImporFotoCommand = new RelayCommand(ImporFoto);
 
         // §16.11: penggantian kartu hilang hanya bermakna bila siswa sudah
         // punya kartu aktif — pendaftaran kartu pertama lewat layar
@@ -154,8 +158,6 @@ public sealed class SiswaViewModel : ObservableObject
 
     public RelayCommand ImporExcelCommand { get; }
 
-    public RelayCommand ImporFotoCommand { get; }
-
     private bool BisaSimpan() => !string.IsNullOrWhiteSpace(_nisn) && !string.IsNullOrWhiteSpace(_nama) && _kelasTerpilih is not null;
 
     private void MulaiEdit(SiswaDaftar siswa)
@@ -231,12 +233,50 @@ public sealed class SiswaViewModel : ObservableObject
             return;
         }
 
+        UnggahFotoDariBerkas(siswa, dialog.FileName);
+    }
+
+    // UAT 2026-09-23: dipisah dari UnggahFoto supaya bisa diuji tanpa
+    // OpenFileDialog sungguhan -- pola sama seperti SimpanTemplateKeBerkas
+    // (A-8). Sebelumnya TIDAK ada try/catch sama sekali -- kegagalan
+    // menyalin/mengubah ukuran gambar (berkas rusak, akses ditolak, folder
+    // data read-only) melempar exception tak tertangani sampai handler
+    // global, dan "Foto ... tersimpan." tidak pernah bisa salah tampil
+    // karena baris itu memang tidak pernah dicapai kalau ada exception --
+    // tapi operator hanya melihat dialog galat generik, bukan alasan nyata.
+    // Sekarang: pesan berhasil BARU tampil setelah PengolahFoto DAN
+    // LayananSiswa.SimpanFoto (yang menulis lewat JalurPerubahanData,
+    // atomik) sama-sama sukses; kegagalan menampilkan alasan yang jelas,
+    // bukan pesan berhasil.
+    public void UnggahFotoDariBerkas(SiswaDaftar siswa, string pathSumber)
+    {
         var namaBerkasTujuan = $"{siswa.Nisn}.png";
         var pathTujuan = System.IO.Path.Combine(LokasiData.FolderData, "foto", namaBerkasTujuan);
-        PengolahFoto.SimpanDiubahUkuran(dialog.FileName, pathTujuan);
-        _layananSiswa.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, siswa.Id, namaBerkasTujuan);
-        PesanStatus = $"Foto {siswa.Nama} tersimpan.";
+
+        try
+        {
+            PengolahFoto.SimpanDiubahUkuran(pathSumber, pathTujuan);
+            _layananSiswa.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, siswa.Id, namaBerkasTujuan);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            PesanGalat = PesanUntukKegagalanUnggahFoto(ex);
+            PesanStatus = null;
+            return;
+        }
+
+        PesanGalat = null;
+        PesanStatus = $"Foto {siswa.Nama} berhasil diunggah.";
+        MuatUlang();
     }
+
+    private static string PesanUntukKegagalanUnggahFoto(Exception ex) => ex switch
+    {
+        UnauthorizedAccessException => "Foto tidak bisa disimpan karena akses ditolak. Periksa izin folder data, lalu coba lagi.",
+        NotSupportedException => "Format gambar tidak dikenali. Gunakan berkas JPG, PNG, atau BMP yang valid.",
+        IOException => "Berkas foto sedang dipakai aplikasi lain atau tidak bisa dibaca. Tutup berkasnya, lalu coba lagi.",
+        _ => "Gagal mengunggah foto. Coba lagi; bila terus terjadi, laporkan ke pengelola aplikasi.",
+    };
 
     // PRD §16.11: "TU membuka Data Siswa → pilih siswa → nonaktifkan kartu
     // lama → aktifkan Mode Registrasi → tap kartu baru" — satu dialog.
@@ -305,20 +345,6 @@ public sealed class SiswaViewModel : ObservableObject
         MuatUlang();
     }
 
-    private void ImporFoto()
-    {
-        var dialog = new OpenFolderDialog();
-        if (dialog.ShowDialog() != true)
-        {
-            return;
-        }
-
-        var hasil = new ImporFotoSiswa().Impor(_connection, _akun, _penyediaWaktu.Sekarang, dialog.FolderName);
-        PesanStatus = hasil.TidakCocok.Count == 0
-            ? $"{hasil.Cocok} foto tersimpan."
-            : $"{hasil.Cocok} foto tersimpan · {hasil.TidakCocok.Count} berkas tidak cocok NISN mana pun.";
-        MuatUlang();
-    }
 
     // Bug #3 (Master Bug & UI/UX Register A-20 / UAT 2026-09-22): panel
     // Siswa di-cache oleh MainWindowViewModel (`_siswaViewModel ??= ...`) —
@@ -357,7 +383,12 @@ public sealed class SiswaViewModel : ObservableObject
         KelasTerpilih = idTerpilihSebelumnya is { } idTerpilih ? DaftarKelas.FirstOrDefault(k => k.Id == idTerpilih) : null;
     }
 
-    private void MuatUlang()
+    // UAT Bug #11 (2026-09-23, putaran kelima): public supaya
+    // MainWindowViewModel bisa memanggilnya setelah RegistrasiKartuWindow
+    // (dialog TERPISAH, tidak tahu-menahu soal SiswaViewModel) tertutup —
+    // status Kartu siswa yang baru didaftarkan tidak pernah muncul di panel
+    // Siswa yang sudah ter-cache tanpa panggilan eksplisit ini.
+    public void MuatUlang()
     {
         _semuaSiswa = _repositoriSiswa.DaftarUntukTahunAjaran(_connection, _tahunAjaranId);
         TerapkanFilterKelas();

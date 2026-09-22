@@ -184,6 +184,16 @@ public sealed class MainWindowViewModel : ObservableObject
     // dipanggil di SINI (bukan di constructor SiswaViewModel saja) supaya
     // jalan setiap kali menu "Siswa" dipilih — baik saat ViewModel baru
     // dibuat MAUPUN dipakai ulang dari cache.
+    // UAT Bug #11 (2026-09-23, putaran kelima): RegistrasiKartuWindow
+    // adalah dialog TERPISAH (dibuka lewat App.BukaRegistrasiKartu(), tidak
+    // lewat menu Siswa) — tidak pernah menyentuh SiswaViewModel sama sekali.
+    // Dipanggil MainWindow.xaml.cs SETIAP KALI dialog itu tertutup (Simpan
+    // maupun Batal) supaya kolom Kartu di panel Siswa yang sudah ter-cache
+    // langsung menunjukkan status terbaru tanpa restart. Tidak melakukan
+    // apa pun kalau panel Siswa belum pernah dibuka sama sekali sesi ini
+    // (SiswaViewModel belum ada, tidak perlu dibuat hanya untuk ini).
+    public void MuatUlangSiswaSetelahRegistrasiKartu() => _siswaViewModel?.MuatUlang();
+
     private SiswaViewModel MuatUlangSiswaViewModel(int tahunAjaranId)
     {
         _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId);

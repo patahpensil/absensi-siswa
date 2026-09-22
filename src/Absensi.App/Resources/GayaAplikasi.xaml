@@ -22,6 +22,7 @@
     <BooleanToVisibilityConverter x:Key="BoolKeVisibilitas" />
     <conv:NullKeVisibilitasConverter x:Key="NullKeVisibilitas" />
     <conv:TanggalLiburMultiConverter x:Key="TanggalLiburKeBool" />
+    <conv:KartuUidKeTeksConverter x:Key="KartuUidKeTeks" />
 
     <!-- Navigasi ViewModel-first (Tugas 7): MainWindow.KontenAktif memuat
          salah satu ViewModel ini, DataTemplate implisit memilih View-nya. -->

@@ -33,6 +33,18 @@ public partial class MainWindow : Window
 
             jendela.Owner = this;
             jendela.ShowDialog();
+
+            // UAT Bug #11 (2026-09-23, putaran kelima): RegistrasiKartuWindow
+            // TIDAK PERNAH terhubung ke SiswaViewModel sama sekali — kalau
+            // operator sudah pernah membuka panel Siswa sebelumnya (jadi
+            // ter-cache lewat "??=" di MainWindowViewModel), kolom Kartu di
+            // sana tetap menunjukkan status LAMA (False) walau kartu
+            // BERHASIL disimpan lewat dialog ini, sampai operator pindah
+            // menu dan balik lagi secara manual. Panggilan ini SELALU
+            // dijalankan begitu dialog tertutup (Simpan MAUPUN Batal —
+            // reload data yang sudah benar tidak berbahaya walau tidak ada
+            // perubahan) supaya Kartu=True langsung terlihat tanpa restart.
+            viewModel.MuatUlangSiswaSetelahRegistrasiKartu();
         };
 
         viewModel.RestoreSelesaiPerluTutupAplikasi += (_, data) => restoreSelesaiPerluTutupAplikasi(data);

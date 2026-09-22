@@ -164,6 +164,13 @@ public sealed class RepositoriSiswa
 
     // PRD §14.4: tabel Daftar dengan penanda Kartu dan TG, plus kelas siswa
     // pada tahun ajaran yang dipilih.
+    //
+    // UAT Bug #11 (2026-09-23): kolom terakhir (uid kartu) ditambahkan —
+    // panel Siswa sekarang menampilkan UID sebenarnya, bukan True/False.
+    // Subquery LIMIT 1 aman karena ix_kartu_uid_aktif menjamin paling
+    // banyak SATU kartu aktif per pemilik pada satu waktu (aturan "satu
+    // siswa satu kartu aktif" ditegakkan di LayananRegistrasiKartu, bukan
+    // di query ini).
     public IReadOnlyList<SiswaDaftar> DaftarUntukTahunAjaran(SqliteConnection connection, int tahunAjaranId)
     {
         using var command = connection.CreateCommand();
@@ -172,7 +179,8 @@ public sealed class RepositoriSiswa
                 s.id, s.nisn, s.nama, s.jenis_kelamin, s.aktif, s.alasan_nonaktif, k.nama,
                 EXISTS(SELECT 1 FROM kartu WHERE pemilik_tipe = 'siswa' AND pemilik_id = s.id AND aktif = 1),
                 EXISTS(SELECT 1 FROM pairing WHERE subjek_tipe = 'siswa' AND subjek_id = s.id AND status = 'tertaut'),
-                s.foto_path
+                s.foto_path,
+                (SELECT uid FROM kartu WHERE pemilik_tipe = 'siswa' AND pemilik_id = s.id AND aktif = 1 LIMIT 1)
             FROM siswa s
             LEFT JOIN siswa_kelas sk ON sk.siswa_id = s.id AND sk.tahun_ajaran_id = $tahunAjaranId
             LEFT JOIN kelas k ON k.id = sk.kelas_id
@@ -194,7 +202,8 @@ public sealed class RepositoriSiswa
                 reader.IsDBNull(6) ? null : reader.GetString(6),
                 reader.GetInt32(7) == 1,
                 reader.GetInt32(8) == 1,
-                PunyaFoto: !reader.IsDBNull(9)));
+                PunyaFoto: !reader.IsDBNull(9),
+                KartuUid: reader.IsDBNull(10) ? null : reader.GetString(10)));
         }
 
         return daftar;

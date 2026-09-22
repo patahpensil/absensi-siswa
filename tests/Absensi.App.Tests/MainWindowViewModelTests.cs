@@ -60,4 +60,50 @@ public sealed class MainWindowViewModelTests
 
         Assert.Null(viewModel.Logo);
     }
+
+    // UAT Bug #11 (2026-09-23, putaran kelima): RegistrasiKartuWindow tidak
+    // pernah terhubung ke SiswaViewModel — kalau panel Siswa sudah pernah
+    // dibuka (ter-cache), kartu yang baru didaftarkan lewat dialog terpisah
+    // itu tidak pernah muncul di kolom Kartu tanpa panggilan eksplisit ini
+    // (dipanggil MainWindow.xaml.cs setiap RegistrasiKartuWindow tertutup).
+    [Fact]
+    public void MuatUlangSiswaSetelahRegistrasiKartu_PanelSiswaSudahDibuka_StatusKartuTerbaru()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, "SMP Contoh", logoPath: null);
+
+        // Buka panel Siswa dulu (persis urutan operator: buka Siswa,
+        // lalu buka Absensi -> Registrasi Kartu terpisah) supaya
+        // SiswaViewModel ter-cache SEBELUM kartu baru didaftarkan.
+        viewModel.MenuAktif = "Siswa";
+        var siswaViewModel = Assert.IsType<Absensi.App.MasterData.SiswaViewModel>(viewModel.KontenAktif);
+        var siswaBelumKartu = siswaViewModel.Daftar.Single(s => s.Nama == "Siswa Belum Satu");
+        Assert.False(siswaBelumKartu.PunyaKartu);
+
+        // Simulasi: RegistrasiKartuViewModel.Simpan() berhasil menulis
+        // kartu baru lewat koneksi yang SAMA (persis skenario nyata —
+        // App._connection dipakai bersama semua ViewModel).
+        database.Execute("""
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-BARU-SIMULASI', 'siswa', 2, 1, '2026-09-23T00:00:00');
+            """);
+
+        viewModel.MuatUlangSiswaSetelahRegistrasiKartu();
+
+        var siswaSetelahRefresh = siswaViewModel.Daftar.Single(s => s.Nama == "Siswa Belum Satu");
+        Assert.True(siswaSetelahRefresh.PunyaKartu);
+    }
+
+    [Fact]
+    public void MuatUlangSiswaSetelahRegistrasiKartu_PanelSiswaBelumPernahDibuka_TidakMelempar()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, "SMP Contoh", logoPath: null);
+
+        var exception = Record.Exception(() => viewModel.MuatUlangSiswaSetelahRegistrasiKartu());
+
+        Assert.Null(exception);
+    }
 }

@@ -35,7 +35,11 @@ namespace Absensi.App.Tests;
 // berulang kali di PANDUAN-TESTER.md untuk siklus hidup Window WPF lain).
 public sealed class SiswaGuruTabelKolomTests
 {
-    private const int KolomSiswaDiharapkan = 8;
+    // UAT 2026-09-23: 8 -> 6 setelah kolom TG dan Alasan dihapus dari
+    // tampilan Panel Siswa (field TertautTelegram/AlasanNonaktif TETAP ada
+    // di database/SiswaDaftar, dipakai modul lain seperti Notifikasi — lihat
+    // MASTER-BUG-UIUX-REGISTER.md).
+    private const int KolomSiswaDiharapkan = 6;
     private const int KolomGuruDiharapkan = 6;
 
     private static DataGrid AmbilTabel(FrameworkElement view, string namaElemen)
@@ -70,7 +74,7 @@ public sealed class SiswaGuruTabelKolomTests
 
         var header = tabel.Columns.Select(k => k.Header?.ToString() ?? string.Empty).ToArray();
 
-        Assert.Equal(new[] { "Nama", "NISN", "JK", "Kelas", "Kartu", "TG", "Alasan", "" }, header);
+        Assert.Equal(new[] { "Nama", "NISN", "JK", "Kelas", "Kartu", "" }, header);
     });
 
     [Fact]
@@ -87,8 +91,10 @@ public sealed class SiswaGuruTabelKolomTests
         // Kolom tindakan (Ubah/Unggah foto/Ganti kartu/Mutasi) butuh ruang
         // paling besar — kalau MinWidth-nya ikut menyempit, tombol-tombol
         // itu yang paling dulu tidak terbaca/tidak bisa diklik (laporan UAT).
+        // UAT 2026-09-23: 290 -> 400, empat tombol teks tidak muat penuh di
+        // 290px (lihat komentar di SiswaView.xaml).
         var kolomTindakan = tabel.Columns.Last();
-        Assert.Equal(290, kolomTindakan.MinWidth);
+        Assert.Equal(400, kolomTindakan.MinWidth);
     });
 
     [Fact]

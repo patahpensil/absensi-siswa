@@ -10,14 +10,17 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.RegistrasiKartu;
 
-// RENCANA-TUGAS.md Tugas 8 — Registrasi Kartu per kelas (PRD §16.5).
-// Kursor berjalan otomatis ke siswa berikutnya yang belum punya kartu
-// (baik dari database maupun yang baru ditap di sesi ini); UID dicek
-// lintas kedua master (§17.9) sebelum diterima. Sesi tidak menyentuh
-// database sampai Simpan ditekan — satu transaksi utuh (langkah 5,
-// dikonfirmasi pemilik proyek 2026-09-18). Mode Registrasi aktif selama
-// jendela ini terbuka dan mati otomatis saat ditutup, disimpan ataupun
-// dibatalkan (gagal-aman — lihat StatusModeRegistrasi).
+// UAT Bug #11 (2026-09-23) — REDESAIN FUNDAMENTAL, menggantikan alur
+// antrean-otomatis lama (RENCANA-TUGAS.md Tugas 8 / PRD §16.5 versi
+// sebelumnya, lihat docs/PRD.md untuk revisi terbaru). Operator SEKARANG
+// memilih kelas, lalu memilih SATU siswa secara eksplisit dari dropdown
+// (bukan kursor yang lompat otomatis ke siswa berikutnya), lalu tap kartu,
+// lalu Simpan — satu klik Simpan menghubungkan TEPAT satu siswa dengan
+// TEPAT satu kartu. Dialog TIDAK menutup diri sendiri setelah Simpan —
+// tetap terbuka supaya operator bisa langsung memilih siswa berikutnya di
+// kelas yang sama tanpa membuka ulang dialog; hanya Batal/tombol X yang
+// menutup jendela. Mode Registrasi aktif selama jendela ini terbuka dan
+// mati otomatis saat ditutup (gagal-aman — lihat StatusModeRegistrasi).
 public sealed class RegistrasiKartuViewModel : ObservableObject
 {
     private readonly SqliteConnection _connection;
@@ -26,13 +29,10 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
     private readonly StatusModeRegistrasi _statusModeRegistrasi;
     private readonly int _tahunAjaranId;
     private readonly LayananRegistrasiKartu _layanan = new();
-    private readonly Dictionary<string, PendaftaranKartu> _pendaftaranSesi = new();
-    private readonly HashSet<int> _terdaftarSesiIni = new();
 
-    private IReadOnlyList<SiswaDaftar> _daftarSiswaKelas = Array.Empty<SiswaDaftar>();
     private KelasDaftar? _kelasTerpilih;
-    private SiswaDaftar? _siswaSekarang;
-    private string? _progresTeks;
+    private SiswaDaftar? _siswaTerpilih;
+    private string? _uidSementara;
     private string? _pesanGalat;
     private string? _pesanStatus;
 
@@ -49,16 +49,12 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
         _statusModeRegistrasi = statusModeRegistrasi;
         _tahunAjaranId = tahunAjaranId;
 
-        // UAT Bug #11 (2026-09-22): dimuat ULANG di sini setiap kali
-        // ViewModel ini dibuat — App.xaml.cs BukaRegistrasiKartu() membuat
-        // ViewModel baru setiap dialog dibuka (tidak ada cache), jadi ini
-        // otomatis mengambil kelas terbaru tanpa perlu restart aplikasi,
-        // memakai _tahunAjaranId yang identik dengan yang dipakai panel
-        // Kelas (MainWindowViewModel meneruskan nilai yang sama ke
-        // keduanya). Dibungkus try/catch supaya kegagalan QUERY (mis.
-        // database terkunci) dibedakan dari kelas yang MEMANG belum ada —
-        // lihat GagalMuatKelas/TahunAjaranTanpaKelas di bawah, bukan
-        // menyembunyikan exception (CLAUDE.md §5).
+        // UAT Bug #11 (2026-09-22, masih berlaku): dimuat ULANG di sini
+        // setiap kali ViewModel ini dibuat — App.xaml.cs BukaRegistrasiKartu()
+        // membuat ViewModel baru setiap dialog dibuka (tidak ada cache),
+        // jadi ini otomatis mengambil kelas terbaru tanpa restart. Dibungkus
+        // try/catch supaya kegagalan QUERY dibedakan dari kelas yang MEMANG
+        // belum ada (bukan menyembunyikan exception, CLAUDE.md §5).
         try
         {
             foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))
@@ -72,7 +68,7 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
             GagalMuatKelas = true;
         }
 
-        SimpanCommand = new RelayCommand(Simpan, () => _pendaftaranSesi.Count > 0);
+        SimpanCommand = new RelayCommand(Simpan, BisaSimpan);
 
         // PRD §16.5 langkah 1: mengaktifkan Mode Registrasi adalah alasan
         // layar ini dibuka, jadi disatukan — bukan tombol terpisah.
@@ -81,18 +77,12 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
 
     public ObservableCollection<KelasDaftar> DaftarKelas { get; } = new();
 
-    // UAT Bug #11: true hanya kalau QUERY-nya sendiri gagal (exception),
-    // bukan kalau kelasnya memang belum ada — dua kondisi ini butuh pesan
-    // berbeda ke pengguna (§ "Hasil yang wajib dicapai" poin 9-11).
     public bool GagalMuatKelas { get; }
 
     public string? PesanMuatKelasGagal => GagalMuatKelas
         ? "Gagal memuat daftar kelas dari database. Tutup dan buka lagi Registrasi Kartu; bila terus terjadi, laporkan ke pengelola aplikasi."
         : null;
 
-    // Dibedakan dari PesanGalat (dipicu tap kartu) — ini tampil begitu
-    // dialog dibuka, sebelum operator sempat tap apa pun, supaya "kenapa
-    // dropdown Kelas kosong" langsung terjawab di layar itu sendiri.
     public bool TahunAjaranTanpaKelas => !GagalMuatKelas && DaftarKelas.Count == 0;
 
     public KelasDaftar? KelasTerpilih
@@ -102,43 +92,44 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
         {
             if (SetField(ref _kelasTerpilih, value))
             {
-                MuatKelas();
+                MuatSiswaKelas();
             }
         }
     }
 
-    public SiswaDaftar? SiswaSekarang
+    public ObservableCollection<SiswaDaftar> DaftarSiswaKelas { get; } = new();
+
+    public bool KelasBelumPunyaSiswa => _kelasTerpilih is not null && DaftarSiswaKelas.Count == 0;
+
+    public SiswaDaftar? SiswaTerpilih
     {
-        get => _siswaSekarang;
-        private set => SetField(ref _siswaSekarang, value);
+        get => _siswaTerpilih;
+        set
+        {
+            if (SetField(ref _siswaTerpilih, value))
+            {
+                // UAT poin wajib: memilih siswa BARU membatalkan UID
+                // sementara yang mungkin masih tertahan dari siswa
+                // sebelumnya — satu UID sementara hanya berlaku untuk satu
+                // siswa yang sedang dipilih.
+                UidSementara = null;
+                PesanGalat = null;
+                PesanStatus = null;
+                SimpanCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(StatusKartuSiswaTerpilih));
+            }
+        }
     }
 
-    // UAT 2026-09-23: sebelumnya XAML memakai TargetNullValue statis
-    // "Seluruh siswa di kelas ini sudah terdaftar" untuk SEMUA kondisi
-    // SiswaSekarang null — salah/membingungkan untuk kelas yang MEMANG
-    // belum punya siswa sama sekali (0 siswa, bukan "sudah terdaftar
-    // semua"). Kelas itu sendiri TIDAK boleh hilang dari dropdown untuk
-    // kasus ini (lihat DaftarKelas — tidak bergantung pada jumlah siswa).
-    //
-    // UAT 2026-09-23 (regresi putaran kedua, DIPERBAIKI): versi sebelumnya
-    // HANYA memeriksa "SiswaSekarang is null" — true SEJAK DIALOG DIBUKA
-    // (SiswaSekarang belum diisi sebelum kelas dipilih sama sekali),
-    // sehingga pesan "Kelas ini belum punya siswa" tampil SEBELUM operator
-    // sempat memilih kelas apa pun. Wajib mensyaratkan _kelasTerpilih tidak
-    // null juga — kondisi "belum ada siswa" hanya bermakna SETELAH kelas
-    // benar-benar dipilih.
-    public bool TidakAdaSiswaSekarang => _kelasTerpilih is not null && SiswaSekarang is null;
+    // "Bagian Siswa sekarang menampilkan ... status kartu siswa terpilih"
+    // — UID sebenarnya kalau sudah punya, bukan True/False (sama seperti
+    // kolom Kartu panel Siswa, lihat SiswaView.xaml).
+    public string StatusKartuSiswaTerpilih => SiswaTerpilih?.KartuUid ?? "Belum terdaftar";
 
-    public string PesanSiswaKosong => _daftarSiswaKelas.Count == 0
-        ? "Kelas ini belum punya siswa terdaftar di sistem."
-        : "Seluruh siswa di kelas ini sudah terdaftar.";
-
-    // PRD §16.5 langkah 4, format persis: "7A: 28 dari 30 terdaftar" —
-    // bukan progress bar persen, operator perlu tahu sisa berapa siswa.
-    public string? ProgresTeks
+    public string? UidSementara
     {
-        get => _progresTeks;
-        private set => SetField(ref _progresTeks, value);
+        get => _uidSementara;
+        private set => SetField(ref _uidSementara, value);
     }
 
     public string? PesanGalat
@@ -155,7 +146,13 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
 
     public RelayCommand SimpanCommand { get; }
 
-    // View menutup jendela saat ini terpicu (setelah Simpan sukses).
+    // View menutup jendela saat ini terpicu — HANYA dari Batal/tombol X
+    // sekarang (redesain 2026-09-23), TIDAK LAGI otomatis dipicu Simpan.
+    // Panel Siswa di-refresh MainWindow.xaml.cs SETELAH dialog ini tertutup
+    // (lihat MuatUlangSiswaSetelahRegistrasiKartu) — tidak perlu event
+    // per-Simpan terpisah karena dialog ini modal (Owner tidak terlihat
+    // selama dialog terbuka, jadi refresh mid-sesi tidak berguna secara
+    // visual bagi operator).
     public event EventHandler? Selesai;
 
     public void TapUid(string uid)
@@ -165,41 +162,55 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
             return;
         }
 
-        if (SiswaSekarang is not { } siswa)
+        if (_kelasTerpilih is null)
         {
-            PesanGalat = _kelasTerpilih is null
-                ? "Pilih kelas terlebih dahulu."
-                : "Seluruh siswa di kelas ini sudah terdaftar.";
+            PesanGalat = "Pilih kelas terlebih dahulu.";
             return;
         }
 
-        PesanGalat = null;
-
-        // PRD §16.5 langkah 3.4: duplikat DALAM sesi yang sama (belum
-        // tersimpan ke database) juga wajib ditolak, bukan hanya yang
-        // sudah ada di database.
-        if (_pendaftaranSesi.TryGetValue(uid, out var dipakaiSesiIni))
+        if (SiswaTerpilih is not { } siswa)
         {
-            PesanGalat = $"Kartu ini sudah dipakai {dipakaiSesiIni.NamaTampil} pada sesi ini.";
+            PesanGalat = "Pilih siswa terlebih dahulu.";
             return;
         }
 
+        // UAT poin wajib (Tap RFID): "Jika UID sudah terdaftar, tolak dan
+        // tampilkan pemiliknya. Jangan isi UID sementara dan jangan
+        // aktifkan Simpan." — dicek LANGSUNG ke database, bukan ke memori
+        // sesi (redesain ini tidak lagi punya "sesi" multi-siswa).
         var pemilikAktif = _layanan.CariPemilikAktif(_connection, uid, _tahunAjaranId);
         if (pemilikAktif is not null)
         {
             PesanGalat = pemilikAktif.KelasNama is { } kelasNama
                 ? $"Kartu ini sudah dipakai {pemilikAktif.Nama} di kelas {kelasNama}."
                 : $"Kartu ini sudah dipakai {pemilikAktif.Nama}.";
+            UidSementara = null;
+            SimpanCommand.RaiseCanExecuteChanged();
             return;
         }
 
-        _pendaftaranSesi[uid] = new PendaftaranKartu(uid, JenisPemilikKartu.Siswa, siswa.Id, siswa.Nama);
-        _terdaftarSesiIni.Add(siswa.Id);
-        PesanStatus = $"{siswa.Nama} terdaftar.";
-        SimpanCommand.RaiseCanExecuteChanged();
+        // UAT poin wajib: "Jika siswa terpilih sudah memiliki kartu aktif,
+        // tolak pendaftaran kartu baru. Penggantian kartu belum termasuk
+        // scope ini." — dicek terhadap DATABASE (KartuUid dari SiswaDaftar
+        // bisa basi kalau kartu itu baru saja dinonaktifkan/diganti lewat
+        // layar lain selagi dialog ini terbuka), bukan cuma properti yang
+        // sudah dimuat di memori.
+        var kartuSiswaSaatIni = _layanan.CariUidAktifSiswa(_connection, siswa.Id);
+        if (kartuSiswaSaatIni is not null)
+        {
+            PesanGalat = $"{siswa.Nama} sudah memiliki kartu aktif ({kartuSiswaSaatIni}). Penggantian kartu dilakukan lewat menu Siswa → Ganti kartu.";
+            UidSementara = null;
+            SimpanCommand.RaiseCanExecuteChanged();
+            return;
+        }
 
-        LompatKeSiswaBelumTerdaftar();
-        PerbaruiProgres();
+        // UAT poin wajib: "Jika UID tersedia, tampilkan UID yang terdeteksi
+        // sebagai data sementara." — BUKAN pesan "terdaftar" (itu baru
+        // benar setelah Simpan berhasil dan transaksi diverifikasi ulang).
+        PesanGalat = null;
+        UidSementara = uid;
+        PesanStatus = null;
+        SimpanCommand.RaiseCanExecuteChanged();
     }
 
     public void Batal() => Selesai?.Invoke(this, EventArgs.Empty);
@@ -208,70 +219,103 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
     // Mode Registrasi tidak pernah "menyala" setelah jendela ini hilang.
     public void MatikanModeRegistrasi() => _statusModeRegistrasi.Matikan();
 
-    private void MuatKelas()
+    private bool BisaSimpan() => _kelasTerpilih is not null && SiswaTerpilih is not null && !string.IsNullOrWhiteSpace(UidSementara);
+
+    private void MuatSiswaKelas()
     {
-        _pendaftaranSesi.Clear();
-        _terdaftarSesiIni.Clear();
+        DaftarSiswaKelas.Clear();
+        SiswaTerpilih = null;
+        UidSementara = null;
         PesanGalat = null;
         PesanStatus = null;
         SimpanCommand.RaiseCanExecuteChanged();
 
         if (_kelasTerpilih is not { } kelas)
         {
-            _daftarSiswaKelas = Array.Empty<SiswaDaftar>();
-            SiswaSekarang = null;
-            ProgresTeks = null;
-            OnPropertyChanged(nameof(TidakAdaSiswaSekarang));
-            OnPropertyChanged(nameof(PesanSiswaKosong));
+            OnPropertyChanged(nameof(KelasBelumPunyaSiswa));
             return;
         }
 
-        // UAT Bug #11: sama seperti pemuatan DaftarKelas di konstruktor —
-        // kegagalan query dibedakan dari kelas yang memang belum punya
-        // siswa, bukan ditelan diam-diam.
+        // UAT Bug #11 (masih berlaku): kegagalan query dibedakan dari
+        // kelas yang memang belum punya siswa, bukan ditelan diam-diam.
         try
         {
-            _daftarSiswaKelas = new RepositoriSiswa().DaftarUntukTahunAjaran(_connection, _tahunAjaranId)
-                .Where(s => s.Aktif && s.KelasNama == kelas.Nama)
-                .ToList();
+            foreach (var siswa in new RepositoriSiswa().DaftarUntukTahunAjaran(_connection, _tahunAjaranId)
+                .Where(s => s.Aktif && s.KelasNama == kelas.Nama))
+            {
+                DaftarSiswaKelas.Add(siswa);
+            }
         }
         catch (Exception galat)
         {
-            PencatatGalat.Catat(galat, sumber: "RegistrasiKartuViewModel.MuatKelas", level: "ERROR");
-            _daftarSiswaKelas = Array.Empty<SiswaDaftar>();
+            PencatatGalat.Catat(galat, sumber: "RegistrasiKartuViewModel.MuatSiswaKelas", level: "ERROR");
             PesanGalat = "Gagal memuat daftar siswa kelas ini. Coba pilih ulang kelasnya.";
-            SiswaSekarang = null;
-            ProgresTeks = null;
-            OnPropertyChanged(nameof(TidakAdaSiswaSekarang));
-            OnPropertyChanged(nameof(PesanSiswaKosong));
-            return;
         }
 
-        LompatKeSiswaBelumTerdaftar();
-        PerbaruiProgres();
+        OnPropertyChanged(nameof(KelasBelumPunyaSiswa));
     }
 
-    private void LompatKeSiswaBelumTerdaftar()
+    // UAT poin wajib (Simpan): CanExecute sudah menjamin kelas/siswa/UID
+    // valid, tapi diperiksa ulang di sini juga (defensif — WPF command
+    // requery tidak 100% real-time di semua skenario fokus).
+    private void Simpan()
     {
-        SiswaSekarang = _daftarSiswaKelas.FirstOrDefault(s => !s.PunyaKartu && !_terdaftarSesiIni.Contains(s.Id));
-        OnPropertyChanged(nameof(TidakAdaSiswaSekarang));
-        OnPropertyChanged(nameof(PesanSiswaKosong));
-    }
-
-    private void PerbaruiProgres()
-    {
-        if (_kelasTerpilih is not { } kelas)
+        if (_kelasTerpilih is null || SiswaTerpilih is not { } siswa || string.IsNullOrWhiteSpace(UidSementara))
         {
             return;
         }
 
-        var terdaftar = _daftarSiswaKelas.Count(s => s.PunyaKartu || _terdaftarSesiIni.Contains(s.Id));
-        ProgresTeks = $"{kelas.Nama}: {terdaftar} dari {_daftarSiswaKelas.Count} terdaftar";
-    }
+        var uid = UidSementara;
 
-    private void Simpan()
-    {
-        _layanan.DaftarkanSesi(_connection, _akun, _penyediaWaktu.Sekarang, _pendaftaranSesi.Values.ToList());
-        Selesai?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            _layanan.DaftarkanSatu(_connection, _akun, _penyediaWaktu.Sekarang, uid, siswa.Id, siswa.Nama);
+        }
+        catch (Exception galat)
+        {
+            // UAT poin wajib (Integritas): "Audit kegagalan ... dengan
+            // jelas." — dicatat dengan detail teknis lengkap, ditampilkan
+            // ke operator dengan pesan yang aman (InvalidOperationException
+            // dari LayananRegistrasiKartu SUDAH berisi kalimat siap-tampil
+            // untuk kegagalan integritas; exception lain memakai pesan
+            // generik supaya tidak membocorkan detail teknis ke UI).
+            PencatatGalat.Catat(galat, sumber: "RegistrasiKartuViewModel.Simpan", level: "ERROR");
+            PesanGalat = galat is InvalidOperationException
+                ? galat.Message
+                : "Gagal menyimpan kartu ke database. Coba lagi; bila terus terjadi, laporkan ke pengelola aplikasi.";
+            PesanStatus = null;
+            return;
+        }
+
+        // UAT poin wajib: "Setelah berhasil, query ulang database dan
+        // pastikan UID benar-benar tersimpan." — tidak menganggap "tidak
+        // melempar exception" sebagai bukti cukup (ini persis skenario
+        // yang menyebabkan Bug #11 putaran kelima: DaftarkanSesi versi
+        // lama SELESAI TANPA EXCEPTION tapi tidak benar-benar menulis
+        // apa pun kalau daftar pendaftarannya kosong).
+        var kartuTersimpan = _layanan.CariUidAktifSiswa(_connection, siswa.Id);
+        if (!string.Equals(kartuTersimpan, uid, StringComparison.Ordinal))
+        {
+            PencatatGalat.Catat(
+                new Exception($"Simpan tidak melempar exception tapi verifikasi ulang gagal: uid={uid}, siswaId={siswa.Id}, kartuTersimpanSaatIni={kartuTersimpan ?? "(null)"}"),
+                sumber: "RegistrasiKartuViewModel.Simpan.VerifikasiGagal",
+                level: "ERROR");
+            PesanGalat = "Penyimpanan tidak dapat diverifikasi. Coba lagi; bila terus terjadi, laporkan ke pengelola aplikasi.";
+            PesanStatus = null;
+            return;
+        }
+
+        // Muat ulang daftar siswa kelas ini supaya SiswaTerpilih (dan
+        // seluruh dropdown) menunjukkan status kartu TERBARU tanpa perlu
+        // menutup dialog — operator langsung lihat konfirmasi "sudah
+        // terdaftar" pada siswa yang baru saja disimpan.
+        var idSiswaTerpilih = siswa.Id;
+        MuatSiswaKelas();
+        SiswaTerpilih = DaftarSiswaKelas.FirstOrDefault(s => s.Id == idSiswaTerpilih);
+
+        PesanGalat = null;
+        PesanStatus = $"Kartu RFID {uid} berhasil disimpan untuk {siswa.Nama}.";
+        UidSementara = null;
+        SimpanCommand.RaiseCanExecuteChanged();
     }
 }

@@ -468,15 +468,19 @@ Empat sub-halaman:
 |---|---|
 | Daftar | Tabel siswa dengan foto, nama, NISN, jenis kelamin |
 | Impor Excel | Alur 10 langkah |
-| Impor Foto | Pencocokan folder dengan NISN |
+| Impor Foto | Pencocokan folder dengan NISN (lihat catatan revisi di bawah) |
 | Mutasi | Menandai siswa keluar/pindah menjadi tidak aktif |
 
-Pada tabel Daftar terdapat dua kolom penanda cepat:
+Kolom utama tabel Daftar: Nama, NISN, JK, Kelas, Kartu, lalu kolom aksi (Ubah/Unggah foto/Ganti kartu/Mutasi).
 
-- **Kartu** — sudah punya kartu RFID atau belum
-- **TG** — orang tua sudah tertaut Telegram atau belum
+- **Kartu** — menampilkan UID kartu RFID sebenarnya kalau sudah terdaftar, atau teks "Belum terdaftar" kalau belum (direvisi 2026-09-23 — sebelumnya hanya penanda ya/tidak, lihat §16.5)
 
-Di atas tabel ditampilkan hitungan untuk kelas yang sedang dipilih, mis. "Kelas 7A · 6 siswa belum punya kartu · 14 belum berfoto". Siswa tidak aktif tetap muncul dengan nama berwarna redup dan alasannya, tetapi tidak ikut absensi harian.
+Di atas tabel ditampilkan hitungan untuk kelas yang sedang dipilih, mis. "Kelas 7A · 6 siswa belum punya kartu · 14 belum berfoto". Siswa tidak aktif tetap muncul dengan nama berwarna redup, dengan alasannya tampil inline di sebelah nama (mis. "Budi (pindah)"), tetapi tidak ikut absensi harian.
+
+**Revisi 2026-09-23 (instruksi eksplisit pemilik proyek, audit TG/Alasan):**
+- Kolom **TG** (status pairing Telegram orang tua) dihapus dari tabel Daftar — audit mengonfirmasi field `TertautTelegram` di database/`SiswaDaftar` TIDAK dihapus (masih dipakai menu Notifikasi untuk hitungan siswa yang orang tuanya sudah/belum tertaut), hanya tampilannya di panel ini yang dihapus karena dinilai jarang dipakai di layar ini dan membuat tabel padat. Status pairing Telegram tetap bisa dilihat di menu Notifikasi.
+- Kolom **Alasan** (dedicated, hampir selalu kosong untuk siswa aktif) dihapus sebagai kolom terpisah — diganti teks alasan inline di sebelah nama siswa tidak aktif (lihat paragraf di atas), field `AlasanNonaktif` TIDAK dihapus dari database (tetap dipakai fitur Mutasi).
+- Tombol **Impor foto** (massal, pencocokan folder-ke-NISN) dihapus dari bagian atas panel — kelas `ImporFotoSiswa` yang mengimplementasikannya TETAP ADA di kode (tidak dihapus), tapi untuk saat ini tidak ada entry point UI yang memanggilnya. Unggah foto satu-per-satu (tombol "Unggah foto" per baris siswa) tetap dipertahankan dan diperbaiki (lihat §16.4 revisi).
 
 ### 14.5 Tampilan Hasil Impor
 
@@ -654,25 +658,63 @@ Impor bersifat **utuh**: bila gagal di tengah, tidak ada baris yang tersimpan.
 
 Harus dijalankan **setelah** impor siswa, karena pencocokan memakai NISN.
 
-### 16.5 Registrasi Kartu
+**Revisi 2026-09-23:** langkah 1-5 (impor massal lewat folder) sementara tidak punya entry point di UI Panel Siswa — tombolnya dihapus atas instruksi eksplisit pemilik proyek (lihat §14.4). Kelas `ImporFotoSiswa` tetap ada di kode. Langkah 6 (unggah satu per satu lewat tombol "Unggah foto" per baris) tetap berfungsi penuh dan diperbaiki: pesan "Foto [nama siswa] berhasil diunggah." hanya tampil SETELAH berkas berhasil disalin/diubah ukuran DAN database berhasil diperbarui (bukan lagi ditampilkan tanpa pengecekan); kegagalan (akses ditolak, berkas terkunci, format tidak dikenali) menampilkan alasan yang jelas, bukan pesan berhasil.
+
+### 16.5 Registrasi Kartu (Siswa)
+
+**Direvisi 2026-09-23** — menggantikan alur antrean-otomatis versi
+sebelumnya (kursor lompat sendiri ke siswa berikutnya yang belum punya
+kartu). UAT nyata menemukan alur lama menghasilkan Simpan yang "berhasil"
+tanpa exception tapi tidak benar-benar menulis kartu ke database
+(docs/MASTER-BUG-UIUX-REGISTER.md A-31) — diganti alur eksplisit satu
+siswa satu kartu per aksi, dikonfirmasi pemilik proyek. **Registrasi kartu
+Guru dan penggantian kartu hilang (§16.11) TIDAK berubah** — tetap satu
+kartu per aksi lewat dialog terpisah, sudah begitu sejak awal.
 
 ```
 1. Admin/TU mengaktifkan Mode Registrasi
    → Seluruh tap TIDAK dicatat sebagai absensi selama mode ini aktif
-2. Pilih kelas → daftar siswa tampil berurutan
-3. Untuk tiap siswa:
-   3.1  Aplikasi menampilkan nama lengkap dan NISN
-   3.2  Operator menempelkan kartu di reader
-   3.3  Aplikasi membaca nomor kartu (UID)
-   3.4  UID sudah dipakai siswa lain ATAU guru? → tolak, tampilkan pemiliknya
-   3.5  UID bebas → kaitkan ke siswa, kursor lompat ke siswa berikutnya
-4. Progres ditampilkan: "7A: 28 dari 30 terdaftar"
+2. Pilih kelas → daftar siswa aktif kelas itu tampil di dropdown terpisah
+3. Operator memilih SATU siswa secara eksplisit dari dropdown itu
+   → Aplikasi menampilkan nama lengkap, NISN, kelas, dan status kartu
+     siswa terpilih (UID kalau sudah punya, "Belum terdaftar" kalau belum)
+   → Memilih siswa lain SEBELUM Simpan membatalkan UID sementara yang
+     sedang ditahan (langkah 4) — tidak ada nilai yang "menempel" ke
+     siswa yang salah
+4. Operator menempelkan kartu di reader
+   4.1  Aplikasi membaca nomor kartu (UID), diperiksa LANGSUNG ke database
+        (bukan ke memori sesi — tidak ada lagi "sesi" multi-siswa)
+   4.2  UID sudah dipakai siswa lain ATAU guru? → tolak, tampilkan
+        pemiliknya. UID TIDAK ditahan sebagai data sementara, tombol
+        Simpan TIDAK aktif
+   4.3  Siswa terpilih SUDAH punya kartu aktif? → tolak, arahkan ke
+        "Ganti kartu" (§16.11) — penggantian kartu tidak termasuk alur
+        registrasi pertama ini
+   4.4  UID bebas dan siswa belum punya kartu → UID ditampilkan sebagai
+        data SEMENTARA ("Kartu terdeteksi: ..., belum disimpan") — BUKAN
+        pesan "terdaftar", karena belum tersimpan ke database
 5. Operator menekan Simpan
-   → Seluruh sesi tersimpan
-   → Mode Registrasi mati otomatis
+   → Tombol hanya aktif kalau kelas, siswa, dan UID sementara semuanya
+     terisi valid
+   → Satu klik menghubungkan TEPAT satu siswa dengan TEPAT satu kartu,
+     dalam satu transaksi yang me-RE-VERIFIKASI keunikan UID dan "satu
+     siswa satu kartu" persis sebelum menulis (menutup celah race
+     condition antara langkah 4 dan langkah 5)
+   → Setelah transaksi commit, aplikasi QUERY ULANG database untuk
+     memastikan kartu benar-benar tersimpan sebelum menampilkan pesan
+     berhasil — "tidak melempar exception" sendiri tidak pernah dianggap
+     cukup sebagai bukti keberhasilan
+   → Panel Siswa (kalau sudah pernah dibuka sesi ini) menunjukkan kolom
+     Kartu terbaru begitu dialog registrasi ditutup, tanpa restart
+     aplikasi
+   → Dialog TIDAK menutup diri sendiri setelah Simpan — operator memilih
+     siswa berikutnya di kelas yang sama tanpa membuka ulang dialog.
+     Hanya tombol Batal/X yang menutup dialog dan mematikan Mode
+     Registrasi
 ```
 
-Satu sesi memuat berapa pun jumlah siswa.
+Kegagalan penyimpanan (database maupun verifikasi ulang) ditampilkan
+sebagai pesan galat yang jelas — TIDAK PERNAH sebagai pesan berhasil.
 
 ### 16.6 Pairing Orang Tua
 
