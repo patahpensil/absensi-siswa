@@ -60,6 +60,22 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += App_AppDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += App_UnobservedTaskException;
 
+        // UAT Bug #11 (2026-09-23, diagnosis putaran keempat): kegagalan
+        // binding WPF (mis. path binding salah, konverter melempar) TIDAK
+        // pernah muncul sebagai exception .NET — WPF hanya menulis ke
+        // PresentationTraceSources dan, secara default, TIDAK ADA listener
+        // yang membaca itu sama sekali di build Release (beda dari Debug
+        // di Visual Studio yang punya Output Window). Titik ini sama
+        // sekali tidak tertangkap oleh 3 handler global di atas maupun
+        // oleh PencatatGalat manapun sebelum sesi ini. Diarahkan ke
+        // PencatatGalat (folder logs/ yang sama) supaya kegagalan binding
+        // di layar mana pun (bukan cuma Registrasi Kartu) akhirnya
+        // terlihat di build Release — bukan instrumentasi sekali pakai,
+        // dipertahankan permanen.
+        System.Diagnostics.PresentationTraceSources.Refresh();
+        System.Diagnostics.PresentationTraceSources.DataBindingSource.Listeners.Add(new PencatatGalatTraceListener());
+        System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Warning;
+
         LokasiData.PastikanFolderDataAda();
         LokasiData.PastikanFolderLogAda();
         _connection = SqliteConnectionFactory.Open(LokasiData.PathDatabase);
@@ -154,13 +170,27 @@ public partial class App : Application
     // RENCANA-TUGAS.md Tugas 8 — PRD §14.3 tombol "Registrasi". Tombol
     // "Buka layar gerbang"/"Registrasi" tampak begitu menu Absensi dipilih
     // walau tahun ajaran aktif belum diatur (celah yang sama sudah ada
-    // sejak Tugas 6 untuk gerbang) — dijaga di sini dengan galat yang
-    // jelas, sama seperti PemrosesTap, bukan NullReferenceException mentah.
-    private Window BukaRegistrasiKartu()
+    // sejak Tugas 6 untuk gerbang).
+    //
+    // UAT Bug #11 (2026-09-22): versi sebelumnya MELEMPAR
+    // InvalidOperationException di sini alih-alih menampilkan pesan —
+    // exception itu tidak tertangkap di mana pun sampai
+    // DispatcherUnhandledException, yang menampilkan dialog GENERIK
+    // "aplikasi mengalami galat tak terduga dan perlu ditutup" (bukan
+    // pesan "tidak ada tahun ajaran aktif" yang dimaksud) DAN membiarkan
+    // proses berhenti (e.Handled tidak pernah diubah jadi true — lihat
+    // App_DispatcherUnhandledException). Klik "Registrasi" tanpa tahun
+    // ajaran aktif sebelumnya MENUTUP SELURUH APLIKASI. Diperbaiki dengan
+    // menampilkan pesan yang jelas di sini dan TIDAK membuka jendela sama
+    // sekali (mengembalikan null), bukan melempar exception.
+    private Window? BukaRegistrasiKartu()
     {
         if (_tahunAjaranId is not { } tahunAjaranId)
         {
-            throw new InvalidOperationException("Tidak ada tahun ajaran aktif; Registrasi Kartu tidak bisa dibuka.");
+            MessageBox.Show(
+                "Tidak ada tahun ajaran aktif. Atur tahun ajaran terlebih dahulu (menu Pengaturan) sebelum membuka Registrasi Kartu.",
+                "Absensi", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return null;
         }
 
         var viewModel = new RegistrasiKartuViewModel(_connection!, _akunLogin!, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId);
@@ -325,5 +355,30 @@ public partial class App : Application
             "Restore", MessageBoxButton.OK, MessageBoxImage.Information);
 
         Shutdown();
+    }
+}
+
+// UAT Bug #11 (2026-09-23): jembatan PresentationTraceSources.DataBindingSource
+// -> PencatatGalat (lihat App.OnStartup). WPF menulis kegagalan binding lewat
+// TraceListener, bukan exception — tanpa listener ini, kegagalan itu hilang
+// begitu saja di build Release (tidak ada Output Window seperti di Visual
+// Studio). Pesan trace SUDAH berupa teks siap pakai dari WPF sendiri (path
+// properti, nama elemen, dsb.) — dibungkus Exception generik supaya bisa
+// lewat PencatatGalat.Catat yang hanya menerima Exception; namespace System
+// (bukan Absensi.Domain/Data) jadi TIDAK kena sensor pesan §4.7.2.
+internal sealed class PencatatGalatTraceListener : System.Diagnostics.TraceListener
+{
+    public override void Write(string? message)
+    {
+    }
+
+    public override void WriteLine(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            return;
+        }
+
+        Absensi.Data.Diagnostik.PencatatGalat.Catat(new Exception(message), sumber: "WPF.BindingError", level: "ERROR");
     }
 }

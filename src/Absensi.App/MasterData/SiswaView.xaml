@@ -45,9 +45,20 @@
                            Visibility="{Binding RingkasanKelas, Converter={StaticResource NullKeVisibilitas}}" />
             </Grid>
 
-            <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
+            <!-- UAT Bug #12 (2026-09-22): setelah navigasi antar panel,
+                 kolom DataGrid menyempit/berhimpitan tidak menentu — WPF
+                 mengukur ulang lebar kolom "*" (dan kadang kolom pixel
+                 tetap) dari nol setiap kali View ini dibuat ulang lewat
+                 DataTemplate implisit (Resources/GayaAplikasi.xaml), dan
+                 pengukuran pertama itu bisa terjadi sebelum container
+                 mendapat lebar akhirnya (bug WPF DataGrid yang terdokumentasi
+                 luas, bukan galat logika di sini). MinWidth per kolom di
+                 bawah adalah BATAS BAWAH KERAS yang ditegakkan terpisah dari
+                 perhitungan "*"/pixel itu — kolom tidak bisa dirender lebih
+                 sempit dari ini apa pun hasil pengukuran sementaranya. -->
+            <DataGrid x:Name="TabelSiswa" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*">
+                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" MinWidth="180">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
@@ -58,13 +69,13 @@
                             </Style>
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
-                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" />
-                    <DataGridTextColumn Header="JK" Binding="{Binding JenisKelamin}" Width="40" />
-                    <DataGridTextColumn Header="Kelas" Binding="{Binding KelasNama}" Width="70" />
-                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="60" />
-                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="50" />
-                    <DataGridTextColumn Header="Alasan" Binding="{Binding AlasanNonaktif}" Width="90" />
-                    <DataGridTemplateColumn Header="" Width="290">
+                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" MinWidth="110" />
+                    <DataGridTextColumn Header="JK" Binding="{Binding JenisKelamin}" Width="40" MinWidth="40" />
+                    <DataGridTextColumn Header="Kelas" Binding="{Binding KelasNama}" Width="70" MinWidth="70" />
+                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="60" MinWidth="60" />
+                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="50" MinWidth="50" />
+                    <DataGridTextColumn Header="Alasan" Binding="{Binding AlasanNonaktif}" Width="90" MinWidth="90" />
+                    <DataGridTemplateColumn Header="" Width="290" MinWidth="290">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">

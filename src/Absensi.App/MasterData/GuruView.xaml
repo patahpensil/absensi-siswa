@@ -28,14 +28,20 @@
 
             <TextBlock DockPanel.Dock="Top" Text="{Binding PesanStatus}" Style="{StaticResource LabelKecilStyle}" Margin="0,0,0,8" />
 
-            <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
+            <!-- UAT Bug #12 (2026-09-22): sama seperti SiswaView.xaml — lihat
+                 komentar di sana untuk akar masalah (bug WPF DataGrid saat
+                 View dibuat ulang oleh DataTemplate implisit lintas navigasi
+                 menu). MinWidth per kolom di bawah adalah batas bawah keras
+                 yang mencegah kolom menyempit/berhimpitan meski pengukuran
+                 "*"/pixel sementaranya salah. -->
+            <DataGrid x:Name="TabelGuru" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                    <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="140" />
-                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="70" />
-                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="60" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding AlasanNonaktif}" Width="100" />
-                    <DataGridTemplateColumn Header="" Width="290">
+                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" MinWidth="180" />
+                    <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="140" MinWidth="140" />
+                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="70" MinWidth="70" />
+                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="60" MinWidth="60" />
+                    <DataGridTextColumn Header="Status" Binding="{Binding AlasanNonaktif}" Width="100" MinWidth="100" />
+                    <DataGridTemplateColumn Header="" Width="290" MinWidth="290">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">

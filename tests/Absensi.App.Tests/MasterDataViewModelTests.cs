@@ -145,6 +145,62 @@ public sealed class MasterDataViewModelTests
         Assert.Contains(viewModel.Daftar, g => g.Nama == "Guru Baru");
     }
 
+    // Bug #3 (Master Bug & UI/UX Register A-20 / UAT 2026-09-22 dan 2026-09-23):
+    // SiswaViewModel di-cache lewat "??=" di MainWindowViewModel — constructor
+    // (dan pemuatan DaftarKelas di dalamnya) hanya jalan SEKALI per sesi.
+    // MuatUlangDaftarKelas() (dipanggil MainWindowViewModel setiap menu
+    // "Siswa" dipilih) memperbaiki ini. Tes di bawah memverifikasi method
+    // itu langsung, tanpa perlu membangun ulang seluruh MainWindow/App.
+
+    [Fact]
+    public void SiswaViewModel_MuatUlangDaftarKelas_KelasBaruMunculTanpaKonstruksiUlang()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        Assert.DoesNotContain(viewModel.DaftarKelas, k => k.Nama == "7Z-Baru");
+
+        // Simulasi: operator menambah kelas lewat panel Kelas TANPA
+        // menutup/membuka ulang panel Siswa (yang tetap dipakai dari cache).
+        database.Execute("INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat) VALUES (2, 1, '7Z-Baru', 7);");
+
+        viewModel.MuatUlangDaftarKelas();
+
+        Assert.Contains(viewModel.DaftarKelas, k => k.Nama == "7Z-Baru");
+        Assert.Contains(viewModel.DaftarKelasFilter, k => k.Nama == "7Z-Baru");
+    }
+
+    [Fact]
+    public void SiswaViewModel_MuatUlangDaftarKelasBerulang_TidakMenghasilkanDuplikat()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+
+        viewModel.MuatUlangDaftarKelas();
+        viewModel.MuatUlangDaftarKelas();
+        viewModel.MuatUlangDaftarKelas();
+
+        Assert.Equal(1, viewModel.DaftarKelas.Count(k => k.Nama == "7A"));
+        // DaftarKelasFilter = DaftarKelas + 1 sentinel "Semua kelas".
+        Assert.Equal(1, viewModel.DaftarKelasFilter.Count(k => k.Nama == "7A"));
+        Assert.Equal(1, viewModel.DaftarKelasFilter.Count(k => k.Id == 0));
+    }
+
+    [Fact]
+    public void SiswaViewModel_MuatUlangDaftarKelas_FilterYangSedangDipilihTetapDipertahankan()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var viewModel = new SiswaViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), new StatusModeRegistrasi(), tahunAjaranId: 1);
+        viewModel.KelasFilterTerpilih = viewModel.DaftarKelasFilter.Single(k => k.Nama == "7A");
+
+        database.Execute("INSERT INTO kelas (id, tahun_ajaran_id, nama, tingkat) VALUES (2, 1, '7Z-Baru', 7);");
+        viewModel.MuatUlangDaftarKelas();
+
+        Assert.Equal("7A", viewModel.KelasFilterTerpilih.Nama);
+    }
+
     [Fact]
     public void KelasViewModel_TambahLaluUbah_DaftarMencerminkanPerubahan()
     {

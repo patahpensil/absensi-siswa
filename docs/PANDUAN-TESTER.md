@@ -146,6 +146,62 @@ Ditambahkan setelah UAT melaporkan dialog "Tutup layar gerbang?" nyaris tidak bi
 
 **Yang DIUJI otomatis (bukan manual)** untuk sesi ini: `KonfirmasiTutupViewModelTests` — keadaan awal `KonfirmasiCommand.CanExecute` (nonaktif saat kosong, aktif saat Username+Sandi terisi) dan `PesanGalat` kosong di awal. Logika autentikasi (peran/sandi benar-salah) sudah dites sebelumnya dan **tidak berubah** di sesi ini.
 
+## Skenario A — Registrasi Kartu membaca kelas (UAT Bug #11, 2026-09-22, diperbarui 2026-09-23 x3)
+
+**Putaran keempat (2026-09-23) — AKAR MASALAH SEBENARNYA ditemukan lewat logging produksi sungguhan (bukan harness):** `KolomTap_LostFocus` merebut fokus balik dari ComboBox Kelas SETIAP kali operator klik untuk membuka dropdown-nya — menutup paksa dropdown itu sebelum sempat memilih apa pun. Terbukti dari `logs/20260923.log` nyata: `ComboBox.DropDownOpened` tercatat puluhan kali berturut-turut dalam ~5 detik, `SelectedItem` selalu `(null)` — pola loop buka-tutup paksa, bukan interaksi normal. Diperbaiki: `KolomTap_LostFocus` tidak lagi merebut fokus selama `ComboBox.IsDropDownOpen`, dan `ComboBox.DropDownClosed` (baru) yang mengembalikan fokus ke `KolomTap` setelah operator selesai memilih. Jembatan `PresentationTraceSources.DataBindingSource` → `PencatatGalat` (`App.xaml.cs`) **dipertahankan permanen** — kegagalan binding WPF di layar mana pun sekarang tercatat di `logs/`. Lihat A-30 di `MASTER-BUG-UIUX-REGISTER.md` untuk detail lengkap.
+
+**Putaran ketiga (2026-09-23) — regresi ditemukan dan diperbaiki:** pesan "Kelas ini belum punya siswa" (ditambahkan putaran kedua) ternyata tampil SEBELUM kelas dipilih (bug di `TidakAdaSiswaSekarang`, hanya cek `SiswaSekarang is null` yang TRUE sejak dialog dibuka) — diperbaiki, sekarang mensyaratkan kelas sudah benar-benar dipilih dulu. Verifikasi tambahan: ComboBox SUNGGUHAN disimulasikan dipilih (bukan cuma dibaca `ItemsSource`-nya) terhadap database UAT nyata (4 kelas) — `KelasTerpilih` ikut terisi benar, 0 binding error WPF tertangkap. Lihat A-29 di `MASTER-BUG-UIUX-REGISTER.md` untuk detail lengkap.
+
+**Status: Implemented — menunggu UAT manual pengguna. TIDAK diklaim selesai.** Putaran pertama (2026-09-22) diperbaiki: `RegistrasiKartuViewModel.cs` (kelas/siswa dimuat dalam try/catch, properti `TahunAjaranTanpaKelas`/`GagalMuatKelas`/`PesanMuatKelasGagal` baru), `RegistrasiKartuWindow.xaml` (teks "(PRD §16.5)" dihapus dari UI, pesan empty-state/gagal-muat baru, `SizeToContent="Height"`), `App.xaml.cs`/`Shell/MainWindow.xaml.cs` (klik "Registrasi" tanpa tahun ajaran aktif dulu MELEMPAR exception tak tertangani sampai crash handler global dan **menutup seluruh aplikasi** — sekarang menampilkan pesan dan tidak membuka jendela).
+
+**Putaran kedua (2026-09-23) — audit mendalam terhadap database UAT NYATA** (`publish/Bug11-12-UAT/data/absensi.db`, tempat `7A-UAT`/`7B-UAT`/`7C-UAT` dibuat): data diperiksa langsung (hanya 1 tahun ajaran, ketiga kelas `tahun_ajaran_id` cocok persis), query SQL asli dijalankan manual (mengembalikan 3 baris benar), `RegistrasiKartuViewModel`+`RegistrasiKartuWindow` SUNGGUHAN dijalankan lewat `Show()` + Dispatcher dipompa (meniru siklus hidup aplikasi asli) terhadap SALINAN database itu — ComboBox menampilkan 3 item dengan benar. **Skenario persis yang dilaporkan operator (dropdown kosong meski kelas ada, setelah restart) TIDAK berhasil direproduksi** dari kode maupun data yang diperiksa — dicatat jujur, BUKAN pernyataan bug tidak nyata. Perbaikan tambahan putaran ini (di luar dugaan akar masalah): pesan "Kelas ini belum punya siswa terdaftar di sistem." vs "Seluruh siswa di kelas ini sudah terdaftar." sekarang dibedakan eksplisit (sebelumnya satu teks statis dipakai untuk keduanya). Diverifikasi otomatis lewat `RegistrasiKartuViewModelTests` (14 test total, 7 baru sejak versi pertama). Langkah di bawah WAJIB dijalankan manual — terutama langkah 7-9 yang jadi inti laporan UAT.
+
+1. Buka panel Kelas, pastikan kelas test (mis. `7A-Test`) tersedia dan tampil di tabel.
+2. Buka menu Absensi → Registrasi Kartu, TANPA restart aplikasi.
+3. **Harap:** dropdown Kelas terisi — kelas yang sama seperti di panel Kelas.
+4. Pilih kelas.
+5. **Harap:** hanya siswa kelas itu yang tampil sebagai "Siswa sekarang"/kandidat berikutnya.
+6. Tutup dialog (tombol Batal), buka lagi — ulangi 5 kali berturut-turut.
+7. **Harap:** dropdown Kelas terisi ulang dengan benar di SETIAP pembukaan, tidak pernah kosong selama kelas memang ada.
+8. Buat kelas baru di panel Kelas (mis. `7Z-Baru`), TANPA restart, buka Registrasi Kartu lagi.
+9. **Harap:** `7Z-Baru` langsung muncul di dropdown.
+10. Baca teks di bawah judul "Registrasi Kartu".
+11. **Harap:** berbunyi persis "Selama registrasi berlangsung, tap kartu tidak dicatat sebagai absensi." — teks "PRD §16.5" TIDAK terlihat di mana pun pada dialog ini.
+12. Selagi dialog Registrasi terbuka, tap kartu apa pun (terdaftar atau tidak) → cek menu Absensi/tabel harian setelah dialog ditutup.
+13. **Harap:** tidak ada baris absensi baru tertulis akibat tap saat mode Registrasi aktif (perilaku ini TIDAK diubah sesi ini — `StatusModeRegistrasi` sudah diuji lewat `GerbangViewModelTests.ProsesTap_ModeRegistrasiAktif_TidakMenulisAbsensi`, tidak disentuh).
+14. **Kasus tambahan — tidak ada tahun ajaran aktif** (kalau bisa disimulasikan tanpa merusak data UAT, mis. di instalasi test terpisah): klik "Registrasi" → **harap:** muncul pesan "Tidak ada tahun ajaran aktif. Atur tahun ajaran terlebih dahulu..." dan aplikasi TETAP TERBUKA (tidak crash/tidak menutup diri) — ini regresi kritis yang diperbaiki sesi ini (dulu menutup seluruh aplikasi).
+15. **Kasus tambahan — tahun ajaran aktif tanpa kelas sama sekali** (instalasi baru sebelum kelas dibuat): buka Registrasi Kartu → **harap:** pesan "Tahun ajaran aktif ini belum mempunyai kelas. Tambahkan kelas dulu di menu Kelas." tampil jelas di dalam dialog, bukan dropdown kosong tanpa penjelasan.
+16. **Kasus tambahan (baru 2026-09-23) — kelas yang belum punya siswa sama sekali:** buat kelas baru di panel Kelas TANPA memasukkan siswa apa pun ke dalamnya (baik manual maupun impor) → buka Registrasi Kartu → pilih kelas itu → **harap:** kartu "Siswa sekarang" menampilkan teks "Kelas ini belum punya siswa terdaftar di sistem." (BUKAN "Seluruh siswa di kelas ini sudah terdaftar.") — dan kelas itu **tetap ada** di dropdown Kelas, tidak hilang.
+
+## Skenario A2 — Panel Siswa membaca kelas baru tanpa restart (UAT Bug #3, 2026-09-23)
+
+**Status: Implemented — menunggu UAT manual pengguna.** Akar masalah dikonfirmasi lewat pembacaan kode: `SiswaViewModel` di-cache oleh `MainWindowViewModel` (`_siswaViewModel ??= new SiswaViewModel(...)`) — constructor-nya (termasuk pemuatan daftar kelas) hanya jalan sekali per sesi. Diperbaiki: `SiswaViewModel.MuatUlangDaftarKelas()` (method baru) dipanggil `MainWindowViewModel` setiap kali menu "Siswa" dipilih, bukan hanya sekali. Diverifikasi otomatis lewat 3 unit test baru (`MasterDataViewModelTests`) — TAPI perilaku WPF `SelectedItem`/navigasi menu sungguhan tetap perlu diverifikasi manual.
+
+1. Buka panel Siswa sekali (supaya `SiswaViewModel` ter-cache), catat daftar kelas yang tersedia di dropdown filter (atas tabel) dan dropdown form Tambah Siswa.
+2. TANPA restart, buka panel Kelas → tambah kelas baru (mis. `9X-Test`) → simpan.
+3. Kembali ke panel Siswa (klik menu "Siswa").
+4. **Harap:** `9X-Test` langsung muncul di KEDUA dropdown (filter atas tabel, dan form Tambah Siswa) — tanpa restart aplikasi.
+5. Pilih `9X-Test` di dropdown filter atas tabel.
+6. Pindah ke panel lain (mis. Guru), lalu kembali ke Siswa.
+7. **Harap:** filter kelas yang dipilih di langkah 5 TETAP `9X-Test` (tidak ter-reset ke "Semua kelas") — seleksi tidak boleh hilang gara-gara refresh daftar kelas di background.
+8. Ulangi langkah 2-4 sekali lagi dengan kelas KEDUA (mis. `9Y-Test`).
+9. **Harap:** dropdown menampilkan KEDUA kelas baru (`9X-Test` dan `9Y-Test`), TIDAK ADA duplikat entri kelas lama.
+
+## Skenario B — Stabilitas tabel Siswa/Guru setelah navigasi (UAT Bug #12, 2026-09-22)
+
+**Status: Implemented — menunggu UAT manual pengguna.** Diperbaiki: `MasterData/SiswaView.xaml` dan `MasterData/GuruView.xaml` — `MinWidth` ditambahkan ke SETIAP kolom `DataGrid` (nilai sama dengan `Width` yang sudah ada, tidak ada perubahan visual/angka lain), mencegah kolom (termasuk kolom tindakan Ubah/Unggah foto/Ganti kartu/Mutasi) menyempit di bawah ukuran itu berapa pun hasil pengukuran ulang WPF saat View dibuat ulang oleh navigasi menu. `Resources/GayaAplikasi.xaml` (`TabelStyle`, dipakai 12 layar lain) **TIDAK disentuh** — audit mengonfirmasi bug ini murni soal definisi kolom per-layar, bukan gaya bersama. Diverifikasi otomatis lewat `SiswaGuruTabelKolomTests` (6 test baru, jalan di thread STA manual) yang membuktikan `InitializeComponent()` menghasilkan jumlah/urutan kolom identik dan `MinWidth` benar-benar terpasang setiap View dibuat ulang — TAPI tes ini TIDAK bisa mereproduksi pengukuran layout WPF sungguhan (`Measure`/`Arrange` di jendela nyata dengan ukuran berubah bertahap), jadi verifikasi visual di bawah tetap wajib.
+
+1. Buka menu Siswa, periksa seluruh kolom (Nama, NISN, JK, Kelas, Kartu, TG, Alasan, tombol tindakan) — catat lebar/urutan sebagai baseline.
+2. Pindah Siswa → Guru → Siswa sebanyak 10 siklus klik menu.
+3. **Harap:** setiap kembali ke Siswa, lebar/urutan kolom, header, isi sel, dan tombol tindakan identik dengan baseline langkah 1 — tidak ada kolom menyempit, berhimpitan, atau tombol terpotong.
+4. Pindah Guru → Kelas → Guru sebanyak 10 siklus.
+5. **Harap:** kolom tabel Guru (Nama, NIP, Kartu, TG, Status, tombol tindakan) tetap stabil, sama seperti langkah 3.
+6. Uji dengan data pendek (nama 1 kata, NISN/NIP normal) dan data panjang (nama sangat panjang, alasan nonaktif panjang) — pastikan teks terpotong dengan wajar (ellipsis/clip di dalam sel), bukan meluber menabrak kolom sebelah.
+7. Resize jendela aplikasi (perkecil/perbesar) sambil tabel Siswa/Guru terbuka.
+8. **Harap:** kolom menyesuaikan wajar, kolom Nama (star) yang menyerap/melepas ruang, kolom lain tetap minimal seukuran `MinWidth` yang sudah diberikan — horizontal scroll muncul hanya kalau lebar jendela memang tidak cukup, bukan pengganti layout.
+9. Ulangi langkah 1-3 pada skala Windows 100%, 125%, dan 150% (Pengaturan Tampilan Windows) bila memungkinkan di mesin tester.
+10. **Harap:** tidak ada teks bertumpuk, kolom hilang, atau tombol (Ubah/Unggah foto/Ganti kartu/Mutasi untuk Siswa; Ubah/Unggah foto/Kartu/Nonaktifkan untuk Guru) yang terpotong di skala DPI manapun.
+
 **Hasil smoke-test build sebelumnya (masih berlaku, tidak diulang di sesi ini):**
 
 **Hasil smoke-test build ini:** build berhasil (`dotnet build`, 0 error),

@@ -75,15 +75,9 @@ public sealed class SiswaViewModel : ObservableObject
         // Registrasi Kartu per kelas (§16.5), bukan di sini.
         GantiKartuCommand = new RelayCommand<SiswaDaftar>(BukaDialogGantiKartu, s => s is not null && s.PunyaKartu);
 
-        DaftarKelasFilter.Add(SemuaKelas);
-        foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))
-        {
-            DaftarKelas.Add(kelas);
-            DaftarKelasFilter.Add(kelas);
-        }
-
         _kelasFilterTerpilih = SemuaKelas;
 
+        MuatUlangDaftarKelas();
         MuatUlang();
     }
 
@@ -324,6 +318,43 @@ public sealed class SiswaViewModel : ObservableObject
             ? $"{hasil.Cocok} foto tersimpan."
             : $"{hasil.Cocok} foto tersimpan · {hasil.TidakCocok.Count} berkas tidak cocok NISN mana pun.";
         MuatUlang();
+    }
+
+    // Bug #3 (Master Bug & UI/UX Register A-20 / UAT 2026-09-22): panel
+    // Siswa di-cache oleh MainWindowViewModel (`_siswaViewModel ??= ...`) —
+    // constructor ViewModel ini hanya jalan SEKALI per sesi, jadi kelas
+    // baru yang dibuat lewat panel Kelas SETELAH panel Siswa pertama kali
+    // dibuka tidak pernah masuk ke DaftarKelas/DaftarKelasFilter tanpa
+    // restart. MainWindowViewModel.PerbaruiKontenAktif memanggil method
+    // PUBLIC ini setiap kali menu "Siswa" dipilih (dibuat baru MAUPUN
+    // dipakai ulang dari cache) — Clear() dulu sebelum re-add supaya
+    // refresh berulang tidak pernah menghasilkan duplikat. KelasDaftar
+    // adalah record (kesetaraan berbasis nilai) jadi ComboBox.SelectedItem
+    // yang sedang dipilih otomatis cocok lagi ke instance baru asalkan
+    // datanya sama persis — tidak perlu penyimpanan/pemulihan seleksi
+    // manual di sini.
+    public void MuatUlangDaftarKelas()
+    {
+        // WPF Selector (ComboBox) kehilangan seleksi begitu ObservableCollection
+        // memancarkan notifikasi Reset (Clear()) — kalau binding SelectedItem
+        // dua arah, itu bisa balik mendorong null ke KelasFilterTerpilih/
+        // KelasTerpilih. Id ditangkap dulu di sini, dipulihkan eksplisit di
+        // bawah lewat property setter (bukan dibiarkan WPF menebak sendiri).
+        var idFilterSebelumnya = _kelasFilterTerpilih.Id;
+        var idTerpilihSebelumnya = _kelasTerpilih?.Id;
+
+        DaftarKelas.Clear();
+        DaftarKelasFilter.Clear();
+
+        DaftarKelasFilter.Add(SemuaKelas);
+        foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(_connection, _tahunAjaranId))
+        {
+            DaftarKelas.Add(kelas);
+            DaftarKelasFilter.Add(kelas);
+        }
+
+        KelasFilterTerpilih = DaftarKelasFilter.FirstOrDefault(k => k.Id == idFilterSebelumnya) ?? SemuaKelas;
+        KelasTerpilih = idTerpilihSebelumnya is { } idTerpilih ? DaftarKelas.FirstOrDefault(k => k.Id == idTerpilih) : null;
     }
 
     private void MuatUlang()

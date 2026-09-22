@@ -17,6 +17,21 @@ public partial class RegistrasiKartuWindow : Window
 
         Loaded += (_, _) => FokusKolomTap();
         Activated += (_, _) => FokusKolomTap();
+
+        // UAT Bug #11 (2026-09-23) — akar masalah TERBUKTI lewat log
+        // diagnostik produksi (PencatatGalat): ComboBox.DropDownOpened
+        // terpicu PULUHAN KALI berturut-turut dalam hitungan detik dengan
+        // SelectedItem tetap null di setiap kejadian — bukan interaksi
+        // pengguna normal, itu loop buka-tutup paksa. Begitu operator klik
+        // ComboBox Kelas, KolomTap kehilangan fokus -> KolomTap_LostFocus
+        // (di bawah) langsung menjadwalkan Focus() balik ke KolomTap ->
+        // ComboBox kehilangan fokus -> dropdown-nya tertutup paksa
+        // sebelum operator sempat mengklik satu item pun. Operator
+        // melihat ini sebagai "dropdown tidak bisa dibuka/kosong".
+        // DropDownClosed di sini yang sekarang bertanggung jawab
+        // mengembalikan fokus ke KolomTap SETELAH operator selesai
+        // memilih kelas (lihat KolomTap_LostFocus untuk sisi lainnya).
+        KolomKelas.DropDownClosed += (_, _) => JadwalkanFokusUlangKolomTap(lewatiKalauDropdownTerbuka: false);
     }
 
     // Mode Registrasi wajib mati begitu layar ini hilang, dengan cara
@@ -51,7 +66,16 @@ public partial class RegistrasiKartuWindow : Window
     // Dispatcher.BeginInvoke memutus rantai panggilan sinkron itu (pola sama
     // seperti perbaikan Crash D-2 di GerbangWindow.OnClosing); flag mencegah
     // penjadwalan tertunda menumpuk.
-    private void KolomTap_LostFocus(object sender, RoutedEventArgs e)
+    //
+    // UAT Bug #11 (2026-09-23): lewatiKalauDropdownTerbuka=true di sini —
+    // kalau KolomTap kehilangan fokus KARENA ComboBox Kelas sedang dibuka
+    // operator, JANGAN rebut fokus balik (itu akar masalahnya, lihat
+    // komentar di constructor). DropDownClosed yang akan mengembalikan
+    // fokus setelah operator selesai memilih.
+    private void KolomTap_LostFocus(object sender, RoutedEventArgs e) =>
+        JadwalkanFokusUlangKolomTap(lewatiKalauDropdownTerbuka: true);
+
+    private void JadwalkanFokusUlangKolomTap(bool lewatiKalauDropdownTerbuka)
     {
         if (_fokusUlangDijadwalkan)
         {
@@ -62,6 +86,16 @@ public partial class RegistrasiKartuWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             _fokusUlangDijadwalkan = false;
+
+            // Diperiksa di DALAM callback tertunda (bukan cuma sebelum
+            // dijadwalkan) supaya status IsDropDownOpen yang dibaca sudah
+            // stabil — klik pembuka ComboBox dan event LostFocus KolomTap
+            // tidak selalu selesai dalam urutan yang sama persis.
+            if (lewatiKalauDropdownTerbuka && KolomKelas.IsDropDownOpen)
+            {
+                return;
+            }
+
             FokusKolomTap();
         });
     }

@@ -164,7 +164,7 @@ public sealed class MainWindowViewModel : ObservableObject
 
         KontenAktif = MenuAktif switch
         {
-            "Siswa" => _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
+            "Siswa" => MuatUlangSiswaViewModel(tahunAjaranId),
             "Guru" => _guruViewModel ??= new GuruViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId),
             "Kelas" => _kelasViewModel ??= new KelasViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Kalender" => _kalenderViewModel ??= new KalenderViewModel(_connection, _akun, _penyediaWaktu),
@@ -174,6 +174,21 @@ public sealed class MainWindowViewModel : ObservableObject
             "Laporan" => _laporanViewModel ??= new LaporanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             _ => null,
         };
+    }
+
+    // Bug #3 (Master Bug & UI/UX Register A-20 / UAT 2026-09-22): SiswaViewModel
+    // di-cache lewat "??=" — constructor-nya (dan pemuatan DaftarKelas di
+    // dalamnya) hanya jalan SEKALI per sesi. Tanpa baris ini, kelas baru
+    // yang dibuat lewat panel Kelas SETELAH panel Siswa pernah dibuka tidak
+    // pernah muncul di dropdown Siswa sampai restart. MuatUlangDaftarKelas()
+    // dipanggil di SINI (bukan di constructor SiswaViewModel saja) supaya
+    // jalan setiap kali menu "Siswa" dipilih — baik saat ViewModel baru
+    // dibuat MAUPUN dipakai ulang dari cache.
+    private SiswaViewModel MuatUlangSiswaViewModel(int tahunAjaranId)
+    {
+        _siswaViewModel ??= new SiswaViewModel(_connection, _akun, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId);
+        _siswaViewModel.MuatUlangDaftarKelas();
+        return _siswaViewModel;
     }
 
     private PengaturanViewModel BuatPengaturanViewModel(int tahunAjaranId)

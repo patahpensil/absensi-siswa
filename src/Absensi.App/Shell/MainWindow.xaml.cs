@@ -7,7 +7,7 @@ public partial class MainWindow : Window
     public MainWindow(
         MainWindowViewModel viewModel,
         Func<Window> bukaGerbang,
-        Func<Window> bukaRegistrasiKartu,
+        Func<Window?> bukaRegistrasiKartu,
         Action<byte[]> restoreSelesaiPerluTutupAplikasi)
     {
         InitializeComponent();
@@ -17,9 +17,20 @@ public partial class MainWindow : Window
         // Dialog modal (bukan fullscreen seperti gerbang) — pengguna
         // menyelesaikan atau membatalkan sesi registrasi sebelum kembali
         // ke layar lain (RENCANA-TUGAS.md Tugas 8).
+        //
+        // UAT Bug #11 (2026-09-22): bukaRegistrasiKartu() sekarang bisa
+        // mengembalikan null (tidak ada tahun ajaran aktif — App.xaml.cs
+        // sudah menampilkan pesannya sendiri) alih-alih melempar exception
+        // yang dulu bocor sampai ke crash handler global dan menutup
+        // aplikasi. null berarti: jangan buka jendela apa pun.
         viewModel.BukaRegistrasiKartuDiminta += (_, _) =>
         {
             var jendela = bukaRegistrasiKartu();
+            if (jendela is null)
+            {
+                return;
+            }
+
             jendela.Owner = this;
             jendela.ShowDialog();
         };
