@@ -37,6 +37,8 @@ public sealed class PengaturanViewModel : ObservableObject
     private string? _tokenBot;
     private string? _usernameBot;
     private string? _pesanStatusBot;
+    private string? _pesanGalatBot;
+    private string? _pesanGalatBackup;
 
     public PengaturanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId, LayananBackup layananBackup)
     {
@@ -91,8 +93,21 @@ public sealed class PengaturanViewModel : ObservableObject
             return;
         }
 
-        var data = _layananBackup.SiapkanRestore(_connection, _akun, _penyediaWaktu.Sekarang, tampilan.Berkas);
-        RestoreSelesaiPerluTutupAplikasi?.Invoke(this, data);
+        // Kegagalan yang bisa dipulihkan (berkas backup hilang/terkunci, wali kelas
+        // tidak berwenang) tampil sebagai pesan di tab Backup — bukan galat global
+        // yang menutup aplikasi. Pesan berhasil tidak ada di sini: restore yang
+        // sukses langsung menutup aplikasi dengan pemberitahuan (App.xaml.cs).
+        byte[]? data = null;
+        PesanGalatBackup = null;
+        if (!PenangananGalat.Coba(
+                () => data = _layananBackup.SiapkanRestore(_connection, _akun, _penyediaWaktu.Sekarang, tampilan.Berkas),
+                pesan => PesanGalatBackup = pesan,
+                "PengaturanViewModel.Restore"))
+        {
+            return;
+        }
+
+        RestoreSelesaiPerluTutupAplikasi?.Invoke(this, data!);
     }
 
     public ObservableCollection<JadwalHariBarisViewModel> JadwalHarian { get; } = new();
@@ -107,6 +122,10 @@ public sealed class PengaturanViewModel : ObservableObject
     public string? UsernameBot { get => _usernameBot; set => SetField(ref _usernameBot, value); }
 
     public string? PesanStatusBot { get => _pesanStatusBot; private set => SetField(ref _pesanStatusBot, value); }
+
+    public string? PesanGalatBot { get => _pesanGalatBot; private set => SetField(ref _pesanGalatBot, value); }
+
+    public string? PesanGalatBackup { get => _pesanGalatBackup; private set => SetField(ref _pesanGalatBackup, value); }
 
     public RelayCommand SimpanBotCommand { get; }
 
@@ -135,11 +154,46 @@ public sealed class PengaturanViewModel : ObservableObject
         UsernameBot = _repositoriPengaturan.BacaString(_connection, "username_bot");
     }
 
+    // Token bot: angka, titik dua, lalu karakter huruf/angka/_/- (format BotFather).
+    // Username bot: 5-32 huruf/angka/garis bawah; tanda @ di depan dibuang.
+    // Pesan galat TIDAK PERNAH memuat nilai token yang diketik (kredensial).
+    private static readonly System.Text.RegularExpressions.Regex FormatToken = new(@"^\d+:[A-Za-z0-9_-]+$");
+    private static readonly System.Text.RegularExpressions.Regex FormatUsername = new(@"^[A-Za-z0-9_]{5,32}$");
+
     private void SimpanBot()
     {
+        PesanStatusBot = null;
+        var token = (TokenBot ?? string.Empty).Trim();
+        var username = (UsernameBot ?? string.Empty).Trim().TrimStart('@');
+
+        if (token.Length > 0 && !FormatToken.IsMatch(token))
+        {
+            PesanGalatBot = "Format token bot tidak dikenali. Salin ulang token utuh dari BotFather (contoh bentuknya: angka, titik dua, lalu huruf dan angka).";
+            return;
+        }
+
+        if (username.Length > 0 && !FormatUsername.IsMatch(username))
+        {
+            PesanGalatBot = "Username bot hanya boleh huruf, angka, dan garis bawah (5 sampai 32 karakter), tanpa tanda @ dan tanpa spasi.";
+            return;
+        }
+
         var waktu = _penyediaWaktu.Sekarang;
-        _layananPengaturan.Simpan(_connection, _akun, waktu, "token_bot", TokenBot ?? string.Empty);
-        _layananPengaturan.Simpan(_connection, _akun, waktu, "username_bot", UsernameBot ?? string.Empty);
+        if (!PenangananGalat.Coba(
+                () =>
+                {
+                    _layananPengaturan.Simpan(_connection, _akun, waktu, "token_bot", token);
+                    _layananPengaturan.Simpan(_connection, _akun, waktu, "username_bot", username);
+                },
+                pesan => PesanGalatBot = pesan,
+                "PengaturanViewModel.SimpanBot"))
+        {
+            return;
+        }
+
+        TokenBot = token;
+        UsernameBot = username;
+        PesanGalatBot = null;
         PesanStatusBot = "Pengaturan bot Telegram tersimpan.";
     }
 
@@ -180,7 +234,15 @@ public sealed class PengaturanViewModel : ObservableObject
         }
 
         PesanGalat = null;
-        _layananJadwalHari.Perbarui(_connection, _akun, _penyediaWaktu.Sekarang, _tahunAjaranId, hasil);
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananJadwalHari.Perbarui(_connection, _akun, _penyediaWaktu.Sekarang, _tahunAjaranId, hasil),
+                pesan => PesanGalat = pesan,
+                "PengaturanViewModel.SimpanJadwal"))
+        {
+            return;
+        }
+
         PesanStatus = "Jadwal harian tersimpan.";
     }
 

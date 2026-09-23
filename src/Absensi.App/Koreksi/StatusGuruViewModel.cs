@@ -129,7 +129,14 @@ public sealed class StatusGuruViewModel : ObservableObject
             return;
         }
 
-        _layananStatusGuru.TetapkanStatus(_connection, _akun, _penyediaWaktu.Sekarang, guru.GuruId, DateOnly.FromDateTime(_tanggalTerpilih), StatusBaru, Keterangan);
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananStatusGuru.TetapkanStatus(_connection, _akun, _penyediaWaktu.Sekarang, guru.GuruId, DateOnly.FromDateTime(_tanggalTerpilih), StatusBaru, Keterangan),
+                pesan => PesanGalat = pesan,
+                "StatusGuruViewModel.Simpan"))
+        {
+            return;
+        }
 
         PesanGalat = null;
         PesanStatus = $"Status {guru.Nama} tersimpan.";

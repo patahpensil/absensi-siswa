@@ -67,9 +67,12 @@ public sealed class SiswaViewModel : ObservableObject
         _tahunAjaranId = tahunAjaranId;
 
         SimpanCommand = new RelayCommand(Simpan, BisaSimpan);
+        TambahCommand = new RelayCommand(MulaiTambah);
         EditCommand = new RelayCommand<SiswaDaftar>(MulaiEdit);
         BatalEditCommand = new RelayCommand(BatalEdit);
-        NonaktifkanCommand = new RelayCommand<SiswaDaftar>(Nonaktifkan);
+        // Siswa yang sudah tidak aktif tidak dinonaktifkan lagi (menimpa alasan);
+        // `is not null`: CanExecute(null) transien dari WPF (pola crash E-2).
+        NonaktifkanCommand = new RelayCommand<SiswaDaftar>(Nonaktifkan, s => s is not null && s.Aktif);
         UnggahFotoCommand = new RelayCommand<SiswaDaftar>(UnggahFoto);
         UnduhTemplateCommand = new RelayCommand(UnduhTemplate);
         ImporExcelCommand = new RelayCommand(ImporExcel);
@@ -144,6 +147,21 @@ public sealed class SiswaViewModel : ObservableObject
 
     public RelayCommand SimpanCommand { get; }
 
+    public RelayCommand TambahCommand { get; }
+
+    // Formulir tambah/ubah tampil di dialog (FormSiswaWindow), dibuka oleh
+    // SiswaView saat event ini terpicu dan ditutup saat FormulirSelesai
+    // (Simpan berhasil atau Batal). Audit UI 2026-09-24: panel formulir 320 px
+    // di kanan tabel menyisakan ±730 px untuk tabel (±690 px di 1280) sehingga
+    // kolom aksi terpotong dan tombol Simpan/Batal berada di bawah lipatan.
+    public event EventHandler? FormulirDiminta;
+
+    public event EventHandler? FormulirSelesai;
+
+    // NISN adalah identitas siswa dan LayananSiswa.Perbarui tidak mengubahnya —
+    // hanya bisa diisi saat menambah siswa baru.
+    public bool NisnHanyaBaca => _sedangDiedit is not null;
+
     public RelayCommand<SiswaDaftar> EditCommand { get; }
 
     public RelayCommand BatalEditCommand { get; }
@@ -160,18 +178,42 @@ public sealed class SiswaViewModel : ObservableObject
 
     private bool BisaSimpan() => !string.IsNullOrWhiteSpace(_nisn) && !string.IsNullOrWhiteSpace(_nama) && _kelasTerpilih is not null;
 
+    private void MulaiTambah()
+    {
+        ResetFormulir();
+        FormulirDiminta?.Invoke(this, EventArgs.Empty);
+    }
+
     private void MulaiEdit(SiswaDaftar siswa)
     {
         _sedangDiedit = siswa;
         Nisn = siswa.Nisn;
         Nama = siswa.Nama;
         JenisKelamin = siswa.JenisKelamin;
+        // Tempat/tanggal lahir, alamat, dan data orang tua tidak ada di baris
+        // daftar — dimuat dari database. Sebelumnya dibiarkan kosong sehingga
+        // Simpan menimpa keempat kolom itu dengan null (data hilang diam-diam).
+        var tersimpan = _repositoriSiswa.CariUntukAudit(_connection, null, siswa.Id)?.Data;
+        TempatLahir = tersimpan?.TempatLahir;
+        TanggalLahir = tersimpan?.TanggalLahir;
+        Alamat = tersimpan?.Alamat;
+        NamaOrtu = tersimpan?.NamaOrtu;
+        NoHpOrtu = tersimpan?.NoHpOrtu;
         KelasTerpilih = DaftarKelas.FirstOrDefault(k => k.Nama == siswa.KelasNama);
+        PesanGalat = null;
         OnPropertyChanged(nameof(JudulFormulir));
+        OnPropertyChanged(nameof(NisnHanyaBaca));
         SimpanCommand.RaiseCanExecuteChanged();
+        FormulirDiminta?.Invoke(this, EventArgs.Empty);
     }
 
     private void BatalEdit()
+    {
+        ResetFormulir();
+        FormulirSelesai?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ResetFormulir()
     {
         _sedangDiedit = null;
         Nisn = string.Empty;
@@ -185,32 +227,77 @@ public sealed class SiswaViewModel : ObservableObject
         KelasTerpilih = null;
         PesanGalat = null;
         OnPropertyChanged(nameof(JudulFormulir));
+        OnPropertyChanged(nameof(NisnHanyaBaca));
     }
+
+    private static readonly System.Text.RegularExpressions.Regex FormatNisn = new(@"^\d{10}$");
 
     private void Simpan()
     {
+        var nisn = Nisn.Trim();
+        var nama = Nama.Trim();
+
+        // Validasi (CLAUDE.md §4.2 aturan 9: NISN teks 10 digit, nol di depan bertahan).
         if (KelasTerpilih is null)
         {
             PesanGalat = "Pilih kelas terlebih dahulu.";
             return;
         }
 
-        var waktu = _penyediaWaktu.Sekarang;
-        var data = new DataSiswa(Nisn, Nama, JenisKelamin, TempatLahir, TanggalLahir, Alamat, NamaOrtu, NoHpOrtu);
-        var kelas = (_tahunAjaranId, KelasTerpilih.Id);
-
-        if (_sedangDiedit is { } siswa)
+        if (_sedangDiedit is null && !FormatNisn.IsMatch(nisn))
         {
-            _layananSiswa.Perbarui(_connection, _akun, waktu, siswa.Id, data, kelas);
+            PesanGalat = "NISN harus tepat 10 angka (tanpa spasi atau huruf).";
+            return;
         }
-        else
+
+        if (!string.IsNullOrWhiteSpace(TanggalLahir)
+            && !DateOnly.TryParseExact(TanggalLahir.Trim(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
         {
-            _layananSiswa.Tambah(_connection, _akun, waktu, data, kelas);
+            PesanGalat = "Tanggal lahir harus berformat TTTT-BB-HH, mis. 2011-03-15.";
+            return;
+        }
+
+        if (_sedangDiedit is null && _repositoriSiswa.CariIdBerdasarkanNisn(_connection, nisn) is { } idAda)
+        {
+            // Nama pemilik NISN itu disebut (bukan data pribadi lain) supaya operator tahu siswa mana.
+            PesanGalat = $"NISN {nisn} sudah terdaftar atas nama {_repositoriSiswa.CariNamaUntukAudit(_connection, idAda)}.";
+            return;
+        }
+
+        var waktu = _penyediaWaktu.Sekarang;
+        var data = new DataSiswa(
+            nisn, nama, JenisKelamin,
+            Bersihkan(TempatLahir), Bersihkan(TanggalLahir), Bersihkan(Alamat), Bersihkan(NamaOrtu), Bersihkan(NoHpOrtu));
+        var kelas = (_tahunAjaranId, KelasTerpilih.Id);
+        var sedangDiedit = _sedangDiedit;
+
+        var berhasil = PenangananGalat.Coba(
+            () =>
+            {
+                if (sedangDiedit is { } siswa)
+                {
+                    _layananSiswa.Perbarui(_connection, _akun, waktu, siswa.Id, data, kelas);
+                }
+                else
+                {
+                    _layananSiswa.Tambah(_connection, _akun, waktu, data, kelas);
+                }
+            },
+            pesan => PesanGalat = pesan,
+            "SiswaViewModel.Simpan");
+
+        if (!berhasil)
+        {
+            PesanStatus = null;
+            return;
         }
 
         BatalEdit();
         MuatUlang();
+        PesanStatus = $"Siswa {nama} tersimpan.";
     }
+
+    private static string? Bersihkan(string? nilai) => string.IsNullOrWhiteSpace(nilai) ? null : nilai.Trim();
 
     private void Nonaktifkan(SiswaDaftar siswa)
     {
@@ -221,8 +308,19 @@ public sealed class SiswaViewModel : ObservableObject
             return;
         }
 
-        _layananSiswa.TandaiTidakAktif(_connection, _akun, _penyediaWaktu.Sekarang, siswa.Id, dialog.AlasanTerpilih);
+        var alasan = dialog.AlasanTerpilih;
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananSiswa.TandaiTidakAktif(_connection, _akun, _penyediaWaktu.Sekarang, siswa.Id, alasan),
+                pesan => PesanGalat = pesan,
+                "SiswaViewModel.Nonaktifkan"))
+        {
+            return;
+        }
+
+        PesanGalat = null;
         MuatUlang();
+        PesanStatus = $"Siswa {siswa.Nama} ditandai tidak aktif ({alasan}).";
     }
 
     private void UnggahFoto(SiswaDaftar siswa)

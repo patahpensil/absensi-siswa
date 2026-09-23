@@ -17,12 +17,15 @@ public partial class NotifikasiView : UserControl
             {
                 lama.TampilkanQrDiminta -= TampilkanQr;
                 lama.CetakMassalSiap -= CetakMassal;
+                lama.MintaKonfirmasi = null;
             }
 
             if (e.NewValue is NotifikasiViewModel baru)
             {
                 baru.TampilkanQrDiminta += TampilkanQr;
                 baru.CetakMassalSiap += CetakMassal;
+                baru.MintaKonfirmasi = pesan => MessageBox.Show(
+                    Window.GetWindow(this), pesan, "Konfirmasi", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
             }
         };
     }

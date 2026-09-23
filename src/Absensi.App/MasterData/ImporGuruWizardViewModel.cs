@@ -32,7 +32,7 @@ public sealed class ImporGuruWizardViewModel : ObservableObject
         _penyediaWaktu = penyediaWaktu;
 
         PilihBerkasCommand = new RelayCommand(PilihBerkas);
-        ImporCommand = new RelayCommand(Impor, () => _analisis is { AdaKesalahan: false });
+        ImporCommand = new RelayCommand(Impor, () => _analisis is { AdaKesalahan: false } && _hasilImpor is null);
     }
 
     public ObservableCollection<BarisImporGuru> Baris { get; } = new();
@@ -60,10 +60,19 @@ public sealed class ImporGuruWizardViewModel : ObservableObject
     public HasilImporGuru? HasilImpor
     {
         get => _hasilImpor;
-        private set => SetField(ref _hasilImpor, value);
+        private set
+        {
+            if (SetField(ref _hasilImpor, value))
+            {
+                OnPropertyChanged(nameof(TeksTombolImpor));
+                ImporCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
 
-    public string TeksTombolImpor => _analisis is { } analisis
+    public string TeksTombolImpor => _hasilImpor is not null
+        ? "Sudah diimpor"
+        : _analisis is { } analisis
         ? $"Impor {analisis.Baris.Count(b => b.Sah)} baris"
         : "Impor";
 
@@ -145,8 +154,17 @@ public sealed class ImporGuruWizardViewModel : ObservableObject
             return;
         }
 
-        HasilImpor = _importir.Impor(_connection, _akun, _penyediaWaktu.Sekarang, _analisis.Baris);
-        LangkahSaatIni = LangkahImpor.Impor;
+        // Klik berulang: setelah berhasil, ImporCommand nonaktif (HasilImpor terisi) — tak ada
+        // impor ganda. Kegagalan (mis. DB terkunci) jadi pesan aman, bukan menutup aplikasi.
+        PesanGalat = null;
+        var baris = _analisis.Baris;
+        if (PenangananGalat.Coba(
+                () => HasilImpor = _importir.Impor(_connection, _akun, _penyediaWaktu.Sekarang, baris),
+                pesan => PesanGalat = "Impor gagal, tidak ada data yang diubah. " + pesan,
+                "ImporGuruWizardViewModel.Impor"))
+        {
+            LangkahSaatIni = LangkahImpor.Impor;
+        }
     }
 
     private void NotifikasiSemuaBerubah()

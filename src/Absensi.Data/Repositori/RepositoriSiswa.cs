@@ -210,7 +210,9 @@ public sealed class RepositoriSiswa
     }
 
     // Keadaan siswa sebelum diubah, untuk nilai lama di jejak audit (PRD §12).
-    public SiswaUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction transaction, int id)
+    // transaction null = baca biasa (form Ubah memuat SEMUA kolom tersimpan supaya
+    // Simpan tidak menimpa kolom yang tidak tampil di daftar dengan kosong).
+    public SiswaUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction? transaction, int id)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;

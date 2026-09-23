@@ -296,9 +296,15 @@ public sealed class LaporanViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
-            PesanGalat = ex.Message;
+            PesanGalat = PesanAman(ex);
         }
     }
+
+    // ArgumentException berasal dari kerangka .NET (pesan teknis berbahasa Inggris,
+    // bisa memuat nama parameter) — tidak pernah ditampilkan mentah ke pengguna.
+    private static string PesanAman(Exception ex) => ex is InvalidOperationException
+        ? ex.Message
+        : "Data laporan tidak valid untuk pilihan ini. Periksa jenis, rentang tanggal, dan kelas, lalu coba lagi.";
 
     private static DateOnly AwalMinggu(DateOnly tanggal)
     {
@@ -405,6 +411,8 @@ public sealed class LaporanViewModel : ObservableObject
 
     private void Ekspor(bool keExcel)
     {
+        PesanGalat = null;
+        PesanStatus = null;
         try
         {
             var kepala = BangunKepala();
@@ -453,7 +461,7 @@ public sealed class LaporanViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
         {
-            PesanGalat = ex.Message;
+            PesanGalat = PesanAman(ex);
         }
     }
 
@@ -471,7 +479,18 @@ public sealed class LaporanViewModel : ObservableObject
             return;
         }
 
-        File.WriteAllBytes(dialog.FileName, isi);
+        // Berkas terkunci (mis. masih terbuka di Excel) / izin ditolak: pesan jelas,
+        // bukan galat global; "tersimpan" hanya setelah berkas benar-benar tertulis.
+        if (!PenangananGalat.Coba(
+                () => File.WriteAllBytes(dialog.FileName, isi),
+                pesan => PesanGalat = pesan,
+                "LaporanViewModel.SimpanKeBerkas"))
+        {
+            PesanStatus = null;
+            return;
+        }
+
+        PesanGalat = null;
         PesanStatus = $"Laporan tersimpan di {dialog.FileName}.";
     }
 

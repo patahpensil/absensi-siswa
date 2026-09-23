@@ -27,6 +27,7 @@ public sealed class NotifikasiViewModel : ObservableObject
     private KelasDaftar? _kelasTerpilih;
     private string? _ringkasanPairingKelas;
     private string? _pesanStatus;
+    private string? _pesanGalat;
 
     public NotifikasiViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId)
     {
@@ -91,6 +92,19 @@ public sealed class NotifikasiViewModel : ObservableObject
 
     public ObservableCollection<OutboxBaris> Riwayat { get; } = new();
 
+    // Membuat QR baru untuk siapa pun yang SUDAH tertaut memutus tautan lamanya
+    // (LayananPairing.BuatTokenBaru) — View memasang dialog Ya/Tidak di sini; tanpa
+    // pemasangan (mis. tes) dianggap disetujui.
+    public Func<string, bool>? MintaKonfirmasi { get; set; }
+
+    private bool Setuju(string pesan) => MintaKonfirmasi?.Invoke(pesan) ?? true;
+
+    public string? PesanGalat
+    {
+        get => _pesanGalat;
+        private set => SetField(ref _pesanGalat, value);
+    }
+
     public string? PesanStatus
     {
         get => _pesanStatus;
@@ -113,15 +127,45 @@ public sealed class NotifikasiViewModel : ObservableObject
 
     private void LihatQrSiswa(SiswaDaftar siswa)
     {
-        var token = _layananPairing.BuatTokenBaru(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Siswa, siswa.Id);
-        TampilkanQrDiminta?.Invoke(this, new QrTampil(siswa.Nama, siswa.Nisn, LayananPairing.BuatUrlQr(UsernameBot!, token)));
+        if (siswa.TertautTelegram
+            && !Setuju($"{siswa.Nama} sudah tertaut Telegram. Membuat QR baru MEMUTUS tautan yang lama — orang tua harus memindai QR baru. Lanjutkan?"))
+        {
+            return;
+        }
+
+        PesanGalat = null;
+        string? token = null;
+        if (!PenangananGalat.Coba(
+                () => token = _layananPairing.BuatTokenBaru(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Siswa, siswa.Id),
+                pesan => PesanGalat = pesan,
+                "NotifikasiViewModel.LihatQrSiswa"))
+        {
+            return;
+        }
+
+        TampilkanQrDiminta?.Invoke(this, new QrTampil(siswa.Nama, siswa.Nisn, LayananPairing.BuatUrlQr(UsernameBot!, token!)));
         MuatSemua();
     }
 
     private void LihatQrGuru(GuruDaftar guru)
     {
-        var token = _layananPairing.BuatTokenBaru(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Guru, guru.Id);
-        TampilkanQrDiminta?.Invoke(this, new QrTampil(guru.Nama, guru.Nip, LayananPairing.BuatUrlQr(UsernameBot!, token)));
+        if (guru.TertautTelegram
+            && !Setuju($"{guru.Nama} sudah tertaut Telegram. Membuat QR baru MEMUTUS tautan yang lama — guru harus memindai QR baru. Lanjutkan?"))
+        {
+            return;
+        }
+
+        PesanGalat = null;
+        string? token = null;
+        if (!PenangananGalat.Coba(
+                () => token = _layananPairing.BuatTokenBaru(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Guru, guru.Id),
+                pesan => PesanGalat = pesan,
+                "NotifikasiViewModel.LihatQrGuru"))
+        {
+            return;
+        }
+
+        TampilkanQrDiminta?.Invoke(this, new QrTampil(guru.Nama, guru.Nip, LayananPairing.BuatUrlQr(UsernameBot!, token!)));
         MuatSemua();
     }
 
@@ -130,13 +174,24 @@ public sealed class NotifikasiViewModel : ObservableObject
     private void CetakMassal()
     {
         var daftar = new List<QrTampil>();
-        foreach (var siswa in SiswaTampil)
+        PesanGalat = null;
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () =>
+                {
+                    foreach (var siswa in SiswaTampil)
+                    {
+                        var token = _layananPairing.PastikanTokenUntukCetakMassal(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Siswa, siswa.Id);
+                        if (token is not null)
+                        {
+                            daftar.Add(new QrTampil(siswa.Nama, siswa.Nisn, LayananPairing.BuatUrlQr(UsernameBot!, token)));
+                        }
+                    }
+                },
+                pesan => PesanGalat = pesan,
+                "NotifikasiViewModel.CetakMassal"))
         {
-            var token = _layananPairing.PastikanTokenUntukCetakMassal(_connection, _akun, _penyediaWaktu.Sekarang, JenisPemilikKartu.Siswa, siswa.Id);
-            if (token is not null)
-            {
-                daftar.Add(new QrTampil(siswa.Nama, siswa.Nisn, LayananPairing.BuatUrlQr(UsernameBot!, token)));
-            }
+            return;
         }
 
         if (daftar.Count == 0)

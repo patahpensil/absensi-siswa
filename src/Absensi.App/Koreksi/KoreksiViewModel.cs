@@ -58,6 +58,12 @@ public sealed class KoreksiViewModel : ObservableObject
             }
         }
 
+        // Wali kelas hanya punya satu kelas: langsung terpilih (daftar tidak kosong-menunggu).
+        if (DaftarKelas.Count == 1)
+        {
+            _kelasTerpilih = DaftarKelas[0];
+        }
+
         SimpanCommand = new RelayCommand(Simpan, BisaSimpan);
         KunciBulanCommand = new RelayCommand(BukaDialogKunciBulan, () => BolehKunciBulan && !BulanTerkunci);
 
@@ -139,6 +145,22 @@ public sealed class KoreksiViewModel : ObservableObject
         private set => SetField(ref _pesanStatus, value);
     }
 
+    // Keadaan kosong tabel (bukan galat): apa yang harus dilakukan pengguna.
+    public string? PesanKosong
+    {
+        get
+        {
+            if (_kelasTerpilih is null)
+            {
+                return "Pilih kelas untuk menampilkan daftar siswa pada tanggal ini.";
+            }
+
+            return Daftar.Count == 0
+                ? "Tidak ada data absensi untuk kelas ini pada tanggal ini (mungkin hari libur, atau hari belum dibuka)."
+                : null;
+        }
+    }
+
     public RelayCommand SimpanCommand { get; }
 
     public RelayCommand KunciBulanCommand { get; }
@@ -153,6 +175,7 @@ public sealed class KoreksiViewModel : ObservableObject
 
         if (_kelasTerpilih is null)
         {
+            OnPropertyChanged(nameof(PesanKosong));
             return;
         }
 
@@ -160,6 +183,8 @@ public sealed class KoreksiViewModel : ObservableObject
         {
             Daftar.Add(siswa);
         }
+
+        OnPropertyChanged(nameof(PesanKosong));
     }
 
     private void Simpan()
@@ -169,10 +194,19 @@ public sealed class KoreksiViewModel : ObservableObject
             return;
         }
 
-        _layananKoreksi.KoreksiStatusSiswa(
-            _connection, _akun, _penyediaWaktu.Sekarang,
-            kelas.Id, siswa.SiswaId, siswa.Nama, DateOnly.FromDateTime(_tanggalTerpilih),
-            StatusBaru, Keterangan, TampilkanAtasPermintaan ? AtasPermintaan : null);
+        // Bulan dikunci / bukan kelas sendiri / dst. dilempar layanan sebagai pesan
+        // aturan — ditampilkan di panel, TIDAK menutup aplikasi.
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananKoreksi.KoreksiStatusSiswa(
+                    _connection, _akun, _penyediaWaktu.Sekarang,
+                    kelas.Id, siswa.SiswaId, siswa.Nama, DateOnly.FromDateTime(_tanggalTerpilih),
+                    StatusBaru, Keterangan, TampilkanAtasPermintaan ? AtasPermintaan : null),
+                pesan => PesanGalat = pesan,
+                "KoreksiViewModel.Simpan"))
+        {
+            return;
+        }
 
         PesanGalat = null;
         PesanStatus = $"Status {siswa.Nama} tersimpan.";
@@ -188,7 +222,15 @@ public sealed class KoreksiViewModel : ObservableObject
             return;
         }
 
-        _layananKuncimBulan.KunciBulan(_connection, _akun, _penyediaWaktu.Sekarang, _tanggalTerpilih.Year, _tanggalTerpilih.Month);
+        if (!PenangananGalat.Coba(
+                () => _layananKuncimBulan.KunciBulan(_connection, _akun, _penyediaWaktu.Sekarang, _tanggalTerpilih.Year, _tanggalTerpilih.Month),
+                pesan => PesanGalat = pesan,
+                "KoreksiViewModel.KunciBulan"))
+        {
+            return;
+        }
+
+        PesanGalat = null;
         OnPropertyChanged(nameof(BulanTerkunci));
         SimpanCommand.RaiseCanExecuteChanged();
         KunciBulanCommand.RaiseCanExecuteChanged();

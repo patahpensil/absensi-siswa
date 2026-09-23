@@ -150,7 +150,17 @@ public sealed class KalenderViewModel : ObservableObject
             return;
         }
 
-        _layananKalender.TandaiRentang(_connection, _akun, _penyediaWaktu.Sekarang, awal, akhir, jenis, _keterangan);
+        // Bulan dikunci (PRD §10/§16.13) dan wali kelas tidak berwenang dilempar layanan
+        // sebagai InvalidOperationException berpesan siap-tampil — sebelumnya lolos ke
+        // penanganan galat global dan MENUTUP aplikasi.
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananKalender.TandaiRentang(_connection, _akun, _penyediaWaktu.Sekarang, awal, akhir, jenis, _keterangan),
+                pesan => PesanGalat = pesan,
+                "KalenderViewModel.Tandai"))
+        {
+            return;
+        }
 
         PesanGalat = null;
         PesanStatus = jenis == JenisHariKalender.Libur

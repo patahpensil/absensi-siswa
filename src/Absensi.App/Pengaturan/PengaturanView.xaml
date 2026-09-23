@@ -92,6 +92,12 @@
                                 <TextBlock Text="Username bot" Style="{StaticResource LabelKolomStyle}" />
                                 <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding UsernameBot, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
 
+                                <TextBlock Text="{Binding PesanGalatBot}"
+                                           Style="{StaticResource PesanSalahKolomStyle}"
+                                           Visibility="{Binding PesanGalatBot, Converter={StaticResource NullKeVisibilitas}}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,8" />
+
                                 <TextBlock Text="{Binding PesanStatusBot}"
                                            Style="{StaticResource TeksUtamaStyle}"
                                            Foreground="{StaticResource HadirTeksBrush}"
@@ -156,6 +162,11 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
 
+                                <TextBlock Text="{Binding PesanGalatBackup}"
+                                           Style="{StaticResource PesanSalahKolomStyle}"
+                                           Visibility="{Binding PesanGalatBackup, Converter={StaticResource NullKeVisibilitas}}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,8,0,0" />
                             </StackPanel>
                         </Border>
                     </StackPanel>

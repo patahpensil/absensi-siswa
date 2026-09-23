@@ -193,8 +193,19 @@ public sealed class GuruViewModel : ObservableObject
             return;
         }
 
-        _layananGuru.TandaiTidakAktif(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, dialog.AlasanTerpilih);
+        var alasan = dialog.AlasanTerpilih;
+        PesanStatus = null;
+        if (!PenangananGalat.Coba(
+                () => _layananGuru.TandaiTidakAktif(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, alasan),
+                pesan => PesanGalat = pesan,
+                "GuruViewModel.Nonaktifkan"))
+        {
+            return;
+        }
+
+        PesanGalat = null;
         MuatUlang();
+        PesanStatus = $"Guru {guru.Nama} ditandai tidak aktif ({alasan}).";
     }
 
     private void UnggahFoto(GuruDaftar guru)
