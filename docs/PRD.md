@@ -938,6 +938,12 @@ sebagai pesan galat yang jelas — TIDAK PERNAH sebagai pesan berhasil.
 7. Cetak QR pairing guru → guru memindai dari HP masing-masing
 ```
 
+**Revisi 2026-09-24 (Panel Guru, instruksi eksplisit pemilik proyek — mengikuti revisi Panel Siswa §14.4/§16.4):**
+- Langkah 3 (impor foto guru massal dari folder): tombol **Impor foto** dihapus dari bagian atas Panel Guru. Kelas `ImporFotoGuru` TETAP ada di kode, tanpa entry point UI untuk saat ini. Foto guru diunggah satu per satu lewat tombol **Unggah foto** pada baris guru (pesan berhasil hanya setelah berkas dan database sama-sama tersimpan; kegagalan menampilkan alasan jelas).
+- Tabel Data Guru: kolom **Nama, NIP, Kartu, Status**, lalu aksi (Ubah · Unggah foto · Daftarkan kartu/Ganti kartu · Nonaktifkan). **Kartu** menampilkan UID RFID aktif sebenarnya atau "Belum terdaftar" (bukan ya/tidak). **Status** menampilkan "Aktif", atau alasan tidak aktif ("Pensiun"/"Pindah"); guru tidak aktif tampil dengan nama redup dan hanya punya aksi Ubah dan Unggah foto.
+- Kolom **TG** (status pairing Telegram guru) dihapus dari tabel Data Guru. Field `TertautTelegram` TIDAK dihapus — masih dipakai menu Notifikasi (pairing guru, langkah 7 di atas); status pairing tetap dilihat di sana.
+- Formulir tambah/ubah guru dipindah dari panel kanan ke bilah di atas tabel agar tabel memakai seluruh lebar panel (tanpa scroll horizontal di 1366×768). NIP hanya bisa diisi saat menambah guru; setelah tersimpan NIP hanya-baca (NIP kembar ditolak dengan pesan di formulir).
+
 ### 16.16 Alur Harian Guru
 
 ```

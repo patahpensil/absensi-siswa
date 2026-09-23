@@ -40,7 +40,9 @@ public sealed class SiswaGuruTabelKolomTests
     // di database/SiswaDaftar, dipakai modul lain seperti Notifikasi — lihat
     // MASTER-BUG-UIUX-REGISTER.md).
     private const int KolomSiswaDiharapkan = 6;
-    private const int KolomGuruDiharapkan = 6;
+    // 2026-09-24: 6 -> 5 setelah kolom TG dihapus dari Panel Guru (sama seperti
+    // Panel Siswa; TertautTelegram TETAP di GuruDaftar untuk menu Notifikasi).
+    private const int KolomGuruDiharapkan = 5;
 
     private static DataGrid AmbilTabel(FrameworkElement view, string namaElemen)
     {
@@ -119,7 +121,7 @@ public sealed class SiswaGuruTabelKolomTests
 
         var header = tabel.Columns.Select(k => k.Header?.ToString() ?? string.Empty).ToArray();
 
-        Assert.Equal(new[] { "Nama", "NIP", "Kartu", "TG", "Status", "" }, header);
+        Assert.Equal(new[] { "Nama", "NIP", "Kartu", "Status", "" }, header);
     });
 
     [Fact]
@@ -134,7 +136,9 @@ public sealed class SiswaGuruTabelKolomTests
         }
 
         var kolomTindakan = tabel.Columns.Last();
-        Assert.Equal(290, kolomTindakan.MinWidth);
+        // 2026-09-24: 290 -> 380, empat slot aksi berlebar tetap (Ubah, Unggah
+        // foto, Daftarkan/Ganti kartu, Nonaktifkan) — lihat GuruView.xaml.
+        Assert.Equal(380, kolomTindakan.MinWidth);
     });
 }
 
@@ -219,7 +223,8 @@ internal static class StaHost
 
         if (galat is not null)
         {
-            throw galat;
+            // Pertahankan stack trace asli dari thread STA ("throw galat" menimpanya).
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(galat).Throw();
         }
     }
 }

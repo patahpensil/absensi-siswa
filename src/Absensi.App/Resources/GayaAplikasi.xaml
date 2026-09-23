@@ -25,6 +25,7 @@
     <conv:KartuUidKeTeksConverter x:Key="KartuUidKeTeks" />
     <conv:UkuranFontNamaConverter x:Key="UkuranFontNama" />
     <conv:JarakBarisNamaConverter x:Key="JarakBarisNama" />
+    <conv:StatusAktifKeTeksConverter x:Key="StatusAktifKeTeks" />
 
     <!-- Navigasi ViewModel-first (Tugas 7): MainWindow.KontenAktif memuat
          salah satu ViewModel ini, DataTemplate implisit memilih View-nya. -->
@@ -304,6 +305,13 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource BiruSeragamBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- Tombol teks untuk aksi per baris tabel (mis. Data Guru): padding
+         horizontal lebih rapat dari TombolTeksStyle supaya keempat aksi
+         muat utuh di 1366x768 tanpa scroll horizontal. -->
+    <Style x:Key="TombolTeksBarisStyle" TargetType="Button" BasedOn="{StaticResource TombolTeksStyle}">
+        <Setter Property="Padding" Value="8,8" />
     </Style>
 
     <!-- ================= 6.2 Kolom Isian ================= -->

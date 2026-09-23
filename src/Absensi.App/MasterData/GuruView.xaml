@@ -5,94 +5,222 @@
 
     <TabControl Margin="{StaticResource PaddingTepiHalaman}">
     <TabItem Header="Data Guru">
+    <!-- Rapikan Panel Guru (2026-09-24, 1366x768): formulir dipindah dari
+         panel kanan 320 px (yang menyisakan ±700 px untuk tabel sehingga
+         kolom aksi terpotong dan tabel harus digulir ke samping — menyembunyikan
+         kolom Nama) ke bilah di ATAS tabel; tabel memakai seluruh lebar
+         panel. Formulir guru hanya empat isian, jadi muat satu baris. -->
     <Grid Margin="16,16,0,0">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="24" />
-            <ColumnDefinition Width="320" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-        <DockPanel Grid.Column="0">
-            <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Guru" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" />
+            <!-- 2026-09-24: tombol Impor foto (massal) dihapus, mengikuti
+                 Panel Siswa (PRD §16.4/§14.4 revisi). Unggah foto per guru
+                 tetap ada di kolom aksi. -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="Unduh Template" Style="{StaticResource TombolSekunderStyle}" Command="{Binding UnduhTemplateCommand}" Margin="0,0,8,0" />
+                <Button Content="Impor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporExcelCommand}" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="1" Text="{Binding PesanStatus}" Style="{StaticResource LabelKecilStyle}" Margin="0,0,0,8"
+                   Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}" />
+
+        <!-- Bilah formulir tambah/ubah guru -->
+        <Border Grid.Row="2" Style="{StaticResource KartuStyle}" Margin="0,0,0,16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="200" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" MinWidth="160" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="16" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="Guru" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="Unduh Template" Style="{StaticResource TombolSekunderStyle}" Command="{Binding UnduhTemplateCommand}" Margin="0,0,8,0" />
-                    <Button Content="Impor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporExcelCommand}" Margin="0,0,8,0" />
-                    <Button Content="Impor foto" Style="{StaticResource TombolSekunderStyle}" Command="{Binding ImporFotoCommand}" />
-                </StackPanel>
-            </Grid>
 
-            <TextBlock DockPanel.Dock="Top" Text="{Binding PesanStatus}" Style="{StaticResource LabelKecilStyle}" Margin="0,0,0,8" />
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="9" Text="{Binding JudulFormulir}" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,8" />
 
-            <!-- UAT Bug #12 (2026-09-22): sama seperti SiswaView.xaml — lihat
-                 komentar di sana untuk akar masalah (bug WPF DataGrid saat
-                 View dibuat ulang oleh DataTemplate implisit lintas navigasi
-                 menu). MinWidth per kolom di bawah adalah batas bawah keras
-                 yang mencegah kolom menyempit/berhimpitan meski pengukuran
-                 "*"/pixel sementaranya salah. -->
-            <DataGrid x:Name="TabelGuru" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" MinWidth="180" />
-                    <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="140" MinWidth="140" />
-                    <DataGridTextColumn Header="Kartu" Binding="{Binding PunyaKartu}" Width="70" MinWidth="70" />
-                    <DataGridTextColumn Header="TG" Binding="{Binding TertautTelegram}" Width="60" MinWidth="60" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding AlasanNonaktif}" Width="100" MinWidth="100" />
-                    <DataGridTemplateColumn Header="" Width="290" MinWidth="290">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="Ubah" Style="{StaticResource TombolTeksStyle}"
-                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Content="Unggah foto" Style="{StaticResource TombolTeksStyle}"
-                                            Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
-                                    <!-- PRD §17.10: registrasi/ganti kartu guru hanya TU/Admin/Kepsek — KartuCommand.CanExecute menyembunyikannya untuk wali kelas -->
-                                    <Button Content="Kartu" Style="{StaticResource TombolTeksStyle}"
-                                            Command="{Binding DataContext.KartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Content="Nonaktifkan" Style="{StaticResource TombolTeksStyle}"
-                                            Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </DockPanel>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="NIP" Style="{StaticResource LabelKolomStyle}" />
+                <TextBox Grid.Row="2" Grid.Column="0" Text="{Binding Nip, UpdateSourceTrigger=PropertyChanged}"
+                         IsReadOnly="{Binding NipHanyaBaca, Mode=OneWay}"
+                         ToolTip="NIP tidak bisa diubah setelah guru tersimpan.">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource KolomTeksStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NipHanyaBaca}" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource KertasBrush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
 
-        <Border Grid.Column="2" Style="{StaticResource KartuStyle}" VerticalAlignment="Top">
-            <StackPanel>
-                <TextBlock Text="{Binding JudulFormulir}" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,16" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Nama" Style="{StaticResource LabelKolomStyle}" />
+                <TextBox Grid.Row="2" Grid.Column="2" Style="{StaticResource KolomTeksStyle}" Text="{Binding Nama, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Text="NIP" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nip, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+                <TextBlock Grid.Row="1" Grid.Column="4" Text="Pangkat" Style="{StaticResource LabelKolomStyle}" />
+                <TextBox Grid.Row="2" Grid.Column="4" Style="{StaticResource KolomTeksStyle}" Text="{Binding Pangkat, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Text="Nama" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nama, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+                <TextBlock Grid.Row="1" Grid.Column="6" Text="Jabatan" Style="{StaticResource LabelKolomStyle}" />
+                <TextBox Grid.Row="2" Grid.Column="6" Style="{StaticResource KolomTeksStyle}" Text="{Binding Jabatan, UpdateSourceTrigger=PropertyChanged}" />
 
-                <TextBlock Text="Pangkat" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Pangkat, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
-
-                <TextBlock Text="Jabatan" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Jabatan, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
-
-                <TextBlock Text="{Binding PesanGalat}"
-                           Style="{StaticResource PesanSalahKolomStyle}"
-                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
-                           Margin="0,0,0,8" />
-
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel Grid.Row="2" Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Bottom">
                     <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Command="{Binding BatalEditCommand}" Margin="0,0,8,0" />
                     <Button Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" />
                 </StackPanel>
-            </StackPanel>
+
+                <TextBlock Grid.Row="3" Grid.ColumnSpan="9"
+                           Text="{Binding PesanGalat}"
+                           Style="{StaticResource PesanSalahKolomStyle}"
+                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                           Margin="0,8,0,0" />
+            </Grid>
         </Border>
+
+        <!-- UAT Bug #12 (2026-09-22): sama seperti SiswaView.xaml — lihat
+             komentar di sana untuk akar masalah (bug WPF DataGrid saat
+             View dibuat ulang oleh DataTemplate implisit lintas navigasi
+             menu). MinWidth per kolom di bawah adalah batas bawah keras
+             yang mencegah kolom menyempit/berhimpitan meski pengukuran
+             "*"/pixel sementaranya salah.
+
+             2026-09-24: kolom TG dihapus (audit: TertautTelegram TETAP
+             dipakai menu Notifikasi — hanya tampilannya di sini yang
+             dihapus, sama seperti Panel Siswa). Kolom Kartu = UID
+             sebenarnya / "Belum terdaftar". Kolom Status = teks
+             "Aktif"/"Pensiun"/"Pindah" (StatusAktifKeTeksConverter),
+             bukan nilai Boolean atau alasan mentah. Jumlah lebar tetap
+             kolom (150+115+80+380) + Nama minimum 170 muat di lebar panel
+             1366x768 tanpa scroll horizontal. -->
+        <DataGrid Grid.Row="3" x:Name="TabelGuru" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
+            <DataGrid.Resources>
+                <!-- Teks sel rata tengah vertikal (sejajar dengan tombol aksi
+                     dan kolom Nama) — bawaan DataGridTextColumn menempel di atas. -->
+                <Style x:Key="TeksSelStyle" TargetType="TextBlock">
+                    <Setter Property="VerticalAlignment" Value="Center" />
+                    <Setter Property="Margin" Value="6,0" />
+                </Style>
+            </DataGrid.Resources>
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Nama" Width="*" MinWidth="170" SortMemberPath="Nama">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Nama, Mode=OneWay}" ToolTip="{Binding Nama, Mode=OneWay}"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="6,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Aktif}" Value="False">
+                                                <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="NIP" Binding="{Binding Nip, Mode=OneWay}" ElementStyle="{StaticResource TeksSelStyle}" Width="150" MinWidth="150" />
+                <DataGridTextColumn Header="Kartu" Binding="{Binding KartuUid, Mode=OneWay, Converter={StaticResource KartuUidKeTeks}}" ElementStyle="{StaticResource TeksSelStyle}" Width="115" MinWidth="115" />
+                <DataGridTextColumn Header="Status" ElementStyle="{StaticResource TeksSelStyle}" Width="80" MinWidth="80">
+                    <DataGridTextColumn.Binding>
+                        <MultiBinding Converter="{StaticResource StatusAktifKeTeks}" Mode="OneWay">
+                            <Binding Path="Aktif" />
+                            <Binding Path="AlasanNonaktif" />
+                        </MultiBinding>
+                    </DataGridTextColumn.Binding>
+                </DataGridTextColumn>
+                <!-- Aksi: empat slot berlebar tetap sehingga tombol sejajar
+                     antar baris. "Daftarkan kartu"/"Ganti kartu" berbagi satu
+                     slot (PRD §16.5/§16.11: kartu pertama vs penggantian).
+                     Guru tidak aktif: hanya Ubah dan Unggah foto. -->
+                <DataGridTemplateColumn Header="" Width="380" MinWidth="380">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="56" />
+                                    <ColumnDefinition Width="98" />
+                                    <ColumnDefinition Width="122" />
+                                    <ColumnDefinition Width="104" />
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0" Content="Ubah" Style="{StaticResource TombolTeksBarisStyle}"
+                                        Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" />
+                                <Button Grid.Column="1" Content="Unggah foto" Style="{StaticResource TombolTeksBarisStyle}"
+                                        Command="{Binding DataContext.UnggahFotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" />
+
+                                <!-- PRD §17.10: registrasi/ganti kartu guru hanya TU/Admin/Kepsek —
+                                     KartuCommand.CanExecute mematikannya untuk wali kelas -->
+                                <Button Grid.Column="2" Content="Daftarkan kartu"
+                                        Command="{Binding DataContext.KartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource TombolTeksBarisStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Aktif}" Value="True" />
+                                                        <Condition Binding="{Binding PunyaKartu}" Value="False" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                                <Button Grid.Column="2" Content="Ganti kartu"
+                                        Command="{Binding DataContext.KartuCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource TombolTeksBarisStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Aktif}" Value="True" />
+                                                        <Condition Binding="{Binding PunyaKartu}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+
+                                <Button Grid.Column="3" Content="Nonaktifkan" Style="{StaticResource TombolTeksBarisStyle}"
+                                        Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}"
+                                        Visibility="{Binding Aktif, Converter={StaticResource BoolKeVisibilitas}}" />
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
     </TabItem>
 

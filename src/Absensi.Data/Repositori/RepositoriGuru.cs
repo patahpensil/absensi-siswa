@@ -148,6 +148,8 @@ public sealed class RepositoriGuru
         command.ExecuteNonQuery();
     }
 
+    // Subquery LIMIT 1 aman karena ix_kartu_uid_aktif menjamin paling banyak
+    // SATU kartu aktif per pemilik (sama seperti RepositoriSiswa).
     public IReadOnlyList<GuruDaftar> DaftarLengkap(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
@@ -155,7 +157,9 @@ public sealed class RepositoriGuru
             SELECT
                 g.id, g.nip, g.nama, g.aktif, g.alasan_nonaktif,
                 EXISTS(SELECT 1 FROM kartu WHERE pemilik_tipe = 'guru' AND pemilik_id = g.id AND aktif = 1),
-                EXISTS(SELECT 1 FROM pairing WHERE subjek_tipe = 'guru' AND subjek_id = g.id AND status = 'tertaut')
+                EXISTS(SELECT 1 FROM pairing WHERE subjek_tipe = 'guru' AND subjek_id = g.id AND status = 'tertaut'),
+                (SELECT uid FROM kartu WHERE pemilik_tipe = 'guru' AND pemilik_id = g.id AND aktif = 1 LIMIT 1),
+                g.pangkat, g.jabatan
             FROM guru g
             ORDER BY g.nama;
             """;
@@ -171,7 +175,10 @@ public sealed class RepositoriGuru
                 reader.GetInt32(3) == 1,
                 reader.IsDBNull(4) ? null : reader.GetString(4),
                 reader.GetInt32(5) == 1,
-                reader.GetInt32(6) == 1));
+                reader.GetInt32(6) == 1,
+                KartuUid: reader.IsDBNull(7) ? null : reader.GetString(7),
+                Pangkat: reader.IsDBNull(8) ? null : reader.GetString(8),
+                Jabatan: reader.IsDBNull(9) ? null : reader.GetString(9)));
         }
 
         return daftar;

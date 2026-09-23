@@ -14,8 +14,17 @@ using Microsoft.Win32;
 
 namespace Absensi.App.MasterData;
 
-// PRD §14.4-setara untuk guru + §16.15: daftar, impor Excel, impor foto,
-// tambah/edit, dan penandaan tidak aktif. Tab "Kehadiran" (Tugas 11, PRD
+// PRD §14.4-setara untuk guru + §16.15: daftar, unduh template, impor Excel,
+// unggah foto per guru, tambah/edit, registrasi/ganti kartu, dan penandaan
+// tidak aktif.
+//
+// 2026-09-24 (rapikan Panel Guru, mengikuti pola Panel Siswa/A-35): kolom
+// Kartu menampilkan UID sebenarnya (KartuUid) atau "Belum terdaftar";
+// kolom TG dihapus dari tabel (TertautTelegram TETAP di GuruDaftar —
+// dipakai menu Notifikasi); kolom Status memakai teks "Aktif"/"Pensiun"/
+// "Pindah" (bukan nilai Boolean/alasan mentah); tombol Impor foto massal
+// dihapus (ImporFotoGuru tetap ada di kode, tanpa entry point UI).
+// Tab "Kehadiran" (Tugas 11, PRD
 // §16.17) memakai ViewModel terpisah (StatusGuru) — layar Data Guru dan
 // Kehadiran berdiri sendiri-sendiri, cuma berbagi jendela yang sama.
 public sealed class GuruViewModel : ObservableObject
@@ -55,16 +64,21 @@ public sealed class GuruViewModel : ObservableObject
         SimpanCommand = new RelayCommand(Simpan, () => !string.IsNullOrWhiteSpace(_nip) && !string.IsNullOrWhiteSpace(_nama));
         EditCommand = new RelayCommand<GuruDaftar>(MulaiEdit);
         BatalEditCommand = new RelayCommand(BatalEdit);
-        NonaktifkanCommand = new RelayCommand<GuruDaftar>(Nonaktifkan);
+        // `guru is not null`: WPF (ButtonBase.UpdateCanExecute) bisa memanggil
+        // CanExecute(null) sesaat sebelum CommandParameter terikat — pola yang
+        // sama dengan crash GantiKartuCommand (Tahap E-2).
+        // Guru yang sudah tidak aktif tidak bisa dinonaktifkan lagi (tidak ada
+        // jalur mengaktifkan kembali di aplikasi ini) — tombolnya disembunyikan
+        // di tampilan dan dimatikan di sini.
+        NonaktifkanCommand = new RelayCommand<GuruDaftar>(Nonaktifkan, guru => guru is not null && guru.Aktif);
         UnggahFotoCommand = new RelayCommand<GuruDaftar>(UnggahFoto);
         UnduhTemplateCommand = new RelayCommand(UnduhTemplate);
         ImporExcelCommand = new RelayCommand(ImporExcel);
-        ImporFotoCommand = new RelayCommand(ImporFoto);
 
         // PRD §17.10: registrasi/ganti kartu guru hanya TU/Admin/Kepala
         // Sekolah — wali kelas tidak berwenang (ditegakkan juga di
         // LayananRegistrasiKartu; ini cuma menyembunyikan tombolnya).
-        KartuCommand = new RelayCommand<GuruDaftar>(BukaDialogKartu, _ => _akun.Peran != PeranAkun.WaliKelas);
+        KartuCommand = new RelayCommand<GuruDaftar>(BukaDialogKartu, guru => guru is not null && guru.Aktif && _akun.Peran != PeranAkun.WaliKelas);
 
         StatusGuru = new StatusGuruViewModel(connection, akun, penyediaWaktu);
 
@@ -76,6 +90,12 @@ public sealed class GuruViewModel : ObservableObject
     public StatusGuruViewModel StatusGuru { get; }
 
     public string JudulFormulir => _sedangDiedit is null ? "Tambah guru" : $"Ubah guru {_sedangDiedit.Nama}";
+
+    // NIP adalah identitas guru (nama berkas foto, kunci impor Excel) dan
+    // LayananGuru.Perbarui memang tidak mengubahnya — kolomnya hanya bisa
+    // diisi saat menambah guru baru, supaya perubahan NIP tidak diam-diam
+    // diabaikan saat Simpan.
+    public bool NipHanyaBaca => _sedangDiedit is not null;
 
     public string Nip { get => _nip; set { if (SetField(ref _nip, value)) SimpanCommand.RaiseCanExecuteChanged(); } }
 
@@ -105,14 +125,18 @@ public sealed class GuruViewModel : ObservableObject
 
     public RelayCommand ImporExcelCommand { get; }
 
-    public RelayCommand ImporFotoCommand { get; }
-
     private void MulaiEdit(GuruDaftar guru)
     {
         _sedangDiedit = guru;
         Nip = guru.Nip;
         Nama = guru.Nama;
+        // Pangkat/Jabatan tersimpan dimuat ke form — sebelumnya dibiarkan
+        // kosong sehingga Simpan menimpa keduanya dengan null.
+        Pangkat = guru.Pangkat;
+        Jabatan = guru.Jabatan;
+        PesanGalat = null;
         OnPropertyChanged(nameof(JudulFormulir));
+        OnPropertyChanged(nameof(NipHanyaBaca));
     }
 
     private void BatalEdit()
@@ -124,12 +148,17 @@ public sealed class GuruViewModel : ObservableObject
         Jabatan = null;
         PesanGalat = null;
         OnPropertyChanged(nameof(JudulFormulir));
+        OnPropertyChanged(nameof(NipHanyaBaca));
     }
 
     private void Simpan()
     {
         var waktu = _penyediaWaktu.Sekarang;
-        var data = new DataGuru(Nip, Nama, Pangkat, Jabatan);
+        var data = new DataGuru(
+            Nip.Trim(),
+            Nama.Trim(),
+            string.IsNullOrWhiteSpace(Pangkat) ? null : Pangkat.Trim(),
+            string.IsNullOrWhiteSpace(Jabatan) ? null : Jabatan.Trim());
 
         if (_sedangDiedit is { } guru)
         {
@@ -137,11 +166,22 @@ public sealed class GuruViewModel : ObservableObject
         }
         else
         {
+            // PRD §16.15 langkah 2.1: NIP wajib dan unik. Dicek di sini supaya
+            // NIP kembar tampil sebagai pesan di form, bukan pelanggaran
+            // UNIQUE yang lolos ke penanganan galat global.
+            if (_repositoriGuru.CariIdBerdasarkanNip(_connection, data.Nip) is not null)
+            {
+                PesanGalat = $"NIP {data.Nip} sudah dipakai guru lain.";
+                return;
+            }
+
             _layananGuru.Tambah(_connection, _akun, waktu, data);
         }
 
+        var nama = data.Nama;
         BatalEdit();
         MuatUlang();
+        PesanStatus = $"Guru {nama} tersimpan.";
     }
 
     private void Nonaktifkan(GuruDaftar guru)
@@ -165,12 +205,42 @@ public sealed class GuruViewModel : ObservableObject
             return;
         }
 
+        UnggahFotoDariBerkas(guru, dialog.FileName);
+    }
+
+    // Dipisah dari UnggahFoto supaya bisa diuji tanpa OpenFileDialog
+    // sungguhan (pola sama seperti SiswaViewModel.UnggahFotoDariBerkas).
+    // Pesan berhasil BARU tampil setelah PengolahFoto DAN SimpanFoto (lewat
+    // JalurPerubahanData) sama-sama sukses; kegagalan menampilkan alasan
+    // yang jelas, bukan pesan berhasil atau galat tak tertangani.
+    public void UnggahFotoDariBerkas(GuruDaftar guru, string pathSumber)
+    {
         var namaBerkasTujuan = $"{guru.Nip}.png";
         var pathTujuan = System.IO.Path.Combine(LokasiData.FolderData, "foto", namaBerkasTujuan);
-        PengolahFoto.SimpanDiubahUkuran(dialog.FileName, pathTujuan);
-        _layananGuru.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, namaBerkasTujuan);
-        PesanStatus = $"Foto {guru.Nama} tersimpan.";
+
+        try
+        {
+            PengolahFoto.SimpanDiubahUkuran(pathSumber, pathTujuan);
+            _layananGuru.SimpanFoto(_connection, _akun, _penyediaWaktu.Sekarang, guru.Id, namaBerkasTujuan);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or FormatException)
+        {
+            PesanGalat = PesanUntukKegagalanUnggahFoto(ex);
+            PesanStatus = null;
+            return;
+        }
+
+        PesanGalat = null;
+        PesanStatus = $"Foto {guru.Nama} berhasil diunggah.";
+        MuatUlang();
     }
+
+    private static string PesanUntukKegagalanUnggahFoto(Exception ex) => ex switch
+    {
+        UnauthorizedAccessException => "Foto tidak bisa disimpan karena akses ditolak. Periksa izin folder data, lalu coba lagi.",
+        NotSupportedException or FormatException => "Format gambar tidak dikenali. Gunakan berkas JPG, PNG, atau BMP yang valid.",
+        _ => "Berkas foto sedang dipakai aplikasi lain atau tidak bisa dibaca. Tutup berkasnya, lalu coba lagi.",
+    };
 
     // Kartu pertama guru (tidak ada alur per-kelas seperti siswa — §16.5
     // hanya menjabarkan itu untuk siswa) dan penggantian kartu hilang
@@ -237,21 +307,6 @@ public sealed class GuruViewModel : ObservableObject
     {
         var wizard = new ImporGuruWizardWindow(new ImporGuruWizardViewModel(_connection, _akun, _penyediaWaktu));
         wizard.ShowDialog();
-        MuatUlang();
-    }
-
-    private void ImporFoto()
-    {
-        var dialog = new OpenFolderDialog();
-        if (dialog.ShowDialog() != true)
-        {
-            return;
-        }
-
-        var hasil = new ImporFotoGuru().Impor(_connection, _akun, _penyediaWaktu.Sekarang, dialog.FolderName);
-        PesanStatus = hasil.TidakCocok.Count == 0
-            ? $"{hasil.Cocok} foto tersimpan."
-            : $"{hasil.Cocok} foto tersimpan · {hasil.TidakCocok.Count} berkas tidak cocok NIP mana pun.";
         MuatUlang();
     }
 
