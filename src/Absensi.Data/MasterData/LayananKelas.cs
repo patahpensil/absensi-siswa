@@ -9,6 +9,7 @@ namespace Absensi.Data.MasterData;
 public sealed class LayananKelas
 {
     private readonly RepositoriKelas _repositoriKelas = new();
+    private readonly RepositoriGuru _repositoriGuru = new();
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     public int Tambah(
@@ -38,6 +39,8 @@ public sealed class LayananKelas
         return idBaru;
     }
 
+    // PRD §12: nilai lama dibaca di dalam transaksi yang sama sebelum UPDATE.
+    // Wali kelas dicatat dengan NAMA guru (bukan id) supaya bisa dibaca.
     public void Perbarui(
         SqliteConnection connection,
         AkunTersimpan akun,
@@ -47,7 +50,7 @@ public sealed class LayananKelas
         int tingkat,
         int? waliGuruId)
     {
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -55,9 +58,19 @@ public sealed class LayananKelas
             entitas: "kelas",
             perubahan: transaction =>
             {
+                var lama = _repositoriKelas.CariUntukAudit(connection, transaction, id);
                 _repositoriKelas.Perbarui(connection, transaction, id, nama, tingkat, waliGuruId);
-                return id;
-            },
-            nilaiBaru: nama);
+
+                string? NamaWali(int? guruId) =>
+                    guruId is { } g ? _repositoriGuru.CariNamaUntukAudit(connection, g, transaction) ?? $"id {g}" : null;
+
+                var kolom = new[]
+                {
+                    new RingkasanPerubahan.Kolom("nama", lama?.Nama, nama),
+                    new RingkasanPerubahan.Kolom("tingkat", lama?.Tingkat.ToString(), tingkat.ToString()),
+                    new RingkasanPerubahan.Kolom("wali_kelas", lama is null ? null : NamaWali(lama.WaliGuruId), NamaWali(waliGuruId)),
+                };
+                return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom) : RingkasanPerubahan.Bandingkan(id, kolom);
+            });
     }
 }

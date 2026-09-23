@@ -47,6 +47,9 @@ public sealed class LayananSiswa
         return idBaru;
     }
 
+    // PRD §12: perubahan master dicatat "nilai lama -> nilai baru". Nilai lama
+    // dibaca di dalam transaksi yang sama sebelum UPDATE; hanya kolom yang
+    // benar-benar berubah yang ditulis (lihat RingkasanPerubahan).
     public void Perbarui(
         SqliteConnection connection,
         AkunTersimpan akun,
@@ -55,7 +58,7 @@ public sealed class LayananSiswa
         DataSiswa data,
         (int TahunAjaranId, int KelasId)? kelas = null)
     {
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -63,21 +66,42 @@ public sealed class LayananSiswa
             entitas: "siswa",
             perubahan: transaction =>
             {
+                var lama = _repositoriSiswa.CariUntukAudit(connection, transaction, id);
+                var kelasLama = kelas is { } kl ? _repositoriSiswaKelas.CariNamaKelas(connection, transaction, id, kl.TahunAjaranId) : null;
+
                 _repositoriSiswa.Perbarui(connection, transaction, id, data);
                 if (kelas is { } k)
                 {
                     _repositoriSiswaKelas.Tetapkan(connection, transaction, id, k.KelasId, k.TahunAjaranId);
                 }
 
-                return id;
-            },
-            nilaiBaru: data.Nama);
+                var kelasBaru = kelas is { } kb ? _repositoriSiswaKelas.CariNamaKelas(connection, transaction, id, kb.TahunAjaranId) : null;
+
+                var kolom = new List<RingkasanPerubahan.Kolom>
+                {
+                    new("nama", lama?.Data.Nama, data.Nama),
+                    new("jenis_kelamin", lama?.Data.JenisKelamin, data.JenisKelamin),
+                    new("tempat_lahir", lama?.Data.TempatLahir, data.TempatLahir),
+                    new("tanggal_lahir", lama?.Data.TanggalLahir, data.TanggalLahir),
+                    new("alamat", lama?.Data.Alamat, data.Alamat),
+                    new("nama_ortu", lama?.Data.NamaOrtu, data.NamaOrtu),
+                    new("no_hp_ortu", lama?.Data.NoHpOrtu, data.NoHpOrtu),
+                };
+                if (kelas is not null)
+                {
+                    kolom.Add(new("kelas", kelasLama, kelasBaru));
+                }
+
+                return lama is null
+                    ? RingkasanPerubahan.HanyaBaru(id, kolom.ToArray())
+                    : RingkasanPerubahan.Bandingkan(id, kolom.ToArray());
+            });
     }
 
     // PRD §5.3: siswa keluar/pindah ditandai tidak aktif, tidak dihapus.
     public void TandaiTidakAktif(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string alasan)
     {
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -85,10 +109,12 @@ public sealed class LayananSiswa
             entitas: "siswa",
             perubahan: transaction =>
             {
+                var lama = _repositoriSiswa.CariUntukAudit(connection, transaction, id);
                 _repositoriSiswa.TandaiTidakAktif(connection, transaction, id, alasan);
-                return id;
-            },
-            nilaiBaru: alasan);
+
+                var kolom = new RingkasanPerubahan.Kolom("status", lama is null ? null : StatusAktif.Teks(lama.Aktif, lama.AlasanNonaktif), StatusAktif.Teks(false, alasan));
+                return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom) : RingkasanPerubahan.Bandingkan(id, kolom);
+            });
     }
 
     // PRD §5.5: unggah per siswa untuk foto susulan/siswa pindahan — foto
@@ -96,7 +122,7 @@ public sealed class LayananSiswa
     // sampai di sini.
     public void SimpanFoto(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string fotoPath)
     {
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -104,9 +130,18 @@ public sealed class LayananSiswa
             entitas: "siswa",
             perubahan: transaction =>
             {
+                var lama = _repositoriSiswa.CariUntukAudit(connection, transaction, id);
                 _repositoriSiswa.PerbaruiFotoPath(connection, transaction, id, fotoPath);
-                return id;
-            },
-            nilaiBaru: fotoPath);
+
+                var kolom = new RingkasanPerubahan.Kolom("foto_path", lama?.FotoPath, fotoPath);
+                return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom) : RingkasanPerubahan.Bandingkan(id, kolom);
+            });
     }
+}
+
+// Teks status aktif/nonaktif untuk nilai lama/baru di jejak audit.
+internal static class StatusAktif
+{
+    public static string Teks(bool aktif, string? alasan) =>
+        aktif ? "aktif" : string.IsNullOrWhiteSpace(alasan) ? "nonaktif" : $"nonaktif ({alasan.Trim()})";
 }

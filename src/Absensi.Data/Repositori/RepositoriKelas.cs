@@ -137,4 +137,18 @@ public sealed class RepositoriKelas
         command.Parameters.AddWithValue("$waliGuruId", (object?)waliGuruId ?? DBNull.Value);
         command.ExecuteNonQuery();
     }
+
+    // Keadaan kelas sebelum diubah, untuk nilai lama di jejak audit (PRD §12).
+    public KelasUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction transaction, int id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT nama, tingkat, wali_guru_id FROM kelas WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+
+        using var reader = command.ExecuteReader();
+        return reader.Read()
+            ? new KelasUntukAudit(reader.GetString(0), reader.GetInt32(1), reader.IsDBNull(2) ? null : reader.GetInt32(2))
+            : null;
+    }
 }

@@ -44,4 +44,16 @@ public sealed class RepositoriSiswaKelas
         commandInsert.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
         commandInsert.ExecuteNonQuery();
     }
+
+    // Nama kelas siswa pada tahun ajaran itu (null bila belum punya kelas) —
+    // nilai lama/baru "kelas" di jejak audit perubahan siswa.
+    public string? CariNamaKelas(SqliteConnection connection, SqliteTransaction transaction, int siswaId, int tahunAjaranId)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT k.nama FROM siswa_kelas sk JOIN kelas k ON k.id = sk.kelas_id WHERE sk.siswa_id = $siswaId AND sk.tahun_ajaran_id = $tahunAjaranId;";
+        command.Parameters.AddWithValue("$siswaId", siswaId);
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+        return command.ExecuteScalar() as string;
+    }
 }

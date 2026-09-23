@@ -209,6 +209,38 @@ public sealed class RepositoriSiswa
         return daftar;
     }
 
+    // Keadaan siswa sebelum diubah, untuk nilai lama di jejak audit (PRD §12).
+    public SiswaUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction transaction, int id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT nisn, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, nama_ortu, no_hp_ortu, aktif, alasan_nonaktif, foto_path FROM siswa WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        string? Teks(int i) => reader.IsDBNull(i) ? null : reader.GetString(i);
+        return new SiswaUntukAudit(
+            new DataSiswa(reader.GetString(0), reader.GetString(1), reader.GetString(2), Teks(3), Teks(4), Teks(5), Teks(6), Teks(7)),
+            reader.GetInt32(8) == 1,
+            Teks(9),
+            Teks(10));
+    }
+
+    // Null bila tidak ditemukan (berbeda dari CariNama): dipakai teks jejak audit.
+    public string? CariNamaUntukAudit(SqliteConnection connection, int id, SqliteTransaction? transaction = null)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT nama FROM siswa WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        return command.ExecuteScalar() as string;
+    }
+
     private static void IsiParameterSiswa(SqliteCommand command, DataSiswa data)
     {
         command.Parameters.AddWithValue("$nisn", data.Nisn);

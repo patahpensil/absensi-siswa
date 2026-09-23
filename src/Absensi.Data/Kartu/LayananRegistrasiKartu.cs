@@ -135,7 +135,7 @@ public sealed class LayananRegistrasiKartu
     {
         PastikanBolehGuru(akun, new[] { pemilikTipe });
 
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -143,11 +143,23 @@ public sealed class LayananRegistrasiKartu
             entitas: "kartu",
             perubahan: transaction =>
             {
+                // PRD §12: penggantian kartu dicatat UID lama -> UID baru.
+                // UID lama dibaca di dalam transaksi SEBELUM dinonaktifkan;
+                // null (tidak ada kartu aktif sebelumnya) memang berarti tidak
+                // ada nilai lama — bukan tebakan. Nama pemilik ikut dicatat
+                // (format "uid->nama", sama dengan daftar_kartu) karena
+                // entitas_id hanya memuat id pemilik tanpa jenisnya.
+                var uidLama = _repositoriKartu.CariUidAktifUntukPemilik(connection, pemilikTipe, pemilikId, transaction);
+                var nama = pemilikTipe == JenisPemilikKartu.Siswa
+                    ? _repositoriSiswa.CariNamaUntukAudit(connection, pemilikId, transaction)
+                    : _repositoriGuru.CariNamaUntukAudit(connection, pemilikId, transaction);
+
                 _repositoriKartu.Nonaktifkan(connection, transaction, pemilikTipe, pemilikId, waktu, alasan: "hilang");
                 _repositoriKartu.Daftarkan(connection, transaction, uidBaru, pemilikTipe, pemilikId, waktu);
-                return pemilikId;
-            },
-            nilaiBaru: uidBaru);
+
+                string Teks(string uid) => string.IsNullOrWhiteSpace(nama) ? uid : $"{uid}->{nama}";
+                return new CatatanPerubahan(pemilikId, uidLama is null ? null : Teks(uidLama), Teks(uidBaru));
+            });
     }
 
     // PRD §17.10: registrasi/penggantian kartu guru hanya TU/Admin/Kepala
