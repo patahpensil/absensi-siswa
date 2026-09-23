@@ -60,6 +60,19 @@ public sealed class GerbangViewModel : ObservableObject
 
     public ObservableCollection<KartuTapViewModel> Ringkasan { get; } = new();
 
+    private TipografiGerbang _tipografi = TipografiGerbang.PresetBesar;
+
+    // Ukuran teks dan jarak sesuai tinggi layar (lihat TipografiGerbang).
+    // Diatur GerbangWindow setiap ukuran jendela berubah; bawaan = ukuran
+    // panduan 1920x1080.
+    public TipografiGerbang Tipografi
+    {
+        get => _tipografi;
+        private set => SetField(ref _tipografi, value);
+    }
+
+    public void SesuaikanDenganTinggi(double tinggiArea) => Tipografi = TipografiGerbang.Untuk(tinggiArea);
+
     public string JamSekarangTeks
     {
         get => _jamSekarangTeks;

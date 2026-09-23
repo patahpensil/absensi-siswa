@@ -28,6 +28,10 @@ public partial class GerbangWindow : Window
 
         Loaded += (_, _) => FokusKolomTap();
         Activated += (_, _) => FokusKolomTap();
+
+        // Tingkat ukuran teks/jarak mengikuti tinggi area jendela
+        // (TipografiGerbang): 1366x768 -> kompak, 1920x1080 -> panduan §8.1.
+        SizeChanged += (_, e) => _viewModel.SesuaikanDenganTinggi(e.NewSize.Height);
     }
 
     // RENCANA-TUGAS.md Tugas 6: "Layar tidak bisa ditutup tanpa sandi."

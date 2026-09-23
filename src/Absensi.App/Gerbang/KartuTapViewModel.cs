@@ -38,6 +38,28 @@ public sealed class KartuTapViewModel : ObservableObject
 
     public string Nama { get; }
 
+    // PANDUAN-UI-UX.md §8.1: nama 64 px pada 1920x1080 (TipografiGerbang
+    // .FontNama = ukuran dasar tingkat layar). Nama panjang (mis.
+    // "Muhammad Rizky Ramadhan Putra Pratama") pada ukuran dasar
+    // membutuhkan 5-6 baris — jauh melampaui kotak nama di
+    // GerbangWindow.xaml. Menurunkan ukuran per panjang nama (faktor
+    // terhadap ukuran dasar) menjaga nama tetap ≤ dua-tiga baris dan
+    // terbaca; nama pendek/menengah memakai ukuran dasar apa adanya.
+    // Dipanggil UkuranFontNamaConverter dengan dasar tingkat layar aktif.
+    public static double UkuranFontUntukNama(string? nama, double dasar = 64)
+    {
+        var panjang = nama?.Trim().Length ?? 0;
+        var faktor = panjang switch
+        {
+            <= 18 => 1.0,
+            <= 26 => 52.0 / 64,
+            <= 40 => 42.0 / 64,
+            _ => 34.0 / 64,
+        };
+
+        return dasar * faktor;
+    }
+
     public string NisnAtauNip { get; }
 
     public ImageSource? Foto { get; }

@@ -15,7 +15,74 @@
          naik di atasnya. WindowState="Maximized" + WindowStyle="None"
          sudah cukup untuk tampilan fullscreen tanpa memblokir shortcut
          sistem. -->
-    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+
+    <!-- UAT 2026-09-23 (1366x768): ukuran teks/jarak MENGIKUTI tingkat layar
+         (GerbangViewModel.Tipografi, TipografiGerbang.cs) — bukan menyusutkan
+         seluruh kartu. Tingkat besar (>= 900 px) = ukuran PANDUAN-UI-UX.md
+         §8.1 apa adanya; tingkat kompak = teks lebih kecil tapi tetap besar,
+         jarak lebih rapat, ringkasan harian sebaris dengan header, dan foto
+         (3:4) mengambil sisa tinggi kartu. Semua sumber gaya berada di
+         Grid.Resources ini (bukan Window.Resources) supaya isi jendela bisa
+         dipindah ke jendela uji tanpa kehilangan gaya. -->
+    <Grid Margin="{Binding Tipografi.MarginHalaman}">
+        <Grid.Resources>
+            <Style x:Key="TampilBilaKompakStyle" TargetType="ContentControl">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Tipografi.Kompak}" Value="True">
+                        <Setter Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="TampilBilaBesarStyle" TargetType="ContentControl">
+                <Setter Property="Visibility" Value="Visible" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Tipografi.Kompak}" Value="True">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Ringkasan harian (PRD §14.1): Hadir / Terlambat / Belum tap / Guru.
+                 Satu template, dipasang di baris sendiri (tingkat besar) atau
+                 sebaris dengan header (tingkat kompak). -->
+            <DataTemplate x:Key="RingkasanHarianTemplate">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel.Resources>
+                        <Style TargetType="TextBlock" x:Key="RingkasanAngkaStyle" BasedOn="{StaticResource AngkaRingkasanStyle}">
+                            <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                        </Style>
+                        <Style TargetType="TextBlock" x:Key="RingkasanLabelStyle" BasedOn="{StaticResource LabelKecilStyle}">
+                            <Setter Property="Foreground" Value="{StaticResource BiruMudaBrush}" />
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                        </Style>
+                        <Style TargetType="StackPanel" x:Key="RingkasanItemStyle">
+                            <Setter Property="Margin" Value="0,0,32,0" />
+                        </Style>
+                    </StackPanel.Resources>
+
+                    <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                        <TextBlock Text="{Binding RingkasanHadir}" Style="{StaticResource RingkasanAngkaStyle}" />
+                        <TextBlock Text="Hadir" Style="{StaticResource RingkasanLabelStyle}" />
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                        <TextBlock Text="{Binding RingkasanTerlambat}" Style="{StaticResource RingkasanAngkaStyle}" />
+                        <TextBlock Text="Terlambat" Style="{StaticResource RingkasanLabelStyle}" />
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                        <TextBlock Text="{Binding RingkasanBelumTap}" Style="{StaticResource RingkasanAngkaStyle}" />
+                        <TextBlock Text="Belum tap" Style="{StaticResource RingkasanLabelStyle}" />
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource RingkasanItemStyle}">
+                        <TextBlock Text="{Binding RingkasanGuru}" Style="{StaticResource RingkasanAngkaStyle}" />
+                        <TextBlock Text="Guru" Style="{StaticResource RingkasanLabelStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </DataTemplate>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -23,11 +90,13 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header: logo + nama sekolah + jam besar (PRD §14.1, PANDUAN §8.2 "jam besar di pojok") -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <!-- Header: logo + nama sekolah + (kompak: ringkasan harian) + jam besar
+             (PRD §14.1, PANDUAN §8.2 "jam besar di pojok") -->
+        <Grid Grid.Row="0" Margin="{Binding Tipografi.MarginHeader}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
@@ -45,46 +114,27 @@
                        Foreground="{StaticResource PutihBrush}"
                        VerticalAlignment="Center" />
 
-            <TextBlock Grid.Column="2"
+            <ContentControl Grid.Column="2"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource RingkasanHarianTemplate}"
+                            Style="{StaticResource TampilBilaKompakStyle}"
+                            VerticalAlignment="Center"
+                            Margin="16,0,16,0" />
+
+            <TextBlock Grid.Column="3"
                        Text="{Binding JamSekarangTeks}"
                        Style="{StaticResource GerbangStatusJamStyle}"
                        Foreground="{StaticResource PutihBrush}"
                        VerticalAlignment="Center" />
         </Grid>
 
-        <!-- Ringkasan harian (PRD §14.1): Hadir / Terlambat / Belum tap / Guru -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,24">
-            <StackPanel.Resources>
-                <Style TargetType="TextBlock" x:Key="RingkasanAngkaStyle" BasedOn="{StaticResource AngkaRingkasanStyle}">
-                    <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
-                    <Setter Property="HorizontalAlignment" Value="Center" />
-                </Style>
-                <Style TargetType="TextBlock" x:Key="RingkasanLabelStyle" BasedOn="{StaticResource LabelKecilStyle}">
-                    <Setter Property="Foreground" Value="{StaticResource BiruMudaBrush}" />
-                    <Setter Property="HorizontalAlignment" Value="Center" />
-                </Style>
-                <Style TargetType="StackPanel" x:Key="RingkasanItemStyle">
-                    <Setter Property="Margin" Value="0,0,32,0" />
-                </Style>
-            </StackPanel.Resources>
-
-            <StackPanel Style="{StaticResource RingkasanItemStyle}">
-                <TextBlock Text="{Binding RingkasanHadir}" Style="{StaticResource RingkasanAngkaStyle}" />
-                <TextBlock Text="Hadir" Style="{StaticResource RingkasanLabelStyle}" />
-            </StackPanel>
-            <StackPanel Style="{StaticResource RingkasanItemStyle}">
-                <TextBlock Text="{Binding RingkasanTerlambat}" Style="{StaticResource RingkasanAngkaStyle}" />
-                <TextBlock Text="Terlambat" Style="{StaticResource RingkasanLabelStyle}" />
-            </StackPanel>
-            <StackPanel Style="{StaticResource RingkasanItemStyle}">
-                <TextBlock Text="{Binding RingkasanBelumTap}" Style="{StaticResource RingkasanAngkaStyle}" />
-                <TextBlock Text="Belum tap" Style="{StaticResource RingkasanLabelStyle}" />
-            </StackPanel>
-            <StackPanel Style="{StaticResource RingkasanItemStyle}">
-                <TextBlock Text="{Binding RingkasanGuru}" Style="{StaticResource RingkasanAngkaStyle}" />
-                <TextBlock Text="Guru" Style="{StaticResource RingkasanLabelStyle}" />
-            </StackPanel>
-        </StackPanel>
+        <!-- Ringkasan harian pada baris sendiri (tingkat besar saja). -->
+        <ContentControl Grid.Row="1"
+                        Content="{Binding}"
+                        ContentTemplate="{StaticResource RingkasanHarianTemplate}"
+                        Style="{StaticResource TampilBilaBesarStyle}"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,24" />
 
         <!-- Sampai empat kartu tap aktif (PANDUAN-UI-UX.md §8.2) -->
         <ItemsControl Grid.Row="2" ItemsSource="{Binding KartuAktif}">
@@ -95,88 +145,214 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Style="{StaticResource KartuGerbangBesarStyle}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding LabelJenis}"
+                    <Border Style="{StaticResource KartuGerbangBesarStyle}"
+                            Padding="{Binding DataContext.Tipografi.PaddingKartu, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            Margin="{Binding DataContext.Tipografi.MarginKartu, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                        <!-- Baris: label (Auto) | foto (* = sisa tinggi) | nama
+                             (tinggi tetap) | NISN/NIP (Auto) | status (Auto).
+                             Nama, NISN/NIP, dan status masing-masing dalam
+                             Viewbox DownOnly: hanya menyusut bila teks lebih
+                             lebar/tinggi dari kotaknya (nama sangat panjang,
+                             status seperti "Jadwal belum diatur · 07:20"),
+                             tidak pernah terpotong. -->
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                                       Text="{Binding LabelJenis}"
                                        Style="{StaticResource GerbangLabelJenisStyle}"
+                                       FontSize="{Binding DataContext.Tipografi.FontLabel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                        Foreground="{StaticResource PutihBrush}"
+                                       MinHeight="{Binding DataContext.Tipografi.TinggiLabel, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                        HorizontalAlignment="Center"
-                                       Margin="0,0,0,8" />
+                                       Margin="0,0,0,6" />
 
-                            <Border Width="{StaticResource GerbangFotoLebar}"
-                                    Height="{StaticResource GerbangFotoTinggi}"
-                                    Background="{StaticResource PutihBrush}"
-                                    CornerRadius="{StaticResource RadiusKecil}"
-                                    Margin="0,0,0,16">
-                                <Image Source="{Binding Foto}" Stretch="UniformToFill" />
-                            </Border>
+                            <!-- Foto: rancangan 300x400 (3:4, PANDUAN §8.1);
+                                 Viewbox menjaga rasio dan hanya menyusutkannya
+                                 bila sisa tinggi kartu kurang dari 400. -->
+                            <Viewbox Grid.Row="1" Stretch="Uniform" StretchDirection="DownOnly"
+                                     Margin="{Binding DataContext.Tipografi.MarginFoto, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                <Border Width="{StaticResource GerbangFotoLebar}"
+                                        Height="{StaticResource GerbangFotoTinggi}"
+                                        Background="{StaticResource PutihBrush}"
+                                        CornerRadius="{StaticResource RadiusKecil}"
+                                        ClipToBounds="True">
+                                    <Grid>
+                                        <Image Source="{Binding Foto}" Stretch="UniformToFill" />
 
-                            <TextBlock Text="{Binding Nama}"
-                                       Style="{StaticResource GerbangNamaStyle}"
-                                       Foreground="{StaticResource PutihBrush}"
-                                       HorizontalAlignment="Center"
-                                       TextAlignment="Center" />
+                                        <!-- Placeholder foto: tampil bila Foto null —
+                                             foto memang belum diunggah (guru/siswa
+                                             baru), berkas hilang/rusak (PemuatGambar
+                                             mengembalikan null), atau kartu tidak
+                                             dikenal. Sebelumnya hanya kotak putih
+                                             kosong yang tak bisa dibedakan dari
+                                             aplikasi yang rusak. -->
+                                        <Border Background="{StaticResource KertasBrush}"
+                                                AutomationProperties.Name="Foto belum tersedia">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Foto}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Viewbox Width="140" Height="140" Margin="0,0,0,12">
+                                                    <Canvas Width="24" Height="24">
+                                                        <Path Fill="{StaticResource AbuTulisBrush}" Opacity="0.45">
+                                                            <Path.Data>
+                                                                <GeometryGroup FillRule="Nonzero">
+                                                                    <EllipseGeometry Center="12,8" RadiusX="4.2" RadiusY="4.2" />
+                                                                    <PathGeometry Figures="M3.5,22 C3.5,16.8 7.6,14.2 12,14.2 C16.4,14.2 20.5,16.8 20.5,22 Z" />
+                                                                </GeometryGroup>
+                                                            </Path.Data>
+                                                        </Path>
+                                                    </Canvas>
+                                                </Viewbox>
+                                                <TextBlock Text="Foto belum tersedia"
+                                                           FontFamily="{StaticResource FontUtama}"
+                                                           FontSize="28"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AbuTulisBrush}"
+                                                           TextAlignment="Center"
+                                                           TextWrapping="Wrap"
+                                                           Margin="16,0" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Viewbox>
 
-                            <TextBlock Text="{Binding NisnAtauNip}"
-                                       Style="{StaticResource GerbangNisnNipStyle}"
-                                       Foreground="{StaticResource PutihBrush}"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,4,0,16" />
+                            <!-- Nama: kotak bertinggi tetap (TipografiGerbang.TinggiNama).
+                                 Ukuran font per tingkat layar dan panjang nama
+                                 (UkuranFontNamaConverter); Viewbox dalam ini
+                                 menjaga nama yang tetap kepanjangan menyusut
+                                 alih-alih terpotong / mendorong status keluar
+                                 kartu. Lebar TextBlock = lebar kotak supaya
+                                 nama membungkus di lebar kartu. -->
+                            <Grid Grid.Row="2" x:Name="KotakNama"
+                                  Height="{Binding DataContext.Tipografi.TinggiNama, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Bottom">
+                                    <TextBlock Text="{Binding Nama}"
+                                               Style="{StaticResource GerbangNamaStyle}"
+                                               Width="{Binding ActualWidth, ElementName=KotakNama}"
+                                               Foreground="{StaticResource PutihBrush}"
+                                               LineStackingStrategy="BlockLineHeight"
+                                               TextAlignment="Center">
+                                        <TextBlock.FontSize>
+                                            <MultiBinding Converter="{StaticResource UkuranFontNama}">
+                                                <Binding Path="Nama" />
+                                                <Binding Path="DataContext.Tipografi.FontNama" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                            </MultiBinding>
+                                        </TextBlock.FontSize>
+                                        <TextBlock.LineHeight>
+                                            <MultiBinding Converter="{StaticResource JarakBarisNama}">
+                                                <Binding Path="Nama" />
+                                                <Binding Path="DataContext.Tipografi.FontNama" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                <Binding Path="DataContext.Tipografi.FaktorJarakBarisNama" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                            </MultiBinding>
+                                        </TextBlock.LineHeight>
+                                    </TextBlock>
+                                </Viewbox>
+                            </Grid>
 
-                            <TextBlock HorizontalAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource GerbangStatusJamStyle}">
-                                        <Setter Property="Foreground" Value="{StaticResource PutihBrush}" />
-                                    </Style>
-                                </TextBlock.Style>
-                                <!-- Mode=OneWay wajib: Run.Text TwoWay secara
-                                     bawaan, tapi TeksStatus/TeksJam
-                                     (KartuTapViewModel) tidak punya setter —
-                                     tanpa ini WPF crash total begitu KARTU
-                                     PERTAMA DI-TAP (ditemukan lewat
-                                     smoke-test .exe Tugas 14; bug sejak
-                                     Tugas 6, tidak tertangkap unit test
-                                     karena tak ada yang benar-benar
-                                     merender XAML ini). -->
-                                <Run Text="{Binding TeksStatus, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TeksJam, Mode=OneWay}" />
-                            </TextBlock>
-                        </StackPanel>
+                            <Viewbox Grid.Row="3" Stretch="Uniform" StretchDirection="DownOnly" Margin="0,2,0,8"
+                                     MinHeight="{Binding DataContext.Tipografi.TinggiNisn, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                <TextBlock Text="{Binding NisnAtauNip}"
+                                           Style="{StaticResource GerbangNisnNipStyle}"
+                                           FontSize="{Binding DataContext.Tipografi.FontNisn, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           Foreground="{StaticResource PutihBrush}"
+                                           TextAlignment="Center" />
+                            </Viewbox>
+
+                            <Viewbox Grid.Row="4" Stretch="Uniform" StretchDirection="DownOnly"
+                                     MinHeight="{Binding DataContext.Tipografi.TinggiStatus, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                <TextBlock Style="{StaticResource GerbangStatusJamStyle}"
+                                           FontSize="{Binding DataContext.Tipografi.FontStatus, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                           Foreground="{StaticResource PutihBrush}"
+                                           TextAlignment="Center">
+                                    <!-- Mode=OneWay wajib: Run.Text TwoWay secara
+                                         bawaan, tapi TeksStatus/TeksJam
+                                         (KartuTapViewModel) tidak punya setter —
+                                         tanpa ini WPF crash total begitu KARTU
+                                         PERTAMA DI-TAP (ditemukan lewat
+                                         smoke-test .exe Tugas 14; bug sejak
+                                         Tugas 6, tidak tertangkap unit test
+                                         karena tak ada yang benar-benar
+                                         merender XAML ini). -->
+                                    <Run Text="{Binding TeksStatus, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TeksJam, Mode=OneWay}" />
+                                </TextBlock>
+                            </Viewbox>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- Kartu lama turun ke daftar ringkas -->
+        <!-- Riwayat tap: kartu lama turun ke daftar ringkas. TINGGI TETAP
+             (TipografiGerbang.TinggiRiwayat), kosong maupun berisi —
+             supaya munculnya riwayat (8 detik setelah tap pertama) tidak
+             mengubah tinggi baris kartu dan tak membuat kartu berubah
+             ukuran. Yang tak muat memanjang ke kanan terpotong (terbaru
+             di kiri). -->
         <Border Grid.Row="3" Background="{StaticResource PutihBrush}"
                 CornerRadius="{StaticResource RadiusSedang}"
-                Padding="{StaticResource PaddingKartu}"
-                Margin="0,24,0,0">
-            <ItemsControl ItemsSource="{Binding Ringkasan}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Style="{StaticResource KartuGerbangRingkasStyle}">
-                            <!-- Mode=OneWay wajib di ketiganya — lihat catatan
-                                 di ItemTemplate kartu besar di atas. -->
-                            <TextBlock Style="{StaticResource TeksUtamaStyle}" Foreground="{StaticResource PutihBrush}">
-                                <Run Text="{Binding Nama, Mode=OneWay}" FontWeight="SemiBold" />
-                                <Run Text=" · " />
-                                <Run Text="{Binding TeksStatus, Mode=OneWay}" />
-                                <Run Text=" · " />
-                                <Run Text="{Binding TeksJam, Mode=OneWay}" />
-                            </TextBlock>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                Padding="{Binding Tipografi.PaddingRiwayat}"
+                Margin="{Binding Tipografi.MarginRiwayat}"
+                Height="{Binding Tipografi.TinggiRiwayat}"
+                ClipToBounds="True">
+            <Grid>
+                <TextBlock Text="Tap sebelumnya tampil di sini"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource LabelKecilStyle}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Ringkasan.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ItemsControl ItemsSource="{Binding Ringkasan}" VerticalAlignment="Center">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource KartuGerbangRingkasStyle}">
+                                <!-- Mode=OneWay wajib di ketiganya — lihat catatan
+                                     di ItemTemplate kartu besar di atas. -->
+                                <TextBlock Style="{StaticResource TeksUtamaStyle}" Foreground="{StaticResource PutihBrush}">
+                                    <Run Text="{Binding Nama, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding TeksStatus, Mode=OneWay}" />
+                                    <Run Text=" · " />
+                                    <Run Text="{Binding TeksJam, Mode=OneWay}" />
+                                </TextBlock>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
         </Border>
 
         <!-- Penangkap masukan reader (USB keyboard-emulation): selalu fokus, tak terlihat -->
         <TextBox x:Name="KolomTap"
+                 Grid.Row="0"
                  Width="1" Height="1"
                  Opacity="0"
                  BorderThickness="0"
