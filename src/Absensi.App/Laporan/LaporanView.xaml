@@ -1,6 +1,7 @@
 <UserControl x:Class="Absensi.App.Laporan.LaporanView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <DockPanel Margin="{StaticResource PaddingTepiHalaman}">
         <TextBlock DockPanel.Dock="Top" Text="Laporan" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
@@ -20,7 +21,7 @@
 
             <StackPanel Orientation="Vertical" Margin="0,0,16,8" Visibility="{Binding TampilkanKelas, Converter={StaticResource BoolKeVisibilitas}}">
                 <TextBlock Text="Kelas" Style="{StaticResource LabelKolomStyle}" />
-                <ComboBox ItemsSource="{Binding DaftarKelas}" DisplayMemberPath="Nama" SelectedValuePath="Id"
+                <ComboBox perilaku:Petunjuk.Teks="Pilih kelas" ItemsSource="{Binding DaftarKelas}" DisplayMemberPath="Nama" SelectedValuePath="Id"
                           SelectedValue="{Binding KelasTerpilihId}" Width="140" Height="{StaticResource TinggiKontrol}" />
             </StackPanel>
 
@@ -41,7 +42,7 @@
 
             <StackPanel Orientation="Vertical" Margin="0,0,16,8" Visibility="{Binding TampilkanOrang, Converter={StaticResource BoolKeVisibilitas}}">
                 <TextBlock Text="Orang" Style="{StaticResource LabelKolomStyle}" />
-                <ComboBox ItemsSource="{Binding DaftarOrang}" DisplayMemberPath="Nama" SelectedValuePath="Id"
+                <ComboBox perilaku:Petunjuk.Teks="Pilih nama" ItemsSource="{Binding DaftarOrang}" DisplayMemberPath="Nama" SelectedValuePath="Id"
                           SelectedValue="{Binding OrangTerpilihId}" Width="200" Height="{StaticResource TinggiKontrol}" />
             </StackPanel>
 
@@ -64,14 +65,14 @@
         <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding PratinjauKejadian}"
                   Visibility="{Binding TampilkanPratinjauKejadian, Converter={StaticResource BoolKeVisibilitas}}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Tanggal" Binding="{Binding Tanggal, StringFormat=dd/MM/yyyy}" Width="90" />
-                <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                <DataGridTextColumn Header="Identitas" Binding="{Binding Identitas}" Width="110" />
-                <DataGridTextColumn Header="Kelas" Binding="{Binding Kelas}" Width="70" />
-                <DataGridTextColumn Header="Status" Binding="{Binding StatusHuruf}" Width="60" />
-                <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk}" Width="80" />
-                <DataGridTextColumn Header="Jam pulang" Binding="{Binding JamPulang}" Width="80" />
-                <DataGridTextColumn Header="Keterangan" Binding="{Binding Keterangan}" Width="180" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tanggal" Binding="{Binding Tanggal, StringFormat=dd/MM/yyyy}" Width="90" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama}" Width="*" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Identitas" Binding="{Binding Identitas}" Width="110" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Kelas" Binding="{Binding Kelas}" Width="70" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Status" Binding="{Binding StatusHuruf}" Width="60" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jam masuk" Binding="{Binding JamMasuk}" Width="80" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jam pulang" Binding="{Binding JamPulang}" Width="80" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Keterangan" Binding="{Binding Keterangan}" Width="180" />
             </DataGrid.Columns>
         </DataGrid>
 
@@ -83,19 +84,19 @@
         <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding PratinjauSemester}"
                   Visibility="{Binding TampilkanPratinjauSemester, Converter={StaticResource BoolKeVisibilitas}}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                <DataGridTextColumn Header="Identitas" Binding="{Binding Identitas}" Width="110" />
-                <DataGridTextColumn Header="Kelas" Binding="{Binding Kelas}" Width="70" />
-                <DataGridTextColumn Header="Hadir" Binding="{Binding Rekap.Hadir}" Width="55" />
-                <DataGridTextColumn Header="Sakit" Binding="{Binding Rekap.Sakit}" Width="55" />
-                <DataGridTextColumn Header="Izin" Binding="{Binding Rekap.Izin}" Width="55" />
-                <DataGridTextColumn Header="Alpa" Binding="{Binding Rekap.Alpa}" Width="55" />
-                <DataGridTextColumn Header="Terlambat" Binding="{Binding Rekap.Terlambat}" Width="70" />
-                <DataGridTextColumn Header="Bolos" Binding="{Binding Rekap.Bolos}" Width="55" />
-                <DataGridTextColumn Header="Tidak lengkap" Binding="{Binding Rekap.TidakLengkap}" Width="90" />
-                <DataGridTextColumn Header="Dinas luar" Binding="{Binding Rekap.DinasLuar}" Width="70" />
-                <DataGridTextColumn Header="Cuti" Binding="{Binding Rekap.Cuti}" Width="55" />
-                <DataGridTextColumn Header="% Kehadiran" Binding="{Binding Rekap.Persentase, StringFormat={}{0:0.0}%}" Width="90" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama}" Width="*" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Identitas" Binding="{Binding Identitas}" Width="110" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Kelas" Binding="{Binding Kelas}" Width="70" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Hadir" Binding="{Binding Rekap.Hadir}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Sakit" Binding="{Binding Rekap.Sakit}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Izin" Binding="{Binding Rekap.Izin}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Alpa" Binding="{Binding Rekap.Alpa}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Terlambat" Binding="{Binding Rekap.Terlambat}" Width="70" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Bolos" Binding="{Binding Rekap.Bolos}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tidak lengkap" Binding="{Binding Rekap.TidakLengkap}" Width="90" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Dinas luar" Binding="{Binding Rekap.DinasLuar}" Width="70" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Cuti" Binding="{Binding Rekap.Cuti}" Width="55" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="% Kehadiran" Binding="{Binding Rekap.Persentase, StringFormat={}{0:0.0}%}" Width="90" />
             </DataGrid.Columns>
         </DataGrid>
 
@@ -132,9 +133,9 @@
                 <TextBlock Text="Rincian hari tidak hadir dan terlambat" Style="{StaticResource LabelKolomStyle}" Margin="0,0,0,4" />
                 <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding KartuTerpilih.Rincian}" Height="220">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Tanggal" Binding="{Binding Tanggal, StringFormat=dd/MM/yyyy}" Width="100" />
-                        <DataGridTextColumn Header="Status" Binding="{Binding StatusHuruf}" Width="70" />
-                        <DataGridTextColumn Header="Keterangan" Binding="{Binding Keterangan}" Width="*" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tanggal" Binding="{Binding Tanggal, StringFormat=dd/MM/yyyy}" Width="100" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Status" Binding="{Binding StatusHuruf}" Width="70" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Keterangan" Binding="{Binding Keterangan}" Width="*" />
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>

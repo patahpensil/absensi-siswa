@@ -113,14 +113,6 @@
              kolom (150+115+80+380) + Nama minimum 170 muat di lebar panel
              1366x768 tanpa scroll horizontal. -->
         <DataGrid Grid.Row="3" x:Name="TabelGuru" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
-            <DataGrid.Resources>
-                <!-- Teks sel rata tengah vertikal (sejajar dengan tombol aksi
-                     dan kolom Nama) — bawaan DataGridTextColumn menempel di atas. -->
-                <Style x:Key="TeksSelStyle" TargetType="TextBlock">
-                    <Setter Property="VerticalAlignment" Value="Center" />
-                    <Setter Property="Margin" Value="6,0" />
-                </Style>
-            </DataGrid.Resources>
             <DataGrid.Columns>
                 <DataGridTemplateColumn Header="Nama" Width="*" MinWidth="170" SortMemberPath="Nama">
                     <DataGridTemplateColumn.CellTemplate>
@@ -221,6 +213,21 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
+
+        <TextBlock Grid.Row="3" Text="Belum ada guru. Isi formulir di atas atau klik &quot;Impor Excel&quot; untuk mengisi."
+                   Foreground="{StaticResource AbuTulisBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Daftar.Count}" Value="0">
+                            <Setter Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
     </Grid>
     </TabItem>
 

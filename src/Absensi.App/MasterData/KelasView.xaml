@@ -1,6 +1,7 @@
 <UserControl x:Class="Absensi.App.MasterData.KelasView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <Grid Margin="{StaticResource PaddingTepiHalaman}">
         <Grid.ColumnDefinitions>
@@ -12,16 +13,29 @@
         <DockPanel Grid.Column="0">
             <TextBlock DockPanel.Dock="Top" Text="Kelas" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
 
+            <TextBlock DockPanel.Dock="Top" Text="Belum ada kelas untuk tahun ajaran ini. Isi formulir di kanan untuk menambah kelas." Foreground="{StaticResource AbuTulisBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Daftar.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
             <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                    <DataGridTextColumn Header="Tingkat" Binding="{Binding Tingkat}" Width="80" />
-                    <DataGridTextColumn Header="Wali kelas" Binding="{Binding WaliGuruNama}" Width="200" />
-                    <DataGridTemplateColumn Header="" Width="80">
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama}" Width="*" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tingkat" Binding="{Binding Tingkat}" Width="80" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Wali kelas" Binding="{Binding WaliGuruNama}" Width="230" />
+                    <DataGridTemplateColumn Header="" Width="80" MinWidth="80">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Content="Ubah"
-                                        Style="{StaticResource TombolTeksStyle}"
+                                        Style="{StaticResource TombolTeksBarisStyle}"
                                         Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}" />
                             </DataTemplate>
@@ -39,16 +53,24 @@
                 <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nama, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
 
                 <TextBlock Text="Tingkat (1-9)" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Tingkat, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+                <ComboBox ItemsSource="{Binding DaftarTingkat}" SelectedItem="{Binding Tingkat}" Margin="0,0,0,16" />
 
                 <TextBlock Text="Wali kelas" Style="{StaticResource LabelKolomStyle}" />
-                <ComboBox ItemsSource="{Binding DaftarGuru}"
+                <ComboBox perilaku:Petunjuk.Teks="Tanpa wali kelas" ItemsSource="{Binding DaftarGuru}"
                           SelectedItem="{Binding WaliTerpilih}"
                           DisplayMemberPath="Nama"
                           Height="{StaticResource TinggiKontrol}"
                           Margin="0,0,0,8" />
 
+                <TextBlock Text="{Binding PesanStatus}"
+                           Style="{StaticResource TeksUtamaStyle}"
+                           Foreground="{StaticResource HadirTeksBrush}"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
+                           Margin="0,0,0,8" />
+
                 <TextBlock Text="{Binding PesanGalat}"
+                           TextWrapping="Wrap"
                            Style="{StaticResource PesanSalahKolomStyle}"
                            Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
                            Margin="0,0,0,8" />

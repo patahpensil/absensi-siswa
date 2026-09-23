@@ -9,7 +9,8 @@
                     xmlns:pengaturan="clr-namespace:Absensi.App.Pengaturan"
                     xmlns:notifikasi="clr-namespace:Absensi.App.Notifikasi"
                     xmlns:koreksi="clr-namespace:Absensi.App.Koreksi"
-                    xmlns:laporan="clr-namespace:Absensi.App.Laporan">
+                    xmlns:laporan="clr-namespace:Absensi.App.Laporan"
+                    xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <!--
         Satu-satunya berkas sumber daya visual aplikasi (docs/PANDUAN-UI-UX.md).
@@ -26,6 +27,7 @@
     <conv:UkuranFontNamaConverter x:Key="UkuranFontNama" />
     <conv:JarakBarisNamaConverter x:Key="JarakBarisNama" />
     <conv:StatusAktifKeTeksConverter x:Key="StatusAktifKeTeks" />
+    <conv:TertautKeTeksConverter x:Key="TertautKeTeks" />
 
     <!-- Navigasi ViewModel-first (Tugas 7): MainWindow.KontenAktif memuat
          salah satu ViewModel ini, DataTemplate implisit memilih View-nya. -->
@@ -236,6 +238,124 @@
         <Setter Property="CornerRadius" Value="{StaticResource RadiusKecil}" />
         <Setter Property="Padding" Value="12,8" />
         <Setter Property="Margin" Value="0,0,12,0" />
+    </Style>
+
+
+    <!-- Teks sel tabel: rata tengah vertikal + margin kiri — bawaan
+         DataGridTextColumn menempel di ATAS sel sehingga tidak sejajar dengan
+         tombol aksi dan teks kolom bertemplate (audit UI 2026-09-24). Dipakai
+         lewat ElementStyle pada DataGridTextColumn. -->
+    <Style x:Key="TeksSelStyle" TargetType="TextBlock">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="6,0" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- ================= ComboBox (audit UI 2026-09-24) =================
+         Sebelumnya ComboBox memakai tampilan bawaan Windows (gradien abu-abu)
+         yang tidak serasi dengan kolom isian lain, dan ComboBox kosong tanpa
+         keterangan. Template ini: bingkai seperti kolom isian, panah, daftar
+         turun berbingkai, dan teks petunjuk (perilaku:Petunjuk.Teks) saat belum
+         ada pilihan. -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="LatarItem" Background="Transparent" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="LatarItem" Property="Background" Value="{StaticResource BiruMudaBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="LatarItem" Property="Background" Value="{StaticResource BiruMudaBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+        <Setter Property="Height" Value="{StaticResource TinggiKontrol}" />
+        <Setter Property="Padding" Value="10,0,30,0" />
+        <Setter Property="Background" Value="{StaticResource PutihBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TintaBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontFamily" Value="{StaticResource FontUtama}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="MaxDropDownHeight" Value="280" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="TombolBuka" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Bingkai"
+                                            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="1" CornerRadius="{StaticResource RadiusKecil}">
+                                        <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0"
+                                              Data="M 0 0 L 4 4 L 8 0" Stroke="{StaticResource AbuTulisBrush}" StrokeThickness="1.5" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bingkai" Property="BorderBrush" Value="{StaticResource BiruSeragamBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <ContentPresenter x:Name="IsiTerpilih" IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center" HorizontalAlignment="Left" />
+
+                        <TextBlock x:Name="TeksPetunjuk" IsHitTestVisible="False" Visibility="Collapsed"
+                                   Text="{Binding (perilaku:Petunjuk.Teks), RelativeSource={RelativeSource TemplatedParent}}"
+                                   Foreground="{StaticResource AbuTulisBrush}"
+                                   Margin="{TemplateBinding Padding}" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <Popup x:Name="Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade"
+                               IsOpen="{TemplateBinding IsDropDownOpen}">
+                            <Grid MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}" Margin="0,2,0,8" SnapsToDevicePixels="True">
+                                <Border Background="{StaticResource PutihBrush}" BorderBrush="{StaticResource GarisBrush}" BorderThickness="1"
+                                        CornerRadius="{StaticResource RadiusKecil}" Effect="{StaticResource BayanganTingkat2}">
+                                    <ScrollViewer Padding="0,4" Background="Transparent">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="SelectedIndex" Value="-1">
+                            <Setter TargetName="TeksPetunjuk" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ================= 6.1 Tombol ================= -->

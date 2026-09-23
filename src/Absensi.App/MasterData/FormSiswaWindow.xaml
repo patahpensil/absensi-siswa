@@ -1,0 +1,119 @@
+<Window x:Class="Absensi.App.MasterData.FormSiswaWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:perilaku="clr-namespace:Absensi.App.Perilaku"
+        Title="{Binding JudulFormulir}"
+        Width="680"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanMinimize"
+        ShowInTaskbar="False"
+        Background="{StaticResource KertasBrush}">
+
+    <!-- Audit UI 2026-09-24: formulir tambah/ubah siswa dipindah dari panel
+         kanan Panel Siswa (320 px, dengan ScrollViewer sehingga Simpan/Batal
+         tersembunyi di bawah lipatan pada 1366x768) ke dialog ini. Isian
+         menggulir bila layar sangat pendek; tombol Simpan/Batal dan pesan
+         galat SELALU terlihat di baris bawah. -->
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding JudulFormulir}" Style="{StaticResource JudulBagianStyle}" TextTrimming="CharacterEllipsis" Margin="0,0,0,16" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Background="Transparent">
+            <Grid Margin="0,0,8,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,16">
+                    <TextBlock Text="NISN (10 angka)" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox x:Name="KolomNisn" Text="{Binding Nisn, UpdateSourceTrigger=PropertyChanged}" MaxLength="10"
+                             IsReadOnly="{Binding NisnHanyaBaca, Mode=OneWay}"
+                             ToolTip="NISN tidak bisa diubah setelah siswa tersimpan.">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource KolomTeksStyle}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding NisnHanyaBaca}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource KertasBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,16">
+                    <TextBlock Text="Nama lengkap" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Nama, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,16">
+                    <TextBlock Text="Jenis kelamin" Style="{StaticResource LabelKolomStyle}" />
+                    <ComboBox SelectedValue="{Binding JenisKelamin}" SelectedValuePath="Content">
+                        <ComboBoxItem Content="L" />
+                        <ComboBoxItem Content="P" />
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,16">
+                    <TextBlock Text="Kelas" Style="{StaticResource LabelKolomStyle}" />
+                    <ComboBox perilaku:Petunjuk.Teks="Pilih kelas"
+                              ItemsSource="{Binding DaftarKelas}" SelectedItem="{Binding KelasTerpilih}" DisplayMemberPath="Nama" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,16">
+                    <TextBlock Text="Tempat lahir" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TempatLahir, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,16">
+                    <TextBlock Text="Tanggal lahir (TTTT-BB-HH)" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TanggalLahir, UpdateSourceTrigger=PropertyChanged}" MaxLength="10" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,16">
+                    <TextBlock Text="Alamat" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding Alamat, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="4" Grid.Column="0">
+                    <TextBlock Text="Nama orang tua" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NamaOrtu, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="4" Grid.Column="2">
+                    <TextBlock Text="No. HP orang tua" Style="{StaticResource LabelKolomStyle}" />
+                    <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding NoHpOrtu, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock Text="{Binding PesanGalat}"
+                       Style="{StaticResource PesanSalahKolomStyle}"
+                       Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,8" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Batal" Style="{StaticResource TombolTeksStyle}" Command="{Binding BatalEditCommand}" IsCancel="True" Margin="0,0,8,0" />
+                <Button Content="Simpan" Style="{StaticResource TombolUtamaStyle}" Command="{Binding SimpanCommand}" IsDefault="True" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

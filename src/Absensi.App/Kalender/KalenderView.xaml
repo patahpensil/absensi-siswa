@@ -20,8 +20,15 @@
                       SelectionMode="MultipleRange"
                       HorizontalAlignment="Left"
                       Margin="0,0,0,16"
+                      Language="id-ID"
                       SelectedDatesChanged="KalenderKontrol_SelectedDatesChanged"
                       DisplayDateChanged="KalenderKontrol_DisplayDateChanged">
+                <!-- Audit UI 2026-09-24: kontrol bawaan terlalu kecil (sel ±20 px) untuk
+                     memilih rentang dengan mouse/layar sentuh; diperbesar 1,5x. Language
+                     id-ID membuat nama hari/bulan berbahasa Indonesia (S S R K J S M). -->
+                <Calendar.LayoutTransform>
+                    <ScaleTransform ScaleX="1.5" ScaleY="1.5" />
+                </Calendar.LayoutTransform>
                 <Calendar.CalendarDayButtonStyle>
                     <Style TargetType="CalendarDayButton">
                         <Style.Triggers>
@@ -47,11 +54,24 @@
             </Calendar>
 
             <TextBlock DockPanel.Dock="Top" Text="Tanggal ditandai bulan ini" Style="{StaticResource LabelKolomStyle}" Margin="0,0,0,4" />
+            <TextBlock DockPanel.Dock="Top" Text="Belum ada tanggal yang ditandai pada bulan ini." Foreground="{StaticResource AbuTulisBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DaftarBulanIni.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
             <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarBulanIni}" IsReadOnly="True">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Tanggal" Binding="{Binding Tanggal, StringFormat=d MMMM yyyy}" Width="160" />
-                    <DataGridTextColumn Header="Jenis" Binding="{Binding Jenis}" Width="100" />
-                    <DataGridTextColumn Header="Keterangan" Binding="{Binding Keterangan}" Width="*" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tanggal" Binding="{Binding Tanggal, StringFormat=d MMMM yyyy}" Width="160" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jenis" Binding="{Binding Jenis}" Width="100" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Keterangan" Binding="{Binding Keterangan}" Width="*" />
                 </DataGrid.Columns>
             </DataGrid>
         </DockPanel>

@@ -96,7 +96,8 @@ public sealed class SiswaGuruTabelKolomTests
         // UAT 2026-09-23: 290 -> 400, empat tombol teks tidak muat penuh di
         // 290px (lihat komentar di SiswaView.xaml).
         var kolomTindakan = tabel.Columns.Last();
-        Assert.Equal(400, kolomTindakan.MinWidth);
+        // 2026-09-24: 400 -> 340 (formulir pindah ke dialog; empat slot aksi berlebar tetap).
+        Assert.Equal(340, kolomTindakan.MinWidth);
     });
 
     [Fact]

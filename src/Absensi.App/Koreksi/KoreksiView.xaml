@@ -1,6 +1,7 @@
 <UserControl x:Class="Absensi.App.Koreksi.KoreksiView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <Grid Margin="{StaticResource PaddingTepiHalaman}">
         <Grid.ColumnDefinitions>
@@ -18,7 +19,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="Koreksi" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" Margin="0,0,16,0" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding DaftarKelas}" SelectedItem="{Binding KelasTerpilih}"
+                <ComboBox perilaku:Petunjuk.Teks="Pilih kelas" Grid.Column="1" ItemsSource="{Binding DaftarKelas}" SelectedItem="{Binding KelasTerpilih}"
                           DisplayMemberPath="Nama" Width="160" Height="{StaticResource TinggiKontrol}" HorizontalAlignment="Left" Margin="0,0,16,0" />
                 <DatePicker Grid.Column="2" SelectedDate="{Binding TanggalTerpilih}" Height="{StaticResource TinggiKontrol}" Margin="0,0,16,0" />
                 <Button Grid.Column="3" Content="Kunci Bulan Ini" Style="{StaticResource TombolBahayaStyle}" Command="{Binding KunciBulanCommand}" />
@@ -30,21 +31,25 @@
                        Visibility="{Binding BulanTerkunci, Converter={StaticResource BoolKeVisibilitas}}"
                        Margin="0,0,0,8" />
 
+            <TextBlock DockPanel.Dock="Top" Text="{Binding PesanKosong}" Foreground="{StaticResource AbuTulisBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                       Style="{StaticResource TeksUtamaStyle}"
+                       Visibility="{Binding PesanKosong, Converter={StaticResource NullKeVisibilitas}}" />
+
             <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}" SelectedItem="{Binding SiswaTerpilih}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" />
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100" />
-                    <DataGridTextColumn Header="Jam Masuk" Binding="{Binding JamMasuk}" Width="90" />
-                    <DataGridTextColumn Header="Jam Pulang" Binding="{Binding JamPulang}" Width="90" />
-                    <DataGridTextColumn Header="Keterangan" Binding="{Binding Keterangan}" Width="150" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="NISN" Binding="{Binding Nisn}" Width="110" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama}" Width="*" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Status" Binding="{Binding Status}" Width="100" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jam Masuk" Binding="{Binding JamMasuk}" Width="90" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jam Pulang" Binding="{Binding JamPulang}" Width="90" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Keterangan" Binding="{Binding Keterangan}" Width="150" />
                 </DataGrid.Columns>
             </DataGrid>
         </DockPanel>
 
         <Border Grid.Column="2" Style="{StaticResource KartuStyle}" VerticalAlignment="Top">
             <StackPanel>
-                <TextBlock Text="{Binding SiswaTerpilih.Nama, TargetNullValue='Pilih siswa dari daftar'}" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,16" />
+                <TextBlock Text="{Binding SiswaTerpilih.Nama, TargetNullValue='Pilih siswa dari daftar', FallbackValue='Pilih siswa dari daftar'}" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,16" />
 
                 <TextBlock Text="Status baru" Style="{StaticResource LabelKolomStyle}" />
                 <ComboBox ItemsSource="{Binding DaftarStatus}" SelectedItem="{Binding StatusBaru}" Height="{StaticResource TinggiKontrol}" Margin="0,0,0,16" />

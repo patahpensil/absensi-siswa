@@ -12,9 +12,9 @@
 
         <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarAkun}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="160" />
-                <DataGridTextColumn Header="Peran" Binding="{Binding TeksPeran}" Width="140" />
-                <DataGridTextColumn Header="Guru terkait" Binding="{Binding GuruTerkait}" Width="180" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Username" Binding="{Binding Username}" Width="160" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Peran" Binding="{Binding TeksPeran}" Width="140" />
+                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Guru terkait" Binding="{Binding GuruTerkait}" Width="180" />
                 <!-- Mode=OneWay wajib: AkunDaftarTampilan.Aktif tidak
                      punya setter (dibungkus AkunDaftar, Absensi.Data) —
                      tanpa ini, DataGridCheckBoxColumn bawaannya TwoWay dan

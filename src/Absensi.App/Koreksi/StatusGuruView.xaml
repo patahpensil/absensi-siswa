@@ -28,12 +28,25 @@
                        Visibility="{Binding BulanTerkunci, Converter={StaticResource BoolKeVisibilitas}}"
                        Margin="0,0,0,8" />
 
+            <TextBlock DockPanel.Dock="Top" Text="Belum ada data guru untuk tanggal ini." Foreground="{StaticResource AbuTulisBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Daftar.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
             <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Daftar}" SelectedItem="{Binding GuruTerpilih}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="110" />
-                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110" />
-                    <DataGridTextColumn Header="Keterangan" Binding="{Binding Keterangan}" Width="150" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="NIP" Binding="{Binding Nip}" Width="110" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama}" Width="*" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Status" Binding="{Binding Status}" Width="110" />
+                    <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Keterangan" Binding="{Binding Keterangan}" Width="150" />
                 </DataGrid.Columns>
             </DataGrid>
         </DockPanel>

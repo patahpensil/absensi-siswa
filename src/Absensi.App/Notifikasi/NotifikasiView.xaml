@@ -1,6 +1,7 @@
 <UserControl x:Class="Absensi.App.Notifikasi.NotifikasiView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <Grid Margin="{StaticResource PaddingTepiHalaman}">
         <Grid.RowDefinitions>
@@ -24,8 +25,13 @@
                 <TextBlock Text="Status bot Telegram:" Style="{StaticResource TeksUtamaStyle}" Margin="0,0,8,0" />
                 <TextBlock Text="Terkonfigurasi" Foreground="{StaticResource HadirTeksBrush}" Style="{StaticResource TeksUtamaStyle}"
                            Visibility="{Binding BotTerkonfigurasi, Converter={StaticResource BoolKeVisibilitas}}" />
-                <TextBlock Text="Belum diatur — isi token &amp; username bot di menu Pengaturan" Foreground="{StaticResource AlpaDitolakTeksBrush}" Style="{StaticResource TeksUtamaStyle}"
+                <TextBlock Text="Belum diatur — isi token &amp; username bot di Pengaturan → Bot Telegram. Tombol QR aktif setelah itu." Foreground="{StaticResource AlpaDitolakTeksBrush}" Style="{StaticResource TeksUtamaStyle}"
                            Visibility="{Binding BotBelumDikonfigurasi, Converter={StaticResource BoolKeVisibilitas}}" />
+                <!-- Hasil aksi (QR dibuat / gagal) — sebelumnya menimpa dasar tabel. -->
+                <TextBlock Text="{Binding PesanStatus}" Style="{StaticResource TeksUtamaStyle}" Foreground="{StaticResource HadirTeksBrush}" Margin="24,0,0,0"
+                           Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}" />
+                <TextBlock Text="{Binding PesanGalat}" Style="{StaticResource PesanSalahKolomStyle}" Margin="24,0,0,0"
+                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}" />
             </StackPanel>
         </Border>
 
@@ -45,7 +51,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding DaftarKelas}" SelectedItem="{Binding KelasTerpilih}"
+                            <ComboBox perilaku:Petunjuk.Teks="Pilih kelas" Grid.Column="0" ItemsSource="{Binding DaftarKelas}" SelectedItem="{Binding KelasTerpilih}"
                                       DisplayMemberPath="Nama" Width="160" Height="{StaticResource TinggiKontrol}" Margin="0,0,16,0" />
                             <TextBlock Grid.Column="1" Text="{Binding RingkasanPairingKelas}" Style="{StaticResource LabelKecilStyle}" VerticalAlignment="Center" />
                             <Button Grid.Column="2" Content="Cetak QR Massal Kelas Ini" Style="{StaticResource TombolUtamaStyle}" Command="{Binding CetakMassalCommand}" />
@@ -54,13 +60,13 @@
                         <TextBlock DockPanel.Dock="Top" Text="Siswa" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
                         <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding SiswaTampil}">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                                <DataGridTextColumn Header="NISN" Binding="{Binding Nisn}" Width="110" />
-                                <DataGridTextColumn Header="Tertaut" Binding="{Binding TertautTelegram}" Width="70" />
-                                <DataGridTemplateColumn Header="" Width="110">
+                                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama, Mode=OneWay}" Width="*" MinWidth="140" />
+                                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="NISN" Binding="{Binding Nisn}" Width="110" />
+                                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tertaut" Binding="{Binding TertautTelegram, Mode=OneWay, Converter={StaticResource TertautKeTeks}}" Width="70" />
+                                <DataGridTemplateColumn Header="" Width="130" MinWidth="130">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="Lihat/Buat QR" Style="{StaticResource TombolTeksStyle}"
+                                            <Button Content="Lihat/Buat QR" Style="{StaticResource TombolTeksBarisStyle}" ToolTipService.ShowOnDisabled="True" ToolTip="Buat/lihat QR pairing Telegram (butuh username bot di Pengaturan → Bot Telegram)."
                                                     Command="{Binding DataContext.LihatQrSiswaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}" />
                                         </DataTemplate>
@@ -74,12 +80,12 @@
                         <TextBlock DockPanel.Dock="Top" Text="Guru (untuk notifikasi wali kelas &amp; pengingat guru)" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,8" />
                         <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarGuru}">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
-                                <DataGridTextColumn Header="Tertaut" Binding="{Binding TertautTelegram}" Width="70" />
-                                <DataGridTemplateColumn Header="" Width="110">
+                                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Nama" Binding="{Binding Nama, Mode=OneWay}" Width="*" MinWidth="140" />
+                                <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tertaut" Binding="{Binding TertautTelegram, Mode=OneWay, Converter={StaticResource TertautKeTeks}}" Width="70" />
+                                <DataGridTemplateColumn Header="" Width="130" MinWidth="130">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="Lihat/Buat QR" Style="{StaticResource TombolTeksStyle}"
+                                            <Button Content="Lihat/Buat QR" Style="{StaticResource TombolTeksBarisStyle}" ToolTipService.ShowOnDisabled="True" ToolTip="Buat/lihat QR pairing Telegram (butuh username bot di Pengaturan → Bot Telegram)."
                                                     Command="{Binding DataContext.LihatQrGuruCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}" />
                                         </DataTemplate>
@@ -94,10 +100,10 @@
             <TabItem Header="Antrean">
                 <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Antrean}" Margin="0,16,0,0">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Tanggal" Binding="{Binding Tanggal}" Width="100" />
-                        <DataGridTextColumn Header="Jenis" Binding="{Binding Jenis}" Width="150" />
-                        <DataGridTextColumn Header="Isi" Binding="{Binding Isi}" Width="*" />
-                        <DataGridTextColumn Header="Percobaan" Binding="{Binding Percobaan}" Width="90" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tanggal" Binding="{Binding Tanggal}" Width="100" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jenis" Binding="{Binding Jenis}" Width="150" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Isi" Binding="{Binding Isi}" Width="*" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Percobaan" Binding="{Binding Percobaan}" Width="90" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -105,21 +111,15 @@
             <TabItem Header="Riwayat Kirim">
                 <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding Riwayat}" Margin="0,16,0,0">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Tanggal" Binding="{Binding Tanggal}" Width="100" />
-                        <DataGridTextColumn Header="Jenis" Binding="{Binding Jenis}" Width="150" />
-                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90" />
-                        <DataGridTextColumn Header="Isi" Binding="{Binding Isi}" Width="*" />
-                        <DataGridTextColumn Header="Terkirim pada" Binding="{Binding TerkirimPada}" Width="150" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Tanggal" Binding="{Binding Tanggal}" Width="100" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Jenis" Binding="{Binding Jenis}" Width="150" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Status" Binding="{Binding Status}" Width="90" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Isi" Binding="{Binding Isi}" Width="*" />
+                        <DataGridTextColumn ElementStyle="{StaticResource TeksSelStyle}" Header="Terkirim pada" Binding="{Binding TerkirimPada}" Width="150" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
         </TabControl>
 
-        <TextBlock Grid.Row="2" Text="{Binding PesanStatus}"
-                   Style="{StaticResource TeksUtamaStyle}"
-                   Foreground="{StaticResource HadirTeksBrush}"
-                   VerticalAlignment="Bottom"
-                   HorizontalAlignment="Left"
-                   Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}" />
     </Grid>
 </UserControl>
