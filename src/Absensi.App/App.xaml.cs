@@ -51,6 +51,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        Absensi.App.Perilaku.PenerusRodaMouse.Pasang();
 
         // docs/INVESTIGASI-CRASH-2026-09-21.md §4.2/§4.3: didaftarkan
         // paling awal, sebelum baris apa pun yang bisa melempar (termasuk

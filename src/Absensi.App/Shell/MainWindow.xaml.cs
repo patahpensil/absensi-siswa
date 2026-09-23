@@ -4,6 +4,11 @@ namespace Absensi.App.Shell;
 
 public partial class MainWindow : Window
 {
+    // Roda mouse diteruskan ke ScrollViewer halaman bila kontrol di bawah kursor
+    // (tabel tanpa luapan, kolom isian, ComboBox tertutup) tidak bisa menggulir —
+    // lihat PenerusRodaMouse. Idempoten; dipasang juga di App.OnStartup.
+    static MainWindow() => Absensi.App.Perilaku.PenerusRodaMouse.Pasang();
+
     public MainWindow(
         MainWindowViewModel viewModel,
         Func<Window> bukaGerbang,

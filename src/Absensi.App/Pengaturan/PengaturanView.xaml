@@ -6,150 +6,165 @@
     <DockPanel Margin="{StaticResource PaddingTepiHalaman}">
         <TextBlock DockPanel.Dock="Top" Text="Pengaturan" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
 
-        <!-- RENCANA-TUGAS.md Tugas 14: sub-tab "Akun" ditambahkan di sini.
-             Disembunyikan sepenuhnya untuk wali kelas (bukan hanya tombol
-             di dalamnya) — PRD §3: "tidak bisa akses menu ini sama sekali". -->
+        <!-- Audit UI 2026-09-24 (1366x768): tiga kartu (Bot Telegram, Jadwal
+             Harian, Backup) sebelumnya bertumpuk dalam SATU tab dan satu
+             ScrollViewer setinggi ±950 px di viewport ±500 px — tombol Simpan
+             Jadwal Harian baru terjangkau setelah menggulir jauh, dan roda mouse
+             mati selama kursor di atas tabel (lihat PenerusRodaMouse). Sekarang
+             setiap bagian punya tab sendiri (Jadwal Harian, Bot Telegram,
+             Backup, Akun) sehingga tiap tab muat atau hanya sedikit menggulir.
+             Setiap tab tetap dibungkus ScrollViewer berlatar Transparent
+             (bisa di-hit-test di area kosong) sebagai pengaman bila layar
+             lebih pendek / skala Windows 125%.
+
+             RENCANA-TUGAS.md Tugas 14: sub-tab "Akun" disembunyikan sepenuhnya
+             untuk wali kelas (bukan hanya tombol di dalamnya) — PRD §3:
+             "tidak bisa akses menu ini sama sekali". -->
         <TabControl>
-        <TabItem Header="Umum">
-    <!-- Tiga kartu (Bot Telegram, Jadwal Harian 7 baris, Backup) melebihi
-         tinggi layar 1366x768 (apalagi di skala Windows 125%, MainWindow
-         MinHeight=720) — sebelum ini StackPanel langsung di dalam TabItem
-         tanpa ScrollViewer, jadi baris jadwal terpotong dan tombol Simpan
-         tidak terjangkau sama sekali, tanpa cara menggulir. ScrollViewer
-         (pola sama seperti panel formulir SiswaView.xaml) menangani mouse
-         wheel, scrollbar, dan tombol keyboard (PageUp/PageDown/panah)
-         bawaan WPF tanpa kode tambahan. DataGrid di bawah TIDAK diberi
-         Height/MaxHeight (TabelStyle memang tidak menetapkannya) sehingga
-         selalu tumbuh menampilkan seluruh barisnya sendiri tanpa scroll
-         internal — mouse wheel di atasnya tetap diteruskan ke ScrollViewer
-         ini, bukan tertangkap DataGrid. Tidak ada logika atau nilai jadwal
-         yang diubah di berkas ini. -->
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="16,16,16,16">
-        <!-- PRD §16.6 langkah 2: "Admin memasukkan token bot dan username
-             bot di menu Pengaturan" (Tugas 10). Identitas sekolah/tahun
-             ajaran/backup menunggu Tugas masing-masing. -->
-        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="Bot Telegram" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                <TextBlock Text="Sekolah membuat bot sendiri lewat BotFather (PRD §16.6). Username tanpa tanda @."
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource AbuTulisBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,16" />
+            <!-- ============ Jadwal Harian ============ -->
+            <TabItem Header="Jadwal Harian">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
+                            <StackPanel>
+                                <TextBlock Text="Jadwal Harian" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah."
+                                           Style="{StaticResource TeksUtamaStyle}"
+                                           Foreground="{StaticResource AbuTulisBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,16" />
 
-                <TextBlock Text="Token bot" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TokenBot, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+                                <!-- UAT 2026-09-23: TabelStyle menetapkan IsReadOnly=True di tingkat
+                                     grid — nilai itu MENGALAHKAN IsReadOnly per-kolom, jadi grid ini
+                                     (satu-satunya yang bisa diedit mouse+keyboard) meng-override
+                                     IsReadOnly="False" di elemennya sendiri. -->
+                                <DataGrid Style="{StaticResource TabelStyle}" IsReadOnly="False" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="110" IsReadOnly="True" />
+                                        <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                                        <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                                        <DataGridTextColumn Header="Jam rekap" Binding="{Binding JamRekap, UpdateSourceTrigger=PropertyChanged}" Width="90" />
+                                        <DataGridTextColumn Header="Batas akhir tap masuk" Binding="{Binding BatasTapMasuk, UpdateSourceTrigger=PropertyChanged}" Width="140" />
+                                        <DataGridTextColumn Header="Mulai absen pulang" Binding="{Binding MulaiPulang, UpdateSourceTrigger=PropertyChanged}" Width="130" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
 
-                <TextBlock Text="Username bot" Style="{StaticResource LabelKolomStyle}" />
-                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding UsernameBot, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
+                                <TextBlock Text="{Binding PesanGalat}"
+                                           Style="{StaticResource PesanSalahKolomStyle}"
+                                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,8,0,0" />
 
-                <TextBlock Text="{Binding PesanStatusBot}"
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource HadirTeksBrush}"
-                           Visibility="{Binding PesanStatusBot, Converter={StaticResource NullKeVisibilitas}}"
-                           Margin="0,0,0,8" />
+                                <TextBlock Text="{Binding PesanStatus}"
+                                           Style="{StaticResource TeksUtamaStyle}"
+                                           Foreground="{StaticResource HadirTeksBrush}"
+                                           Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
+                                           Margin="0,8,0,0" />
 
-                <Button Content="Simpan Bot Telegram"
-                        Style="{StaticResource TombolUtamaStyle}"
-                        Command="{Binding SimpanBotCommand}"
-                        HorizontalAlignment="Right" />
-            </StackPanel>
-        </Border>
+                                <Button Content="Simpan Jadwal Harian"
+                                        Style="{StaticResource TombolUtamaStyle}"
+                                        Command="{Binding SimpanJadwalCommand}"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,16,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
-            <StackPanel>
-                <TextBlock Text="Jadwal Harian" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah."
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource AbuTulisBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,16" />
+            <!-- ============ Bot Telegram ============ -->
+            <!-- PRD §16.6 langkah 2: "Admin memasukkan token bot dan username bot di menu Pengaturan" -->
+            <TabItem Header="Bot Telegram">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
+                            <StackPanel>
+                                <TextBlock Text="Bot Telegram" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                                <TextBlock Text="Sekolah membuat bot sendiri lewat BotFather (PRD §16.6). Username tanpa tanda @."
+                                           Style="{StaticResource TeksUtamaStyle}"
+                                           Foreground="{StaticResource AbuTulisBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,16" />
 
-                <!-- UAT 2026-09-23: TabelStyle (GayaAplikasi.xaml, dipakai
-                     SEMUA DataGrid di aplikasi) menetapkan IsReadOnly=True
-                     di tingkat grid — nilai itu MENGALAHKAN IsReadOnly
-                     per-kolom manapun selama tidak di-override di elemen
-                     DataGrid ini sendiri (kontrak WPF: IsReadOnly per-kolom
-                     diabaikan total kalau DataGrid.IsReadOnly=True). Grid
-                     ini SATU-SATUNYA yang perlu bisa diedit mouse+keyboard
-                     (checkbox Hari sekolah + 4 kolom jam) — diverifikasi
-                     lewat Window WPF sungguhan sebelum perbaikan ini bahwa
-                     grid benar-benar terkunci meski kolom individualnya
-                     tidak menandai read-only. IsReadOnly="False" di sini
-                     HANYA berlaku untuk grid ini — TabelStyle (gaya global)
-                     dan DataGrid Backup di bawah (yang sengaja tetap
-                     IsReadOnly="True", daftar riwayat) TIDAK disentuh. -->
-                <DataGrid Style="{StaticResource TabelStyle}" IsReadOnly="False" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="110" IsReadOnly="True" />
-                        <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
-                        <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk, UpdateSourceTrigger=PropertyChanged}" Width="90" />
-                        <DataGridTextColumn Header="Jam rekap" Binding="{Binding JamRekap, UpdateSourceTrigger=PropertyChanged}" Width="90" />
-                        <DataGridTextColumn Header="Batas akhir tap masuk" Binding="{Binding BatasTapMasuk, UpdateSourceTrigger=PropertyChanged}" Width="140" />
-                        <DataGridTextColumn Header="Mulai absen pulang" Binding="{Binding MulaiPulang, UpdateSourceTrigger=PropertyChanged}" Width="130" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                                <TextBlock Text="Token bot" Style="{StaticResource LabelKolomStyle}" />
+                                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding TokenBot, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
 
-                <TextBlock Text="{Binding PesanGalat}"
-                           Style="{StaticResource PesanSalahKolomStyle}"
-                           Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
-                           TextWrapping="Wrap"
-                           Margin="0,8,0,0" />
+                                <TextBlock Text="Username bot" Style="{StaticResource LabelKolomStyle}" />
+                                <TextBox Style="{StaticResource KolomTeksStyle}" Text="{Binding UsernameBot, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,16" />
 
-                <TextBlock Text="{Binding PesanStatus}"
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource HadirTeksBrush}"
-                           Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
-                           Margin="0,8,0,0" />
+                                <TextBlock Text="{Binding PesanStatusBot}"
+                                           Style="{StaticResource TeksUtamaStyle}"
+                                           Foreground="{StaticResource HadirTeksBrush}"
+                                           Visibility="{Binding PesanStatusBot, Converter={StaticResource NullKeVisibilitas}}"
+                                           Margin="0,0,0,8" />
 
-                <Button Content="Simpan Jadwal Harian"
-                        Style="{StaticResource TombolUtamaStyle}"
-                        Command="{Binding SimpanJadwalCommand}"
-                        HorizontalAlignment="Right"
-                        Margin="0,16,0,0" />
-            </StackPanel>
-        </Border>
+                                <Button Content="Simpan Bot Telegram"
+                                        Style="{StaticResource TombolUtamaStyle}"
+                                        Command="{Binding SimpanBotCommand}"
+                                        HorizontalAlignment="Right" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-        <!-- RENCANA-TUGAS.md Tugas 13 — PRD §18: dua titik backup otomatis
-             (pembukaan aplikasi, batas akhir tap masuk) berjalan sendiri di
-             latar belakang; di sini hanya daftar berkas lokal + restore. -->
-        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch" Margin="0,16,0,0">
-            <StackPanel>
-                <TextBlock Text="Backup" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                <TextBlock Text="Backup berjalan otomatis setiap aplikasi dibuka dan setelah batas akhir tap masuk (PRD §18.1). Tujuh berkas terakhir disimpan di folder backup/."
-                           Style="{StaticResource TeksUtamaStyle}"
-                           Foreground="{StaticResource AbuTulisBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,16" />
+            <!-- ============ Backup ============ -->
+            <!-- RENCANA-TUGAS.md Tugas 13 — PRD §18: dua titik backup otomatis berjalan sendiri di
+                 latar belakang; di sini hanya daftar berkas lokal + restore. -->
+            <TabItem Header="Backup">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+                    <StackPanel Margin="16">
+                        <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
+                            <StackPanel>
+                                <TextBlock Text="Backup" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
+                                <TextBlock Text="Backup berjalan otomatis setiap aplikasi dibuka dan setelah batas akhir tap masuk (PRD §18.1). Tujuh berkas terakhir disimpan di folder backup/."
+                                           Style="{StaticResource TeksUtamaStyle}"
+                                           Foreground="{StaticResource AbuTulisBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,16" />
 
-                <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarBackup}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Berkas" Binding="{Binding NamaBerkas}" Width="200" />
-                        <DataGridTextColumn Header="Dibuat" Binding="{Binding WaktuDibuat}" Width="160" />
-                        <DataGridTextColumn Header="Hari data hilang jika dipulihkan" Binding="{Binding HariDataHilang}" Width="200" />
-                        <DataGridTemplateColumn Header="" Width="*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="Pulihkan"
-                                            Style="{StaticResource TombolSekunderStyle}"
-                                            Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"
-                                            HorizontalAlignment="Left" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </StackPanel>
-        </Border>
-    </StackPanel>
-    </ScrollViewer>
-        </TabItem>
+                                <TextBlock Text="Belum ada berkas backup." Margin="0,0,0,8">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">
+                                            <Setter Property="Foreground" Value="{StaticResource AbuTulisBrush}" />
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DaftarBackup.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
 
-        <TabItem Header="Akun" Visibility="{Binding Akun.BolehAkses, Converter={StaticResource BoolKeVisibilitas}}">
-            <pengaturan:AkunView DataContext="{Binding Akun}" />
-        </TabItem>
+                                <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding DaftarBackup}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Berkas" Binding="{Binding NamaBerkas}" Width="200" />
+                                        <DataGridTextColumn Header="Dibuat" Binding="{Binding WaktuDibuat}" Width="160" />
+                                        <DataGridTextColumn Header="Hari data hilang jika dipulihkan" Binding="{Binding HariDataHilang}" Width="220" />
+                                        <DataGridTemplateColumn Header="" Width="*" MinWidth="110">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="Pulihkan"
+                                                            Style="{StaticResource TombolSekunderStyle}"
+                                                            Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}"
+                                                            HorizontalAlignment="Left" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Akun" Visibility="{Binding Akun.BolehAkses, Converter={StaticResource BoolKeVisibilitas}}">
+                <pengaturan:AkunView DataContext="{Binding Akun}" />
+            </TabItem>
         </TabControl>
     </DockPanel>
 </UserControl>

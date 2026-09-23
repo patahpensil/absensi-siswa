@@ -53,6 +53,11 @@ public sealed class PengaturanJadwalHarianEditTests
             Assert.NotNull(tabelJadwal);
             Assert.False(tabelJadwal!.IsReadOnly, "DataGrid Jadwal Harian masih IsReadOnly=True — checkbox dan kolom jam tidak akan pernah bisa diedit.");
 
+            // 2026-09-24: Backup kini tab sendiri — pilih dulu supaya isinya terbentuk.
+            var tabControl = (TabControl)LogicalTreeHelper.GetChildren(view).OfType<DockPanel>().Single().Children.OfType<TabControl>().Single();
+            tabControl.SelectedItem = tabControl.Items.OfType<TabItem>().Single(t => t.Header as string == "Backup");
+            PompaDispatcher(5);
+
             var tabelBackup = CariTabelBackup(view);
             Assert.NotNull(tabelBackup);
             Assert.True(tabelBackup!.IsReadOnly, "DataGrid Backup seharusnya TETAP read-only (daftar riwayat) — jangan ikut dibuka.");
