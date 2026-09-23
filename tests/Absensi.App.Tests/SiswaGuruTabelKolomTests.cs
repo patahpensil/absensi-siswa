@@ -164,6 +164,17 @@ internal static class StaHost
         {
             _ = new Application
             {
+                // Bawaan WPF (OnLastWindowClose) mematikan Application
+                // begitu Window SUNGGUHAN yang di-Show() (RegistrasiKartuWindowTests,
+                // PengaturanViewLayoutTests, dst.) di-Close() — StaHost ini
+                // dipakai ULANG oleh BANYAK berkas tes sepanjang satu proses
+                // xUnit, jadi Window kedua yang ditutup akan mematikan
+                // Application untuk SISA seluruh proses tes (ditemukan lewat
+                // percobaan langsung: tes lain gagal acak tergantung urutan
+                // eksekusi). OnExplicitShutdown memastikan StaHost tetap
+                // hidup sampai proses tes berakhir sendiri (thread
+                // IsBackground=true), berapa pun Window yang dibuka/ditutup.
+                ShutdownMode = ShutdownMode.OnExplicitShutdown,
                 Resources = new ResourceDictionary
                 {
                     MergedDictionaries =

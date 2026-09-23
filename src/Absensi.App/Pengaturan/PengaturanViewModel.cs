@@ -167,10 +167,10 @@ public sealed class PengaturanViewModel : ObservableObject
 
         foreach (var baris in JadwalHarian)
         {
-            if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, out var jamMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "jam rekap", baris.JamRekap, out var jamRekap)
-                || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, out var batasTapMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, out var mulaiPulang))
+            if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, baris.HariSekolah, out var jamMasuk)
+                || !CobaUraikanJam(baris.NamaHari, "jam rekap", baris.JamRekap, baris.HariSekolah, out var jamRekap)
+                || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, baris.HariSekolah, out var batasTapMasuk)
+                || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, baris.HariSekolah, out var mulaiPulang))
             {
                 PesanStatus = null;
                 return;
@@ -184,11 +184,24 @@ public sealed class PengaturanViewModel : ObservableObject
         PesanStatus = "Jadwal harian tersimpan.";
     }
 
-    private bool CobaUraikanJam(string namaHari, string namaKolom, string? teks, out TimeOnly? hasil)
+    // UAT 2026-09-23: sebelumnya kosong diterima sebagai valid untuk baris
+    // apa pun, termasuk hari sekolah — dikombinasikan dengan grid yang saat
+    // itu tidak bisa diedit sama sekali (lihat PengaturanView.xaml), Simpan
+    // menuliskan NULL ke jadwal_hari sambil tetap menampilkan "Jadwal
+    // harian tersimpan." seolah berhasil. Sekarang hari sekolah WAJIB diisi
+    // (pola sama seperti WizardInstalasiViewModel.CobaUraikanJam) — hari
+    // non-sekolah tetap boleh kosong sesuai PRD §7.
+    private bool CobaUraikanJam(string namaHari, string namaKolom, string? teks, bool wajib, out TimeOnly? hasil)
     {
         hasil = null;
         if (string.IsNullOrWhiteSpace(teks))
         {
+            if (wajib)
+            {
+                PesanGalat = $"{namaHari}: {namaKolom} wajib diisi untuk hari sekolah.";
+                return false;
+            }
+
             return true;
         }
 

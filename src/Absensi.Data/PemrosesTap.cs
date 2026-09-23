@@ -38,8 +38,33 @@ public sealed class PemrosesTap
         var jedaTapMinimal = TimeSpan.FromSeconds(_repositoriPengaturan.BacaInt(connection, "jeda_tap_detik", 15));
         var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal));
 
-        var konteks = BuatKonteks(connection, tanggal, waktu, modeRegistrasiAktif, jenisHari, kartu, tapTerakhir, jedaTapMinimal, jadwal);
-        var keputusan = _penentuStatusKehadiran.Tentukan(konteks);
+        // Bug jadwal kosong (docs/MASTER-BUG-UIUX-REGISTER.md, analisis
+        // penolakan Gerbang): sebelumnya jam jadwal yang NULL diam-diam
+        // dijadikan 00:00 lewat "?? default" di BuatKonteks, membuat
+        // PenentuStatusKehadiran salah menyimpulkan "sudah lewat jam
+        // mulai pulang" untuk tap PERTAMA hari itu, kapan pun jam
+        // sebenarnya. Ditangani DI SINI, secara eksplisit, SEBELUM
+        // PenentuStatusKehadiran pernah dipanggil — kelas itu (satu-
+        // satunya penentu status kehadiran, CLAUDE.md §4.1 aturan 1) dan
+        // KonteksTapSiswa/KonteksTapGuru TIDAK disentuh, aturannya tidak
+        // berubah sama sekali. Gerbang tetap dicek lebih dulu (mode
+        // registrasi, kartu tidak terdaftar) supaya penolakan ini tidak
+        // pernah membocorkan/mengganggu alur registrasi RFID atau hari
+        // libur — keduanya sudah benar menentukan hasil TANPA pernah
+        // membaca jam jadwal sama sekali.
+        KeputusanTap keputusan;
+        if (!modeRegistrasiAktif
+            && jenisHari == JenisHariKalender.Sekolah
+            && kartu is not null
+            && JadwalBelumLengkapUntuk(kartu.PemilikTipe, jadwal))
+        {
+            keputusan = KeputusanTap.Ditolak(AlasanTap.JadwalBelumDiatur);
+        }
+        else
+        {
+            var konteks = BuatKonteks(connection, tanggal, waktu, modeRegistrasiAktif, jenisHari, kartu, tapTerakhir, jedaTapMinimal, jadwal);
+            keputusan = _penentuStatusKehadiran.Tentukan(konteks);
+        }
 
         // PRD §16.8.a langkah 9 / §16.9: tap yang menghasilkan TERLAMBAT
         // SETELAH jam rekap diantre real-time di sini. Tap sebelum jam
@@ -78,6 +103,22 @@ public sealed class PemrosesTap
         return keputusan;
     }
 
+    // Jam yang dipakai Proses() untuk memutuskan gerbang harus ditolak
+    // eksplisit SEBELUM BuatKonteks/PenentuStatusKehadiran dipanggil sama
+    // sekali — lihat komentar di Proses(). Guru hanya butuh MulaiTapPulang
+    // (KonteksTapGuru tidak pernah membaca JamMasuk/BatasAkhirTapMasuk,
+    // lihat PenentuStatusKehadiran.TentukanUntukGuru); siswa butuh
+    // ketiganya. jadwal bisa null kalau baris jadwal_hari hari ini belum
+    // ada sama sekali — kasus itu sebenarnya sudah ditolak lebih dulu
+    // sebagai TanggalLibur oleh RepositoriKalender.TentukanJenisHari (baris
+    // tanpa jadwal dianggap bukan hari sekolah), jadi pemeriksaan `jadwal is
+    // null` di sini murni jaring pengaman, bukan jalur yang diharapkan
+    // tercapai untuk jenisHari == Sekolah.
+    private static bool JadwalBelumLengkapUntuk(JenisPemilikKartu pemilikTipe, JadwalHariKonfigurasi? jadwal) =>
+        pemilikTipe == JenisPemilikKartu.Siswa
+            ? jadwal is not { JamMasuk: not null, BatasTapMasuk: not null, MulaiPulang: not null }
+            : jadwal is not { MulaiPulang: not null };
+
     private KonteksTap BuatKonteks(
         SqliteConnection connection,
         DateOnly tanggal,
@@ -91,6 +132,17 @@ public sealed class PemrosesTap
     {
         if (kartu?.PemilikTipe == JenisPemilikKartu.Siswa)
         {
+            // "?? default" (00:00) di bawah TIDAK PERNAH memengaruhi
+            // keputusan nyata lagi: untuk hari sekolah dengan kartu
+            // terdaftar dan mode registrasi mati, Proses() sudah menolak
+            // eksplisit lewat JadwalBelumLengkapUntuk SEBELUM sampai ke sini
+            // kalau salah satu field ini null. Jalur yang MASIH bisa sampai
+            // ke sini dengan jam null adalah mode registrasi aktif atau
+            // hari libur — keduanya membuat PenentuStatusKehadiran berhenti
+            // di pengecekan paling awal (ModeRegistrasiAktif / JenisHariIni)
+            // tanpa pernah membaca field KonteksTapSiswa ini. Default di
+            // sini sekadar memenuhi tipe TimeOnly non-nullable-nya, bukan
+            // nilai yang pernah dipakai untuk memutuskan apa pun.
             var absensiHariIni = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, kartu.PemilikId);
             var konteksSiswa = new KonteksTapSiswa(
                 SiswaAktif: _repositoriSiswa.IsAktif(connection, kartu.PemilikId),
@@ -106,6 +158,9 @@ public sealed class PemrosesTap
 
         if (kartu?.PemilikTipe == JenisPemilikKartu.Guru)
         {
+            // "?? default" di bawah: catatan yang sama seperti cabang Siswa
+            // di atas berlaku persis — sudah dijaga JadwalBelumLengkapUntuk
+            // di Proses() sebelum sampai ke sini untuk hari sekolah.
             var absensiHariIni = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, kartu.PemilikId);
             var statusDiMuka = absensiHariIni is not null && PemetaanEnum.AdalahStatusDitetapkanDiMuka(absensiHariIni.Status)
                 ? absensiHariIni.Status
@@ -192,6 +247,12 @@ public sealed class PemrosesTap
                 AlasanTap.JedaTapTerlaluCepat => "ditolak_jeda",
                 AlasanTap.LewatBatasTapMasuk => "ditolak_lewat_batas",
                 AlasanTap.BelumPunyaCatatanMasuk => "ditolak_lewat_batas",
+                // Sama seperti dua alasan di atas: tidak ada nilai CHECK
+                // khusus untuk "jadwal belum diatur" (menambah satu berarti
+                // migrasi skema baru, di luar cakupan perbaikan ini — lihat
+                // AlasanTap.JadwalBelumDiatur). Alasan lengkapnya tetap apa
+                // adanya di tap_log.catatan lewat keputusan.Alasan?.ToString().
+                AlasanTap.JadwalBelumDiatur => "ditolak_lewat_batas",
                 _ => throw new ArgumentOutOfRangeException(nameof(keputusan), keputusan.Alasan, null),
             },
             JenisTindakanTap.IsiJamMasuk => pemilikTipe == JenisPemilikKartu.Guru

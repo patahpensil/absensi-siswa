@@ -11,7 +11,21 @@
              di dalamnya) — PRD §3: "tidak bisa akses menu ini sama sekali". -->
         <TabControl>
         <TabItem Header="Umum">
-    <StackPanel Margin="16,16,0,0">
+    <!-- Tiga kartu (Bot Telegram, Jadwal Harian 7 baris, Backup) melebihi
+         tinggi layar 1366x768 (apalagi di skala Windows 125%, MainWindow
+         MinHeight=720) — sebelum ini StackPanel langsung di dalam TabItem
+         tanpa ScrollViewer, jadi baris jadwal terpotong dan tombol Simpan
+         tidak terjangkau sama sekali, tanpa cara menggulir. ScrollViewer
+         (pola sama seperti panel formulir SiswaView.xaml) menangani mouse
+         wheel, scrollbar, dan tombol keyboard (PageUp/PageDown/panah)
+         bawaan WPF tanpa kode tambahan. DataGrid di bawah TIDAK diberi
+         Height/MaxHeight (TabelStyle memang tidak menetapkannya) sehingga
+         selalu tumbuh menampilkan seluruh barisnya sendiri tanpa scroll
+         internal — mouse wheel di atasnya tetap diteruskan ke ScrollViewer
+         ini, bukan tertangkap DataGrid. Tidak ada logika atau nilai jadwal
+         yang diubah di berkas ini. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="16,16,16,16">
         <!-- PRD §16.6 langkah 2: "Admin memasukkan token bot dan username
              bot di menu Pengaturan" (Tugas 10). Identitas sekolah/tahun
              ajaran/backup menunggu Tugas masing-masing. -->
@@ -52,7 +66,21 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,16" />
 
-                <DataGrid Style="{StaticResource TabelStyle}" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
+                <!-- UAT 2026-09-23: TabelStyle (GayaAplikasi.xaml, dipakai
+                     SEMUA DataGrid di aplikasi) menetapkan IsReadOnly=True
+                     di tingkat grid — nilai itu MENGALAHKAN IsReadOnly
+                     per-kolom manapun selama tidak di-override di elemen
+                     DataGrid ini sendiri (kontrak WPF: IsReadOnly per-kolom
+                     diabaikan total kalau DataGrid.IsReadOnly=True). Grid
+                     ini SATU-SATUNYA yang perlu bisa diedit mouse+keyboard
+                     (checkbox Hari sekolah + 4 kolom jam) — diverifikasi
+                     lewat Window WPF sungguhan sebelum perbaikan ini bahwa
+                     grid benar-benar terkunci meski kolom individualnya
+                     tidak menandai read-only. IsReadOnly="False" di sini
+                     HANYA berlaku untuk grid ini — TabelStyle (gaya global)
+                     dan DataGrid Backup di bawah (yang sengaja tetap
+                     IsReadOnly="True", daftar riwayat) TIDAK disentuh. -->
+                <DataGrid Style="{StaticResource TabelStyle}" IsReadOnly="False" ItemsSource="{Binding JadwalHarian}" AutoGenerateColumns="False" CanUserAddRows="False">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="110" IsReadOnly="True" />
                         <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
@@ -116,6 +144,7 @@
             </StackPanel>
         </Border>
     </StackPanel>
+    </ScrollViewer>
         </TabItem>
 
         <TabItem Header="Akun" Visibility="{Binding Akun.BolehAkses, Converter={StaticResource BoolKeVisibilitas}}">

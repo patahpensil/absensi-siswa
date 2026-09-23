@@ -61,7 +61,8 @@ public sealed class WizardInstalasiViewModel : ObservableObject
 
         for (var hari = 1; hari <= 7; hari++)
         {
-            JadwalHarian.Add(new JadwalHariBarisViewModel(hari, NamaHari[hari - 1], hariSekolah: hari != 7, null, null, null, null));
+            var (jamMasuk, jamRekap, batasTapMasuk, mulaiPulang) = JadwalBawaan(hari);
+            JadwalHarian.Add(new JadwalHariBarisViewModel(hari, NamaHari[hari - 1], hariSekolah: hari != 7, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang));
         }
 
         InstalasiBaruCommand = new RelayCommand(InstalasiBaru, () => !string.IsNullOrWhiteSpace(KunciLisensi));
@@ -271,10 +272,10 @@ public sealed class WizardInstalasiViewModel : ObservableObject
         var jadwal = new List<JadwalHariBaris>();
         foreach (var baris in JadwalHarian)
         {
-            if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, out var jamMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "jam rekap", baris.JamRekap, out var jamRekap)
-                || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, out var batasTapMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, out var mulaiPulang))
+            if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, baris.HariSekolah, out var jamMasuk)
+                || !CobaUraikanJam(baris.NamaHari, "jam rekap", baris.JamRekap, baris.HariSekolah, out var jamRekap)
+                || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, baris.HariSekolah, out var batasTapMasuk)
+                || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, baris.HariSekolah, out var mulaiPulang))
             {
                 LangkahSaatIni = LangkahWizard.JadwalHarian;
                 return;
@@ -310,11 +311,17 @@ public sealed class WizardInstalasiViewModel : ObservableObject
         WizardSelesai?.Invoke(this, AkunKepalaSekolahDibuat);
     }
 
-    private bool CobaUraikanJam(string namaHari, string namaKolom, string? teks, out TimeOnly? hasil)
+    private bool CobaUraikanJam(string namaHari, string namaKolom, string? teks, bool wajib, out TimeOnly? hasil)
     {
         hasil = null;
         if (string.IsNullOrWhiteSpace(teks))
         {
+            if (wajib)
+            {
+                PesanGalat = $"{namaHari}: {namaKolom} wajib diisi untuk hari sekolah.";
+                return false;
+            }
+
             return true;
         }
 
@@ -326,5 +333,29 @@ public sealed class WizardInstalasiViewModel : ObservableObject
 
         hasil = jam;
         return true;
+    }
+
+    // PRD §7 — nilai bawaan pengisi awal formulir jadwal wizard, BUKAN
+    // nilai yang ditegakkan kode (CLAUDE.md §7 aturan 2): admin tetap bebas
+    // mengubahnya sebelum Selesaikan, dan CobaUraikanJam tetap memvalidasi
+    // ulang teks yang akhirnya tersimpan di JadwalHarian, apa pun asalnya.
+    // Sebelumnya keempat kolom diisi null (kosong) di sini, dan layar tidak
+    // menampilkan nilai bawaan apa pun — operator mengikuti teks instruksi
+    // "kosongkan jam pada hari yang bukan hari sekolah" apa adanya dan
+    // mengosongkan SEMUA baris termasuk hari sekolah, membuat jadwal_hari
+    // tersimpan NULL untuk seluruh sekolah (lihat
+    // docs/MASTER-BUG-UIUX-REGISTER.md, analisis penolakan Gerbang). Hari 7
+    // (Minggu) sengaja TETAP kosong di sini — bukan hari sekolah, PRD §7
+    // sendiri tidak punya nilai untuk baris itu.
+    private static (string? JamMasuk, string? JamRekap, string? BatasTapMasuk, string? MulaiPulang) JadwalBawaan(int hari)
+    {
+        if (hari == 7)
+        {
+            return (null, null, null, null);
+        }
+
+        return hari == 5
+            ? ("07:30", "08:00", "10:00", "11:30")
+            : ("07:30", "08:00", "12:00", "13:10");
     }
 }

@@ -183,6 +183,104 @@ public sealed class PemrosesTapTests
         Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
     }
 
+    // Bug jadwal kosong (docs/MASTER-BUG-UIUX-REGISTER.md, analisis
+    // penolakan Gerbang): jadwal_hari.hari_sekolah=1 tapi jam intinya NULL
+    // (persis kondisi yang ditemukan di database UAT nyata — wizard
+    // menyimpan kosong tanpa validasi). Sebelum perbaikan, "?? default" di
+    // BuatKonteks diam-diam menjadikannya 00:00, membuat tap PERTAMA hari
+    // itu — jam berapa pun — salah ditolak sebagai BelumPunyaCatatanMasuk.
+    [Fact]
+    public void Proses_JadwalSiswaBelumDiatur_DitolakEksplisitBukanBelumPunyaCatatanMasuk()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        database.Execute("""
+            UPDATE jadwal_hari SET jam_masuk = NULL, jam_rekap = NULL, batas_tap_masuk = NULL, mulai_pulang = NULL
+            WHERE tahun_ajaran_id = 1 AND hari = 4;
+            """);
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        var keputusan = _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(7, 29), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.Ditolak, keputusan.Tindakan);
+        Assert.Equal(Absensi.Domain.Kehadiran.AlasanTap.JadwalBelumDiatur, keputusan.Alasan);
+
+        AssertTapLogTunggal(database, hasilDiharapkan: "ditolak_lewat_batas", pemilikTipe: "siswa", pemilikId: 1);
+        AssertCatatanTapLog(database, "JadwalBelumDiatur");
+    }
+
+    [Fact]
+    public void Proses_JadwalGuruBelumDiatur_DitolakEksplisit()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        database.Execute("""
+            UPDATE jadwal_hari SET jam_masuk = NULL, jam_rekap = NULL, batas_tap_masuk = NULL, mulai_pulang = NULL
+            WHERE tahun_ajaran_id = 1 AND hari = 4;
+            """);
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        var keputusan = _pemrosesTap.Proses(database.Connection, "UID-GURU-1", Waktu(7, 0), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.Ditolak, keputusan.Tindakan);
+        Assert.Equal(Absensi.Domain.Kehadiran.AlasanTap.JadwalBelumDiatur, keputusan.Alasan);
+
+        AssertTapLogTunggal(database, hasilDiharapkan: "ditolak_lewat_batas", pemilikTipe: "guru", pemilikId: 1);
+        AssertCatatanTapLog(database, "JadwalBelumDiatur");
+    }
+
+    // Penjagaan jadwal TIDAK BOLEH mengganggu Mode Registrasi (PRD §16.5) —
+    // tap saat registrasi mengaitkan kartu ke pemilik, tidak pernah butuh
+    // jam jadwal sama sekali.
+    [Fact]
+    public void Proses_JadwalBelumDiaturTapiModeRegistrasiAktif_TetapMenghasilkanRegistrasi()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        database.Execute("""
+            UPDATE jadwal_hari SET jam_masuk = NULL, jam_rekap = NULL, batas_tap_masuk = NULL, mulai_pulang = NULL
+            WHERE tahun_ajaran_id = 1 AND hari = 4;
+            """);
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        var keputusan = _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(7, 29), modeRegistrasiAktif: true);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.Registrasi, keputusan.Tindakan);
+        AssertTapLogTunggal(database, hasilDiharapkan: "registrasi", pemilikTipe: "siswa", pemilikId: 1);
+    }
+
+    // Penjagaan jadwal TIDAK BOLEH mengambil alih penolakan hari libur —
+    // TanggalLibur tetap alasan yang benar, jam jadwal memang tidak relevan
+    // pada hari libur (PenentuStatusKehadiran berhenti di pengecekan itu
+    // sebelum pernah membaca jam).
+    [Fact]
+    public void Proses_JadwalBelumDiaturDiHariLibur_TetapDitolakKarenaLiburBukanJadwal()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        database.Execute("""
+            UPDATE jadwal_hari SET jam_masuk = NULL, jam_rekap = NULL, batas_tap_masuk = NULL, mulai_pulang = NULL
+            WHERE tahun_ajaran_id = 1 AND hari = 4;
+
+            INSERT INTO kalender (tanggal, jenis, keterangan)
+            VALUES ('2026-09-17', 'libur', 'Libur mendadak untuk pengujian');
+            """);
+
+        var keputusan = _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(7, 29), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.Ditolak, keputusan.Tindakan);
+        Assert.Equal(Absensi.Domain.Kehadiran.AlasanTap.TanggalLibur, keputusan.Alasan);
+
+        AssertTapLogTunggal(database, hasilDiharapkan: "ditolak_libur", pemilikTipe: "siswa", pemilikId: 1);
+    }
+
+    private static void AssertCatatanTapLog(MigratedDatabase database, string catatanDiharapkan)
+    {
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT catatan FROM tap_log;";
+        Assert.Equal(catatanDiharapkan, command.ExecuteScalar() as string);
+    }
+
     private static void AssertTapLogTunggal(
         MigratedDatabase database,
         string hasilDiharapkan,
