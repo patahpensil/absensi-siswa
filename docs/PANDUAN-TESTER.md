@@ -230,6 +230,22 @@ Diperbaiki: `MasterData/SiswaView.xaml` dan `MasterData/GuruView.xaml` — `MinW
 9. Ulangi langkah 1-3 pada skala Windows 100%, 125%, dan 150% (Pengaturan Tampilan Windows) bila memungkinkan di mesin tester.
 10. **Harap:** tidak ada teks bertumpuk, kolom hilang, atau tombol (Ubah/Unggah foto/Ganti kartu/Mutasi untuk Siswa; Ubah/Unggah foto/Kartu/Nonaktifkan untuk Guru) yang terpotong di skala DPI manapun.
 
+## Skenario C — Migrasi 002 (A-38): Verifikasi pada Salinan Database UAT
+
+Dijalankan sebelum publish berikutnya yang membawa migrasi 002 (`trg_audit_cegah_update`/`trg_audit_cegah_delete`, `MASTER-BUG-UIUX-REGISTER.md` A-38, commit `60b0c58`). **Hanya terhadap salinan database di folder sementara DI LUAR repo** — jangan buat folder publish UAT baru, jangan jalankan EXE terhadap database UAT asli.
+
+1. Tutup semua proses `Absensi.App.exe` yang memegang `publish/Bug11-12-UAT/data/absensi.db`.
+2. Salin `absensi.db` (dan `-wal`/`-shm` bila ada) ke folder sementara di luar repo, mis. `%TEMP%\absensi-migrasi-a38\`.
+3. Tambahkan test sekali-pakai di `tests/Absensi.Data.Tests/` yang membuka salinan itu lewat `SqliteConnectionFactory.Open`, mencatat versi `skema_versi` serta jumlah dan isi baris `audit` SEBELUM, menjalankan `new MigrationRunner().Run(connection)`, lalu mencatat ulang SESUDAH — jalankan lewat `dotnet test ... --filter`, hapus lagi berkas test itu setelah lulus (bergantung path absolut di luar repo, bukan bagian suite permanen).
+
+**Harap:**
+- Versi skema naik dari `1` ke `2`.
+- Jumlah **dan** isi baris `audit` identik sebelum-sesudah (migrasi ini DDL murni, tidak menyentuh data).
+- `INSERT` baris audit baru tetap berhasil.
+- `UPDATE`/`DELETE` terhadap baris `audit` mana pun — termasuk baris yang sudah ada sejak sebelum migrasi — ditolak dengan pesan "Baris audit tidak dapat diubah/dihapus (PRD §12)."
+
+Sudah dijalankan sekali (2026-09-24) terhadap salinan database UAT nyata (24 baris audit) — seluruh hasil di atas terkonfirmasi.
+
 **Hasil smoke-test build sebelumnya (masih berlaku, tidak diulang di sesi ini):**
 
 **Hasil smoke-test build ini:** build berhasil (`dotnet build`, 0 error),
