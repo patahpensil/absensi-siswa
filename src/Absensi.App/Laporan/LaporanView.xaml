@@ -49,7 +49,8 @@
             <StackPanel Orientation="Vertical" Margin="0,0,0,8" VerticalAlignment="Bottom">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Ekspor Excel" Style="{StaticResource TombolSekunderStyle}" Command="{Binding EksporExcelCommand}" Margin="0,0,8,0" />
-                    <Button Content="Ekspor PDF" Style="{StaticResource TombolUtamaStyle}" Command="{Binding EksporPdfCommand}" />
+                    <Button Content="Ekspor PDF" Style="{StaticResource TombolUtamaStyle}" Command="{Binding EksporPdfCommand}" Margin="0,0,8,0" />
+                    <Button Content="Cetak" Style="{StaticResource TombolSekunderStyle}" Command="{Binding CetakCommand}" />
                 </StackPanel>
             </StackPanel>
         </WrapPanel>

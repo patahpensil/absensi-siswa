@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using System.IO;
+using System.Printing;
 using Absensi.Data.Diagnostik;
 using Microsoft.Data.Sqlite;
 
@@ -32,6 +34,13 @@ public static class PenangananGalat
             "Berkas tidak bisa diakses karena izin ditolak. Pilih lokasi lain atau periksa izin folder, lalu coba lagi.",
         IOException =>
             "Berkas sedang dipakai aplikasi lain atau tidak bisa dibaca/ditulis. Tutup berkasnya, lalu coba lagi.",
+        // Fitur Cetak (2026-09-25): printer tidak terpasang, mati, offline,
+        // atau spooler Windows bermasalah — PrintSystemException mencakup
+        // PrintQueueException/PrintServerException/PrintJobException
+        // sekaligus (semuanya turunan System.Printing.PrintSystemException);
+        // Win32Exception muncul untuk sebagian galat spooler tingkat rendah.
+        PrintSystemException or Win32Exception =>
+            "Printer tidak tersedia atau tidak bisa diakses. Periksa apakah printer sudah terpasang, menyala, dan tersambung, lalu coba lagi.",
         _ => null,
     };
 

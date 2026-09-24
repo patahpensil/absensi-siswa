@@ -187,7 +187,7 @@ public sealed class MainWindowViewModel : ObservableObject
             "Pengaturan" => _pengaturanViewModel ??= BuatPengaturanViewModel(tahunAjaranId),
             "Notifikasi" => _notifikasiViewModel ??= new NotifikasiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Koreksi" => _koreksiViewModel ??= new KoreksiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
-            "Laporan" => _laporanViewModel ??= new LaporanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
+            "Laporan" => _laporanViewModel ??= new LaporanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId, new LayananCetakLaporan()),
             "Audit" => MuatUlangAuditViewModel(),
             _ => null,
         };

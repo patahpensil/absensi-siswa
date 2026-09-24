@@ -16,9 +16,23 @@ public sealed class PenulisPdfLaporan
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
-    public byte[] TulisKejadian(KepalaLaporan kepala, IReadOnlyList<BarisKejadian> baris, bool tampilkanKelas)
-    {
-        var dokumen = Document.Create(container => container.Page(page =>
+    public byte[] TulisKejadian(KepalaLaporan kepala, IReadOnlyList<BarisKejadian> baris, bool tampilkanKelas) =>
+        BangunDokumenKejadian(kepala, baris, tampilkanKelas).GeneratePdf();
+
+    // Fitur Cetak (terpisah dari Ekspor PDF, instruksi eksplisit pemilik
+    // proyek 2026-09-25): satu gambar PNG per halaman, dibangun dari
+    // DOKUMEN QuestPDF YANG SAMA PERSIS dengan TulisKejadian di atas —
+    // supaya tata letak, pemisahan baris antar halaman, dan pengulangan
+    // kepala/kepala tabel di tiap halaman (keduanya sudah ditangani
+    // QuestPDF sendiri lewat page.Header()/table.Header()) identik dengan
+    // yang sudah diuji lewat Ekspor PDF, tanpa logika pagination baru yang
+    // terpisah dan berisiko tidak konsisten. dpi rendah dipakai di tes
+    // (kecepatan); default 200 cukup tajam untuk cetak dokumen teks/tabel.
+    public IReadOnlyList<byte[]> GambarKejadian(KepalaLaporan kepala, IReadOnlyList<BarisKejadian> baris, bool tampilkanKelas, int dpi = 200) =>
+        GambarHalaman(BangunDokumenKejadian(kepala, baris, tampilkanKelas), dpi);
+
+    private static Document BangunDokumenKejadian(KepalaLaporan kepala, IReadOnlyList<BarisKejadian> baris, bool tampilkanKelas) =>
+        Document.Create(container => container.Page(page =>
         {
             page.Size(PageSizes.A4);
             page.Margin(30);
@@ -33,57 +47,130 @@ public sealed class PenulisPdfLaporan
             });
         }));
 
-        return dokumen.GeneratePdf();
+    // PANDUAN-UI-UX.md §11: laporan bulanan lanskap.
+    public byte[] TulisBulanan(KepalaLaporan kepala, LaporanBulanan laporan, JenisSubjekLaporan subjek) =>
+        BangunDokumenBulanan(kepala, laporan, subjek).GeneratePdf();
+
+    public IReadOnlyList<byte[]> GambarBulanan(KepalaLaporan kepala, LaporanBulanan laporan, JenisSubjekLaporan subjek, int dpi = 200) =>
+        GambarHalaman(BangunDokumenBulanan(kepala, laporan, subjek), dpi);
+
+    // Lebar tetap tabel Bulanan (poin), dipakai bersama oleh
+    // KolomPerHalamanBulanan (hitung berapa tanggal muat per halaman) dan
+    // TulisTabelBulanan (ColumnsDefinition sungguhan) -- HARUS tetap sama
+    // supaya perhitungan dan tata letak sungguhan tidak pernah menyimpang.
+    private const double LebarKontenBulanan = 794; // A4 lanskap (842) - 2 x margin (24)
+    private const float LebarNamaBulanan = 95;
+    private const float LebarIdentitasBulanan = 60;
+    private const float LebarKelasBulanan = 40;
+    private const float LebarTanggalBulanan = 22;
+    private const float LebarRekapBulanan = 30;
+    private const float LebarPersenBulanan = 36;
+
+    // Bug ditemukan 2026-09-25 (bukan bug fitur Cetak -- Ekspor PDF yang
+    // sudah dipakai sejak awal): tabel Bulanan SATU HALAMAN dengan margin
+    // 24 + kolom tanggal 16pt HANYA muat sampai 28 kolom (Februari
+    // non-kabisat); bulan APA PUN 29-31 hari (hampir semua bulan) melempar
+    // DocumentLayoutException tak tertangkap yang menutup aplikasi.
+    // Perbaikan PERTAMA (margin 20 + kolom 14pt, commit ba68604) memang
+    // tidak lagi crash, TAPI membuat tabelnya sangat kecil/sulit dibaca --
+    // dilaporkan lewat UAT pemilik proyek 2026-09-25. Perbaikan KEDUA ini:
+    // font dan lebar kolom dikembalikan ke ukuran yang nyaman dibaca
+    // (lihat konstanta Lebar*Bulanan di atas), dan kalau satu bulan penuh
+    // tidak muat pada lebar itu, TANGGAL DIBAGI ke beberapa halaman
+    // (KolomPerHalamanBulanan/BagiKolomTanggalBulanan) -- bukan
+    // mengecilkan huruf/kolom lagi. Nama/Identitas/Kelas dan kepala tabel
+    // BERULANG di setiap halaman (page.Header() + table.Header() per
+    // halaman); rekap bulanan (H/S/I/.../%) HANYA di halaman TERAKHIR
+    // (angka itu ringkasan SATU bulan penuh, mengulanginya di tiap
+    // potongan tanggal akan menyiratkan seolah-olah rekap itu milik
+    // potongan itu saja -- keliru).
+    private static Document BangunDokumenBulanan(KepalaLaporan kepala, LaporanBulanan laporan, JenisSubjekLaporan subjek)
+    {
+        var potongan = BagiKolomTanggalBulanan(laporan.Kolom, KolomPerHalamanBulanan(subjek));
+
+        return Document.Create(container =>
+        {
+            for (var i = 0; i < potongan.Count; i++)
+            {
+                var kolomHalamanIni = potongan[i];
+                var halamanTerakhir = i == potongan.Count - 1;
+
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(24);
+                    page.DefaultTextStyle(x => x.FontSize(9));
+                    page.Header().Element(c => TulisKepala(c, kepala));
+                    page.Footer().Element(c => TulisKaki(c, kepala));
+                    page.Content().Column(kolom =>
+                    {
+                        kolom.Spacing(8);
+
+                        if (potongan.Count > 1)
+                        {
+                            kolom.Item().Text(
+                                $"Tanggal {kolomHalamanIni[0].Tanggal:d/M} - {kolomHalamanIni[^1].Tanggal:d/M} (halaman {i + 1} dari {potongan.Count})")
+                                .SemiBold();
+                        }
+
+                        kolom.Item().Element(c => TulisTabelBulanan(c, laporan, kolomHalamanIni, subjek, sertakanRekap: halamanTerakhir));
+
+                        if (halamanTerakhir)
+                        {
+                            var alasanLibur = laporan.Kolom.Where(k => k.Libur && !string.IsNullOrWhiteSpace(k.Alasan)).ToList();
+                            if (alasanLibur.Count > 0)
+                            {
+                                kolom.Item().Text(text =>
+                                {
+                                    text.Span("Catatan libur mendadak: ").SemiBold();
+                                    text.Span(string.Join("; ", alasanLibur.Select(k => $"{k.Tanggal:d/M} — {k.Alasan}")));
+                                });
+                            }
+
+                            kolom.Item().Element(TulisTandaTangan);
+                        }
+                    });
+                });
+            }
+        });
     }
 
-    // PANDUAN-UI-UX.md §11: laporan bulanan lanskap.
-    public byte[] TulisBulanan(KepalaLaporan kepala, LaporanBulanan laporan, JenisSubjekLaporan subjek)
+    // Berapa kolom tanggal muat di satu halaman YANG JUGA memuat blok
+    // rekap+% (dipakai SERAGAM untuk semua potongan, bukan cuma yang
+    // terakhir, supaya lebar tabel konsisten di seluruh laporan --
+    // sedikit "boros" ruang di halaman non-terakhir, tapi hasilnya lebih
+    // mudah dibaca/dibandingkan antar halaman daripada lebar yang
+    // berubah-ubah).
+    internal static int KolomPerHalamanBulanan(JenisSubjekLaporan subjek)
     {
-        var dokumen = Document.Create(container => container.Page(page =>
+        var identitas = LebarNamaBulanan + LebarIdentitasBulanan + (subjek == JenisSubjekLaporan.Siswa ? LebarKelasBulanan : 0);
+        var blokRekap = (KolomRekap(subjek).Length * LebarRekapBulanan) + LebarPersenBulanan;
+        var tersedia = LebarKontenBulanan - identitas - blokRekap;
+        return Math.Max(1, (int)(tersedia / LebarTanggalBulanan));
+    }
+
+    internal static IReadOnlyList<IReadOnlyList<KolomTanggalBulanan>> BagiKolomTanggalBulanan(IReadOnlyList<KolomTanggalBulanan> kolom, int ukuranHalaman)
+    {
+        var hasil = new List<IReadOnlyList<KolomTanggalBulanan>>();
+        for (var i = 0; i < kolom.Count; i += ukuranHalaman)
         {
-            page.Size(PageSizes.A4.Landscape());
-            // Bug ditemukan 2026-09-25: margin 24 + kolom tanggal 16pt
-            // (TulisTabelBulanan) HANYA muat sampai 28 kolom (Februari
-            // non-kabisat). Bulan APA PUN 29-31 hari (hampir semua bulan)
-            // melempar QuestPDF.Drawing.Exceptions.DocumentLayoutException
-            // -- turunan langsung System.Exception, BUKAN
-            // InvalidOperationException/ArgumentException, jadi TIDAK
-            // tertangkap LaporanViewModel.Ekspor dan menutup aplikasi.
-            // margin 20 dipilih supaya bulan 31 hari (terpanjang) tetap
-            // muat dengan sisa ruang (bukan pas-pasan di batas), tanpa
-            // mengurangi kolom atau data apa pun.
-            page.Margin(20);
-            page.DefaultTextStyle(x => x.FontSize(7));
-            page.Header().Element(c => TulisKepala(c, kepala));
-            page.Footer().Element(c => TulisKaki(c, kepala));
-            page.Content().Column(kolom =>
-            {
-                kolom.Spacing(8);
-                kolom.Item().Element(c => TulisTabelBulanan(c, laporan, subjek));
+            hasil.Add(kolom.Skip(i).Take(ukuranHalaman).ToList());
+        }
 
-                var alasanLibur = laporan.Kolom.Where(k => k.Libur && !string.IsNullOrWhiteSpace(k.Alasan)).ToList();
-                if (alasanLibur.Count > 0)
-                {
-                    kolom.Item().Text(text =>
-                    {
-                        text.Span("Catatan libur mendadak: ").SemiBold();
-                        text.Span(string.Join("; ", alasanLibur.Select(k => $"{k.Tanggal:d/M} — {k.Alasan}")));
-                    });
-                }
-
-                kolom.Item().Element(TulisTandaTangan);
-            });
-        }));
-
-        return dokumen.GeneratePdf();
+        return hasil.Count == 0 ? [kolom] : hasil;
     }
 
     // PRD §11.3/§17.8: satu kartu per orang, satu halaman per orang supaya
     // bisa dicetak/dipisah sendiri-sendiri walau diminta sekaligus satu
     // kelas.
-    public byte[] TulisKartuOrang(KepalaLaporan kepala, IReadOnlyList<KartuOrang> kartu, JenisSubjekLaporan subjek)
-    {
-        var dokumen = Document.Create(container =>
+    public byte[] TulisKartuOrang(KepalaLaporan kepala, IReadOnlyList<KartuOrang> kartu, JenisSubjekLaporan subjek) =>
+        BangunDokumenKartuOrang(kepala, kartu, subjek).GeneratePdf();
+
+    public IReadOnlyList<byte[]> GambarKartuOrang(KepalaLaporan kepala, IReadOnlyList<KartuOrang> kartu, JenisSubjekLaporan subjek, int dpi = 200) =>
+        GambarHalaman(BangunDokumenKartuOrang(kepala, kartu, subjek), dpi);
+
+    private static Document BangunDokumenKartuOrang(KepalaLaporan kepala, IReadOnlyList<KartuOrang> kartu, JenisSubjekLaporan subjek) =>
+        Document.Create(container =>
         {
             foreach (var orang in kartu)
             {
@@ -107,12 +194,14 @@ public sealed class PenulisPdfLaporan
             }
         });
 
-        return dokumen.GeneratePdf();
-    }
+    public byte[] TulisSemester(KepalaLaporan kepala, IReadOnlyList<BarisSemester> baris, JenisSubjekLaporan subjek) =>
+        BangunDokumenSemester(kepala, baris, subjek).GeneratePdf();
 
-    public byte[] TulisSemester(KepalaLaporan kepala, IReadOnlyList<BarisSemester> baris, JenisSubjekLaporan subjek)
-    {
-        var dokumen = Document.Create(container => container.Page(page =>
+    public IReadOnlyList<byte[]> GambarSemester(KepalaLaporan kepala, IReadOnlyList<BarisSemester> baris, JenisSubjekLaporan subjek, int dpi = 200) =>
+        GambarHalaman(BangunDokumenSemester(kepala, baris, subjek), dpi);
+
+    private static Document BangunDokumenSemester(KepalaLaporan kepala, IReadOnlyList<BarisSemester> baris, JenisSubjekLaporan subjek) =>
+        Document.Create(container => container.Page(page =>
         {
             page.Size(PageSizes.A4.Landscape());
             page.Margin(30);
@@ -127,8 +216,8 @@ public sealed class PenulisPdfLaporan
             });
         }));
 
-        return dokumen.GeneratePdf();
-    }
+    private static IReadOnlyList<byte[]> GambarHalaman(Document dokumen, int dpi) =>
+        dokumen.GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = dpi }).ToList();
 
     private static void TulisKepala(IContainer container, KepalaLaporan kepala)
     {
@@ -236,36 +325,39 @@ public sealed class PenulisPdfLaporan
     }
 
     // Kolom hari libur diarsir abu-abu muda (PANDUAN-UI-UX.md §11).
-    private static void TulisTabelBulanan(IContainer container, LaporanBulanan laporan, JenisSubjekLaporan subjek)
+    // kolomHalaman: SUBSET laporan.Kolom untuk halaman ini saja (lihat
+    // BagiKolomTanggalBulanan) -- Nama/Identitas/Kelas dan kode kehadiran
+    // dari laporan.Baris tetap dari laporan LENGKAP (tidak pernah
+    // terpotong per orang, cuma kolom tanggalnya yang dipecah).
+    // sertakanRekap: hanya true di halaman TERAKHIR (lihat komentar
+    // BangunDokumenBulanan soal kenapa rekap tidak diulang tiap halaman).
+    private static void TulisTabelBulanan(IContainer container, LaporanBulanan laporan, IReadOnlyList<KolomTanggalBulanan> kolomHalaman, JenisSubjekLaporan subjek, bool sertakanRekap)
     {
         container.Table(table =>
         {
             table.ColumnsDefinition(kolom =>
             {
-                kolom.ConstantColumn(90);
-                kolom.ConstantColumn(55);
+                kolom.ConstantColumn(LebarNamaBulanan);
+                kolom.ConstantColumn(LebarIdentitasBulanan);
                 if (subjek == JenisSubjekLaporan.Siswa)
                 {
-                    kolom.ConstantColumn(40);
+                    kolom.ConstantColumn(LebarKelasBulanan);
                 }
 
-                // 14 (bukan 16 semula) -- lihat komentar margin di
-                // TulisBulanan: pada margin 20 dan lebar tetap lainnya, 14
-                // adalah lebar terbesar yang masih muat untuk Siswa (kolom
-                // paling sempit, karena ada kolom Kelas) pada bulan 31 hari
-                // terpanjang, dengan sisa ruang wajar -- bukan angka
-                // sembarang.
-                foreach (var _ in laporan.Kolom)
+                foreach (var _ in kolomHalaman)
                 {
-                    kolom.ConstantColumn(14);
+                    kolom.ConstantColumn(LebarTanggalBulanan);
                 }
 
-                foreach (var _ in KolomRekap(subjek))
+                if (sertakanRekap)
                 {
-                    kolom.ConstantColumn(20);
-                }
+                    foreach (var _ in KolomRekap(subjek))
+                    {
+                        kolom.ConstantColumn(LebarRekapBulanan);
+                    }
 
-                kolom.ConstantColumn(30);
+                    kolom.ConstantColumn(LebarPersenBulanan);
+                }
             });
 
             table.Header(header =>
@@ -277,17 +369,20 @@ public sealed class PenulisPdfLaporan
                     header.Cell().Element(SelKepala).Text("Kls");
                 }
 
-                foreach (var k in laporan.Kolom)
+                foreach (var k in kolomHalaman)
                 {
                     header.Cell().Element(c => SelKepalaTanggal(c, k.Libur)).Text(k.Tanggal.Day.ToString());
                 }
 
-                foreach (var judul in KolomRekap(subjek))
+                if (sertakanRekap)
                 {
-                    header.Cell().Element(SelKepala).Text(judul);
-                }
+                    foreach (var judul in KolomRekap(subjek))
+                    {
+                        header.Cell().Element(SelKepala).Text(judul);
+                    }
 
-                header.Cell().Element(SelKepala).Text("%");
+                    header.Cell().Element(SelKepala).Text("%");
+                }
             });
 
             foreach (var b in laporan.Baris)
@@ -299,18 +394,21 @@ public sealed class PenulisPdfLaporan
                     table.Cell().Element(SelBadan).Text(b.Kelas ?? "-");
                 }
 
-                foreach (var k in laporan.Kolom)
+                foreach (var k in kolomHalaman)
                 {
                     var kode = b.KodePerTanggal.TryGetValue(k.Tanggal, out var nilai) ? nilai : "";
                     table.Cell().Element(c => SelBadanTanggal(c, k.Libur)).AlignCenter().Text(kode);
                 }
 
-                foreach (var nilai in NilaiRekap(b.Rekap, subjek))
+                if (sertakanRekap)
                 {
-                    table.Cell().Element(SelBadan).Text(nilai.ToString());
-                }
+                    foreach (var nilai in NilaiRekap(b.Rekap, subjek))
+                    {
+                        table.Cell().Element(SelBadan).Text(nilai.ToString());
+                    }
 
-                table.Cell().Element(SelBadan).Text($"{b.Rekap.Persentase:0.0}");
+                    table.Cell().Element(SelBadan).Text($"{b.Rekap.Persentase:0.0}");
+                }
             }
         });
     }

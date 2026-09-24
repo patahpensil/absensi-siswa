@@ -1,0 +1,27 @@
+<Window x:Class="Absensi.App.Laporan.JendelaPratinjauCetak"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pratinjau Cetak"
+        Width="820" Height="760"
+        MinWidth="480" MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        WindowStyle="SingleBorderWindow"
+        Background="{StaticResource KertasBrush}">
+
+    <DockPanel Margin="16">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBlock x:Name="TeksJumlahHalaman" Style="{StaticResource TeksUtamaStyle}" VerticalAlignment="Center" Margin="0,0,16,0" />
+            <Button Content="Cetak..." Style="{StaticResource TombolUtamaStyle}" Click="TombolCetak_Click" Margin="0,0,8,0" />
+            <Button Content="Tutup" Style="{StaticResource TombolTeksStyle}" Click="TombolTutup_Click" />
+        </StackPanel>
+
+        <!-- Satu Border+Image per halaman (PNG utuh, sudah memuat kepala
+             dan kepala tabel berulang, lihat PenulisPdfLaporan.Gambar*),
+             ditumpuk vertikal dalam ScrollViewer supaya laporan panjang
+             tetap bisa ditinjau seluruhnya sebelum dicetak. -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="PanelHalaman" HorizontalAlignment="Center" />
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -33,6 +33,7 @@ public sealed class LaporanViewModel : ObservableObject
     private readonly RepositoriGuru _repositoriGuru = new();
     private readonly PenulisExcelLaporan _penulisExcel = new();
     private readonly PenulisPdfLaporan _penulisPdf = new();
+    private readonly ILayananCetakLaporan _layananCetak;
 
     private JenisLaporan _jenisTerpilih = JenisLaporan.Harian;
     private JenisSubjekLaporan _subjekTerpilih = JenisSubjekLaporan.Siswa;
@@ -46,12 +47,13 @@ public sealed class LaporanViewModel : ObservableObject
     private string? _pesanGalat;
     private string? _pesanStatus;
 
-    public LaporanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId)
+    public LaporanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId, ILayananCetakLaporan layananCetak)
     {
         _connection = connection;
         _akun = akun;
         _penyediaWaktu = penyediaWaktu;
         _tahunAjaranId = tahunAjaranId;
+        _layananCetak = layananCetak;
         _tanggalAwal = penyediaWaktu.Sekarang.Date;
         _tanggalAkhir = penyediaWaktu.Sekarang.Date;
 
@@ -63,6 +65,7 @@ public sealed class LaporanViewModel : ObservableObject
 
         EksporExcelCommand = new RelayCommand(() => Ekspor(keExcel: true), () => BolehAkses);
         EksporPdfCommand = new RelayCommand(() => Ekspor(keExcel: false), () => BolehAkses);
+        CetakCommand = new RelayCommand(Cetak, () => BolehAkses);
 
         if (BolehAkses)
         {
@@ -234,6 +237,8 @@ public sealed class LaporanViewModel : ObservableObject
     public RelayCommand EksporExcelCommand { get; }
 
     public RelayCommand EksporPdfCommand { get; }
+
+    public RelayCommand CetakCommand { get; }
 
     private void MuatDaftarOrang()
     {
@@ -492,6 +497,83 @@ public sealed class LaporanViewModel : ObservableObject
 
         PesanGalat = null;
         PesanStatus = $"Laporan tersimpan di {dialog.FileName}.";
+    }
+
+    // Cetak (terpisah dari Ekspor PDF, instruksi eksplisit pemilik proyek
+    // 2026-09-25): TIDAK memakai byte[] Tulis*/berkas PDF sama sekali --
+    // memanggil Gambar* (satu PNG per halaman) supaya Ekspor PDF di atas
+    // benar-benar tidak tersentuh sedikit pun. Beda dari Ekspor, di sini
+    // laporan KOSONG diperiksa dulu dan diberi pesan jelas (bukan tetap
+    // mencetak halaman kosong) -- Ekspor sengaja dibiarkan apa adanya,
+    // bukan bug yang diperbaiki di sini, karena "berkas tersimpan kosong"
+    // dan "mencetak kertas kosong" beda dampaknya bagi pengguna.
+    private void Cetak()
+    {
+        PesanGalat = null;
+        PesanStatus = null;
+        try
+        {
+            var kepala = BangunKepala();
+            IReadOnlyList<byte[]> halaman;
+
+            switch (_jenisTerpilih)
+            {
+                case JenisLaporan.Harian or JenisLaporan.Mingguan:
+                    if (PratinjauKejadian.Count == 0)
+                    {
+                        PesanGalat = "Tidak ada data untuk dicetak. Ubah tanggal atau kelas, lalu coba lagi.";
+                        return;
+                    }
+
+                    halaman = _penulisPdf.GambarKejadian(kepala, PratinjauKejadian, _subjekTerpilih == JenisSubjekLaporan.Siswa);
+                    break;
+                case JenisLaporan.Bulanan:
+                    var bulanan = _layananLaporan.Bulanan(_connection, _akun, _tahunAjaranId, _tanggalAwal.Year, _tanggalAwal.Month, _kelasTerpilihId, _subjekTerpilih);
+                    if (bulanan.Baris.Count == 0)
+                    {
+                        PesanGalat = "Tidak ada data untuk dicetak. Ubah bulan atau kelas, lalu coba lagi.";
+                        return;
+                    }
+
+                    halaman = _penulisPdf.GambarBulanan(kepala, bulanan, _subjekTerpilih);
+                    break;
+                case JenisLaporan.PerOrang when _cetakSatuOrang:
+                    if (KartuTerpilih is not { } satu)
+                    {
+                        PesanGalat = "Pilih orang yang akan dicetak terlebih dahulu.";
+                        return;
+                    }
+
+                    halaman = _penulisPdf.GambarKartuOrang(kepala, [satu], _subjekTerpilih);
+                    break;
+                case JenisLaporan.PerOrang:
+                    var batch = _layananLaporan.PerKelasAtauSemua(
+                        _connection, _akun, _subjekTerpilih, _kelasTerpilihId, _tahunAjaranId, DateOnly.FromDateTime(_tanggalAwal), DateOnly.FromDateTime(_tanggalAkhir));
+                    if (batch.Count == 0)
+                    {
+                        PesanGalat = "Tidak ada data untuk dicetak. Ubah rentang tanggal atau kelas, lalu coba lagi.";
+                        return;
+                    }
+
+                    halaman = _penulisPdf.GambarKartuOrang(kepala, batch, _subjekTerpilih);
+                    break;
+                default:
+                    if (PratinjauSemester.Count == 0)
+                    {
+                        PesanGalat = "Tidak ada data untuk dicetak. Ubah kelas, lalu coba lagi.";
+                        return;
+                    }
+
+                    halaman = _penulisPdf.GambarSemester(kepala, PratinjauSemester, _subjekTerpilih);
+                    break;
+            }
+
+            _layananCetak.Cetak(halaman, kepala.Judul, pesan => PesanGalat = pesan);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            PesanGalat = PesanAman(ex);
+        }
     }
 
     private KepalaLaporan BangunKepala()
