@@ -42,7 +42,17 @@ public sealed class PenulisPdfLaporan
         var dokumen = Document.Create(container => container.Page(page =>
         {
             page.Size(PageSizes.A4.Landscape());
-            page.Margin(24);
+            // Bug ditemukan 2026-09-25: margin 24 + kolom tanggal 16pt
+            // (TulisTabelBulanan) HANYA muat sampai 28 kolom (Februari
+            // non-kabisat). Bulan APA PUN 29-31 hari (hampir semua bulan)
+            // melempar QuestPDF.Drawing.Exceptions.DocumentLayoutException
+            // -- turunan langsung System.Exception, BUKAN
+            // InvalidOperationException/ArgumentException, jadi TIDAK
+            // tertangkap LaporanViewModel.Ekspor dan menutup aplikasi.
+            // margin 20 dipilih supaya bulan 31 hari (terpanjang) tetap
+            // muat dengan sisa ruang (bukan pas-pasan di batas), tanpa
+            // mengurangi kolom atau data apa pun.
+            page.Margin(20);
             page.DefaultTextStyle(x => x.FontSize(7));
             page.Header().Element(c => TulisKepala(c, kepala));
             page.Footer().Element(c => TulisKaki(c, kepala));
@@ -239,9 +249,15 @@ public sealed class PenulisPdfLaporan
                     kolom.ConstantColumn(40);
                 }
 
+                // 14 (bukan 16 semula) -- lihat komentar margin di
+                // TulisBulanan: pada margin 20 dan lebar tetap lainnya, 14
+                // adalah lebar terbesar yang masih muat untuk Siswa (kolom
+                // paling sempit, karena ada kolom Kelas) pada bulan 31 hari
+                // terpanjang, dengan sisa ruang wajar -- bukan angka
+                // sembarang.
                 foreach (var _ in laporan.Kolom)
                 {
-                    kolom.ConstantColumn(16);
+                    kolom.ConstantColumn(14);
                 }
 
                 foreach (var _ in KolomRekap(subjek))

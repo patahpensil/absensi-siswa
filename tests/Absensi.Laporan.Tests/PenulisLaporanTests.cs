@@ -115,6 +115,62 @@ public sealed class PenulisLaporanTests
         AssertPdfValid(berkas);
     }
 
+    // Regresi bug 2026-09-25 (ditemukan tidak sengaja saat mengerjakan
+    // fitur Cetak terpisah, sama sekali bukan akibat fitur itu): tes di
+    // atas selalu memakai data uji SATU kolom tanggal, jadi tidak pernah
+    // membuktikan tabel Bulanan benar-benar muat untuk bulan NYATA (28-31
+    // kolom). margin 24 + ConstantColumn(16) lama HANYA muat sampai 28
+    // kolom (Februari non-kabisat) -- bulan APA PUN 29-31 hari (hampir
+    // semua bulan) melempar DocumentLayoutException yang TIDAK tertangkap
+    // LaporanViewModel.Ekspor (bukan InvalidOperationException/
+    // ArgumentException), menutup aplikasi. Keempat kasus di bawah
+    // (bulan terpendek dan terpanjang yang benar-benar ada di kalender)
+    // terbukti GAGAL pada kode lama, sekarang lulus setelah margin
+    // diperkecil ke 20 dan kolom tanggal ke 14 (TulisBulanan/
+    // TulisTabelBulanan) -- tanpa mengurangi kolom atau data apa pun.
+    [Theory]
+    [InlineData(2026, 2)] // Februari 2026 (bukan tahun kabisat) = 28 hari
+    [InlineData(2028, 2)] // Februari 2028 (tahun kabisat) = 29 hari
+    [InlineData(2026, 4)] // April = 30 hari
+    [InlineData(2026, 1)] // Januari = 31 hari (bulan terpanjang, kasus paling ketat)
+    public void TulisBulanan_Pdf_Siswa_MuatUntukBulanApaPunTanpaKehilanganKolom(int tahun, int bulan)
+    {
+        var laporan = BangunLaporanBulananUjiLebar(tahun, bulan, JenisSubjekLaporan.Siswa);
+
+        var berkas = _pdf.TulisBulanan(Kepala, laporan, JenisSubjekLaporan.Siswa);
+
+        AssertPdfValid(berkas);
+    }
+
+    [Theory]
+    [InlineData(2026, 2)]
+    [InlineData(2028, 2)]
+    [InlineData(2026, 4)]
+    [InlineData(2026, 1)]
+    public void TulisBulanan_Pdf_Guru_MuatUntukBulanApaPunTanpaKehilanganKolom(int tahun, int bulan)
+    {
+        var laporan = BangunLaporanBulananUjiLebar(tahun, bulan, JenisSubjekLaporan.Guru);
+
+        var berkas = _pdf.TulisBulanan(Kepala, laporan, JenisSubjekLaporan.Guru);
+
+        AssertPdfValid(berkas);
+    }
+
+    private static LaporanBulanan BangunLaporanBulananUjiLebar(int tahun, int bulan, JenisSubjekLaporan subjek)
+    {
+        var jumlahHari = DateTime.DaysInMonth(tahun, bulan);
+        var kolom = Enumerable.Range(1, jumlahHari)
+            .Select(hari => new KolomTanggalBulanan(new DateOnly(tahun, bulan, hari), false, null))
+            .ToList();
+        var kodePerTanggal = kolom.ToDictionary(k => k.Tanggal, _ => "H");
+        var rekap = new RekapKehadiran(jumlahHari, 0, 0, 0, 0, 0, 0, 0, 0, jumlahHari, 100.0);
+        var baris = new List<BarisBulanan>
+        {
+            new("Orang Satu", "0001", subjek == JenisSubjekLaporan.Siswa ? "7A" : null, kodePerTanggal, rekap),
+        };
+        return new LaporanBulanan(kolom, baris);
+    }
+
     // Ini juga pengujian regresi: TulisRekap (kartu per orang) sempat
     // salah hitung jumlah kolom untuk guru (8 kolom didefinisikan, 9 sel
     // header ditulis) — ditemukan justru saat memperbaiki poin 1-2 ini,
