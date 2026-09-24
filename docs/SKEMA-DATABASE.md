@@ -342,11 +342,42 @@ BEFORE DELETE ON audit
 BEGIN
     SELECT RAISE(ABORT, 'Baris audit tidak dapat dihapus (PRD §12).');
 END;
+
+-- Migrasi 003 (Master Bug & UI/UX Register A-39, Tahap 1): identitas
+-- permanen per baris audit, supaya baris yang SAMA tetap dikenali sama
+-- walau `id` (INTEGER PRIMARY KEY tanpa AUTOINCREMENT) dipakai ulang oleh
+-- peristiwa LAIN setelah database di-restore ke backup lama -- dibuktikan
+-- lewat prototipe + pengujian terhadap salinan database UAT nyata sebelum
+-- migrasi ini ditulis (bukan diasumsikan). Trigger di atas dilepas lalu
+-- dipasang ulang PERSIS sama di dalam migrasi ini (satu transaksi) supaya
+-- UPDATE backfill di bawah bisa berjalan -- lihat komentar lengkap di
+-- Migration003TambahAuditUid.cs untuk kenapa ini perlu (ditemukan lewat
+-- tes gagal, bukan dirancang di atas kertas).
+ALTER TABLE audit ADD COLUMN audit_uid TEXT NOT NULL DEFAULT '';
+
+UPDATE audit SET audit_uid =
+    waktu || '|' || akun_id || '|' || aksi || '|' || entitas || '|' ||
+    COALESCE(entitas_id, '') || '|' || COALESCE(nilai_lama, '') || '|' ||
+    COALESCE(nilai_baru, '') || '|' || COALESCE(atas_permintaan, '')
+WHERE audit_uid = '';
+
+CREATE UNIQUE INDEX ix_audit_uid ON audit(audit_uid);
 ```
 
 **Catatan.** `guru_id` pada akun wali kelas menunjuk ke baris guru yang sama dengan `kelas.wali_guru_id` — dari sinilah aplikasi tahu kelas mana yang boleh disentuh akun tersebut.
 
 Tabel `audit` tidak pernah diubah atau dihapus oleh aplikasi. Tidak ada layar yang menyediakan tombol hapus untuk tabel ini — dan sejak migrasi 002, UPDATE/DELETE terhadap tabel ini ditolak langsung oleh database (trigger di atas), bukan cuma oleh konvensi kode. **Batasnya:** ini pencegah lewat SQL biasa, bukan kebal-rusak — akses langsung ke berkas `.db` di luar aplikasi (mis. DB Browser, atau `DROP TRIGGER`) tetap bisa melewatinya.
+
+**`audit_uid` (migrasi 003).** Baris LAMA (sudah ada sebelum migrasi) diisi **fingerprint deterministik** dari isi baris itu sendiri (rumus di atas) — SENGAJA bukan GUID acak, supaya baris yang sama tetap dikenali sama walau di-backfill ulang secara independen di lini masa/berkas berbeda (mis. backup lama yang suatu saat di-restore lalu database hasilnya dimigrasi ulang). Baris BARU (dibuat setelah migrasi ini ada) diisi GUID acak oleh `RepositoriAudit.Catat` saat `INSERT`. **Jangan ubah rumus fingerprint di atas setelah dirilis** — mengubahnya membuat baris lama yang sama dihitung ulang jadi `audit_uid` berbeda di lini masa berbeda, merusak jaminan identitas yang jadi tujuan kolom ini.
+
+### Arsip riwayat audit pra-restore (A-39, Tahap 1)
+
+Sebelum restore database menimpa apa pun, `LayananArsipAudit` membuat salinan **tabel `audit`+`akun` saja** (bukan seluruh database) ke `backup/arsip-audit/arsip-audit-<yyyyMMdd-HHmmss>.db`, memverifikasinya (`PRAGMA integrity_check` + jumlah baris cocok dengan sumber lewat koneksi BARU, bukan koneksi yang baru menulis), baru mengizinkan restore lanjut. Kalau pembuatan atau verifikasi gagal, restore **dibatalkan** dan database sumber tidak disentuh; berkas arsip yang gagal verifikasi ditandai `.gagal-verifikasi` (tidak dihapus — punya nilai forensik).
+
+- **Lokasi:** `backup/arsip-audit/`, folder terpisah dari 7 berkas backup biasa di `backup/` langsung — rotasi `LayananBackup.HapusBerkasSelainNTerbaru` hanya memindai folder induk, jadi subfolder ini otomatis tidak pernah ikut terhitung/terhapus.
+- **Retensi (tahap ini):** **tidak dihapus otomatis sama sekali.** Setiap restore menambah satu berkas baru; jumlahnya bertambah seiring waktu tanpa batas built-in. Ini keputusan sengaja (pemilik proyek, 2026-09-24) untuk tahap ini — bukan jaminan "aman selamanya tanpa perlu diawasi".
+- **Ruang penyimpanan:** satu arsip berisi hanya `audit`+`akun` (jauh lebih kecil dari backup database penuh ~180 KB pada database UAT saat ini) — perkiraan kasar, tumbuh sebanding jumlah baris audit di titik restore itu, bukan sebanding ukuran seluruh database. Cara memeriksa: lihat ukuran folder `backup/arsip-audit/` lewat Properti folder di File Explorer (tidak ada layar aplikasi yang menampilkan ini di tahap ini — dicatat sebagai kebutuhan potensial untuk layar Audit/Pengaturan nanti).
+- **Belum dikerjakan (dicatat, bukan diklaim selesai):** salinan arsip ke media/server di luar PC ini + uji pemulihan sungguhan adalah pekerjaan terpisah (lihat catatan `FolderBackupCloudStub` di `LokasiData.cs` — "cloud" saat ini adalah folder cadangan SEKUNDER LOKAL, bukan di luar PC).
 
 ---
 
@@ -365,6 +396,7 @@ Delapan aturan PRD yang dijamin oleh struktur di atas, sehingga tidak bisa dilan
 | Status hanya dari daftar yang sah | `CHECK (status IN ...)` |
 | Tingkat kelas hanya 1–9 | `CHECK (tingkat BETWEEN 1 AND 9)` |
 | Baris `audit` tidak dapat diubah/dihapus lewat SQL biasa | `trg_audit_cegah_update`, `trg_audit_cegah_delete` (migrasi 002) |
+| Setiap baris `audit` punya identitas unik, kebal terhadap `id` yang dipakai ulang setelah restore | `ix_audit_uid` (migrasi 003) |
 
 ---
 

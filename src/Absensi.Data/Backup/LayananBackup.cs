@@ -18,11 +18,17 @@ public sealed class LayananBackup
     private readonly string _folderBackup;
     private readonly IPenyimpanCloudBackup _penyimpanCloud;
     private readonly JalurPerubahanData _jalurPerubahanData = new();
+    // Master Bug & UI/UX Register A-39: subfolder "arsip-audit" di bawah
+    // folderBackup yang sama -- sengaja diturunkan di sini (bukan
+    // parameter konstruktor baru) supaya seluruh pemanggil yang sudah ada
+    // (App.xaml.cs, test) tidak perlu diubah.
+    private readonly LayananArsipAudit _layananArsipAudit;
 
     public LayananBackup(string folderBackup, IPenyimpanCloudBackup penyimpanCloud)
     {
         _folderBackup = folderBackup;
         _penyimpanCloud = penyimpanCloud;
+        _layananArsipAudit = new LayananArsipAudit(Path.Combine(folderBackup, "arsip-audit"));
     }
 
     // Titik normal (PRD §18.1): snapshot lokal, lalu — bila lisensi sudah
@@ -70,6 +76,13 @@ public sealed class LayananBackup
         {
             throw new InvalidOperationException("Wali kelas tidak berwenang memulihkan backup (PRD §18.4).");
         }
+
+        // Master Bug & UI/UX Register A-39: arsip riwayat audit dibuat DAN
+        // diverifikasi DI SINI, sebelum apa pun yang destruktif. Kalau ini
+        // melempar, database sumber belum disentuh sama sekali -- pemanggil
+        // (PengaturanViewModel.Restore, dibungkus PenangananGalat.Coba)
+        // tidak pernah lanjut ke TerapkanRestore.
+        _layananArsipAudit.BuatDanVerifikasi(sumber, waktu);
 
         var dataSumberRestore = File.ReadAllBytes(berkasSumberRestore.PathBerkas);
         var pathCadangan = BuatSnapshotLokal(sumber, waktu);

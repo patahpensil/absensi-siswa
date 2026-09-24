@@ -249,11 +249,16 @@ public sealed class KelengkapanAuditTests
     public void BarisAuditLama_TidakBerubahSetelahOperasiBaru()
     {
         using var database = BuatDatabase();
+        // audit_uid diisi manual (bukan lewat RepositoriAudit.Catat) --
+        // meniru baris LAMA format pra-migrasi 003, yang di dunia nyata
+        // sudah dibackfill jadi fingerprint unik oleh migrasi itu sendiri,
+        // bukan dibiarkan kosong (kosong akan bentrok UNIQUE INDEX
+        // ix_audit_uid kalau lebih dari satu baris memakainya).
         database.Execute("""
-            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan)
-            VALUES ('2026-09-01T08:00:00.0000000', 1, 'perbarui_siswa', 'siswa', 2, NULL, 'Siswa Belum Satu', NULL);
-            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan)
-            VALUES ('2026-09-02T08:00:00.0000000', 1, 'ganti_kartu', 'kartu', 1, NULL, 'UID-LAMA-SEKALI', NULL);
+            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan, audit_uid)
+            VALUES ('2026-09-01T08:00:00.0000000', 1, 'perbarui_siswa', 'siswa', 2, NULL, 'Siswa Belum Satu', NULL, 'uji-lama-1');
+            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan, audit_uid)
+            VALUES ('2026-09-02T08:00:00.0000000', 1, 'ganti_kartu', 'kartu', 1, NULL, 'UID-LAMA-SEKALI', NULL, 'uji-lama-2');
             """);
         var snapshot = Skalar(database, "SELECT group_concat(id || '|' || waktu || '|' || akun_id || '|' || aksi || '|' || entitas || '|' || IFNULL(entitas_id,'') || '|' || IFNULL(nilai_lama,'~') || '|' || IFNULL(nilai_baru,'~') || '|' || IFNULL(atas_permintaan,'~'), ';') FROM (SELECT * FROM audit ORDER BY id)");
 

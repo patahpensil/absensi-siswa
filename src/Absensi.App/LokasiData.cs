@@ -25,6 +25,12 @@ public static class LokasiData
     // tidak ikut kena rotasi/hitungan PRD §18.2.
     public static string FolderBackupCloudStub => Path.Combine(FolderBackup, "cloud-stub");
 
+    // Master Bug & UI/UX Register A-39: arsip riwayat audit pra-restore
+    // (audit+akun saja) — subfolder TERPISAH dari 7 berkas backup biasa,
+    // TIDAK ikut rotasi, TIDAK dihapus otomatis (lihat LayananArsipAudit
+    // dan docs/SKEMA-DATABASE.md §9 untuk retensi/pemeriksaan ruang).
+    public static string FolderArsipAudit => Path.Combine(FolderBackup, "arsip-audit");
+
     // docs/INVESTIGASI-CRASH-2026-09-21.md §4.1: sumber kebenarannya sengaja
     // di Absensi.Data (PencatatGalat.FolderLogBawaan), bukan didefinisikan
     // ulang di sini — supaya Absensi.Telegram (yang tidak boleh

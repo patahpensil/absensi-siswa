@@ -24,8 +24,8 @@ public sealed class RepositoriAudit
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
-            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan)
-            VALUES ($waktu, $akunId, $aksi, $entitas, $entitasId, $nilaiLama, $nilaiBaru, $atasPermintaan);
+            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan, audit_uid)
+            VALUES ($waktu, $akunId, $aksi, $entitas, $entitasId, $nilaiLama, $nilaiBaru, $atasPermintaan, $auditUid);
             """;
         command.Parameters.AddWithValue("$waktu", waktu.ToString("o"));
         command.Parameters.AddWithValue("$akunId", akunId);
@@ -35,6 +35,11 @@ public sealed class RepositoriAudit
         command.Parameters.AddWithValue("$nilaiLama", (object?)nilaiLama ?? DBNull.Value);
         command.Parameters.AddWithValue("$nilaiBaru", (object?)nilaiBaru ?? DBNull.Value);
         command.Parameters.AddWithValue("$atasPermintaan", (object?)atasPermintaan ?? DBNull.Value);
+        // Master Bug & UI/UX Register A-39: GUID acak, BUKAN fingerprint --
+        // baris baru hanya pernah di-INSERT sekali, jadi identitas acak
+        // aman (beda dari backfill migrasi 003 untuk baris LAMA, yang
+        // harus deterministik). Lihat Migration003TambahAuditUid.cs.
+        command.Parameters.AddWithValue("$auditUid", Guid.NewGuid().ToString());
         command.ExecuteNonQuery();
     }
 }
