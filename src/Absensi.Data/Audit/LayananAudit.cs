@@ -1,0 +1,169 @@
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using Absensi.Data.Repositori;
+using Absensi.Domain.Akun;
+using Microsoft.Data.Sqlite;
+
+namespace Absensi.Data.Audit;
+
+// Master Bug & UI/UX Register A-39 Tahap 2: layar Audit minimum -- baca
+// gabungan riwayat dari database aktif + seluruh arsip pra-restore (A-39
+// Tahap 1, LayananArsipAudit), dedup berdasarkan audit_uid (identitas
+// permanen, kebal terhadap `id` SQLite yang dipakai ulang setelah restore
+// -- lihat Migration003TambahAuditUid.cs). Method ini HANYA MEMBACA --
+// tidak pernah menulis balik ke tabel audit manapun. Desain "arsip dibaca
+// saat ditampilkan, tidak pernah digabung fisik ke tabel aktif" dipilih
+// setelah membandingkan dengan opsi salin-ke-tabel-aktif (risiko
+// menghidupkan kembali akun yang seharusnya tidak ada di snapshot restore,
+// atau gagal FK kalau pelakunya sendiri tidak ada di backup) -- lihat
+// riwayat keputusan proyek 2026-09-24/25.
+public sealed class LayananAudit
+{
+    // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
+    // membaca riwayat audit, di rilis awal ini -- diperiksa DI SINI
+    // (lapisan layanan), bukan cuma disembunyikan di UI. Pola sama seperti
+    // LayananBackup.SiapkanRestore menolak Wali Kelas. Kepala Sekolah
+    // SENGAJA belum diberi akses (keputusan eksplisit, bukan kelalaian) --
+    // menunggu aturan akses per peran diputuskan dan diuji terpisah.
+    public HasilAudit Baca(
+        SqliteConnection sumber,
+        AkunTersimpan akun,
+        string folderArsipAudit,
+        DateTime dariTanggal,
+        DateTime sampaiTanggal)
+    {
+        if (akun.Peran != PeranAkun.Admin)
+        {
+            throw new InvalidOperationException("Hanya Admin yang dapat membuka layar Audit.");
+        }
+
+        var baris = new Dictionary<string, BarisAuditGabungan>();
+        BacaDariSumber(sumber, "Aktif", dariTanggal, sampaiTanggal, baris);
+
+        var arsipDirujuk = AmbilArsipDirujuk(sumber);
+        var arsipBermasalah = new List<ArsipTidakBisaDibaca>();
+
+        var arsipAda = Directory.Exists(folderArsipAudit)
+            ? Directory.GetFiles(folderArsipAudit, "arsip-audit-*.db")
+                .Select(Path.GetFileName)
+                .Where(nama => nama is not null)
+                .Cast<string>()
+                .ToHashSet()
+            : new HashSet<string>();
+
+        foreach (var namaBerkas in arsipAda)
+        {
+            var pathArsip = Path.Combine(folderArsipAudit, namaBerkas);
+            try
+            {
+                BacaDariArsip(pathArsip, namaBerkas, dariTanggal, sampaiTanggal, baris);
+            }
+            catch (Exception ex) when (ex is SqliteException or InvalidOperationException or IOException)
+            {
+                var waktu = arsipDirujuk.TryGetValue(namaBerkas, out var w) ? w : DateTime.MinValue;
+                arsipBermasalah.Add(new ArsipTidakBisaDibaca(namaBerkas, waktu, $"Gagal dibaca: {ex.Message}"));
+            }
+        }
+
+        foreach (var (namaBerkas, waktuRestore) in arsipDirujuk)
+        {
+            if (!arsipAda.Contains(namaBerkas))
+            {
+                arsipBermasalah.Add(new ArsipTidakBisaDibaca(namaBerkas, waktuRestore, "Berkas arsip tidak ditemukan"));
+            }
+        }
+
+        var urut = baris.Values.OrderByDescending(b => b.Waktu).ToList();
+        var masalahUrut = arsipBermasalah.OrderByDescending(a => a.WaktuRestore).ToList();
+        return new HasilAudit(urut, masalahUrut);
+    }
+
+    // Nama arsip mengikuti format PERSIS LayananArsipAudit.Buat --
+    // "arsip-audit-{waktu:yyyyMMdd-HHmmss}.db" -- dan waktu itu SAMA
+    // dengan waktu baris restore_backup (LayananBackup.SiapkanRestore
+    // memanggil keduanya dengan parameter waktu yang identik). Keterkaitan
+    // ini SENGAJA implisit lewat konvensi, bukan kolom tersimpan terpisah
+    // -- JANGAN ubah salah satu format tanpa yang lain.
+    private static Dictionary<string, DateTime> AmbilArsipDirujuk(SqliteConnection sumber)
+    {
+        var hasil = new Dictionary<string, DateTime>();
+        using var command = sumber.CreateCommand();
+        command.CommandText = "SELECT waktu FROM audit WHERE aksi = 'restore_backup';";
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var waktu = DateTime.Parse(reader.GetString(0), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            hasil[$"arsip-audit-{waktu:yyyyMMdd-HHmmss}.db"] = waktu;
+        }
+
+        return hasil;
+    }
+
+    private static void BacaDariSumber(
+        SqliteConnection koneksi, string asal, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
+    {
+        using var command = koneksi.CreateCommand();
+        command.CommandText = """
+            SELECT a.audit_uid, a.waktu, a.aksi, a.entitas, a.entitas_id, a.nilai_lama, a.nilai_baru, a.atas_permintaan, k.username
+            FROM audit a
+            LEFT JOIN akun k ON k.id = a.akun_id
+            WHERE a.waktu >= $dari AND a.waktu <= $sampai
+            ORDER BY a.id;
+            """;
+        command.Parameters.AddWithValue("$dari", dari.ToString("o"));
+        command.Parameters.AddWithValue("$sampai", sampai.ToString("o"));
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var uid = reader.GetString(0);
+            if (tujuan.ContainsKey(uid))
+            {
+                // Dedup -- baris yang sama (audit_uid identik) muncul di
+                // lebih dari satu sumber (mis. baseline yang ada di live
+                // DAN di beberapa arsip) -- isinya dijamin identik (baris
+                // audit tidak pernah berubah, lihat trigger A-38), jadi
+                // yang pertama ditemukan cukup, tidak perlu dibandingkan.
+                continue;
+            }
+
+            tujuan[uid] = new BarisAuditGabungan(
+                uid,
+                DateTime.Parse(reader.GetString(1), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.IsDBNull(4) ? null : reader.GetInt32(4),
+                reader.IsDBNull(5) ? null : reader.GetString(5),
+                reader.IsDBNull(6) ? null : reader.GetString(6),
+                reader.IsDBNull(7) ? null : reader.GetString(7),
+                reader.IsDBNull(8) ? "(akun tidak ditemukan)" : reader.GetString(8),
+                asal);
+        }
+    }
+
+    // Koneksi BARU terpisah ke berkas arsip (bukan ATTACH ke koneksi
+    // database aktif yang sedang dipakai sesi berjalan) -- lebih aman,
+    // tidak mengubah keadaan koneksi utama sama sekali. ReadOnly murni
+    // untuk jaga-jaga (LayananAudit tidak pernah menulis, tapi menegaskan
+    // niat itu di tingkat koneksi juga).
+    private static void BacaDariArsip(
+        string pathArsip, string namaBerkas, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
+    {
+        SqliteConnection.ClearAllPools();
+        using var koneksi = new SqliteConnection($"Data Source={pathArsip};Mode=ReadOnly");
+        koneksi.Open();
+
+        using (var cekIntegritas = koneksi.CreateCommand())
+        {
+            cekIntegritas.CommandText = "PRAGMA integrity_check;";
+            var hasil = (string)cekIntegritas.ExecuteScalar()!;
+            if (hasil != "ok")
+            {
+                throw new InvalidOperationException($"integrity_check gagal ({hasil})");
+            }
+        }
+
+        BacaDariSumber(koneksi, $"Arsip {namaBerkas}", dari, sampai, tujuan);
+    }
+}

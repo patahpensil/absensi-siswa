@@ -10,6 +10,7 @@
                     xmlns:notifikasi="clr-namespace:Absensi.App.Notifikasi"
                     xmlns:koreksi="clr-namespace:Absensi.App.Koreksi"
                     xmlns:laporan="clr-namespace:Absensi.App.Laporan"
+                    xmlns:audit="clr-namespace:Absensi.App.Audit"
                     xmlns:perilaku="clr-namespace:Absensi.App.Perilaku">
 
     <!--
@@ -54,6 +55,9 @@
     </DataTemplate>
     <DataTemplate DataType="{x:Type laporan:LaporanViewModel}">
         <laporan:LaporanView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type audit:AuditViewModel}">
+        <audit:AuditView />
     </DataTemplate>
 
     <!-- ================= 3. Warna — Palet Dasar ================= -->

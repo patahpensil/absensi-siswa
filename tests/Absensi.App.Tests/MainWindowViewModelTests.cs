@@ -14,15 +14,20 @@ public sealed class MainWindowViewModelTests
 {
     private static readonly DateTime Waktu = new(2026, 9, 19, 8, 0, 0);
     private static readonly AkunTersimpan Admin = new(1, "admin1", "x", PeranAkun.Admin, null, true);
+    private static readonly AkunTersimpan Kepsek = new(2, "kepsek", "x", PeranAkun.KepalaSekolah, null, true);
+    private static readonly AkunTersimpan WaliKelas = new(3, "wali_a", "x", PeranAkun.WaliKelas, 1, true);
 
     private static LayananBackup BuatLayananBackup() => new(
         Path.Combine(Path.GetTempPath(), $"absensi-test-backup-{Guid.NewGuid():N}"),
         new PenyimpanCloudBackupLokal(Path.Combine(Path.GetTempPath(), $"absensi-test-cloud-{Guid.NewGuid():N}")));
 
     private static MainWindowViewModel BuatViewModel(MigratedDatabase database, string namaSekolah, string? logoPath) =>
+        BuatViewModel(database, Admin, namaSekolah, logoPath);
+
+    private static MainWindowViewModel BuatViewModel(MigratedDatabase database, AkunTersimpan akun, string namaSekolah, string? logoPath) =>
         new(
             database.Connection,
-            Admin,
+            akun,
             new PenyediaWaktuUji(Waktu),
             new StatusModeRegistrasi(),
             namaSekolah,
@@ -105,5 +110,47 @@ public sealed class MainWindowViewModelTests
         var exception = Record.Exception(() => viewModel.MuatUlangSiswaSetelahRegistrasiKartu());
 
         Assert.Null(exception);
+    }
+
+    // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
+    // melihat menu Audit di rilis awal. Item menu LAIN (mis. Koreksi,
+    // Kalender) sengaja TETAP tampil untuk semua peran di sini -- itu A-18,
+    // belum diputuskan, di luar cakupan perubahan ini.
+    [Fact]
+    public void MenuItems_Admin_MenyertakanAudit()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, Admin, "SMP Contoh", logoPath: null);
+
+        Assert.Contains("Audit", viewModel.MenuItems);
+    }
+
+    [Theory]
+    [MemberData(nameof(PeranBukanAdmin))]
+    public void MenuItems_BukanAdmin_TidakMenyertakanAudit(AkunTersimpan bukanAdmin)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, bukanAdmin, "SMP Contoh", logoPath: null);
+
+        Assert.DoesNotContain("Audit", viewModel.MenuItems);
+        // Item lain TIDAK ikut hilang -- konfirmasi ini bukan filter umum.
+        Assert.Contains("Koreksi", viewModel.MenuItems);
+        Assert.Contains("Kalender", viewModel.MenuItems);
+    }
+
+    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { Kepsek, WaliKelas };
+
+    [Fact]
+    public void MenuAktifAudit_Admin_MemuatAuditViewModel()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var viewModel = BuatViewModel(database, Admin, "SMP Contoh", logoPath: null);
+
+        viewModel.MenuAktif = "Audit";
+
+        Assert.IsType<Absensi.App.Audit.AuditViewModel>(viewModel.KontenAktif);
     }
 }

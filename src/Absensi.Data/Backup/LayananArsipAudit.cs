@@ -58,6 +58,66 @@ public sealed class LayananArsipAudit
         return pathArsip;
     }
 
+    // Master Bug & UI/UX Register A-39 Tahap 2: baris `restore_backup`
+    // (LayananBackup.SiapkanRestore) SENGAJA ditulis ke `sumber` SETELAH
+    // arsip ini dibuat -- supaya kalau pengarsipan gagal, database sumber
+    // TIDAK punya jejak restore sama sekali (jujur, tidak menyesatkan).
+    // Konsekuensinya baris itu sendiri tidak ikut ter-snapshot ke arsip
+    // (yang sudah lebih dulu dibuat) -- ditemukan lewat tes gagal
+    // (LayananAuditTests), bukan dirancang di atas kertas. Method ini
+    // menyalin SATU baris terakhir (marker yang baru saja berhasil
+    // ditulis) ke arsip yang sudah ada. Aman: berkas arsip TIDAK ikut
+    // menyalin trigger A-38 (CREATE TABLE AS SELECT hanya menyalin data),
+    // jadi INSERT ke sana tidak melanggar batasan apa pun.
+    public void TambahkanBarisTerakhir(string pathArsip, SqliteConnection sumber)
+    {
+        string waktu, aksi, entitas, auditUid;
+        int akunId;
+        object? entitasId, nilaiLama, nilaiBaru, atasPermintaan;
+
+        using (var bacaTerakhir = sumber.CreateCommand())
+        {
+            bacaTerakhir.CommandText = """
+                SELECT waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan, audit_uid
+                FROM audit ORDER BY id DESC LIMIT 1;
+                """;
+            using var reader = bacaTerakhir.ExecuteReader();
+            if (!reader.Read())
+            {
+                return;
+            }
+
+            waktu = reader.GetString(0);
+            akunId = reader.GetInt32(1);
+            aksi = reader.GetString(2);
+            entitas = reader.GetString(3);
+            entitasId = reader.IsDBNull(4) ? null : reader.GetInt32(4);
+            nilaiLama = reader.IsDBNull(5) ? null : reader.GetString(5);
+            nilaiBaru = reader.IsDBNull(6) ? null : reader.GetString(6);
+            atasPermintaan = reader.IsDBNull(7) ? null : reader.GetString(7);
+            auditUid = reader.GetString(8);
+        }
+
+        SqliteConnection.ClearAllPools();
+        using var arsip = new SqliteConnection($"Data Source={pathArsip}");
+        arsip.Open();
+        using var tulis = arsip.CreateCommand();
+        tulis.CommandText = """
+            INSERT INTO audit (waktu, akun_id, aksi, entitas, entitas_id, nilai_lama, nilai_baru, atas_permintaan, audit_uid)
+            VALUES ($waktu, $akunId, $aksi, $entitas, $entitasId, $nilaiLama, $nilaiBaru, $atasPermintaan, $auditUid);
+            """;
+        tulis.Parameters.AddWithValue("$waktu", waktu);
+        tulis.Parameters.AddWithValue("$akunId", akunId);
+        tulis.Parameters.AddWithValue("$aksi", aksi);
+        tulis.Parameters.AddWithValue("$entitas", entitas);
+        tulis.Parameters.AddWithValue("$entitasId", (object?)entitasId ?? DBNull.Value);
+        tulis.Parameters.AddWithValue("$nilaiLama", (object?)nilaiLama ?? DBNull.Value);
+        tulis.Parameters.AddWithValue("$nilaiBaru", (object?)nilaiBaru ?? DBNull.Value);
+        tulis.Parameters.AddWithValue("$atasPermintaan", (object?)atasPermintaan ?? DBNull.Value);
+        tulis.Parameters.AddWithValue("$auditUid", auditUid);
+        tulis.ExecuteNonQuery();
+    }
+
     internal string Buat(SqliteConnection sumber, DateTime waktu)
     {
         Directory.CreateDirectory(_folderArsip);

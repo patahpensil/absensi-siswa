@@ -1,0 +1,54 @@
+<UserControl x:Class="Absensi.App.Audit.AuditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="{StaticResource PaddingTepiHalaman}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Audit" Style="{StaticResource JudulHalamanStyle}" VerticalAlignment="Center" Margin="0,0,16,0" />
+            <TextBlock Grid.Column="2" Text="Dari" VerticalAlignment="Center" Margin="0,0,8,0" Style="{StaticResource LabelKolomStyle}" />
+            <DatePicker Grid.Column="3" SelectedDate="{Binding DariTanggal}" Height="{StaticResource TinggiKontrol}" Margin="0,0,16,0" />
+            <TextBlock Grid.Column="4" Text="Sampai" VerticalAlignment="Center" Margin="0,0,8,0" Style="{StaticResource LabelKolomStyle}" />
+            <DatePicker Grid.Column="5" SelectedDate="{Binding SampaiTanggal}" Height="{StaticResource TinggiKontrol}" />
+        </Grid>
+
+        <TextBlock Grid.Row="1" Text="{Binding PesanGalat}" Style="{StaticResource PesanSalahKolomStyle}"
+                   Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding PesanArsipBermasalah}"
+                      Visibility="{Binding AdaArsipBermasalah, Converter={StaticResource BoolKeVisibilitas}}" Margin="0,0,0,8">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" Style="{StaticResource PesanSalahKolomStyle}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <DataGrid Grid.Row="3" Style="{StaticResource TabelStyle}" ItemsSource="{Binding Baris}" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Waktu" Binding="{Binding Waktu, StringFormat='dd/MM/yyyy HH:mm:ss'}" Width="150" MinWidth="150" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Pelaku" Binding="{Binding NamaPelaku}" Width="140" MinWidth="140" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Aksi" Binding="{Binding Aksi}" Width="150" MinWidth="150" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Entitas" Binding="{Binding Entitas}" Width="110" MinWidth="110" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Nilai Lama" Binding="{Binding NilaiLama}" Width="*" MinWidth="150" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Nilai Baru" Binding="{Binding NilaiBaru}" Width="*" MinWidth="150" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Atas Permintaan" Binding="{Binding AtasPermintaan}" Width="140" MinWidth="140" ElementStyle="{StaticResource TeksSelStyle}" />
+                <DataGridTextColumn Header="Asal" Binding="{Binding Asal}" Width="180" MinWidth="180" ElementStyle="{StaticResource TeksSelStyle}" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

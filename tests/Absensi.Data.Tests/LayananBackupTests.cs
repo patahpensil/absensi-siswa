@@ -115,6 +115,38 @@ public sealed class LayananBackupTests : IDisposable
         SqliteConnection.ClearAllPools();
     }
 
+    // A-39 Tahap 2 (ditemukan lewat tes gagal, LayananAuditTests): baris
+    // restore_backup ditulis SETELAH arsip dibuat (sengaja -- kalau
+    // pengarsipan gagal, database sumber tidak boleh punya jejak restore
+    // sama sekali), jadi tanpa langkah tambahan baris itu sendiri tidak
+    // pernah ter-snapshot ke arsipnya. Diuji di sini LANGSUNG di lapisan
+    // arsip (bukan cuma lewat integrasi LayananAudit).
+    [Fact]
+    public async Task SiapkanRestore_ArsipnyaSendiriBerisiBarisRestoreBackupMarkerItu()
+    {
+        using var databaseAsal = new MigratedDatabase();
+        databaseAsal.SeedBaselineReferenceRows();
+        var layanan = BuatLayanan();
+        await layanan.JalankanAsync(databaseAsal.Connection, new DateTime(2026, 9, 1, 6, 0, 0), kunciLisensiAktif: null);
+        var berkasSumberRestore = layanan.DaftarBackupLokal().Single();
+
+        using var databaseTujuan = new MigratedDatabase();
+        databaseTujuan.SeedMasterDataUntukUji();
+        var waktuRestore = new DateTime(2026, 9, 18, 7, 0, 0);
+
+        layanan.SiapkanRestore(databaseTujuan.Connection, Admin, waktuRestore, berkasSumberRestore);
+
+        var pathArsip = Path.Combine(_folderBackup, "arsip-audit", $"arsip-audit-{waktuRestore:yyyyMMdd-HHmmss}.db");
+        Assert.True(File.Exists(pathArsip));
+
+        SqliteConnection.ClearAllPools();
+        using var arsip = new SqliteConnection($"Data Source={pathArsip};Mode=ReadOnly");
+        arsip.Open();
+        using var command = arsip.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'restore_backup';";
+        Assert.Equal(1, Convert.ToInt32(command.ExecuteScalar()));
+    }
+
     // CLAUDE.md §4.5 aturan 19: pemeriksaan peran di lapisan layanan, bukan
     // hanya menyembunyikan tombol Pulihkan di UI.
     [Fact]

@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Media.Imaging;
+using Absensi.App.Audit;
 using Absensi.App.Kalender;
 using Absensi.App.Koreksi;
 using Absensi.App.Laporan;
@@ -10,6 +12,7 @@ using Absensi.App.Pengaturan;
 using Absensi.Data.Backup;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Domain.Akun;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Shell;
@@ -40,6 +43,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private NotifikasiViewModel? _notifikasiViewModel;
     private KoreksiViewModel? _koreksiViewModel;
     private LaporanViewModel? _laporanViewModel;
+    private AuditViewModel? _auditViewModel;
 
     public MainWindowViewModel(
         SqliteConnection connection,
@@ -63,11 +67,7 @@ public sealed class MainWindowViewModel : ObservableObject
         LogoPath = logoPath;
         TahunAjaranAktif = string.IsNullOrWhiteSpace(tahunAjaranAktif) ? "Tahun ajaran belum diatur" : tahunAjaranAktif;
 
-        MenuItems = new ObservableCollection<string>
-        {
-            "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi",
-            "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan",
-        };
+        MenuItems = new ObservableCollection<string>(DaftarMenuUntukPeran(akun.Peran));
 
         _menuAktif = MenuItems[0];
         BukaGerbangCommand = new RelayCommand(() => BukaGerbangDiminta?.Invoke(this, EventArgs.Empty));
@@ -110,6 +110,22 @@ public sealed class MainWindowViewModel : ObservableObject
     public string TahunAjaranAktif { get; }
 
     public ObservableCollection<string> MenuItems { get; }
+
+    // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
+    // melihat menu Audit di rilis awal -- diputuskan bersamaan dengan
+    // A-39 Tahap 2 (LayananAudit menolak peran lain juga, lapisan
+    // layanan). Item menu LAIN sengaja TIDAK ikut difilter di sini --
+    // itu A-18, masalah terpisah yang belum diputuskan, jangan
+    // diselesaikan diam-diam lewat perubahan ini.
+    private static IEnumerable<string> DaftarMenuUntukPeran(PeranAkun peran)
+    {
+        var semua = new[]
+        {
+            "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi",
+            "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan",
+        };
+        return peran == PeranAkun.Admin ? semua : semua.Where(m => m != "Audit");
+    }
 
     public RelayCommand BukaGerbangCommand { get; }
 
@@ -172,8 +188,21 @@ public sealed class MainWindowViewModel : ObservableObject
             "Notifikasi" => _notifikasiViewModel ??= new NotifikasiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Koreksi" => _koreksiViewModel ??= new KoreksiViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
             "Laporan" => _laporanViewModel ??= new LaporanViewModel(_connection, _akun, _penyediaWaktu, tahunAjaranId),
+            "Audit" => MuatUlangAuditViewModel(),
             _ => null,
         };
+    }
+
+    // Dimuat ulang setiap menu "Audit" dipilih (bukan cuma sekali seperti
+    // Kelas/Guru) -- riwayat audit terus bertambah selama sesi berjalan,
+    // beda dari master data yang jarang berubah dari sumber lain. Menu ini
+    // sendiri sudah difilter untuk non-Admin (DaftarMenuUntukPeran), tapi
+    // AuditViewModel.BolehAkses tetap jadi lapisan kedua (defense in depth).
+    private AuditViewModel MuatUlangAuditViewModel()
+    {
+        _auditViewModel ??= new AuditViewModel(_connection, _akun, _penyediaWaktu, LokasiData.FolderArsipAudit);
+        _auditViewModel.MuatUlang();
+        return _auditViewModel;
     }
 
     // Bug #3 (Master Bug & UI/UX Register A-20 / UAT 2026-09-22): SiswaViewModel

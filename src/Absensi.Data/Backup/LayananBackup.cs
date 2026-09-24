@@ -82,7 +82,7 @@ public sealed class LayananBackup
         // melempar, database sumber belum disentuh sama sekali -- pemanggil
         // (PengaturanViewModel.Restore, dibungkus PenangananGalat.Coba)
         // tidak pernah lanjut ke TerapkanRestore.
-        _layananArsipAudit.BuatDanVerifikasi(sumber, waktu);
+        var pathArsip = _layananArsipAudit.BuatDanVerifikasi(sumber, waktu);
 
         var dataSumberRestore = File.ReadAllBytes(berkasSumberRestore.PathBerkas);
         var pathCadangan = BuatSnapshotLokal(sumber, waktu);
@@ -96,6 +96,13 @@ public sealed class LayananBackup
             perubahan: _ => null,
             nilaiLama: Path.GetFileName(pathCadangan),
             nilaiBaru: berkasSumberRestore.NamaBerkas);
+
+        // Ditemukan lewat tes gagal (LayananAuditTests, A-39 Tahap 2): baris
+        // restore_backup di atas ditulis SETELAH arsip dibuat (sengaja,
+        // lihat komentar di atas), jadi tidak pernah ikut ter-snapshot --
+        // catatan "sebelum restore ini" sendiri hilang begitu `sumber`
+        // ditimpa. Disalin manual ke arsip yang sudah ada di sini.
+        _layananArsipAudit.TambahkanBarisTerakhir(pathArsip, sumber);
 
         return dataSumberRestore;
     }
