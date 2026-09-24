@@ -326,11 +326,27 @@ CREATE TABLE audit (
 
 CREATE INDEX ix_audit_waktu ON audit(waktu);
 CREATE INDEX ix_audit_akun  ON audit(akun_id);
+
+-- Migrasi 002 (Master Bug & UI/UX Register A-38): PRD §12 "tidak dapat
+-- dihapus atau diedit siapa pun" ditegakkan langsung di database, bukan
+-- cuma diandalkan dari perilaku RepositoriAudit yang cuma pernah INSERT.
+-- Berlaku ke SELURUH baris (lama maupun baru) -- tidak butuh migrasi data.
+CREATE TRIGGER trg_audit_cegah_update
+BEFORE UPDATE ON audit
+BEGIN
+    SELECT RAISE(ABORT, 'Baris audit tidak dapat diubah (PRD §12).');
+END;
+
+CREATE TRIGGER trg_audit_cegah_delete
+BEFORE DELETE ON audit
+BEGIN
+    SELECT RAISE(ABORT, 'Baris audit tidak dapat dihapus (PRD §12).');
+END;
 ```
 
 **Catatan.** `guru_id` pada akun wali kelas menunjuk ke baris guru yang sama dengan `kelas.wali_guru_id` — dari sinilah aplikasi tahu kelas mana yang boleh disentuh akun tersebut.
 
-Tabel `audit` tidak pernah diubah atau dihapus oleh aplikasi. Tidak ada layar yang menyediakan tombol hapus untuk tabel ini.
+Tabel `audit` tidak pernah diubah atau dihapus oleh aplikasi. Tidak ada layar yang menyediakan tombol hapus untuk tabel ini — dan sejak migrasi 002, UPDATE/DELETE terhadap tabel ini ditolak langsung oleh database (trigger di atas), bukan cuma oleh konvensi kode. **Batasnya:** ini pencegah lewat SQL biasa, bukan kebal-rusak — akses langsung ke berkas `.db` di luar aplikasi (mis. DB Browser, atau `DROP TRIGGER`) tetap bisa melewatinya.
 
 ---
 
@@ -348,6 +364,7 @@ Delapan aturan PRD yang dijamin oleh struktur di atas, sehingga tidak bisa dilan
 | Satu pesan per jenis per subjek per hari | `ix_outbox_sekali` |
 | Status hanya dari daftar yang sah | `CHECK (status IN ...)` |
 | Tingkat kelas hanya 1–9 | `CHECK (tingkat BETWEEN 1 AND 9)` |
+| Baris `audit` tidak dapat diubah/dihapus lewat SQL biasa | `trg_audit_cegah_update`, `trg_audit_cegah_delete` (migrasi 002) |
 
 ---
 

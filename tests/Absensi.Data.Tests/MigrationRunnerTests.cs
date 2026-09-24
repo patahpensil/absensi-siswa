@@ -9,12 +9,17 @@ public sealed class MigrationRunnerTests
     {
         using var database = new MigratedDatabase();
 
+        // Jumlah baris tidak di-hardcode ke satu migrasi tertentu -- yang
+        // diuji adalah PERILAKU idempoten (Run kedua tidak menambah baris
+        // apa pun), bukan jumlah migrasi yang kebetulan ada saat ini.
+        using var countCommand = database.Connection.CreateCommand();
+        countCommand.CommandText = "SELECT COUNT(*) FROM skema_versi;";
+        var rowCountBeforeSecondRun = Convert.ToInt32(countCommand.ExecuteScalar());
+
         new MigrationRunner().Run(database.Connection);
 
-        using var command = database.Connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM skema_versi;";
-        var rowCount = Convert.ToInt32(command.ExecuteScalar());
+        var rowCountAfterSecondRun = Convert.ToInt32(countCommand.ExecuteScalar());
 
-        Assert.Equal(1, rowCount);
+        Assert.Equal(rowCountBeforeSecondRun, rowCountAfterSecondRun);
     }
 }

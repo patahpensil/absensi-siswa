@@ -10,6 +10,7 @@ public sealed class MigrationRunner
     private static readonly IMigration[] AllMigrations =
     {
         new Migration001CreateSchema(),
+        new Migration002CegahUbahHapusAudit(),
     };
 
     public void Run(SqliteConnection connection)

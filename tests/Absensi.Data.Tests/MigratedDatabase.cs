@@ -13,11 +13,20 @@ internal sealed class MigratedDatabase : IDisposable
 
     public SqliteConnection Connection { get; }
 
-    public MigratedDatabase()
+    public MigratedDatabase(bool applyAllMigrations = true)
     {
         _path = Path.Combine(Path.GetTempPath(), $"absensi-test-{Guid.NewGuid():N}.db");
         Connection = SqliteConnectionFactory.Open(_path);
-        new MigrationRunner().Run(Connection);
+
+        if (applyAllMigrations)
+        {
+            new MigrationRunner().Run(Connection);
+        }
+
+        // applyAllMigrations: false -- pemanggil membangun skema sendiri
+        // secara manual (mis. Migration002CegahUbahHapusAuditTests, yang
+        // perlu mensimulasikan database berhenti di versi 1 sebelum
+        // menjalankan migrasi berikutnya lewat MigrationRunner).
     }
 
     public void Execute(string sql)
