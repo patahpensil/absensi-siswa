@@ -134,7 +134,12 @@
                        TextWrapping="Wrap" Margin="0,0,0,16" />
 
             <!-- PRD §18.3: dua cabang eksplisit — pemasangan pertama, atau
-                 pindah ke PC baru menggunakan backup cloud sekolah ini. -->
+                 pindah ke PC baru menggunakan cadangan sekunder sekolah ini.
+                 Catatan kejujuran istilah (2026-09-25): penyimpanan cadangan
+                 sekunder saat ini masih folder lokal (PenyimpanCloudBackupLokal,
+                 lihat catatan di kelas itu), BUKAN server terpisah dari PC.
+                 Teks di bawah SENGAJA tidak menyebut "cloud" dan menjelaskan
+                 batasannya ke pengguna. -->
             <Border Style="{StaticResource KartuStyle}" Margin="0,0,0,12">
                 <StackPanel>
                     <TextBlock Text="Instalasi Baru" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
@@ -150,7 +155,7 @@
             <Border Style="{StaticResource KartuStyle}">
                 <StackPanel>
                     <TextBlock Text="Pulihkan dari PC Lama" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                    <TextBlock Text="PC lama rusak atau diganti. Backup terakhir sekolah ini akan diambil dari cloud — identitas sekolah, tahun ajaran, jadwal, dan akun terisi otomatis, melompati langkah 2-5."
+                    <TextBlock Text="PC lama rusak atau diganti. Data sekolah akan diambil dari cadangan sekunder yang tersimpan dengan kunci lisensi ini — identitas sekolah, tahun ajaran, jadwal, dan akun terisi otomatis, melompati langkah 2-5. Catatan: cadangan sekunder ini untuk saat ini masih tersimpan lokal di tempat backup terakhir dibuat (belum di server terpisah) — pilihan ini tidak akan menemukan apa pun kalau penyimpanan lama itu benar-benar sudah tidak bisa diakses."
                                Style="{StaticResource TeksUtamaStyle}"
                                Foreground="{StaticResource AbuTulisBrush}"
                                TextWrapping="Wrap"

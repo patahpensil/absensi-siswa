@@ -321,6 +321,23 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         Assert.Contains("Instalasi Baru", viewModel.PesanGalat);
     }
 
+    // Koreksi istilah (2026-09-25): penyimpanan di balik "Pulihkan dari PC
+    // Lama" saat ini masih folder lokal (PenyimpanCloudBackupLokal), BUKAN
+    // server di luar PC -- pesan ke pengguna tidak boleh menyebut "cloud"
+    // atau menyiratkan perlindungan dari kehilangan PC.
+    [Fact]
+    public void PulihkanDariPcLamaCommand_TidakAdaBackup_PesanGalatTidakMenyebutCloud()
+    {
+        using var database = new MigratedDatabase();
+        var viewModel = BuatViewModel(database);
+        viewModel.KunciLisensi = "SEKOLAH-BARU-TANPA-BACKUP";
+
+        viewModel.PulihkanDariPcLamaCommand.Execute(null);
+
+        Assert.DoesNotContain("cloud", viewModel.PesanGalat, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cadangan sekunder", viewModel.PesanGalat);
+    }
+
     // Berkas cloud rusak/dienkripsi dengan kunci lain tidak boleh
     // melemparkan galat mentah — diperlakukan sama seperti tidak ada backup.
     [Fact]

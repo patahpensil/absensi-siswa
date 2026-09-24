@@ -86,8 +86,11 @@ public sealed class WizardInstalasiViewModel : ObservableObject
     // Langkah 1 — PRD §13.1/§16.1/§18.3: dua cabang eksplisit. "Instalasi
     // Baru" mengaktifkan lisensi lalu lanjut ke langkah 2. "Pulihkan dari
     // PC Lama" mengaktifkan lisensi yang sama, lalu mengambil backup
-    // terakhir dari cloud dan melompati langkah 2-5 sepenuhnya (identitas
-    // sekolah/tahun ajaran/jadwal/akun semuanya sudah ada di backup itu).
+    // terakhir dari cadangan sekunder dan melompati langkah 2-5 sepenuhnya
+    // (identitas sekolah/tahun ajaran/jadwal/akun semuanya sudah ada di
+    // backup itu). "Cadangan sekunder" -- BUKAN "cloud": penyimpanannya
+    // (PenyimpanCloudBackupLokal) saat ini masih folder lokal, bukan
+    // server terpisah dari PC -- lihat catatan di kelas itu.
     public string KunciLisensi
     {
         get => _kunciLisensi;
@@ -197,7 +200,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
 
         if (data is null)
         {
-            PesanGalat = "Tidak ditemukan backup cloud untuk kunci lisensi ini. Periksa kembali kunci lisensi, atau pilih \"Instalasi Baru\" bila ini pemasangan pertama.";
+            PesanGalat = "Tidak ditemukan cadangan sekunder untuk kunci lisensi ini. Periksa kembali kunci lisensi, pastikan penyimpanan cadangan lama masih bisa diakses dari PC ini, atau pilih \"Instalasi Baru\" bila ini pemasangan pertama.";
             return;
         }
 

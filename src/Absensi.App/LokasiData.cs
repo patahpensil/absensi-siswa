@@ -20,9 +20,12 @@ public static class LokasiData
     // tidak boleh menyentuh backup, dan sebaliknya).
     public static string FolderBackup => Path.Combine(AppContext.BaseDirectory, "backup");
 
-    // Stub "cloud" (RENCANA-TUGAS.md Tugas 13 — lihat catatan di
-    // IPenyimpanCloudBackup): folder terpisah dari 7 berkas lokal supaya
-    // tidak ikut kena rotasi/hitungan PRD §18.2.
+    // "cloud-stub" — folder CADANGAN SEKUNDER LOKAL sementara (RENCANA-TUGAS.md
+    // Tugas 13, lihat catatan di IPenyimpanCloudBackup): TIDAK boleh disebut
+    // "cloud" atau "pelindung dari kehilangan PC" di UI atau dokumen manapun
+    // — secara fisik masih di disk yang sama, terpisah dari 7 berkas lokal
+    // supaya tidak ikut kena rotasi/hitungan PRD §18.2. Server cadangan
+    // sungguhan (di luar PC) adalah pekerjaan terpisah, belum ada.
     public static string FolderBackupCloudStub => Path.Combine(FolderBackup, "cloud-stub");
 
     // Master Bug & UI/UX Register A-39: arsip riwayat audit pra-restore
