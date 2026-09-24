@@ -25,6 +25,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Ellipse Grid.Column="0"
@@ -43,11 +44,24 @@
                            Style="{StaticResource LabelHeaderStyle}"
                            VerticalAlignment="Center" />
 
+                <!-- Penanda akun yang sedang masuk (mis. "Admin · admin1").
+                     Kolom Auto TERSENDIRI (bukan berbagi kolom TahunAjaranAktif
+                     atau kolom "*" NamaSekolah) supaya lebarnya selalu
+                     menyesuaikan teksnya sendiri (tidak pernah terpotong di
+                     jendela kecil) TANPA mendorong tombol Keluar, yang tetap
+                     kolom Auto TERAKHIR, posisinya rapat ke tepi kanan
+                     berapa pun panjang teks penanda ini. -->
+                <TextBlock Grid.Column="3"
+                           Text="{Binding AkunAktifTeks}"
+                           Style="{StaticResource LabelHeaderStyle}"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0" />
+
                 <!-- Tugas 14: App.xaml ShutdownMode="OnExplicitShutdown" —
                      tombol ini satu-satunya jalur menu untuk keluar (jendela
                      ini juga menutup aplikasi bila ditutup lewat tombol X,
                      lihat MainWindow.xaml.cs). -->
-                <Button Grid.Column="3"
+                <Button Grid.Column="4"
                         Content="Keluar"
                         Style="{StaticResource TombolTeksStyle}"
                         Foreground="{StaticResource PutihBrush}"

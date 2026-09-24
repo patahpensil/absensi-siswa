@@ -109,6 +109,22 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public string TahunAjaranAktif { get; }
 
+    // Penanda akun yang sedang masuk di header (mis. "Admin · admin1").
+    // Diambil dari sesi login aktif (_akun, ditetapkan sekali di konstruktor)
+    // -- setiap login/ganti akun SELALU membuat instance MainWindowViewModel
+    // BARU (tidak ada "ganti akun tanpa keluar aplikasi" di app ini, lihat
+    // MainWindow.xaml.cs: Closed selalu mematikan seluruh proses), jadi
+    // properti ini otomatis benar tanpa perlu logika pembaruan tambahan.
+    public string AkunAktifTeks => $"{TeksPeran(_akun.Peran)} · {_akun.Username}";
+
+    private static string TeksPeran(PeranAkun peran) => peran switch
+    {
+        PeranAkun.KepalaSekolah => "Kepala Sekolah",
+        PeranAkun.Admin => "Admin",
+        PeranAkun.WaliKelas => "Wali Kelas",
+        _ => peran.ToString(),
+    };
+
     public ObservableCollection<string> MenuItems { get; }
 
     // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh

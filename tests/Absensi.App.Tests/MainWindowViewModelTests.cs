@@ -142,6 +142,24 @@ public sealed class MainWindowViewModelTests
 
     public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { Kepsek, WaliKelas };
 
+    // Penanda akun di header (mis. "Admin · admin1") -- diambil dari sesi
+    // login aktif. Setiap peran diuji supaya label Indonesia-nya benar,
+    // bukan cuma nama enum C# mentah.
+    [Theory]
+    [InlineData("admin1", "Admin", "Admin · admin1")]
+    [InlineData("kepsek", "KepalaSekolah", "Kepala Sekolah · kepsek")]
+    [InlineData("wali_a", "WaliKelas", "Wali Kelas · wali_a")]
+    public void AkunAktifTeks_SesuaiPeranDanUsernameSesiLogin(string username, string namaPeran, string diharapkan)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var peran = Enum.Parse<PeranAkun>(namaPeran);
+        var akun = new AkunTersimpan(1, username, "x", peran, GuruId: peran == PeranAkun.WaliKelas ? 1 : null, true);
+        var viewModel = BuatViewModel(database, akun, "SMP Contoh", logoPath: null);
+
+        Assert.Equal(diharapkan, viewModel.AkunAktifTeks);
+    }
+
     [Fact]
     public void MenuAktifAudit_Admin_MemuatAuditViewModel()
     {
