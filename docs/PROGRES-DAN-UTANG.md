@@ -52,6 +52,4 @@ Pengaturan bisa menimpa jam dengan 00:00 bila nilai belum ada, PDF Helvetica gag
 ## 5. Pembersihan
 Folder di luar proyek yang terkait absensi dihapus setelah isinya diarsipkan dan diverifikasi
 (jumlah berkas + SHA-256 untuk dump): `D:\Absensi SMP 1`, `D:\smp.txt`, `D:\master pembuatan aplikasi
-absensi Final.zip`, `C:\AbsensiSekolah-*` (10 build uji, semua data uji sintetis), `C:\c` (sisa kosong
-berisi profil Hermes + salinan `binance_raw.json` yang identik dengan `C:\Users\edgar`), dan 4 berkas absensi di
-Downloads. Folder proyek lain di `D:\` (ICT Screening, Malomo, NAHKODA, Ayuma, dst.) **tidak disentuh**.
+absensi Final.zip`, `C:\AbsensiSekolah-*` (10 build uji, semua data uji sintetis), dan 4 berkas absensi di Downloads. **Tidak dihapus:** `C:\c` -- isinya bukan absensi (kerangka profil Hermes + `binance_raw.json` 1,9 MB yang BERBEDA dari `C:\Users\edgar\binance_raw.json`); menunggu keputusan pemilik. **GitHub:** akun `gh` (patahpensil) login, tetapi repo ini tidak punya remote dan belum ada repo absensi di akun; tidak ada yang di-push -- menunggu keputusan pemilik (nama repo, privat/publik). Folder proyek lain di `D:\` (ICT Screening, Malomo, NAHKODA, Ayuma, dst.) **tidak disentuh**.
