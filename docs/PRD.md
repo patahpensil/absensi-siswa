@@ -5,6 +5,12 @@
 **Sekolah rujukan:** UPT SMP Negeri 1 Pancarijang
 **Status:** terbuka untuk perubahan
 
+> **REVISI ARSITEKTUR 2026-11-03 (keputusan pemilik proyek): aplikasi berubah dari _standalone_ menjadi _online_.**
+> Rincian, dampak per bagian, dan keputusan yang masih terbuka ada di **§21**. Sampai §21 selesai diputuskan dan
+> bagian-bagian terkait diperbarui, pernyataan "standalone / satu PC / offline-first / SQLite lokal" di §1, §13, §15,
+> §18, §19, dan §20 **sudah tidak berlaku sebagai arah** — dipertahankan apa adanya hanya sebagai catatan kondisi
+> versi 0.9 yang sedang berjalan.
+
 ---
 
 ## 1. Ringkasan Produk
@@ -1135,6 +1141,74 @@ Direncanakan untuk versi berikutnya, sebagian menjadi dasar update berbayar:
 - Notifikasi via WhatsApp (ditolak untuk versi ini karena biaya ±Rp7 juta/bulan untuk 800 siswa)
 - Migrasi ke database jaringan bila akses multi-perangkat diperlukan
 - Optimasi ukuran file `.exe`
+
+---
+
+## 21. Revisi 2026-11-03 — Perubahan Arsitektur: Standalone → Online
+
+**Sifat revisi:** perubahan arah produk atas keputusan eksplisit pemilik proyek (2026-11-03). Bagian ini
+**baru mencatat keputusan dan dampaknya**; rancangan teknis online belum dibuat. Tidak ada kode yang diubah oleh
+revisi ini. Daftar "Keputusan terbuka" (21.3) **wajib** dijawab pemilik sebelum rancangan dan kode dimulai —
+kebutuhan tidak ditebak.
+
+### 21.1 Keputusan
+1. Aplikasi tidak lagi dirancang sebagai aplikasi desktop **standalone** (satu PC, database SQLite lokal, offline-first).
+2. Aplikasi akan beroperasi sebagai sistem **online**.
+
+### 21.2 Dampak pada isi PRD ini (hasil telaah dokumen; pengganti belum diputuskan)
+| Bagian | Isi versi 0.9 | Status setelah revisi |
+|---|---|---|
+| §1 Ringkasan | "desktop standalone", 1 instalasi per sekolah, offline-first, SQLite | **Berubah** — menunggu 21.3 |
+| §3, §3.1 Hak akses & hierarki akun | Akun lokal di database lokal | Perlu ditinjau: identitas/sesi/akun lintas perangkat |
+| §9 Notifikasi Telegram, §9.4 Pengaman | Outbox lokal, "internet putus → antre" | Perlu ditinjau: pengirim di server atau tetap di klien |
+| §12 Jejak audit | Tabel audit lokal, tak bisa diubah/dihapus (trigger SQLite) | Perlu ditinjau: audit terpusat di server |
+| §13 Lisensi & instalasi | "Aktivasi sekali online, setelah itu offline selamanya"; wizard instalasi; update manual | **Berubah** — lisensi dan pembaruan bisa diperiksa terus-menerus |
+| §14.1 Layar Gerbang | Tap RFID diproses lokal seketika | **Risiko tertinggi**: perilaku saat koneksi putus harus ditentukan (21.3 butir 3) |
+| §15 Ketentuan teknis | `.exe` tanpa install, SQLite di PC yang sama, folder `data/ config/ logs/ backup/` | **Berubah** |
+| §16.1 Instalasi pertama | Wizard 6 langkah di PC sekolah | **Berubah** |
+| §18 Backup & Restore | Backup lokal + "cloud" (saat ini folder lokal) + restore dari berkas | **Berubah** — backup menjadi tanggung jawab server |
+| §19 Poin terbuka #1, #2 | Pemindahan backup ke cloud sekolah; akses wali kelas lewat HP | Sebagian terjawab/terambil oleh arsitektur online |
+| §20 Di luar lingkup | Akses HP wali kelas, database jaringan multi-perangkat, update otomatis | Butir-butir ini **menjadi relevan** — tinjau ulang |
+
+Tidak terdampak secara konsep (aturan bisnis tetap): aturan status kehadiran (§8, §16.8), kalender (§6),
+jadwal (§7), master data (§5), koreksi (§10), laporan (§11), modul guru (§17). Yang berubah adalah *tempat* aturan
+ini dijalankan dan disimpan, bukan aturannya.
+
+### 21.3 Keputusan terbuka (perlu jawaban pemilik sebelum rancangan)
+1. **Bentuk "online":** (a) server pusat + klien desktop WPF yang sudah ada tersambung ke server; (b) aplikasi web
+   (browser); (c) gabungan (gerbang desktop + admin/wali kelas lewat web/HP)?
+2. **Model sewa/hosting:** satu server untuk banyak sekolah (multi-tenant) atau satu server per sekolah? Di mana
+   dihosting dan siapa yang membayar/mengelola? Dampaknya ke model lisensi §13.1 (beli putus vs langganan).
+3. **Perilaku Layar Gerbang saat internet putus:** tap tetap diterima dan disinkronkan nanti (butuh antrean/buffer
+   lokal; status kehadiran dihitung di klien atau di server?) atau tap ditolak/ditunda sampai online? Ini menentukan
+   apakah aturan §16.8 dijalankan di klien, di server, atau keduanya.
+4. **Sumber waktu:** server atau jam PC gerbang sebagai acuan keterlambatan?
+5. **Database:** SQLite diganti (mis. PostgreSQL)? Bagaimana nasib data dan instalasi versi 0.9 yang sudah ada
+   (migrasi satu kali)?
+6. **Notifikasi Telegram:** dikirim dari server — token bot per sekolah atau satu bot untuk semua?
+7. **Akun & keamanan:** login lewat internet berarti butuh kebijakan sandi, pembatasan percobaan masuk, sesi/token,
+   HTTPS, dan perlindungan data pribadi siswa (NISN/NIK/alamat/nomor orang tua) di server, termasuk kepatuhan
+   (izin orang tua, lokasi data).
+8. **Audit (§12):** diteruskan sebagai audit terpusat tak-ubah di server?
+9. **Backup/restore (§18):** menjadi layanan server; apakah fitur restore dari berkas di klien masih diperlukan?
+10. **Perangkat RFID & akses wali kelas lewat HP (§19 #2, §20):** masuk lingkup rilis online pertama atau menyusul?
+11. **Urutan pengerjaan:** apakah versi standalone 0.9 yang sedang UAT diselesaikan dan dirilis dulu, atau pengembangan
+    dialihkan penuh ke arsitektur online sekarang?
+
+### 21.4 Dampak ke pekerjaan yang sedang berjalan (catatan, bukan keputusan)
+- Rancangan dan kode yang sudah ada (Domain murni, aturan status, laporan) dipertahankan sebisa mungkin; lapisan
+  `Absensi.Data` (SQLite lokal, `JalurPerubahanData`, trigger audit, backup/restore, lisensi lokal), penjadwal lokal,
+  dan pengirim outbox adalah bagian yang paling terdampak.
+- Utang teknis yang terkait arsitektur lama (lihat `PROGRES-DAN-UTANG.md`) perlu dinilai ulang: sebagian
+  (backup lokal tak terenkripsi, lisensi stub, "cloud" folder lokal, Bolos saat PC mati) bisa menjadi tidak
+  relevan atau berubah bentuk.
+- Dokumen turunan yang harus mengikuti begitu 21.3 diputuskan: `CLAUDE.md`, `RENCANA-TUGAS.md`, `SKEMA-DATABASE.md`,
+  `PANDUAN-PEMASANGAN.md`, `PANDUAN-TESTER.md`, `MASTER-BUG-UIUX-REGISTER.md`.
+
+### 21.5 Riwayat revisi
+| Tanggal | Perubahan | Sumber |
+|---|---|---|
+| 2026-11-03 | Dicatat keputusan standalone → online; dibuat §21 (dampak + keputusan terbuka). Belum ada rancangan teknis. | Instruksi pemilik proyek |
 
 ---
 

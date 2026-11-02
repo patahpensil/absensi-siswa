@@ -4,6 +4,10 @@ Satu-satunya folder kerja proyek: `D:\Project Absensi SMP 1`. Berkas ini adalah
 ringkasan status terkini; rincian per butir ada di `MASTER-BUG-UIUX-REGISTER.md`,
 `TODO-VERSI-BERIKUTNYA.md`, dan `RENCANA-TUGAS.md`.
 
+> **2026-11-03 — KEPUTUSAN ARSITEKTUR:** pemilik memutuskan aplikasi berubah dari standalone menjadi online
+> (dicatat sebagai revisi PRD §21). Rancangan belum dibuat; 11 keputusan terbuka ada di PRD §21.3. Utang di bawah
+> yang terkait arsitektur lama harus dinilai ulang setelah §21.3 dijawab.
+
 ## 1. Kondisi
 - Tes Release: **592 hijau** (Domain 54, Laporan 32, Data 241, Telegram 10, App 255).
 - Repo git lokal, cabang `master`. **Belum ada remote GitHub** (`git remote -v` kosong) —
