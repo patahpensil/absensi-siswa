@@ -97,6 +97,12 @@ public sealed class LayananAkun
     public void NonaktifkanAkun(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget)
     {
         PastikanBolehMengelolaAkun(pembuat);
+        PastikanBerwenangAtasTarget(connection, pembuat, akunIdTarget);
+
+        if (pembuat.Id == akunIdTarget)
+        {
+            throw new InvalidOperationException("Akun yang sedang dipakai tidak bisa menonaktifkan dirinya sendiri.");
+        }
 
         _jalurPerubahanData.Jalankan(
             connection,
@@ -117,6 +123,7 @@ public sealed class LayananAkun
     public void ResetSandi(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget, string sandiBaru)
     {
         PastikanBolehMengelolaAkun(pembuat);
+        PastikanBerwenangAtasTarget(connection, pembuat, akunIdTarget);
 
         var sandiHash = HashSandi.Buat(sandiBaru);
 
@@ -131,6 +138,21 @@ public sealed class LayananAkun
                 _repositoriAkun.PerbaruiSandi(connection, transaction, akunIdTarget, sandiHash);
                 return akunIdTarget;
             });
+    }
+
+    // PRD §3.1: Kepala Sekolah → akun Admin (dan Wali Kelas); Admin → akun
+    // Wali Kelas SAJA. Wewenang mereset/menonaktifkan mengikuti wewenang
+    // membuat, jadi Admin tidak boleh menyentuh akun Kepala Sekolah, Admin
+    // lain, maupun dirinya sendiri lewat jalur ini.
+    private void PastikanBerwenangAtasTarget(SqliteConnection connection, AkunTersimpan pembuat, int akunIdTarget)
+    {
+        var target = _repositoriAkun.CariBerdasarkanId(connection, akunIdTarget)
+            ?? throw new InvalidOperationException("Akun yang dituju tidak ditemukan.");
+
+        if (pembuat.Peran == PeranAkun.Admin && target.Peran != PeranAkun.WaliKelas)
+        {
+            throw new InvalidOperationException("Admin hanya berwenang atas akun Wali Kelas (PRD §3.1).");
+        }
     }
 
     private static void PastikanBolehMengelolaAkun(AkunTersimpan akun)

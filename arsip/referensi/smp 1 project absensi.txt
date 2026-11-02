@@ -1,0 +1,43 @@
+Nama aplikasinya "SISTEM INFORMASI BERBASIS DIGITAL UPT SMP NEGERI 1 PANCARIJANG"
+aplikasi berbasis desktop atau file exe.aplikasi ini untuk tahap awal hanya untuk absensi seluruh siswa.
+
+Definisi Tahap awal:
+1.Absen masuk yakni pukul 07:15 dan absen pulang 13:30 dari hari senin sampai hari sabtu.
+2.Absen ini berbasis desktop.
+3.Aplikasi ini atau Absen akan di koneksikan dengan Rfid berbasis kartu idenitas siswa.
+4.Tampilan UI/UX yang ramah,profesional,mudah dimengerti dan tidak nampak seperti dibuat oleh AI.
+5.Memiliki fitur admin untuk mengedit fitur.
+6.Aplikasi dilengkapi fitur absen harian,mingguan dan bulanan.
+7.Aplikasi memiliki fitur kelas yang bisa diedit dan diisi manual oleh admin atau di hapus oleh admin.
+8.Aplikasi memiliki fitur absensi untuk guru.
+9.Aplikasi mempunyai fitur atau tombol navigasi yang bisa di integrasikan dengan internet atau dengan kata lain bisa berjalan online dan offline.
+Karena pada saat aplikasi mengirimkan notifikasi ke tiap orang tua siswa berbasis Whatsapp aplikasi harus online atau terkoneksi dengan internet.
+10.Memiliki fitur Dashboard Monitoring: Menyediakan tampilan visual dan grafik bagi admin atau kepala sekolah untuk memantau tingkat kedisiplinan siswa.
+11.Untuk penyimpanan database,menggunakan pc lokal atau offline dan jika di koneksikan ke internet akan terupdate ke penyimpanan online yang dipilih oleh developer.
+
+Ini yang saya maksud.
+- Toleransi keterlambatan. 07:15 itu batas masuk, tapi scan 07:21 dihitung TERLAMBAT.
+- Jam 07:30 sistem menetapkan ALPA bagi yang tidak pernah scan.
+- Layanan WhatsApp — API resmi Meta (berbayar, stabil, wajib template disetujui) 
+- Stack teknis: menggunakan phyton
+- Poin 5 "fitur admin untuk mengedit fitur" — maksudnya admin bisa mengubah pengaturan (jam, template pesan, kelas), menambah jam,kelas atau mengurangi atau menyalakan/mematikan modul tertentu.
+
+1.intinya pukul 07:21 sudah terhitung terlambat.
+2.intinya pukul 07:30 sudah alpa,itulah gunanya fitur admin yang bisa mengedit jika ada siswa terlambat dengan alasan yang logis bisa di edit oleh admin atau wali kelasnya.
+untuk notifikasi alpa akan dikirim pada saat jam 09:15.pada saat jam pelajaran pertama berlangsung.
+3.untuk tahap awal gunakan WhatsApp API gratis saja dulu.
+4.tetap menggunakan Stack Python.
+5.Poin 5 sudah sangat jelas.
+
+
+
+1. Jam pulang pada hari Jumat 11:10 dan Sabtu 13:30 .
+
+2. Untuk absensi guru, status kehadiran yang perlu dicatat adalah hadir, terlambat, dinas luar, izin, sakit, cuti.
+
+3. toleransi keterlambatan untuk guru pukul 09:30
+
+4. Perkiraan jumlah siswa aktif dan jumlah guru saat ini, untuk penyesuaian kapasitas sistem ada sekitar 1000 an.begini untuk data tiap siswa dan tiap guru,suruh agen buatkan form ekspor file saja,
+agar supaya berbasis data di dapodik,data di dapodik sangat detail. sekali upload oleh admin langsung menjadi database dan dapat di panggil oleh alat RFID pada saat absensi.
+
+5. untuk kalender sepertinya sama dengan poin 4 berdasarkan data dapodik,tetapi bisa juga di cek di https://www.kalenderpendidikan.com/sulawesiselatan-2026/

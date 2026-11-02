@@ -24,3 +24,10 @@ obj/
 ## Sistem operasi
 Thumbs.db
 .DS_Store
+
+## Arsip proyek lama & bukti uji (disalin 2026-11-02): berkas besar/biner dan
+## data uji tidak ikut kontrol versi. Catatan teks tetap ikut.
+*.dmp
+/arsip/bukti-uji-c/dumps/
+/arsip/proyek-python-lama/sumber/**/*.db
+/arsip/referensi/*.zip

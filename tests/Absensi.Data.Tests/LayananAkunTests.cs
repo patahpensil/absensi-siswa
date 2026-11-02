@@ -276,4 +276,79 @@ public sealed class LayananAkunTests
 
         Assert.False(_layananAkun.BolehMenyentuhKelas(database.Connection, waliA, kelasId: 3));
     }
+
+    // ---- Hierarki wewenang atas akun TARGET (PRD §3.1) ----
+
+    private static AkunTersimpan BuatAdmin(MigratedDatabase database)
+    {
+        database.Execute("""
+            INSERT INTO akun (id, username, sandi_hash, peran, guru_id, aktif, dibuat_pada)
+            VALUES (9, 'admin_tu', 'tidak-terpakai', 'admin', NULL, 1, '2026-09-01T00:00:00');
+            """);
+        return new AkunTersimpan(9, "admin_tu", "x", PeranAkun.Admin, GuruId: null, Aktif: true);
+    }
+
+    [Fact]
+    public void ResetSandi_AdminKeKepalaSekolah_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var admin = BuatAdmin(database);
+
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru1!"));
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
+    }
+
+    [Fact]
+    public void NonaktifkanAkun_AdminKeKepalaSekolah_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var admin = BuatAdmin(database);
+
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.NonaktifkanAkun(database.Connection, admin, Waktu, akunIdTarget: 1));
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
+    }
+
+    [Fact]
+    public void NonaktifkanAkun_AdminKeDirinyaSendiri_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var admin = BuatAdmin(database);
+
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.NonaktifkanAkun(database.Connection, admin, Waktu, akunIdTarget: 9));
+    }
+
+    [Fact]
+    public void NonaktifkanAkun_KepalaSekolahKeDirinyaSendiri_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
+
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.NonaktifkanAkun(database.Connection, kepsek, Waktu, akunIdTarget: kepsek.Id));
+    }
+
+    [Fact]
+    public void ResetSandi_AdminKeWaliKelas_Berhasil()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var admin = BuatAdmin(database);
+
+        _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 2, "SandiBaruWaliA1!");
+
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "wali_a", "SandiBaruWaliA1!"));
+    }
+
+    [Fact]
+    public void ResetSandi_TargetTidakAda_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
+
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, akunIdTarget: 999, "SandiBaru1!"));
+    }
 }

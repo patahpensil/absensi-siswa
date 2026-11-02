@@ -39,6 +39,13 @@ public sealed class Penjadwal
     private readonly PemrosesPembaruanPairing _pemrosesPembaruanPairing;
     private readonly LayananBackup _layananBackup;
 
+    // Timer 30 detik memanggil DetakAsync tanpa menunggu detak sebelumnya
+    // selesai; pengirim outbox menunggu ~1 detik per pesan, jadi antrean besar
+    // (rekap 08.00) bisa melewati 30 detik dan detak berikutnya akan
+    // berjalan bersamaan — baris outbox yang sama bisa terkirim dua kali.
+    // Satu thread UI, jadi bendera sederhana cukup (tanpa kunci).
+    private bool _sedangDetak;
+
     private DateOnly? _tanggalTerakhirDiproses;
     private bool _rekapSudahDiproses;
     private bool _batasAkhirSudahDiproses;
@@ -61,6 +68,24 @@ public sealed class Penjadwal
     // sesaat) tidak boleh mematikan aplikasi absensi gerbang yang sedang
     // dipakai — dicoba lagi detak berikutnya.
     public async Task DetakAsync()
+    {
+        if (_sedangDetak)
+        {
+            return;
+        }
+
+        _sedangDetak = true;
+        try
+        {
+            await DetakTanpaPenjagaAsync();
+        }
+        finally
+        {
+            _sedangDetak = false;
+        }
+    }
+
+    private async Task DetakTanpaPenjagaAsync()
     {
         var sekarang = _penyediaWaktu.Sekarang;
         var tanggal = DateOnly.FromDateTime(sekarang);

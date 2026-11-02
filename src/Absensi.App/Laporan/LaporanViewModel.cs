@@ -445,13 +445,13 @@ public sealed class LaporanViewModel : ObservableObject
                         return;
                     }
 
-                    berkas = keExcel ? _penulisExcel.TulisKartuOrang(kepala, [satu], _subjekTerpilih) : _penulisPdf.TulisKartuOrang(kepala, [satu], _subjekTerpilih);
+                    berkas = keExcel ? _penulisExcel.TulisKartuOrang(kepala, LengkapiFoto([satu]), _subjekTerpilih) : _penulisPdf.TulisKartuOrang(kepala, LengkapiFoto([satu]), _subjekTerpilih);
                     namaBerkas = $"{kepala.Judul} - {satu.Nama}";
                     break;
                 case JenisLaporan.PerOrang:
                     var batch = _layananLaporan.PerKelasAtauSemua(
                         _connection, _akun, _subjekTerpilih, _kelasTerpilihId, _tahunAjaranId, DateOnly.FromDateTime(_tanggalAwal), DateOnly.FromDateTime(_tanggalAkhir));
-                    berkas = keExcel ? _penulisExcel.TulisKartuOrang(kepala, batch, _subjekTerpilih) : _penulisPdf.TulisKartuOrang(kepala, batch, _subjekTerpilih);
+                    berkas = keExcel ? _penulisExcel.TulisKartuOrang(kepala, LengkapiFoto(batch), _subjekTerpilih) : _penulisPdf.TulisKartuOrang(kepala, LengkapiFoto(batch), _subjekTerpilih);
                     namaBerkas = kepala.Judul;
                     break;
                 default:
@@ -544,7 +544,7 @@ public sealed class LaporanViewModel : ObservableObject
                         return;
                     }
 
-                    halaman = _penulisPdf.GambarKartuOrang(kepala, [satu], _subjekTerpilih);
+                    halaman = _penulisPdf.GambarKartuOrang(kepala, LengkapiFoto([satu]), _subjekTerpilih);
                     break;
                 case JenisLaporan.PerOrang:
                     var batch = _layananLaporan.PerKelasAtauSemua(
@@ -555,7 +555,7 @@ public sealed class LaporanViewModel : ObservableObject
                         return;
                     }
 
-                    halaman = _penulisPdf.GambarKartuOrang(kepala, batch, _subjekTerpilih);
+                    halaman = _penulisPdf.GambarKartuOrang(kepala, LengkapiFoto(batch), _subjekTerpilih);
                     break;
                 default:
                     if (PratinjauSemester.Count == 0)
@@ -576,6 +576,22 @@ public sealed class LaporanViewModel : ObservableObject
         }
     }
 
+    // FotoPath/LogoPath tersimpan sebagai nama berkas polos (mis. "0012345678.png"),
+    // relatif terhadap data/foto atau data/. PenulisPdfLaporan memeriksa File.Exists
+    // pada path apa adanya, jadi tanpa ini foto/logo tidak pernah tercetak.
+    private static string? AbsolutDariFolderData(string? nama, string? subfolder)
+    {
+        if (string.IsNullOrWhiteSpace(nama) || Path.IsPathRooted(nama))
+        {
+            return nama;
+        }
+
+        return subfolder is null ? Path.Combine(LokasiData.FolderData, nama) : Path.Combine(LokasiData.FolderData, subfolder, nama);
+    }
+
+    private static IReadOnlyList<KartuOrang> LengkapiFoto(IReadOnlyList<KartuOrang> kartu) =>
+        kartu.Select(k => k with { FotoPath = AbsolutDariFolderData(k.FotoPath, "foto") }).ToList();
+
     private KepalaLaporan BangunKepala()
     {
         var sekolah = _repositoriSekolah.CariSatuSatunya(_connection);
@@ -586,7 +602,7 @@ public sealed class LaporanViewModel : ObservableObject
         return new KepalaLaporan(
             sekolah?.Nama ?? "Nama sekolah belum diatur",
             sekolah?.Npsn,
-            sekolah?.LogoPath,
+            AbsolutDariFolderData(sekolah?.LogoPath, null),
             judul,
             rentang,
             dicetakOleh,

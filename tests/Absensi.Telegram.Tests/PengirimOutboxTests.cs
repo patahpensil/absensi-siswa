@@ -79,4 +79,47 @@ public sealed class PengirimOutboxTests
         command.CommandText = "SELECT status FROM outbox WHERE chat_id = 'chat-gagal-total';";
         Assert.Equal("gagal", command.ExecuteScalar());
     }
+
+    [Fact]
+    public async Task KirimAntreanAsync_InternetMati_TidakMenghabiskanJatahPercobaanDanBerhentiSiklus()
+    {
+        using var database = new MigratedDatabase();
+        database.TulisPengaturan("token_bot", "TOKEN-UJI");
+        database.TambahOutboxAntre("chat-a");
+        database.TambahOutboxAntre("chat-b", jenis: "alpa");
+        var klien = new KlienBotTelegramPalsu { JaringanMati = true };
+        var pengirim = new PengirimOutbox(klien, TimeSpan.Zero);
+
+        // Jauh melebihi BatasPercobaan: offline berjam-jam tidak boleh
+        // membuat antrean 'gagal' permanen (PRD §9.4).
+        for (var i = 0; i < 50; i++)
+        {
+            await pengirim.KirimAntreanAsync(database.Connection, new PenyediaWaktuTetap(Waktu));
+        }
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM outbox WHERE status = 'antre' AND percobaan = 0;";
+        Assert.Equal(2L, command.ExecuteScalar());
+        // Satu panggilan per siklus: begitu jaringan terdeteksi mati, sisa antrean tidak dicoba.
+        Assert.Equal(50, klien.JumlahPanggilanKirim);
+    }
+
+    [Fact]
+    public async Task KirimAntreanAsync_InternetKembali_PesanYangTertundaTerkirim()
+    {
+        using var database = new MigratedDatabase();
+        database.TulisPengaturan("token_bot", "TOKEN-UJI");
+        database.TambahOutboxAntre("chat-a");
+        var klien = new KlienBotTelegramPalsu { JaringanMati = true };
+        var pengirim = new PengirimOutbox(klien, TimeSpan.Zero);
+        for (var i = 0; i < 10; i++)
+        {
+            await pengirim.KirimAntreanAsync(database.Connection, new PenyediaWaktuTetap(Waktu));
+        }
+
+        klien.JaringanMati = false;
+        var terkirim = await pengirim.KirimAntreanAsync(database.Connection, new PenyediaWaktuTetap(Waktu));
+
+        Assert.Equal(1, terkirim);
+    }
 }

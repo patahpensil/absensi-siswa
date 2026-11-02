@@ -93,7 +93,7 @@ Catatan pengisian:
 3. Pilih berkas Excel yang sudah disiapkan.
 4. Aplikasi akan memeriksa isinya dan menunjukkan baris mana yang bermasalah (kalau ada) beserta alasannya — perbaiki di Excel, lalu impor ulang.
 5. Bila semua sudah benar, klik tombol impor untuk menyimpan.
-6. Setelah siswa berhasil diimpor, klik **"Impor foto"** untuk memasukkan foto siswa sekaligus (nama file foto = NISN, contoh `0012345678.jpg`).
+6. (Fitur "Impor foto" massal sudah dihapus dari layar, A-35; foto per orang diunggah lewat form Siswa/Guru. Entry point impor foto massal belum ada — lihat PROGRES-DAN-UTANG.md.)
 
 `[GAMBAR: layar Siswa, tombol Impor Excel]`
 
@@ -138,11 +138,11 @@ Bila komputer sekolah rusak total atau harus diganti:
 2. Jalankan `Absensi.App.exe` — layar **Instalasi Pertama** akan muncul lagi (karena komputer baru belum punya data sama sekali).
 3. Di **Langkah 1 — Lisensi**, masukkan kunci lisensi sekolah yang sama seperti sebelumnya.
 4. Pilih **"Pulihkan dari PC Lama"**.
-5. Aplikasi akan mengambil backup terakhir dari cloud secara otomatis — seluruh data sekolah (siswa, guru, absensi, pengaturan) akan kembali seperti semula tanpa perlu mengisi ulang wizard dari awal.
+5. Aplikasi akan mengambil backup terakhir dari penyimpanan cadangan sekunder (SAAT INI masih folder lokal di PC, bukan server di luar PC — A-43) secara otomatis — seluruh data sekolah (siswa, guru, absensi, pengaturan) akan kembali seperti semula tanpa perlu mengisi ulang wizard dari awal.
 
 `[GAMBAR: layar Instalasi Pertama, tombol Pulihkan dari PC Lama]`
 
-> Jalur ini hanya berhasil bila komputer lama sempat online dan mengirim backup ke cloud sebelum rusak. Bila ragu, hubungi developer terlebih dahulu sebelum memasang di komputer baru.
+> Jalur ini hanya berhasil bila folder cadangan sekunder dari komputer lama masih bisa diakses (belum ada penyimpanan di luar PC). Bila ragu, hubungi developer terlebih dahulu sebelum memasang di komputer baru.
 
 ---
 

@@ -148,4 +148,49 @@ public sealed class PenjadwalTests
         command.CommandText = "SELECT status FROM absensi_guru WHERE guru_id = 1 AND tanggal = '2026-09-17';";
         Assert.Equal("masuk", command.ExecuteScalar());
     }
+
+    // Pengirim outbox menunggu per pesan; timer 30 detik tidak menunggu detak
+    // sebelumnya. Detak yang tumpang tindih tidak boleh mengirim ulang baris
+    // outbox yang sama.
+    [Fact]
+    public async Task DetakAsync_DetakSebelumnyaMasihBerjalan_DetakBerikutnyaDilewati()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        SeedPairingSiswaSatu(database);
+        database.Execute("INSERT OR REPLACE INTO pengaturan (kunci, nilai) VALUES ('token_bot', 'TOKEN-UJI');");
+        var klien = new KlienTertahan();
+        var waktu = new PenyediaWaktuUji(Waktu(12, 5));
+        var penjadwal = new Penjadwal(database.Connection, waktu, klien, BuatLayananBackup());
+
+        var detakPertama = penjadwal.DetakAsync();
+        await klien.SudahDipanggil.Task;
+
+        await penjadwal.DetakAsync();
+        Assert.Equal(1, klien.JumlahPanggilan);
+
+        klien.Lepas.SetResult();
+        await detakPertama;
+        Assert.Equal(1, klien.JumlahPanggilan);
+    }
+
+    private sealed class KlienTertahan : Absensi.Telegram.IKlienBotTelegram
+    {
+        public TaskCompletionSource SudahDipanggil { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Lepas { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public int JumlahPanggilan { get; private set; }
+
+        public async Task<Absensi.Telegram.HasilKirimPesan> KirimPesanAsync(string tokenBot, string chatId, string teks)
+        {
+            JumlahPanggilan++;
+            SudahDipanggil.TrySetResult();
+            await Lepas.Task;
+            return Absensi.Telegram.HasilKirimPesan.Berhasil;
+        }
+
+        public Task<IReadOnlyList<Absensi.Telegram.PembaruanTelegram>> AmbilPembaruanAsync(string tokenBot, long offsetTerakhir) =>
+            Task.FromResult<IReadOnlyList<Absensi.Telegram.PembaruanTelegram>>(Array.Empty<Absensi.Telegram.PembaruanTelegram>());
+    }
 }

@@ -1,0 +1,15 @@
+revisi PRD
+
+status Kehadiran
+scan sampai 07:30:00            ->  HADIR
+scan mulai 07:31:00             ->  TERLAMBAT
+tidak ada scan sampai 07:30     ->  ALPA
+
+
+status Kehadiran 
+scan keharidan status awal alpa
+status awal semua siswa adalah alpa
+tap kartu RFID yang merubah semua status
+Hadir 07:30:00
+Terlambat 07:31:00 sampai dengan 13:30
+yang melakukan tap 

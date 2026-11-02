@@ -25,6 +25,14 @@ public sealed class LayananPengaturan
                 _repositoriPengaturan.Tulis(connection, transaction, kunci, nilai);
                 return null;
             },
-            nilaiBaru: $"{kunci}={nilai}");
+            nilaiBaru: $"{kunci}={NilaiUntukAudit(kunci, nilai)}");
     }
+
+    // Audit tidak bisa diubah/dihapus (trigger A-38) dan ikut arsip serta
+    // backup, jadi rahasia tidak boleh pernah masuk ke sana. Cukup tercatat
+    // BAHWA token diganti, bukan nilainya.
+    private static string NilaiUntukAudit(string kunci, string nilai) =>
+        kunci.Contains("token", StringComparison.OrdinalIgnoreCase) || kunci.Contains("sandi", StringComparison.OrdinalIgnoreCase)
+            ? "(disamarkan)"
+            : nilai;
 }

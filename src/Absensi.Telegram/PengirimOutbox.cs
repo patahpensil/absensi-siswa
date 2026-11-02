@@ -43,19 +43,29 @@ public sealed class PengirimOutbox
 
         foreach (var baris in antrean)
         {
-            var berhasil = await _klien.KirimPesanAsync(tokenBot, baris.ChatId, baris.Isi);
-            if (berhasil)
+            var hasil = await _klien.KirimPesanAsync(tokenBot, baris.ChatId, baris.Isi);
+            if (hasil == HasilKirimPesan.GagalJaringan)
+            {
+                // PRD §9.4 "internet putus → antre, kirim saat normal": tidak
+                // ada koneksi (atau Telegram sedang bermasalah) bukan salah
+                // pesan ini, jadi jatah percobaan TIDAK dikurangi dan sisa
+                // antrean tidak dicoba lagi pada siklus ini (pasti gagal
+                // juga, dan menunggu timeout per pesan menahan siklus).
+                break;
+            }
+
+            if (hasil == HasilKirimPesan.Berhasil)
             {
                 _repositoriOutbox.TandaiTerkirim(connection, baris.Id, penyediaWaktu.Sekarang);
                 jumlahTerkirim++;
             }
             else if (baris.Percobaan + 1 >= BatasPercobaan)
             {
-                _repositoriOutbox.TandaiGagalPermanen(connection, baris.Id, "Gagal mengirim setelah beberapa kali percobaan.");
+                _repositoriOutbox.TandaiGagalPermanen(connection, baris.Id, "Ditolak Telegram setelah beberapa kali percobaan.");
             }
             else
             {
-                _repositoriOutbox.TandaiGagalSementara(connection, baris.Id, "Gagal mengirim, akan dicoba lagi.");
+                _repositoriOutbox.TandaiGagalSementara(connection, baris.Id, "Ditolak Telegram, akan dicoba lagi.");
             }
 
             await Task.Delay(_jedaAntarKirim);

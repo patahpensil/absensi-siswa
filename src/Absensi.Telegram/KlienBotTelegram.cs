@@ -19,7 +19,7 @@ public sealed class KlienBotTelegram : IKlienBotTelegram
         _httpClient = httpClient ?? new HttpClient();
     }
 
-    public async Task<bool> KirimPesanAsync(string tokenBot, string chatId, string teks)
+    public async Task<HasilKirimPesan> KirimPesanAsync(string tokenBot, string chatId, string teks)
     {
         try
         {
@@ -29,11 +29,16 @@ public sealed class KlienBotTelegram : IKlienBotTelegram
 
             if (!respons.IsSuccessStatusCode)
             {
-                return false;
+                // 429 (terlalu cepat) dan 5xx adalah masalah sementara di sisi
+                // Telegram — bukan salah pesan/chat/token, jadi tidak boleh
+                // menghabiskan jatah percobaan. 4xx lain (400/401/403/404)
+                // adalah penolakan nyata.
+                var kode = (int)respons.StatusCode;
+                return kode == 429 || kode >= 500 ? HasilKirimPesan.GagalJaringan : HasilKirimPesan.Ditolak;
             }
 
             var hasil = await respons.Content.ReadFromJsonAsync<ResponsTelegram>();
-            return hasil?.Ok ?? false;
+            return hasil?.Ok ?? false ? HasilKirimPesan.Berhasil : HasilKirimPesan.Ditolak;
         }
         catch (HttpRequestException galat)
         {
@@ -43,12 +48,12 @@ public sealed class KlienBotTelegram : IKlienBotTelegram
             // Level ERROR (bukan FATAL): kegagalan satu kali kirim tidak
             // menghentikan aplikasi, PRD §9.4 tetap "antre, coba lagi".
             PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.KirimPesanAsync", level: "ERROR");
-            return false;
+            return HasilKirimPesan.GagalJaringan;
         }
         catch (TaskCanceledException galat)
         {
             PencatatGalat.Catat(galat, sumber: "KlienBotTelegram.KirimPesanAsync", level: "ERROR");
-            return false;
+            return HasilKirimPesan.GagalJaringan;
         }
     }
 

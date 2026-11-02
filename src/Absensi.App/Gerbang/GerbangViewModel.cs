@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using Absensi.App.Mvvm;
 using Absensi.Data;
+using Absensi.Data.Diagnostik;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
 using Absensi.Domain.Kehadiran;
@@ -113,8 +114,26 @@ public sealed class GerbangViewModel : ObservableObject
         }
 
         var waktu = _penyediaWaktu.Sekarang;
-        var kartu = _repositoriKartu.CariAktifBerdasarkanUid(_connection, uid);
-        var keputusan = _pemrosesTap.Proses(_connection, uid, waktu, _statusModeRegistrasi.Aktif);
+        KeputusanTap keputusan;
+        KartuAktif? kartu;
+        try
+        {
+            kartu = _repositoriKartu.CariAktifBerdasarkanUid(_connection, uid);
+            keputusan = _pemrosesTap.Proses(_connection, uid, waktu, _statusModeRegistrasi.Aktif);
+        }
+        catch (Exception ex) when (PenangananGalat.PesanUntuk(ex) is not null)
+        {
+            // Tahun ajaran aktif hilang, database terkunci sesaat, dst.: layar
+            // gerbang dipasang permanen, jadi satu tap yang gagal diproses TIDAK
+            // boleh menutup aplikasi lewat penanganan galat global. Tap ini
+            // belum tercatat — petugas diminta mengulang.
+            PencatatGalat.Catat(ex, "GerbangViewModel.ProsesTap", "ERROR");
+            TambahKartuAktif(new KartuTapViewModel(
+                null, "Tap belum tercatat", string.Empty, null, "Ulangi tap atau lapor petugas", waktu, KategoriWarnaTap.Ditolak));
+            _pemutarBunyi.Gagal();
+            return;
+        }
+
         var info = _cache.Cari(kartu?.PemilikTipe, kartu?.PemilikId);
         var (kategori, teksStatus, berhasil) = PemetaanTampilanTap.Petakan(keputusan);
 

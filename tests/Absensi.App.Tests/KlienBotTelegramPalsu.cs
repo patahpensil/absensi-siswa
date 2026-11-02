@@ -8,10 +8,10 @@ internal sealed class KlienBotTelegramPalsu : IKlienBotTelegram
 {
     public List<(string ChatId, string Teks)> PesanTerkirim { get; } = new();
 
-    public Task<bool> KirimPesanAsync(string tokenBot, string chatId, string teks)
+    public Task<HasilKirimPesan> KirimPesanAsync(string tokenBot, string chatId, string teks)
     {
         PesanTerkirim.Add((chatId, teks));
-        return Task.FromResult(true);
+        return Task.FromResult(HasilKirimPesan.Berhasil);
     }
 
     public Task<IReadOnlyList<PembaruanTelegram>> AmbilPembaruanAsync(string tokenBot, long offsetTerakhir) =>

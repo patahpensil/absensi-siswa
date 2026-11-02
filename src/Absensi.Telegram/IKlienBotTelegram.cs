@@ -7,7 +7,7 @@ namespace Absensi.Telegram;
 // seperti IPenyediaWaktu/IPemutarBunyi di Absensi.App).
 public interface IKlienBotTelegram
 {
-    Task<bool> KirimPesanAsync(string tokenBot, string chatId, string teks);
+    Task<HasilKirimPesan> KirimPesanAsync(string tokenBot, string chatId, string teks);
 
     Task<IReadOnlyList<PembaruanTelegram>> AmbilPembaruanAsync(string tokenBot, long offsetTerakhir);
 }
