@@ -60,6 +60,12 @@ public sealed class PenentuStatusKehadiran
             return KeputusanTap.Ditolak(AlasanTap.JedaTapTerlaluCepat);
         }
 
+        // PRD §8.3/§16.8.a: koreksi Izin/Sakit mendahului tap masuk maupun pulang.
+        if (siswa.StatusSaatIni is StatusAbsensiSiswa.Izin or StatusAbsensiSiswa.Sakit)
+        {
+            return KeputusanTap.TidakBerubahSiswa(siswa.StatusSaatIni);
+        }
+
         var jamSekarang = TimeOnly.FromDateTime(waktu);
 
         if (jamSekarang >= siswa.MulaiAbsenPulang)
@@ -74,7 +80,7 @@ public sealed class PenentuStatusKehadiran
             return KeputusanTap.Diabaikan();
         }
 
-        if (jamSekarang < siswa.JamMasuk)
+        if (jamSekarang <= siswa.JamMasuk)
         {
             return KeputusanTap.IsiJamMasukSiswa(StatusAbsensiSiswa.Hadir);
         }

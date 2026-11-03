@@ -15,7 +15,8 @@ public sealed class KartuTapViewModel : ObservableObject
         ImageSource? foto,
         string teksStatus,
         DateTime waktu,
-        KategoriWarnaTap kategoriWarna)
+        KategoriWarnaTap kategoriWarna,
+        string? petunjuk = null)
     {
         PemilikTipe = pemilikTipe;
         Nama = nama;
@@ -24,9 +25,12 @@ public sealed class KartuTapViewModel : ObservableObject
         TeksStatus = teksStatus;
         Waktu = waktu;
         KategoriWarna = kategoriWarna;
+        Petunjuk = petunjuk;
     }
 
     public JenisPemilikKartu? PemilikTipe { get; }
+
+    public string? Petunjuk { get; }
 
     // Sentence case (PANDUAN-UI-UX.md §4.3): "Guru" dan "Siswa", bukan huruf besar semua.
     public string LabelJenis => PemilikTipe switch

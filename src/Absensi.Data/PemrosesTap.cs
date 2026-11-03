@@ -28,12 +28,15 @@ public sealed class PemrosesTap
 
     public KeputusanTap Proses(SqliteConnection connection, string uid, DateTime waktu, bool modeRegistrasiAktif)
     {
+        // PRD §8.3: koreksi tidak boleh disela oleh tap dengan konteks yang sudah usang.
+        using var transaction = connection.BeginTransaction(deferred: false);
+
         var tanggal = DateOnly.FromDateTime(waktu);
         var tahunAjaranId = _repositoriTahunAjaran.CariIdAktif(connection)
             ?? throw new InvalidOperationException("Tidak ada tahun ajaran aktif; tap tidak bisa diproses.");
 
         var jenisHari = _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId);
-        var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid);
+        var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid, transaction);
         var tapTerakhir = _repositoriTapLog.CariWaktuTapTerakhir(connection, uid);
         var jedaTapMinimal = TimeSpan.FromSeconds(_repositoriPengaturan.BacaInt(connection, "jeda_tap_detik", 15));
         var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal));
@@ -73,8 +76,6 @@ public sealed class PemrosesTap
         // dikonfirmasi pemilik proyek 2026-09-18. Pesan hanya diANTRE, tak
         // pernah dikirim di sini (CLAUDE.md §4.4 aturan 15).
         var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);
-
-        using var transaction = connection.BeginTransaction();
 
         if (kartu is not null)
         {
@@ -151,7 +152,8 @@ public sealed class PemrosesTap
                 SudahTapMasukHariIni: absensiHariIni?.SudahTapMasuk ?? false,
                 JamMasuk: jadwal?.JamMasuk ?? default,
                 BatasAkhirTapMasuk: jadwal?.BatasTapMasuk ?? default,
-                MulaiAbsenPulang: jadwal?.MulaiPulang ?? default);
+                MulaiAbsenPulang: jadwal?.MulaiPulang ?? default,
+                StatusSaatIni: absensiHariIni?.Status ?? StatusAbsensiSiswa.Alpa);
 
             return new KonteksTap(waktu, modeRegistrasiAktif, jenisHari, kartu.PemilikTipe, Siswa: konteksSiswa);
         }

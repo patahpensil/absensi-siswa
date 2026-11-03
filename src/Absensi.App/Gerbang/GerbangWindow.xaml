@@ -149,7 +149,8 @@
                             Padding="{Binding DataContext.Tipografi.PaddingKartu, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                             Margin="{Binding DataContext.Tipografi.MarginKartu, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
                         <!-- Baris: label (Auto) | foto (* = sisa tinggi) | nama
-                             (tinggi tetap) | NISN/NIP (Auto) | status (Auto).
+                             (tinggi tetap) | NISN/NIP (Auto) | status (Auto)
+                             | petunjuk koreksi opsional (Auto).
                              Nama, NISN/NIP, dan status masing-masing dalam
                              Viewbox DownOnly: hanya menyusut bila teks lebih
                              lebar/tinggi dari kotaknya (nama sangat panjang,
@@ -159,6 +160,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -292,6 +294,23 @@
                                     <Run Text="{Binding TeksStatus, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TeksJam, Mode=OneWay}" />
                                 </TextBlock>
                             </Viewbox>
+                            <TextBlock Grid.Row="5"
+                                       Text="{Binding Petunjuk, Mode=OneWay}"
+                                       Foreground="{StaticResource PutihBrush}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       FontSize="16"
+                                       Margin="0,8,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Petunjuk}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </Border>
                 </DataTemplate>

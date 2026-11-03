@@ -144,7 +144,8 @@ public sealed class GerbangViewModel : ObservableObject
             info?.Foto,
             teksStatus,
             waktu,
-            kategori);
+            kategori,
+            petunjuk: PemetaanTampilanTap.PetunjukUntuk(keputusan));
 
         TambahKartuAktif(kartuTampil);
         PerbaruiRingkasanHarian();

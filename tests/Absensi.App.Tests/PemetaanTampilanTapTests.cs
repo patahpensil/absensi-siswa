@@ -13,6 +13,29 @@ namespace Absensi.App.Tests;
 public sealed class PemetaanTampilanTapTests
 {
     [Theory]
+    [InlineData(StatusAbsensiSiswa.Izin, "Izin")]
+    [InlineData(StatusAbsensiSiswa.Sakit, "Sakit")]
+    public void Petakan_KoreksiSiswaTetapBerlaku_MenampilkanStatusDanArahan(
+        StatusAbsensiSiswa status, string teksStatus)
+    {
+        var keputusan = KeputusanTap.TidakBerubahSiswa(status);
+
+        var (kategori, teks, _) = PemetaanTampilanTap.Petakan(keputusan);
+
+        Assert.Equal(KategoriWarnaTap.Info, kategori);
+        Assert.Equal(teksStatus, teks);
+        Assert.Equal($"Status hari ini: {teksStatus}. Hubungi wali kelas atau admin untuk koreksi.",
+            PemetaanTampilanTap.PetunjukUntuk(keputusan));
+    }
+
+    [Fact]
+    public void PetunjukUntuk_TapNormalAtauGuru_TidakMenampilkanArahanKoreksiSiswa()
+    {
+        Assert.Null(PemetaanTampilanTap.PetunjukUntuk(KeputusanTap.IsiJamMasukSiswa(StatusAbsensiSiswa.Hadir)));
+        Assert.Null(PemetaanTampilanTap.PetunjukUntuk(KeputusanTap.TidakBerubahGuru(StatusAbsensiGuru.Izin)));
+    }
+
+    [Theory]
     [InlineData(AlasanTap.TanggalLibur, "Hari libur")]
     [InlineData(AlasanTap.KartuTidakTerdaftar, "Tidak terdaftar")]
     [InlineData(AlasanTap.PemilikTidakAktif, "Nonaktif")]

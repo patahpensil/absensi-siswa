@@ -14,6 +14,9 @@ public static class PemetaanTampilanTap
 
             JenisTindakanTap.Diabaikan => (KategoriWarnaTap.Netral, "Sudah tercatat", true),
 
+            JenisTindakanTap.TidakBerubah when keputusan.StatusSiswaBaru is { } status =>
+                (KategoriWarnaTap.Info, TeksStatusSiswa(status), true),
+
             JenisTindakanTap.TidakBerubah => (KategoriWarnaTap.Info, TeksStatusGuru(keputusan.StatusGuruBaru), true),
 
             JenisTindakanTap.IsiJamPulang => (KategoriWarnaTap.Hadir, "Pulang", true),
@@ -31,6 +34,19 @@ public static class PemetaanTampilanTap
 
             _ => (KategoriWarnaTap.Netral, "-", true),
         };
+
+    public static string? PetunjukUntuk(KeputusanTap keputusan) =>
+        keputusan.Tindakan == JenisTindakanTap.TidakBerubah
+        && keputusan.StatusSiswaBaru is StatusAbsensiSiswa.Izin or StatusAbsensiSiswa.Sakit
+            ? $"Status hari ini: {TeksStatusSiswa(keputusan.StatusSiswaBaru.Value)}. Hubungi wali kelas atau admin untuk koreksi."
+            : null;
+
+    private static string TeksStatusSiswa(StatusAbsensiSiswa status) => status switch
+    {
+        StatusAbsensiSiswa.Izin => "Izin",
+        StatusAbsensiSiswa.Sakit => "Sakit",
+        _ => "-",
+    };
 
     private static string TeksStatusGuru(StatusAbsensiGuru? status) => status switch
     {

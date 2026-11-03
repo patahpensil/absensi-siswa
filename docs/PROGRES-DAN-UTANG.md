@@ -1,8 +1,10 @@
-# Progres dan Utang — pembaruan dokumentasi 2026-11-04
+# Progres dan Utang — implementasi awal PRD 2026-11-04
 
 Satu-satunya folder kerja proyek: `D:\Project Absensi SMP 1`. Berkas ini adalah
 ringkasan status terkini; rincian per butir ada di `MASTER-BUG-UIUX-REGISTER.md`,
 `TODO-VERSI-BERIKUTNYA.md`, dan `RENCANA-TUGAS.md`.
+
+> **Checkpoint kode 2026-11-04:** pemilik telah menginstruksikan kelanjutan kode yang ada mengacu pada PRD terbaru. Implementasi awal P-04 dan batas Hadir P-06 beserta hasil pengujian dicatat pada §7. Catatan §1–§5 serta checkpoint dokumentasi di bawah merupakan riwayat, bukan keadaan implementasi baru. Belum ada deployment.
 
 > **2026-11-04 — PEMBARUAN DOKUMENTASI:** rancangan online rinci dan hasil pembahasan dicatat pada [PRD](PRD.md). Pemilik menginstruksikan commit/push dokumen PRD serta catatan utang ini. P-16 (verifikasi penautan dan pemilihan kanal Telegram/WhatsApp) tetap ditangguhkan. Utang PRD online ada pada §6 di bawah dan PRD §25.1.
 >
@@ -98,3 +100,41 @@ P-01–P-15, P-17 dan P-18 dicatat pada PRD §25.5: koreksi berwenang, kartu tet
 ### 6.4 Lingkup checkpoint dokumentasi
 
 Pembaruan ini hanya menyimpan `docs/PRD.md` dan `docs/PROGRES-DAN-UTANG.md` ke repositori atas instruksi pemilik. Tidak mengubah source code, database, data sekolah, konfigurasi runtime, atau deployment. Daftar bug dan arsip historis pada §1–§5 tetap dipertahankan. Keputusan implementasi, migrasi data nyata, pengadaan dan deployment tetap memerlukan instruksi tersendiri.
+
+## 7. Implementasi awal P-04 dan batas Hadir P-06
+
+**Acuan:** PRD §8.3, §16.8.a dan §24. **Basis kode:** commit `6df9dee5978f2cb359062c80cefb2bb4dd63103a` pada `master`. Perubahan melanjutkan Domain, Data dan WPF yang sudah ada; tidak menambahkan dependency atau mengubah skema/database sekolah.
+
+### 7.1 Perubahan yang ditulis
+
+- Konteks tap siswa wajib memuat status resmi saat ini. Izin/Sakit mendahului tap masuk/pulang sesuai urutan PRD; status dan jam resmi tetap utuh, percobaan masuk ke `tap_log`, dan tap itu tidak menambah notifikasi Hadir/Terlambat.
+- Pembacaan konteks, penyimpanan keputusan, antrean notifikasi dan tap log berada dalam satu transaksi SQLite dengan penguncian penulis sejak awal. Transaksi kartu diteruskan eksplisit. Koreksi dari koneksi lain tidak dapat menyela pembacaan status dan penyimpanan tap. Mekanisme ini hanya berlaku pada adapter SQLite yang ada, bukan bukti implementasi backend PostgreSQL.
+- Perbandingan batas Hadir mengikuti konfigurasi sekolah dengan operator `<=`: pada konfigurasi 07.30, tap 07.30.00 Hadir dan 07.30.01 Terlambat; detik tidak dibulatkan.
+- Gerbang menampilkan Izin/Sakit dengan arahan menghubungi wali kelas atau admin. Teks arahan opsional tidak ditampilkan untuk tap normal/guru.
+- `CLAUDE.md` menandai teknologi lama sebagai baseline, merujuk arsitektur PRD baru, dan memperbaiki contoh batas Hadir. DOC-01 masih terbuka untuk dokumen/aturan lain.
+
+### 7.2 Bukti pemeriksaan pada perubahan ini
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Restore/build Release seluruh `Absensi.sln`, termasuk WPF dan proyek tes Windows | Berhasil, SDK 8.0.427; lintas target dengan `EnableWindowsTargeting=true` pada Linux |
+| Domain | 66 lulus, 0 gagal, 0 dilewati |
+| Data | 247 lulus, 0 gagal, 0 dilewati |
+| Telegram | 10 lulus, 0 gagal, 0 dilewati |
+| Laporan | 32 lulus, 0 gagal, 0 dilewati |
+| Total tes yang benar-benar dijalankan | **355 lulus**, 0 gagal, 0 dilewati |
+| Tes WPF/App dan UAT visual/RFID | **Belum dijalankan**, memerlukan Windows; build tes berhasil |
+| `git diff --check` | Lulus |
+
+Tes Data mencakup Izin/Sakit sebelum masuk, setelah rekap dan saat pulang, termasuk jam resmi yang sudah terisi; tidak ada outbox baru dan percobaan tercatat. Uji kegagalan insert tap log membuktikan perubahan absensi/outbox ikut rollback dan pemrosesan berikutnya tetap dapat berhasil. Tes Domain mencakup batas detik, jadwal sekolah yang berbeda dan prioritas jeda tap. Tes pemetaan pesan dan layout petunjuk pada empat ukuran layar ditambahkan ke proyek App, tetapi belum dinyatakan lulus runtime.
+
+CLI `dotnet test`/VSTest terhalang pembacaan informasi proses pada lingkungan ini. Build dijalankan melalui `MSBuild.dll` SDK yang sama; 355 tes di atas dijalankan memakai console runner resmi xUnit 2.5.3 dengan `-noshadow -parallel none`. Runner hanya alat pemeriksaan lokal, bukan dependency proyek. Pada Windows, jalankan `dotnet test Absensi.sln -c Release` sebelum menerima perubahan UI. Angka historis 592 pada §1 bukan hasil ulang seluruh suite dalam checkpoint ini.
+
+### 7.3 Pekerjaan berikutnya yang belum selesai
+
+1. Jalankan seluruh tes App/WPF dan UAT arahan gerbang pada Windows; pastikan tata letak, DPI dan input RFID benar.
+2. Selesaikan P-06: pisahkan konfigurasi/job daftar belum tap wali kelas 08.00 dari rekap orang tua 08.10. Baseline masih memakai satu `jam_rekap`; perubahan ini **belum** memisahkannya atau mengganti jadwal tersimpan.
+3. Bangun backend ASP.NET Core, adapter PostgreSQL dan identitas/isolasi tenant mengikuti PRD; desktop saat ini masih menggunakan adapter SQLite. Belum ada portal online, provisioning atau migrasi data nyata.
+4. Lanjutkan DOC-01, T3/T6/T8, P-07–P-15/P-17/P-18 dan verifikasi keamanan sesuai cakupan masing-masing. D-01–D-11 tetap membutuhkan rincian/bukti sebagaimana §6; P-16 tetap ditangguhkan.
+
+Perubahan ini tidak membuktikan ASVS L3, kapasitas, lokasi hosting, sinkronisasi offline atau kelayakan biaya. Tidak ada deployment, pengadaan maupun perubahan data sekolah nyata.

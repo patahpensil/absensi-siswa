@@ -27,4 +27,7 @@ public sealed record KeputusanTap(
 
     public static KeputusanTap TidakBerubahGuru(StatusAbsensiGuru status) =>
         new(JenisTindakanTap.TidakBerubah, AlasanTap.StatusSudahDitetapkanDiMuka, StatusGuruBaru: status);
+
+    public static KeputusanTap TidakBerubahSiswa(StatusAbsensiSiswa status) =>
+        new(JenisTindakanTap.TidakBerubah, AlasanTap.StatusSudahDitetapkanDiMuka, StatusSiswaBaru: status);
 }

@@ -228,6 +228,41 @@ public sealed class GerbangKartuLayoutTests
 
     [Theory]
     [MemberData(nameof(Ukuran))]
+    public void KartuGerbang_PetunjukKoreksiTerbacaTanpaMenimpaStatus(int lebar, int tinggi) => StaHost.Jalankan(() =>
+    {
+        using var database = new MigratedDatabase();
+        var kartu = EmpatKartu().Select((k, i) =>
+        {
+            var keputusan = KeputusanTap.TidakBerubahSiswa(
+                i % 2 == 0 ? StatusAbsensiSiswa.Izin : StatusAbsensiSiswa.Sakit);
+            var (warna, status, _) = PemetaanTampilanTap.Petakan(keputusan);
+            return new KartuTapViewModel(JenisPemilikKartu.Siswa, k.Nama, k.NisnAtauNip,
+                k.Foto, status, Waktu, warna, PemetaanTampilanTap.PetunjukUntuk(keputusan));
+        }).ToList();
+        var (host, akar, _) = HostUkuranTetap(database, kartu, lebar, tinggi);
+
+        Tampilkan(host);
+
+        VerifikasiTidakTerpotong(UkurKartu(akar), $"{lebar}x{tinggi}");
+        var petunjuk = Semua<TextBlock>(akar).Where(t => t.Text.StartsWith("Status hari ini:")).ToList();
+        Assert.Equal(4, petunjuk.Count);
+        foreach (var teks in petunjuk)
+        {
+            Assert.Equal(Visibility.Visible, teks.Visibility);
+            var grid = (Grid)teks.Parent;
+            var posisi = teks.TransformToAncestor(grid).TransformBounds(new Rect(teks.RenderSize));
+            var status = (FrameworkElement)Baris(grid, 4);
+            var posisiStatus = status.TransformToAncestor(grid).TransformBounds(new Rect(status.RenderSize));
+            Assert.True(posisi.Top >= posisiStatus.Bottom);
+            Assert.InRange(posisi.Bottom, 1, grid.ActualHeight + 1);
+            Assert.InRange(posisi.Right, 1, grid.ActualWidth + 1);
+        }
+
+        host.Hide();
+    });
+
+    [Theory]
+    [MemberData(nameof(Ukuran))]
     public void KartuGerbang_SemuaUnsurMuatDiAreaKartuTanpaTerpotongDanTanpaTumpangTindih(int lebar, int tinggi) => StaHost.Jalankan(() =>
     {
         using var database = new MigratedDatabase();

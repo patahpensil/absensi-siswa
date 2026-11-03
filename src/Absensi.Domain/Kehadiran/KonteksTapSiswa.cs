@@ -9,4 +9,5 @@ public sealed record KonteksTapSiswa(
     bool SudahTapMasukHariIni,
     TimeOnly JamMasuk,
     TimeOnly BatasAkhirTapMasuk,
-    TimeOnly MulaiAbsenPulang);
+    TimeOnly MulaiAbsenPulang,
+    StatusAbsensiSiswa StatusSaatIni);

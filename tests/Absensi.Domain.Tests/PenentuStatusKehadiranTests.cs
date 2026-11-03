@@ -18,14 +18,16 @@ public sealed class PenentuStatusKehadiranTests
         bool sudahMasuk = false,
         TimeOnly? jamMasuk = null,
         TimeOnly? batasAkhirTapMasuk = null,
-        TimeOnly? mulaiAbsenPulang = null) => new(
+        TimeOnly? mulaiAbsenPulang = null,
+        StatusAbsensiSiswa statusSaatIni = StatusAbsensiSiswa.Alpa) => new(
             SiswaAktif: aktif,
             TapTerakhirKartuIni: tapTerakhir,
             JedaTapMinimal: JedaTapMinimalBawaan,
             SudahTapMasukHariIni: sudahMasuk,
             JamMasuk: jamMasuk ?? new TimeOnly(7, 30),
             BatasAkhirTapMasuk: batasAkhirTapMasuk ?? new TimeOnly(12, 0),
-            MulaiAbsenPulang: mulaiAbsenPulang ?? new TimeOnly(13, 10));
+            MulaiAbsenPulang: mulaiAbsenPulang ?? new TimeOnly(13, 10),
+            StatusSaatIni: statusSaatIni);
 
     private static KonteksTapGuru BuatKonteksGuru(
         bool aktif = true,
@@ -62,13 +64,13 @@ public sealed class PenentuStatusKehadiranTests
     }
 
     [Fact]
-    public void Siswa_Tap0730_TepatJamMasuk_Terlambat()
+    public void Siswa_Tap0730_TepatJamMasuk_Hadir()
     {
         var keputusan = _penentu.Tentukan(
             Bungkus(Waktu(7, 30), JenisPemilikKartu.Siswa, siswa: BuatKonteksSiswa()));
 
         Assert.Equal(JenisTindakanTap.IsiJamMasuk, keputusan.Tindakan);
-        Assert.Equal(StatusAbsensiSiswa.Terlambat, keputusan.StatusSiswaBaru);
+        Assert.Equal(StatusAbsensiSiswa.Hadir, keputusan.StatusSiswaBaru);
     }
 
     [Fact]
@@ -79,6 +81,63 @@ public sealed class PenentuStatusKehadiranTests
 
         Assert.Equal(JenisTindakanTap.IsiJamMasuk, keputusan.Tindakan);
         Assert.Equal(StatusAbsensiSiswa.Terlambat, keputusan.StatusSiswaBaru);
+    }
+
+    [Theory]
+    [InlineData(7, 30, 0, StatusAbsensiSiswa.Hadir)]
+    [InlineData(7, 30, 1, StatusAbsensiSiswa.Terlambat)]
+    [InlineData(12, 0, 0, StatusAbsensiSiswa.Terlambat)]
+    public void Siswa_BatasWaktu_DinilaiTanpaMembulatkanDetik(
+        int jam, int menit, int detik, StatusAbsensiSiswa status)
+    {
+        var keputusan = _penentu.Tentukan(Bungkus(
+            Waktu(jam, menit, detik), JenisPemilikKartu.Siswa, siswa: BuatKonteksSiswa()));
+
+        Assert.Equal(JenisTindakanTap.IsiJamMasuk, keputusan.Tindakan);
+        Assert.Equal(status, keputusan.StatusSiswaBaru);
+    }
+
+    [Theory]
+    [InlineData(StatusAbsensiSiswa.Izin, 7, 20, false)]
+    [InlineData(StatusAbsensiSiswa.Izin, 8, 15, false)]
+    [InlineData(StatusAbsensiSiswa.Izin, 13, 15, true)]
+    [InlineData(StatusAbsensiSiswa.Sakit, 7, 20, false)]
+    [InlineData(StatusAbsensiSiswa.Sakit, 8, 15, false)]
+    [InlineData(StatusAbsensiSiswa.Sakit, 13, 15, true)]
+    [InlineData(StatusAbsensiSiswa.Sakit, 13, 15, false)]
+    public void Siswa_IzinAtauSakit_TapTidakMengubahStatusMaupunWaktu(
+        StatusAbsensiSiswa status, int jam, int menit, bool sudahMasuk)
+    {
+        var keputusan = _penentu.Tentukan(Bungkus(
+            Waktu(jam, menit), JenisPemilikKartu.Siswa,
+            siswa: BuatKonteksSiswa(sudahMasuk: sudahMasuk, statusSaatIni: status)));
+
+        Assert.Equal(JenisTindakanTap.TidakBerubah, keputusan.Tindakan);
+        Assert.Equal(AlasanTap.StatusSudahDitetapkanDiMuka, keputusan.Alasan);
+        Assert.Equal(status, keputusan.StatusSiswaBaru);
+        Assert.Null(keputusan.StatusGuruBaru);
+    }
+
+    [Fact]
+    public void Siswa_IzinAtauSakit_JedaMinimumTetapDiperiksaLebihDahulu()
+    {
+        var tapTerakhir = Waktu(8, 15);
+        var keputusan = _penentu.Tentukan(Bungkus(
+            tapTerakhir.AddSeconds(10), JenisPemilikKartu.Siswa,
+            siswa: BuatKonteksSiswa(tapTerakhir: tapTerakhir, statusSaatIni: StatusAbsensiSiswa.Izin)));
+
+        Assert.Equal(JenisTindakanTap.Ditolak, keputusan.Tindakan);
+        Assert.Equal(AlasanTap.JedaTapTerlaluCepat, keputusan.Alasan);
+    }
+
+    [Fact]
+    public void Siswa_BatasHadir_MengikutiKonfigurasiSekolah()
+    {
+        var keputusan = _penentu.Tentukan(Bungkus(
+            Waktu(8, 0), JenisPemilikKartu.Siswa,
+            siswa: BuatKonteksSiswa(jamMasuk: new TimeOnly(8, 0))));
+
+        Assert.Equal(StatusAbsensiSiswa.Hadir, keputusan.StatusSiswaBaru);
     }
 
     [Fact]

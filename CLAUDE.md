@@ -6,9 +6,9 @@ Berkas ini dibaca pada setiap sesi. Letakkan di akar repositori.
 
 ## 1. Apa yang Dibangun
 
-Aplikasi desktop **standalone** untuk absensi siswa dan guru menggunakan kartu RFID, dengan notifikasi otomatis lewat Telegram.
+Layanan absensi RFID multi sekolah dengan desktop C#/WPF, backend C#/ASP.NET Core dan frontend terpisah. Rancangan resmi mengikuti `docs/PRD.md` terbaru, khususnya §21–§25: isolasi runtime/database per sekolah, penyimpanan sensitif di Indonesia dan target verifikasi ASVS v5.0.0 L3.
 
-Dipakai di sekolah menengah pertama negeri di Indonesia. Dijual per sekolah, satu instalasi untuk satu sekolah.
+Kode yang ada masih baseline desktop standalone/SQLite, bukan implementasi arsitektur online yang telah selesai. Telegram adalah integrasi lama; pemilihan kanal online dan P-16 ditangguhkan. Jangan menganggap tabel teknologi/aturan lama di bawah sebagai izin mengesampingkan PRD terbaru. Pembangunan kode tidak memberi izin deployment atau migrasi data sekolah.
 
 **Dokumen rujukan — baca sebelum mengerjakan tugas apa pun:**
 
@@ -22,7 +22,7 @@ Bila ada pertentangan antara berkas ini dan PRD, **PRD yang menang**. Laporkan p
 
 ---
 
-## 2. Tumpukan Teknologi
+## 2. Tumpukan Teknologi Baseline yang Sudah Ada
 
 | Aspek | Ketetapan |
 |---|---|
@@ -117,7 +117,8 @@ Kode ditulis seperti seorang software engineer senior yang tahu bahwa aplikasi i
 
 ```
 tap 07.29            → hadir
-tap 07.30            → terlambat
+tap 07.30.00         → hadir
+tap 07.30.01         → terlambat
 tap 07.31            → terlambat
 tap kedua 10 detik   → ditolak
 tap kedua 20 detik   → diabaikan (belum jam pulang)
@@ -127,7 +128,10 @@ Jumat tap 10.30      → ditolak
 Jumat tap 11.35      → mengisi jam pulang
 tanggal libur        → semua tap ditolak
 guru tap masuk saja  → tidak_lengkap
+siswa Izin/Sakit tap → status dan jam resmi tetap; percobaan dicatat
 ```
+
+Waktu di atas adalah konfigurasi contoh. P-06 menetapkan rekap orang tua 08.10 dan daftar belum tap wali kelas 08.00 sebagai dua jadwal berbeda; pemisahannya masih merupakan utang implementasi, bukan alasan mengubah batas Hadir. Perubahan jadwal tidak boleh diam-diam menulis ulang riwayat (P-15). Ketentuan offline/replay, kalender libur/ralat dan hak akses historis memakai PRD terbaru; rincian terbuka pada §25.1 tidak boleh ditebak dari perilaku baseline.
 
 ---
 

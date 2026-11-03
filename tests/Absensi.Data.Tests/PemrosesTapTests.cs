@@ -9,6 +9,109 @@ public sealed class PemrosesTapTests
 
     private static DateTime Waktu(int jam, int menit) => HariKamis.ToDateTime(new TimeOnly(jam, menit));
 
+    [Theory]
+    [InlineData("izin", 7, 20, null, null)]
+    [InlineData("sakit", 8, 15, null, null)]
+    [InlineData("izin", 13, 15, "07:20", null)]
+    [InlineData("sakit", 13, 25, "07:20", "13:15")]
+    public void Proses_StatusIzinSakit_TetapUtuhTanpaNotifikasiBaru(
+        string status, int jam, int menit, string? jamMasuk, string? jamPulang)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+        using (var koreksi = database.Connection.CreateCommand())
+        {
+            koreksi.CommandText = """
+                UPDATE absensi_siswa
+                SET status = $status, jam_masuk = $jamMasuk, jam_pulang = $jamPulang
+                WHERE siswa_id = 1;
+                """;
+            koreksi.Parameters.AddWithValue("$status", status);
+            koreksi.Parameters.AddWithValue("$jamMasuk", (object?)jamMasuk ?? DBNull.Value);
+            koreksi.Parameters.AddWithValue("$jamPulang", (object?)jamPulang ?? DBNull.Value);
+            koreksi.ExecuteNonQuery();
+        }
+
+        var keputusan = _pemrosesTap.Proses(
+            database.Connection, "UID-SISWA-1", Waktu(jam, menit), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.TidakBerubah, keputusan.Tindakan);
+        using (var command = database.Connection.CreateCommand())
+        {
+            command.CommandText = "SELECT status, jam_masuk, jam_pulang FROM absensi_siswa WHERE siswa_id = 1;";
+            using var reader = command.ExecuteReader();
+            Assert.True(reader.Read());
+            Assert.Equal(status, reader.GetString(0));
+            Assert.Equal(jamMasuk, reader.IsDBNull(1) ? null : reader.GetString(1));
+            Assert.Equal(jamPulang, reader.IsDBNull(2) ? null : reader.GetString(2));
+        }
+
+        using var outbox = database.Connection.CreateCommand();
+        outbox.CommandText = "SELECT COUNT(*) FROM outbox;";
+        Assert.Equal(0, Convert.ToInt32(outbox.ExecuteScalar()));
+        AssertTapLogTunggal(database, "diabaikan", "siswa", 1);
+        AssertCatatanTapLog(database, "StatusSudahDitetapkanDiMuka");
+    }
+
+    [Fact]
+    public void Proses_PenulisanTapLogGagal_AbsensiDanOutboxDibatalkanLaluBisaDicobaUlang()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+        database.Execute("""
+            CREATE TRIGGER gagalkan_tap_log BEFORE INSERT ON tap_log
+            BEGIN
+                SELECT RAISE(ABORT, 'Kegagalan penulisan untuk pengujian');
+            END;
+            """);
+
+        Assert.Throws<Microsoft.Data.Sqlite.SqliteException>(() =>
+            _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(8, 15), modeRegistrasiAktif: false));
+
+        using (var command = database.Connection.CreateCommand())
+        {
+            command.CommandText = """
+                SELECT status, jam_masuk, jam_pulang,
+                    (SELECT COUNT(*) FROM tap_log), (SELECT COUNT(*) FROM outbox)
+                FROM absensi_siswa WHERE siswa_id = 1;
+                """;
+            using var reader = command.ExecuteReader();
+            Assert.True(reader.Read());
+            Assert.Equal("alpa", reader.GetString(0));
+            Assert.True(reader.IsDBNull(1));
+            Assert.True(reader.IsDBNull(2));
+            Assert.Equal(0, reader.GetInt32(3));
+            Assert.Equal(0, reader.GetInt32(4));
+        }
+
+        database.Execute("DROP TRIGGER gagalkan_tap_log;");
+        var keputusan = _pemrosesTap.Proses(
+            database.Connection, "UID-SISWA-1", Waktu(8, 15), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.StatusAbsensiSiswa.Terlambat, keputusan.StatusSiswaBaru);
+        AssertTapLogTunggal(database, "terlambat", "siswa", 1);
+        using var outbox = database.Connection.CreateCommand();
+        outbox.CommandText = "SELECT COUNT(*) FROM outbox;";
+        Assert.Equal(1, Convert.ToInt32(outbox.ExecuteScalar()));
+    }
+
+    [Fact]
+    public void Proses_TepatBatasHadir_MenyimpanHadir()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+
+        _pemrosesTap.Proses(database.Connection, "UID-SISWA-1", Waktu(7, 30), modeRegistrasiAktif: false);
+
+        AssertTapLogTunggal(database, "hadir", "siswa", 1);
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status FROM absensi_siswa WHERE siswa_id = 1;";
+        Assert.Equal("hadir", command.ExecuteScalar());
+    }
+
     [Fact]
     public void Proses_TapSiswaSebelumJamMasuk_MenulisHadirDanTapLog()
     {
