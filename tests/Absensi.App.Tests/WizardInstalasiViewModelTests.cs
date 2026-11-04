@@ -45,14 +45,16 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         {
             var baris = viewModel.JadwalHarian[indeks];
             Assert.Equal("07:30", baris.JamMasuk);
-            Assert.Equal("08:00", baris.JamRekap);
+            Assert.Equal("08:00", baris.JamDaftarBelumTap);
+            Assert.Equal("08:10", baris.JamRekap);
             Assert.Equal("12:00", baris.BatasTapMasuk);
             Assert.Equal("13:10", baris.MulaiPulang);
         }
 
         var jumat = viewModel.JadwalHarian[4];
         Assert.Equal("07:30", jumat.JamMasuk);
-        Assert.Equal("08:00", jumat.JamRekap);
+        Assert.Equal("08:00", jumat.JamDaftarBelumTap);
+        Assert.Equal("08:10", jumat.JamRekap);
         Assert.Equal("10:00", jumat.BatasTapMasuk);
         Assert.Equal("11:30", jumat.MulaiPulang);
 
@@ -62,6 +64,7 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         var minggu = viewModel.JadwalHarian[6];
         Assert.Null(minggu.JamMasuk);
         Assert.Null(minggu.JamRekap);
+        Assert.Null(minggu.JamDaftarBelumTap);
         Assert.Null(minggu.BatasTapMasuk);
         Assert.Null(minggu.MulaiPulang);
     }
@@ -264,7 +267,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         var senin = repositoriJadwal.CariUntukHari(koneksiBaru, tahunAjaranId!.Value, 1);
         Assert.NotNull(senin);
         Assert.Equal(new TimeOnly(7, 30), senin!.JamMasuk);
-        Assert.Equal(new TimeOnly(8, 0), senin.JamRekap);
+        Assert.Equal(new TimeOnly(8, 0), senin.JamDaftarBelumTap);
+        Assert.Equal(new TimeOnly(8, 10), senin.JamRekap);
         Assert.Equal(new TimeOnly(12, 0), senin.BatasTapMasuk);
         Assert.Equal(new TimeOnly(13, 10), senin.MulaiPulang);
 

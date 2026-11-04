@@ -254,7 +254,7 @@ public sealed class PemrosesTapTests
     // RENCANA-TUGAS.md Tugas 10 — PRD §16.8.a langkah 9 / §16.9: Terlambat
     // SETELAH jam rekap diantre real-time (dikonfirmasi pemilik proyek
     // 2026-09-18); sebelum jam rekap tidak, karena itu tugas rekap batch
-    // (Absensi.Data.Notifikasi.LayananNotifikasi.JalankanRekapPagi).
+    // (Absensi.Data.Notifikasi.LayananNotifikasi.JalankanRekapOrangTua).
     [Fact]
     public void Proses_TerlambatSetelahJamRekap_DiantreRealtimeKeOrangTua()
     {

@@ -90,6 +90,62 @@ public sealed class PenjadwalTests
         Assert.Equal(1, Convert.ToInt32(command.ExecuteScalar()));
     }
 
+    // PRD §7 P-06: daftar belum tap wali kelas dan rekap orang tua dijalankan
+    // pada jamnya masing-masing, tidak lagi bersamaan.
+    private static void SeedJadwalTerpisahDanPairingWali(MigratedDatabase database) => database.Execute("""
+        UPDATE jadwal_hari SET jam_daftar_belum_tap = '08:00', jam_rekap = '08:10' WHERE hari = 4;
+        INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
+        VALUES ('guru', 1, 'TOKWALI', 'tertaut', 'chat-wali-uji', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
+        """);
+
+    private static int HitungOutbox(MigratedDatabase database, string kondisi)
+    {
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = $"SELECT COUNT(*) FROM outbox WHERE {kondisi};";
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    [Fact]
+    public async Task DetakAsync_JamDaftarBelumTap_HanyaWaliYangDikirimiBelumRekapOrangTua()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        SeedPairingSiswaSatu(database);
+        SeedJadwalTerpisahDanPairingWali(database);
+        var waktu = new PenyediaWaktuUji(Waktu(7, 0));
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
+        await penjadwal.DetakAsync();
+        database.Execute("UPDATE absensi_siswa SET status = 'hadir', jam_masuk = '07:10' WHERE siswa_id = 1 AND tanggal = '2026-09-17';");
+
+        waktu.Sekarang = Waktu(8, 5);
+        await penjadwal.DetakAsync();
+
+        Assert.Equal(1, HitungOutbox(database, "chat_id = 'chat-wali-uji' AND jenis = 'rekap_wali_belum_tap'"));
+        Assert.Equal(0, HitungOutbox(database, "chat_id = 'chat-siswa-uji'"));
+    }
+
+    [Fact]
+    public async Task DetakAsync_JamRekapOrangTua_SiswaHadirDiantreSekali()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        SeedPairingSiswaSatu(database);
+        SeedJadwalTerpisahDanPairingWali(database);
+        var waktu = new PenyediaWaktuUji(Waktu(7, 0));
+        var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
+        await penjadwal.DetakAsync();
+        database.Execute("UPDATE absensi_siswa SET status = 'hadir', jam_masuk = '07:10' WHERE siswa_id = 1 AND tanggal = '2026-09-17';");
+
+        waktu.Sekarang = Waktu(8, 5);
+        await penjadwal.DetakAsync();
+        waktu.Sekarang = Waktu(8, 12);
+        await penjadwal.DetakAsync();
+        waktu.Sekarang = Waktu(8, 13);
+        await penjadwal.DetakAsync();
+
+        Assert.Equal(1, HitungOutbox(database, "chat_id = 'chat-siswa-uji' AND jenis = 'hadir'"));
+    }
+
     // PRD §9.4: "Tanggal diblok → seluruh jadwal dibatalkan".
     [Fact]
     public async Task DetakAsync_TanggalLibur_TidakMengantreApaPun()

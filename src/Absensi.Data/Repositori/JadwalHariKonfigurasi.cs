@@ -7,4 +7,7 @@ public sealed record JadwalHariKonfigurasi(
     TimeOnly? JamMasuk,
     TimeOnly? JamRekap,
     TimeOnly? BatasTapMasuk,
-    TimeOnly? MulaiPulang);
+    TimeOnly? MulaiPulang,
+    // PRD §7 P-06: daftar belum tap wali kelas, terpisah dari JamRekap
+    // (rekap orang tua). Null = tidak dijadwalkan.
+    TimeOnly? JamDaftarBelumTap = null);
