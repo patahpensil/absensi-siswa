@@ -91,8 +91,26 @@ jobs:
           fi
 
       - name: Deploy ke Cloudflare Pages
+        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy publish/wwwroot --project-name=${{ env.PAGES_PROJECT }} --branch=master --commit-dirty=true
+
+      # Memastikan Cloudflare benar-benar menyajikan aplikasi (tipe berkas .wasm,
+      # jalur _framework), bukan hanya bahwa unggahan berhasil.
+      - name: Pasang Playwright dan Chromium
+        working-directory: tests/web-browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Periksa hasil deploy di Chromium
+        working-directory: tests/web-browser
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy tidak dikembalikan oleh wrangler-action."; exit 1; }
+          echo "::notice::Alamat deploy: ${DEPLOYMENT_URL}"
+          node check.mjs "${DEPLOYMENT_URL}/"
