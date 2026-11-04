@@ -38,11 +38,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Pasang workload wasm-tools
-        run: dotnet workload install wasm-tools
+      - name: Pasang workload yang dibutuhkan proyek web
+        run: |
+          dotnet --version
+          dotnet workload restore src/Absensi.Web/Absensi.Web.csproj -p:WasmBuildNative=true
 
       - name: Publish web uji
-        run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -o publish
+        run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -p:WasmBuildNative=true -o publish
 
       - name: Pasang Playwright dan Chromium
         working-directory: tests/web-browser

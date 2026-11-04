@@ -9,9 +9,10 @@
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
     <BlazorEnableCompression>false</BlazorEnableCompression>
-    <!-- SQLite adalah pustaka native; di browser ia harus ditautkan ke dalam
-         runtime WebAssembly (butuh workload wasm-tools saat publish). -->
-    <WasmBuildNative>true</WasmBuildNative>
+    <!-- SQLite adalah pustaka native; saat publish ia harus ditautkan ke dalam
+         runtime WebAssembly dengan -p:WasmBuildNative=true (butuh workload
+         wasm-tools). Sengaja TIDAK diset di sini: bila diset, setiap restore
+         dan build biasa (mis. CI seluruh solusi) ikut mewajibkan workload. -->
     <!-- Trimming dimatikan selama pembuktian agar kegagalan tidak bercampur
          dengan kode yang terpangkas diam-diam. -->
     <PublishTrimmed>false</PublishTrimmed>
