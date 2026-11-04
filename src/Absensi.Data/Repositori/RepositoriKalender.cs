@@ -100,6 +100,30 @@ public sealed class RepositoriKalender
     // libur mendadak) untuk satu rentang tanggal sekaligus — dua kueri
     // (kalender + jadwal_hari), bukan satu kueri per tanggal seperti
     // TentukanJenisHari, supaya rentang semester (~180 hari) tetap murah.
+    // T8 / PRD §16.12 P-13: tanggal yang ditandai libur secara eksplisit di
+    // tabel kalender (libur terjadwal maupun mendadak). Hari libur mingguan
+    // dari jadwal_hari tidak perlu disaring karena pembukaan hari tidak
+    // pernah membuat baris absensi untuk hari itu.
+    public IReadOnlySet<DateOnly> DaftarTanggalLiburDitandai(SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT tanggal FROM kalender
+            WHERE jenis = 'libur' AND tanggal BETWEEN $awal AND $akhir;
+            """;
+        command.Parameters.AddWithValue("$awal", tanggalAwal.ToString("yyyy-MM-dd"));
+        command.Parameters.AddWithValue("$akhir", tanggalAkhir.ToString("yyyy-MM-dd"));
+
+        var hasil = new HashSet<DateOnly>();
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            hasil.Add(DateOnly.Parse(reader.GetString(0)));
+        }
+
+        return hasil;
+    }
+
     public IReadOnlyDictionary<DateOnly, JenisHariInfo> DaftarJenisHariUntukRentang(
         SqliteConnection connection, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir)
     {
