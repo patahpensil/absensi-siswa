@@ -24,6 +24,8 @@ public sealed class LayananSiswa
         DataSiswa data,
         (int TahunAjaranId, int KelasId)? kelas = null)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "menambah siswa");
+
         var idBaru = 0;
 
         _jalurPerubahanData.Jalankan(
@@ -58,6 +60,8 @@ public sealed class LayananSiswa
         DataSiswa data,
         (int TahunAjaranId, int KelasId)? kelas = null)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah data siswa");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
@@ -101,6 +105,8 @@ public sealed class LayananSiswa
     // PRD §5.3: siswa keluar/pindah ditandai tidak aktif, tidak dihapus.
     public void TandaiTidakAktif(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string alasan)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "menonaktifkan siswa");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
@@ -122,6 +128,8 @@ public sealed class LayananSiswa
     // sampai di sini.
     public void SimpanFoto(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string fotoPath)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah foto siswa");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,

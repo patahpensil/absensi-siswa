@@ -351,6 +351,17 @@ public sealed class SiswaViewModel : ObservableObject
         var namaBerkasTujuan = $"{siswa.Nisn}.png";
         var pathTujuan = System.IO.Path.Combine(LokasiData.FolderData, "foto", namaBerkasTujuan);
 
+        // T6: periksa peran SEBELUM berkas foto disalin, supaya akun tanpa
+        // kewenangan tidak bisa menimpa berkas di data/foto walau database
+        // menolak (PRD §3).
+        if (!PenangananGalat.Coba(
+            () => PenjagaKewenangan.PastikanKewenanganPenuh(_akun, "mengubah foto siswa"),
+            pesan => { PesanGalat = pesan; PesanStatus = null; },
+            "SiswaViewModel.UnggahFotoDariBerkas"))
+        {
+            return;
+        }
+
         try
         {
             PengolahFoto.SimpanDiubahUkuran(pathSumber, pathTujuan);

@@ -11,6 +11,8 @@ public sealed class LayananGuru
 
     public int Tambah(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, DataGuru data)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "menambah guru");
+
         var idBaru = 0;
 
         _jalurPerubahanData.Jalankan(
@@ -33,6 +35,8 @@ public sealed class LayananGuru
     // NIP tidak diubah oleh Perbarui, jadi tidak ikut dibandingkan.
     public void Perbarui(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, DataGuru data)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah data guru");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
@@ -57,6 +61,8 @@ public sealed class LayananGuru
     // PRD §5.3-setara untuk guru: pensiun/pindah ditandai tidak aktif, tidak dihapus.
     public void TandaiTidakAktif(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string alasan)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "menonaktifkan guru");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
@@ -75,6 +81,8 @@ public sealed class LayananGuru
 
     public void SimpanFoto(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string fotoPath)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah foto guru");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,

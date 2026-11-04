@@ -21,6 +21,8 @@ public sealed class LayananKelas
         int tingkat,
         int? waliGuruId)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "menambah kelas");
+
         int idBaru = 0;
 
         _jalurPerubahanData.Jalankan(
@@ -50,6 +52,8 @@ public sealed class LayananKelas
         int tingkat,
         int? waliGuruId)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah kelas");
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,

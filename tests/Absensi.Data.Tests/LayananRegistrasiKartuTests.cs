@@ -117,8 +117,8 @@ public sealed class LayananRegistrasiKartuTests
         AssertAdaBarisAudit(database, "ganti_kartu", jumlahDiharapkan: 1);
     }
 
-    // PRD §17.10: wali kelas tidak berwenang mendaftarkan/mengganti kartu
-    // guru — kartu siswa tidak dibatasi.
+    // PRD §3 dan §17.10: wali kelas tidak berwenang mendaftarkan/mengganti
+    // kartu, baik kartu guru maupun kartu siswa.
     [Fact]
     public void DaftarkanSesi_WaliKelasDaftarkanKartuGuru_Ditolak()
     {
@@ -132,19 +132,22 @@ public sealed class LayananRegistrasiKartuTests
         }));
     }
 
+    // Sebelumnya tes ini mengizinkan wali kelas mendaftarkan kartu siswa.
+    // PRD §3 menyatakan wali kelas tidak dapat mendaftarkan kartu, dan PRD
+    // yang menang atas perilaku lama (CLAUDE.md §1).
     [Fact]
-    public void DaftarkanSesi_WaliKelasDaftarkanKartuSiswa_Diizinkan()
+    public void DaftarkanSesi_WaliKelasDaftarkanKartuSiswa_Ditolak()
     {
         using var database = new MigratedDatabase();
         database.SeedKelasUntukRegistrasiKartu();
         var layanan = new LayananRegistrasiKartu();
 
-        layanan.DaftarkanSesi(database.Connection, WaliKelas, Waktu, new[]
+        Assert.Throws<InvalidOperationException>(() => layanan.DaftarkanSesi(database.Connection, WaliKelas, Waktu, new[]
         {
             new PendaftaranKartu("UID-BARU-1", JenisPemilikKartu.Siswa, 2, "Siswa Belum Satu"),
-        });
+        }));
 
-        Assert.NotNull(new RepositoriKartu().CariAktifBerdasarkanUid(database.Connection, "UID-BARU-1"));
+        Assert.Null(new RepositoriKartu().CariAktifBerdasarkanUid(database.Connection, "UID-BARU-1"));
     }
 
     private static void AssertAdaBarisAudit(MigratedDatabase database, string aksi, int jumlahDiharapkan)
