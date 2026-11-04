@@ -12,7 +12,7 @@
         <h2>Pengaturan hari</h2>
         <div class="form-grid">
             <label>Tanggal
-                <input type="date" @bind="dateText" @bind:after="StartNewDay" />
+                <input type="date" @bind="selectedDate" @bind:after="StartNewDay" />
             </label>
             <label>Jenis hari
                 <select @bind="dayType" @bind:after="ApplySettings">
@@ -178,7 +178,7 @@
     private static readonly string[] AcceptedTimeFormats = { "HH:mm:ss", "H:mm:ss", "HH:mm", "H:mm" };
 
     private SimulationSession session = SimulationSession.CreateWithSampleData(new DateOnly(2026, 9, 17));
-    private string dateText = "2026-09-17";
+    private DateOnly selectedDate = new(2026, 9, 17);
     private JenisHariKalender dayType;
     private string entryTimeText = "";
     private string entryDeadlineText = "";
@@ -207,12 +207,7 @@
 
     private void StartNewDay()
     {
-        if (!DateOnly.TryParseExact(dateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-        {
-            ShowError("Tanggal tidak valid.");
-            return;
-        }
-
+        var date = selectedDate;
         session.ResetDay();
         session.Settings = DaySettings.DefaultFor(date);
         LoadFormFromSettings();
