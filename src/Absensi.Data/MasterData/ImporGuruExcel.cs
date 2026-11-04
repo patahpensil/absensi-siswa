@@ -100,6 +100,8 @@ public sealed class ImporGuruExcel
         DateTime waktu,
         IReadOnlyList<BarisImporGuru> barisTervalidasi)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor data guru");
+
         if (barisTervalidasi.Any(b => !b.Sah))
         {
             throw new InvalidOperationException("Tidak bisa mengimpor selagi masih ada baris bermasalah.");

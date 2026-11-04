@@ -1,6 +1,5 @@
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
-using Absensi.Domain.Akun;
 using Absensi.Domain.Kehadiran;
 using Microsoft.Data.Sqlite;
 
@@ -55,6 +54,8 @@ public sealed class LayananRegistrasiKartu
     // (ViewModel) menampilkannya sebagai PesanGalat, TIDAK menutup dialog.
     public void DaftarkanSatu(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string uid, int siswaId, string namaSiswa)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mendaftarkan kartu");
+
         _jalurPerubahanData.Jalankan(
             connection,
             akun,
@@ -96,12 +97,13 @@ public sealed class LayananRegistrasiKartu
     // Kartu Siswa) masih memakainya — di luar cakupan redesain ini.
     public void DaftarkanSesi(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, IReadOnlyList<PendaftaranKartu> pendaftaran)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mendaftarkan kartu");
+
         if (pendaftaran.Count == 0)
         {
             return;
         }
 
-        PastikanBolehGuru(akun, pendaftaran.Select(p => p.PemilikTipe));
 
         _jalurPerubahanData.Jalankan(
             connection,
@@ -133,7 +135,7 @@ public sealed class LayananRegistrasiKartu
         int pemilikId,
         string uidBaru)
     {
-        PastikanBolehGuru(akun, new[] { pemilikTipe });
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengganti kartu");
 
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
@@ -160,16 +162,5 @@ public sealed class LayananRegistrasiKartu
                 string Teks(string uid) => string.IsNullOrWhiteSpace(nama) ? uid : $"{uid}->{nama}";
                 return new CatatanPerubahan(pemilikId, uidLama is null ? null : Teks(uidLama), Teks(uidBaru));
             });
-    }
-
-    // PRD §17.10: registrasi/penggantian kartu guru hanya TU/Admin/Kepala
-    // Sekolah — wali kelas tidak berwenang. Kartu siswa tidak dibatasi
-    // perannya di PRD, jadi tidak diperiksa di sini.
-    private static void PastikanBolehGuru(AkunTersimpan akun, IEnumerable<JenisPemilikKartu> pemilikTipe)
-    {
-        if (akun.Peran == PeranAkun.WaliKelas && pemilikTipe.Contains(JenisPemilikKartu.Guru))
-        {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mendaftarkan atau mengganti kartu guru (PRD §17.10).");
-        }
     }
 }

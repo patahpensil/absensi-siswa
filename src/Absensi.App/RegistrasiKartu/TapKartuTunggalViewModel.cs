@@ -87,13 +87,27 @@ public sealed class TapKartuTunggalViewModel : ObservableObject
         }
 
         var waktu = _penyediaWaktu.Sekarang;
-        if (_modeGanti)
+        // Penolakan layanan (peran, integritas kartu) atau galat database
+        // ditampilkan sebagai PesanGalat; jendela tetap terbuka dan tidak
+        // menutup seolah kartu tersimpan.
+        var tersimpan = PenangananGalat.Coba(
+            () =>
+            {
+                if (_modeGanti)
+                {
+                    _layanan.GantiKartuHilang(_connection, _akun, waktu, _pemilikTipe, _pemilikId, uid);
+                }
+                else
+                {
+                    _layanan.DaftarkanSesi(_connection, _akun, waktu, new[] { new PendaftaranKartu(uid, _pemilikTipe, _pemilikId, NamaPemilik) });
+                }
+            },
+            pesan => PesanGalat = pesan,
+            "TapKartuTunggalViewModel.TapUid");
+
+        if (!tersimpan)
         {
-            _layanan.GantiKartuHilang(_connection, _akun, waktu, _pemilikTipe, _pemilikId, uid);
-        }
-        else
-        {
-            _layanan.DaftarkanSesi(_connection, _akun, waktu, new[] { new PendaftaranKartu(uid, _pemilikTipe, _pemilikId, NamaPemilik) });
+            return;
         }
 
         Selesai?.Invoke(this, EventArgs.Empty);

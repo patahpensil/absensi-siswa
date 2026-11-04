@@ -14,6 +14,9 @@ public sealed class ImporFotoGuru
 
     public HasilImporFoto Impor(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string folderSumber)
     {
+        // T6: tolak sebelum berkas apa pun disalin ke data/foto (PRD §3).
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor foto guru");
+
         var guruBerdasarkanNip = _repositoriGuru.DaftarAktifRingkas(connection)
             .ToDictionary(g => g.Nip, g => g.Id);
 

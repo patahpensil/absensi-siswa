@@ -163,6 +163,8 @@ public sealed class ImporSiswaExcel
         int tahunAjaranId,
         IReadOnlyList<BarisImporSiswa> barisTervalidasi)
     {
+        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor data siswa");
+
         if (barisTervalidasi.Any(b => !b.Sah))
         {
             throw new InvalidOperationException("Tidak bisa mengimpor selagi masih ada baris bermasalah.");
