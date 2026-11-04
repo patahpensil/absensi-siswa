@@ -2,7 +2,7 @@
 
 Aplikasi desktop standalone untuk absensi siswa dan guru menggunakan kartu RFID, dengan notifikasi otomatis lewat Telegram. Dibangun untuk UPT SMP Negeri 1 Pancarijang, dirancang agar dapat dipasang di sekolah lain.
 
-Baca `CLAUDE.md` dan `docs/PRD.md` sebelum mengerjakan tugas apa pun.
+Acuan kerja satu-satunya: `docs/PRD.md` (termasuk standar penulisan kode §24). Baca bagian yang relevan sebelum mengerjakan tugas apa pun.
 
 ## Struktur
 
