@@ -54,7 +54,7 @@ public sealed class LayananRegistrasiKartu
     // (ViewModel) menampilkannya sebagai PesanGalat, TIDAK menutup dialog.
     public void DaftarkanSatu(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string uid, int siswaId, string namaSiswa)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mendaftarkan kartu");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mendaftarkan kartu");
 
         _jalurPerubahanData.Jalankan(
             connection,
@@ -97,7 +97,7 @@ public sealed class LayananRegistrasiKartu
     // Kartu Siswa) masih memakainya — di luar cakupan redesain ini.
     public void DaftarkanSesi(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, IReadOnlyList<PendaftaranKartu> pendaftaran)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mendaftarkan kartu");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mendaftarkan kartu");
 
         if (pendaftaran.Count == 0)
         {
@@ -135,7 +135,7 @@ public sealed class LayananRegistrasiKartu
         int pemilikId,
         string uidBaru)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengganti kartu");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengganti kartu");
 
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,

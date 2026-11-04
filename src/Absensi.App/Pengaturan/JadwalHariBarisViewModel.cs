@@ -12,7 +12,7 @@ public sealed class JadwalHariBarisViewModel : ObservableObject
     private string? _jamRekap;
     private string? _batasTapMasuk;
     private string? _mulaiPulang;
-    private string? _jamDaftarBelumTap;
+    private string? _notTappedListTime;
 
     public JadwalHariBarisViewModel(
         int hari,
@@ -22,7 +22,7 @@ public sealed class JadwalHariBarisViewModel : ObservableObject
         string? jamRekap,
         string? batasTapMasuk,
         string? mulaiPulang,
-        string? jamDaftarBelumTap = null)
+        string? notTappedListTime = null)
     {
         Hari = hari;
         NamaHari = namaHari;
@@ -31,7 +31,7 @@ public sealed class JadwalHariBarisViewModel : ObservableObject
         _jamRekap = jamRekap;
         _batasTapMasuk = batasTapMasuk;
         _mulaiPulang = mulaiPulang;
-        _jamDaftarBelumTap = jamDaftarBelumTap;
+        _notTappedListTime = notTappedListTime;
     }
 
     public int Hari { get; }
@@ -47,7 +47,7 @@ public sealed class JadwalHariBarisViewModel : ObservableObject
 
     // PRD §7 P-06: jam daftar belum tap untuk wali kelas (sekolah rujukan
     // 08.00), jadwal terpisah dari rekap orang tua.
-    public string? JamDaftarBelumTap { get => _jamDaftarBelumTap; set => SetField(ref _jamDaftarBelumTap, value); }
+    public string? NotTappedListTime { get => _notTappedListTime; set => SetField(ref _notTappedListTime, value); }
 
     public string? BatasTapMasuk { get => _batasTapMasuk; set => SetField(ref _batasTapMasuk, value); }
 

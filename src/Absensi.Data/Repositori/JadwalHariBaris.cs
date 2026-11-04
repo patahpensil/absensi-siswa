@@ -12,4 +12,4 @@ public sealed record JadwalHariBaris(
     TimeOnly? BatasTapMasuk,
     TimeOnly? MulaiPulang,
     // PRD §7 P-06: daftar belum tap wali kelas (lihat JadwalHariKonfigurasi).
-    TimeOnly? JamDaftarBelumTap = null);
+    TimeOnly? NotTappedListTime = null);

@@ -61,8 +61,8 @@ public sealed class WizardInstalasiViewModel : ObservableObject
 
         for (var hari = 1; hari <= 7; hari++)
         {
-            var (jamMasuk, jamDaftarBelumTap, jamRekap, batasTapMasuk, mulaiPulang) = JadwalBawaan(hari);
-            JadwalHarian.Add(new JadwalHariBarisViewModel(hari, NamaHari[hari - 1], hariSekolah: hari != 7, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang, jamDaftarBelumTap));
+            var (jamMasuk, notTappedListTime, jamRekap, batasTapMasuk, mulaiPulang) = JadwalBawaan(hari);
+            JadwalHarian.Add(new JadwalHariBarisViewModel(hari, NamaHari[hari - 1], hariSekolah: hari != 7, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang, notTappedListTime));
         }
 
         InstalasiBaruCommand = new RelayCommand(InstalasiBaru, () => !string.IsNullOrWhiteSpace(KunciLisensi));
@@ -276,7 +276,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
         foreach (var baris in JadwalHarian)
         {
             if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, baris.HariSekolah, out var jamMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "jam daftar belum tap", baris.JamDaftarBelumTap, baris.HariSekolah, out var jamDaftarBelumTap)
+                || !CobaUraikanJam(baris.NamaHari, "jam daftar belum tap", baris.NotTappedListTime, baris.HariSekolah, out var notTappedListTime)
                 || !CobaUraikanJam(baris.NamaHari, "jam rekap orang tua", baris.JamRekap, baris.HariSekolah, out var jamRekap)
                 || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, baris.HariSekolah, out var batasTapMasuk)
                 || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, baris.HariSekolah, out var mulaiPulang))
@@ -285,7 +285,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
                 return;
             }
 
-            jadwal.Add(new JadwalHariBaris(baris.Hari, baris.HariSekolah, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang, jamDaftarBelumTap));
+            jadwal.Add(new JadwalHariBaris(baris.Hari, baris.HariSekolah, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang, notTappedListTime));
         }
 
         string? logoPathTujuan = null;
@@ -354,7 +354,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
     // PRD §7 P-06: daftar belum tap wali kelas 08.00 dan rekap orang tua
     // 08.10 adalah dua kolom terpisah. Isian awal formulir, bukan nilai yang
     // ditegakkan di kode (CLAUDE.md §4.1 aturan 2).
-    private static (string? JamMasuk, string? JamDaftarBelumTap, string? JamRekap, string? BatasTapMasuk, string? MulaiPulang) JadwalBawaan(int hari)
+    private static (string? JamMasuk, string? NotTappedListTime, string? JamRekap, string? BatasTapMasuk, string? MulaiPulang) JadwalBawaan(int hari)
     {
         if (hari == 7)
         {

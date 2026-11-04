@@ -72,7 +72,7 @@ public sealed class PemrosesTap
         // PRD §16.8.a langkah 9 / §16.9: tap yang menghasilkan TERLAMBAT
         // SETELAH jam rekap diantre real-time di sini. Tap sebelum jam
         // rekap (Hadir maupun Terlambat) ditangani batch oleh
-        // Absensi.Data.Notifikasi.LayananNotifikasi.JalankanRekapOrangTua —
+        // Absensi.Data.Notifikasi.LayananNotifikasi.RunParentRecap —
         // dikonfirmasi pemilik proyek 2026-09-18. Pesan hanya diANTRE, tak
         // pernah dikirim di sini (CLAUDE.md §4.4 aturan 15).
         var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);

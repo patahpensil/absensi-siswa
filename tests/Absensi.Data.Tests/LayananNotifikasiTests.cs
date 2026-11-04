@@ -10,39 +10,39 @@ public sealed class LayananNotifikasiTests
     private static readonly DateTime Waktu = Tanggal.ToDateTime(new TimeOnly(8, 0));
 
     [Fact]
-    public void JalankanRekapOrangTua_HadirDanTerlambat_KeduanyaDiantreKeOrangTuaMasingMasing()
+    public void RunParentRecap_PresentAndLate_BothQueuedToTheirParents()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukNotifikasi();
         var layanan = new LayananNotifikasi();
 
-        layanan.JalankanRekapOrangTua(database.Connection, Tanggal, Waktu);
+        layanan.RunParentRecap(database.Connection, Tanggal, Waktu);
 
         AssertOutboxTerantre(database, "chat-siswa-1", "hadir");
         AssertOutboxTerantre(database, "chat-siswa-2", "terlambat");
     }
 
     [Fact]
-    public void JalankanRekapOrangTua_SiswaAlpa_TidakDapatPesanDanWaliTidakDikirimiDaftar()
+    public void RunParentRecap_AbsentStudent_NoMessageAndNoHomeroomList()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukNotifikasi();
         var layanan = new LayananNotifikasi();
 
-        layanan.JalankanRekapOrangTua(database.Connection, Tanggal, Waktu);
+        layanan.RunParentRecap(database.Connection, Tanggal, Waktu);
 
         AssertTidakAdaOutboxUntuk(database, "chat-siswa-3");
         AssertTidakAdaOutboxUntuk(database, "chat-wali-1");
     }
 
     [Fact]
-    public void JalankanDaftarBelumTapWali_SiswaAlpa_WaliDapatDaftarTanpaPesanKeOrangTua()
+    public void RunHomeroomNotTappedList_AbsentStudent_HomeroomGetsListWithoutParentMessages()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukNotifikasi();
         var layanan = new LayananNotifikasi();
 
-        layanan.JalankanDaftarBelumTapWali(database.Connection, Tanggal, Waktu);
+        layanan.RunHomeroomNotTappedList(database.Connection, Tanggal, Waktu);
 
         var isi = AssertOutboxTerantre(database, "chat-wali-1", "rekap_wali_belum_tap");
         Assert.Contains("Siswa Alpa", isi);
@@ -51,14 +51,14 @@ public sealed class LayananNotifikasiTests
     }
 
     [Fact]
-    public void JalankanDaftarBelumTapWali_DipanggilDuaKali_TidakMenggandakanPesan()
+    public void RunHomeroomNotTappedList_CalledTwice_DoesNotDuplicate()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukNotifikasi();
         var layanan = new LayananNotifikasi();
 
-        layanan.JalankanDaftarBelumTapWali(database.Connection, Tanggal, Waktu);
-        layanan.JalankanDaftarBelumTapWali(database.Connection, Tanggal, Waktu);
+        layanan.RunHomeroomNotTappedList(database.Connection, Tanggal, Waktu);
+        layanan.RunHomeroomNotTappedList(database.Connection, Tanggal, Waktu);
 
         using var command = database.Connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM outbox WHERE chat_id = 'chat-wali-1';";
@@ -66,14 +66,14 @@ public sealed class LayananNotifikasiTests
     }
 
     [Fact]
-    public void JalankanRekapOrangTua_DipanggilDuaKali_TidakMenggandakanPesan()
+    public void RunParentRecap_CalledTwice_DoesNotDuplicate()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukNotifikasi();
         var layanan = new LayananNotifikasi();
 
-        layanan.JalankanRekapOrangTua(database.Connection, Tanggal, Waktu);
-        layanan.JalankanRekapOrangTua(database.Connection, Tanggal, Waktu);
+        layanan.RunParentRecap(database.Connection, Tanggal, Waktu);
+        layanan.RunParentRecap(database.Connection, Tanggal, Waktu);
 
         using var command = database.Connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM outbox WHERE chat_id = 'chat-siswa-1';";

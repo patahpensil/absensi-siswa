@@ -10,15 +10,15 @@ namespace Absensi.Data.Akun;
 // status kehadiran kelasnya sendiri (PRD §3.2), diperiksa di LayananKoreksi.
 // Publik agar ViewModel dapat memeriksa lebih awal sebelum efek samping di
 // luar database (mis. menyalin berkas foto); layanan tetap memeriksa ulang.
-public static class PenjagaKewenangan
+public static class AuthorizationGuard
 {
-    public static void PastikanKewenanganPenuh(AkunTersimpan akun, string tindakan)
+    public static void EnsureFullAuthority(AkunTersimpan akun, string action)
     {
         if (akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin)
         {
             return;
         }
 
-        throw new InvalidOperationException($"Wali kelas tidak berwenang {tindakan} (PRD §3).");
+        throw new InvalidOperationException($"Wali kelas tidak berwenang {action} (PRD §3).");
     }
 }

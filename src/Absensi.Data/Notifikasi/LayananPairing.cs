@@ -25,7 +25,7 @@ public sealed class LayananPairing
     // dinonaktifkan lebih dulu, satu transaksi.
     public string BuatTokenBaru(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, JenisPemilikKartu subjekTipe, int subjekId)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "membuat token pairing");
+        AuthorizationGuard.EnsureFullAuthority(akun, "membuat token pairing");
 
         var token = TokenBaru();
 
@@ -71,7 +71,7 @@ public sealed class LayananPairing
     // lewat BuatTokenBaru). Null berarti dilewati (sudah tertaut).
     public string? PastikanTokenUntukCetakMassal(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, JenisPemilikKartu subjekTipe, int subjekId)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mencetak QR pairing");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mencetak QR pairing");
 
         if (_repositoriPairing.CariChatIdAktif(connection, subjekTipe, subjekId) is not null)
         {

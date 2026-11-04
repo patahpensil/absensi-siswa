@@ -104,7 +104,7 @@ public sealed class RepositoriKalender
     // tabel kalender (libur terjadwal maupun mendadak). Hari libur mingguan
     // dari jadwal_hari tidak perlu disaring karena pembukaan hari tidak
     // pernah membuat baris absensi untuk hari itu.
-    public IReadOnlySet<DateOnly> DaftarTanggalLiburDitandai(SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    public IReadOnlySet<DateOnly> ListMarkedHolidayDates(SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
@@ -114,14 +114,14 @@ public sealed class RepositoriKalender
         command.Parameters.AddWithValue("$awal", tanggalAwal.ToString("yyyy-MM-dd"));
         command.Parameters.AddWithValue("$akhir", tanggalAkhir.ToString("yyyy-MM-dd"));
 
-        var hasil = new HashSet<DateOnly>();
+        var dates = new HashSet<DateOnly>();
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            hasil.Add(DateOnly.Parse(reader.GetString(0)));
+            dates.Add(DateOnly.Parse(reader.GetString(0)));
         }
 
-        return hasil;
+        return dates;
     }
 
     public IReadOnlyDictionary<DateOnly, JenisHariInfo> DaftarJenisHariUntukRentang(

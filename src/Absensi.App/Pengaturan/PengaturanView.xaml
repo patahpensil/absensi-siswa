@@ -43,7 +43,7 @@
                                         <DataGridTextColumn Header="Hari" Binding="{Binding NamaHari}" Width="110" IsReadOnly="True" />
                                         <DataGridCheckBoxColumn Header="Hari sekolah" Binding="{Binding HariSekolah, UpdateSourceTrigger=PropertyChanged}" Width="90" />
                                         <DataGridTextColumn Header="Jam masuk" Binding="{Binding JamMasuk, UpdateSourceTrigger=PropertyChanged}" Width="90" />
-                                        <DataGridTextColumn Header="Belum tap (wali)" Binding="{Binding JamDaftarBelumTap, UpdateSourceTrigger=PropertyChanged}" Width="110" />
+                                        <DataGridTextColumn Header="Belum tap (wali)" Binding="{Binding NotTappedListTime, UpdateSourceTrigger=PropertyChanged}" Width="110" />
                                         <DataGridTextColumn Header="Rekap orang tua" Binding="{Binding JamRekap, UpdateSourceTrigger=PropertyChanged}" Width="110" />
                                         <DataGridTextColumn Header="Batas akhir tap masuk" Binding="{Binding BatasTapMasuk, UpdateSourceTrigger=PropertyChanged}" Width="140" />
                                         <DataGridTextColumn Header="Mulai absen pulang" Binding="{Binding MulaiPulang, UpdateSourceTrigger=PropertyChanged}" Width="130" />

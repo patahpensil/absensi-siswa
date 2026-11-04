@@ -12,7 +12,8 @@ public sealed class MigrationRunner
         new Migration001CreateSchema(),
         new Migration002CegahUbahHapusAudit(),
         new Migration003TambahAuditUid(),
-        new Migration004TambahJamDaftarBelumTap(),
+        new Migration004AddNotTappedListTime(),
+        new Migration005RenameNotTappedListTime(),
     };
 
     public void Run(SqliteConnection connection)

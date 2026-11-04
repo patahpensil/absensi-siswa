@@ -4,13 +4,14 @@ namespace Absensi.Data.Migrations;
 // notifikasi orang tua (08.10) adalah dua jadwal berbeda. Sebelumnya keduanya
 // memakai satu kolom jam_rekap. Kolom jam_rekap tetap berarti rekap orang tua
 // (juga batas mulai notifikasi Terlambat real-time, PRD §9.2), dan kolom baru
-// jam_daftar_belum_tap menjadi jadwal daftar belum tap wali kelas.
+// jam_daftar_belum_tap menjadi jadwal daftar belum tap wali kelas. Migrasi
+// 005 mengganti nama kolom ini menjadi not_tapped_list_time (PRD §24.2).
 //
 // Baris lama diisi dengan nilai jam_rekap yang sudah tersimpan, sehingga
 // perilaku instalasi yang ada tidak berubah diam-diam (P-15: perubahan jadwal
 // tidak menulis ulang riwayat). Admin menyesuaikan jam rekap orang tua sendiri
 // lewat Pengaturan bila ingin mengikuti 08.10.
-internal sealed class Migration004TambahJamDaftarBelumTap : IMigration
+internal sealed class Migration004AddNotTappedListTime : IMigration
 {
     public int Number => 4;
 

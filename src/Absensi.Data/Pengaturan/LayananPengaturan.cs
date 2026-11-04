@@ -14,7 +14,7 @@ public sealed class LayananPengaturan
 
     public void Simpan(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string kunci, string nilai)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengubah pengaturan");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengubah pengaturan");
 
         _jalurPerubahanData.Jalankan(
             connection,

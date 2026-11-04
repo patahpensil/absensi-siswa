@@ -163,7 +163,7 @@ public sealed class ImporSiswaExcel
         int tahunAjaranId,
         IReadOnlyList<BarisImporSiswa> barisTervalidasi)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor data siswa");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengimpor data siswa");
 
         if (barisTervalidasi.Any(b => !b.Sah))
         {

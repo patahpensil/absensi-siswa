@@ -23,14 +23,14 @@ public sealed class LayananNotifikasi
     private readonly PenentuStatusKehadiran _penentuStatusKehadiran = new();
 
     // PRD §7 P-06: rekap orang tua (jam_rekap, sekolah rujukan 08.10) dan
-    // daftar belum tap wali kelas (jam_daftar_belum_tap, 08.00) adalah dua
+    // daftar belum tap wali kelas (not_tapped_list_time, 08.00) adalah dua
     // jadwal terpisah yang dipanggil penjadwal pada jamnya masing-masing.
 
     // PRD §9.2/§16.7 + P-06: rekap orang tua berisi status sebenarnya dan
     // jam tap untuk siswa yang sudah tap sebelum jam rekap, termasuk yang
     // sudah Terlambat (dikonfirmasi pemilik proyek 2026-09-18: Terlambat
     // SEBELUM jam rekap ikut batch ini, bukan real-time).
-    public void JalankanRekapOrangTua(SqliteConnection connection, DateOnly tanggal, DateTime waktu)
+    public void RunParentRecap(SqliteConnection connection, DateOnly tanggal, DateTime waktu)
     {
         foreach (var siswa in _repositoriAbsensi.DaftarSiswaUntukNotifikasi(connection, tanggal))
         {
@@ -45,7 +45,7 @@ public sealed class LayananNotifikasi
     // per kelas ke wali kelas. Siswa yang masih Alpa tidak mendapat pesan
     // pribadi di sini; notifikasi orang tua untuk Alpa menunggu batas akhir
     // tap masuk (JalankanBatasAkhirTapMasuk).
-    public void JalankanDaftarBelumTapWali(SqliteConnection connection, DateOnly tanggal, DateTime waktu)
+    public void RunHomeroomNotTappedList(SqliteConnection connection, DateOnly tanggal, DateTime waktu)
     {
         var daftarSiswa = _repositoriAbsensi.DaftarSiswaUntukNotifikasi(connection, tanggal);
 
