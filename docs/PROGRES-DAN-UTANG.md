@@ -151,3 +151,22 @@ Pratinjau terbaru disimpan di [docs/ui-preview/index.html](ui-preview/index.html
 - Pemeriksaan browser terakhir: 14 aturan HTML lulus; perintah, pencarian, bantuan dan pintasan diperiksa; empat ukuran bingkai diperiksa tanpa luapan horizontal/kartu terpotong. Sintaks dua blok JavaScript diperiksa kembali sebelum commit.
 - **Batas implementasi:** masih prototipe HTML dengan data contoh di memori browser. Belum mengubah tampilan WPF, menambahkan backend online, menghubungkan RFID/database, atau mengirim pesan. Utang pada §6–§7 tetap terbuka.
 - Commit/push pratinjau diminta pemilik. Penyimpanan berkas ini ke GitHub tidak merupakan deployment aplikasi.
+
+
+## 9. Checkpoint kode 4 November 2026 (sore) — T6, P-06, T8, CI dan build uji
+
+Dikerjakan atas instruksi pemilik untuk melanjutkan kode yang ada sampai dapat diuji lewat GitHub. Seluruh perubahan pada baseline desktop WPF/SQLite; belum ada backend online. Data uji tetap sintetis (D-12).
+
+| Butir | Perubahan | PR |
+|---|---|---|
+| T6 | `PenjagaKewenangan`: master siswa/guru/kelas, registrasi & ganti kartu, impor, pengaturan dan pairing hanya Kepala Sekolah/Admin, diperiksa di lapisan layanan sebelum transaksi. Unggah/impor foto memeriksa peran sebelum berkas disalin. Dialog tap kartu tunggal menampilkan penolakan sebagai pesan. **Perubahan perilaku:** wali kelas tidak lagi bisa mendaftarkan kartu siswa (tes lama mengizinkannya, bertentangan dengan PRD §3). | #13 |
+| P-06 | Migrasi 004 `jadwal_hari.jam_daftar_belum_tap` (baris lama diisi dari `jam_rekap`, tidak mengubah perilaku instalasi lama). Daftar belum tap wali kelas dan rekap orang tua dijalankan terpisah. Pengaturan/wizard punya kolom "Belum tap (wali)" dan "Rekap orang tua"; isian awal wizard 08.00/08.10. | #14 |
+| T8 | Baris absensi pada tanggal yang ditetapkan libur setelah hari dibuka tetap tersimpan, tetapi tidak dihitung pada seluruh laporan (P-13). | #15 |
+| CI | Workflow `CI`: build dan seluruh tes di Windows untuk setiap push/PR. Workflow `Rilis build uji`: setelah CI `master` lulus, `.exe` self-contained diterbitkan ke prarilis `uji-terbaru`. Dependabot mingguan aktif. | #1, #4, PR ini |
+
+**Bukti:** CI `master` commit `0b8151c` lulus — Domain 66, Data 266, Telegram 10, Laporan 32, App 266 (**640 tes**, 0 gagal), dijalankan di runner Windows GitHub.
+
+**Belum dikerjakan / tetap terbuka:**
+- T3 (finalisasi Bolos/guru saat PC mati), DOC-01 (penyelarasan CLAUDE.md, SKEMA-DATABASE.md — kolom baru migrasi 004 belum tercatat di sana), P-14 (pemberitahuan koreksi kalender), butir 4–7 §3, register UAT, serta D-01–D-12.
+- UAT manual pada Windows dengan reader RFID sungguhan untuk perubahan T6 (pesan penolakan) dan P-06 (dua kolom jadwal) belum dilakukan.
+- PR Dependabot #2–#12 belum ditinjau; sebagian versi mayor (mis. Microsoft.Data.Sqlite 10, xunit runner 4) perlu keputusan pemilik.

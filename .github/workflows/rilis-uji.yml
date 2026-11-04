@@ -1,0 +1,79 @@
+# Build uji otomatis untuk dievaluasi pemilik (utang D-12: lingkungan uji
+# sementara di GitHub, hanya data sintetis). Berjalan setelah workflow CI
+# lulus di master, lalu memperbarui prarilis "uji-terbaru" berisi .exe
+# self-contained win-x64. Paket tidak memuat database: folder data/ dibuat
+# oleh wizard instalasi saat aplikasi pertama kali dijalankan.
+name: Rilis build uji
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rilis-uji
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish .exe dan perbarui prarilis
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Ambil kode yang sudah lulus CI
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - name: Pasang .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Perintah publish yang sama dengan docs/PANDUAN-TESTER.md.
+      - name: Publish self-contained win-x64
+        run: >
+          dotnet publish src/Absensi.App/Absensi.App.csproj -c Release -r win-x64
+          --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true
+          -p:PublishTrimmed=false -o publish/AbsensiSekolah
+
+      - name: Kemas zip
+        shell: pwsh
+        run: |
+          $pendek = $env:SHA.Substring(0, 7)
+          $nama = "AbsensiSekolah-uji-$pendek.zip"
+          Compress-Archive -Path publish/AbsensiSekolah/* -DestinationPath $nama
+          "ZIP=$nama" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "PENDEK=$pendek" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Perbarui prarilis uji-terbaru
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $catatan = @"
+          Build uji otomatis dari commit $env:SHA (sudah lulus seluruh tes CI).
+
+          Cara menguji:
+          1. Unduh $env:ZIP, ekstrak ke folder kosong (mis. C:\AbsensiSekolah-Uji).
+          2. Jalankan Absensi.App.exe. Wizard instalasi akan muncul.
+          3. Kunci lisensi: isi teks apa pun (aktivasi masih stub lokal).
+          4. Gunakan data sintetis saja (utang D-12), bukan data siswa/guru sungguhan.
+
+          Ini prarilis untuk evaluasi, bukan rilis produksi.
+          "@
+          gh release delete uji-terbaru --repo $env:GITHUB_REPOSITORY --yes --cleanup-tag 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create uji-terbaru $env:ZIP --repo $env:GITHUB_REPOSITORY --prerelease `
+            --target $env:SHA --title "Build uji $env:PENDEK" --notes $catatan
