@@ -39,7 +39,7 @@ public static class DataContoh
             Alamat: null,
             LogoPath: null,
             NamaTahunAjaran: "2026/2027",
-            Semester: "Ganjil",
+            Semester: "ganjil",
             TglMulaiTahunAjaran: new DateOnly(2026, 7, 13),
             TglSelesaiTahunAjaran: new DateOnly(2026, 12, 19),
             JadwalHarian: jadwal,
