@@ -48,7 +48,7 @@ public sealed class PemrosesTap
         // mulai pulang" untuk tap PERTAMA hari itu, kapan pun jam
         // sebenarnya. Ditangani DI SINI, secara eksplisit, SEBELUM
         // PenentuStatusKehadiran pernah dipanggil — kelas itu (satu-
-        // satunya penentu status kehadiran, CLAUDE.md §4.1 aturan 1) dan
+        // satunya penentu status kehadiran, PRD §24.1) dan
         // KonteksTapSiswa/KonteksTapGuru TIDAK disentuh, aturannya tidak
         // berubah sama sekali. Gerbang tetap dicek lebih dulu (mode
         // registrasi, kartu tidak terdaftar) supaya penolakan ini tidak
@@ -74,7 +74,7 @@ public sealed class PemrosesTap
         // rekap (Hadir maupun Terlambat) ditangani batch oleh
         // Absensi.Data.Notifikasi.LayananNotifikasi.RunParentRecap —
         // dikonfirmasi pemilik proyek 2026-09-18. Pesan hanya diANTRE, tak
-        // pernah dikirim di sini (CLAUDE.md §4.4 aturan 15).
+        // pernah dikirim di sini (PRD §9.4).
         var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);
 
         if (kartu is not null)

@@ -6,7 +6,7 @@ namespace Absensi.Data.Backup;
 // PRD §18.2: "Berkas dienkripsi sebelum diunggah, karena memuat data ribuan
 // siswa". Kunci enkripsi diturunkan dari kunci lisensi sekolah lewat
 // PBKDF2 (pola sama seperti Absensi.Data.Akun.HashSandi) — bukan nilai
-// tertanam di kode (CLAUDE.md §4.1 aturan 2), dan sekaligus mengikuti PRD
+// tertanam di kode (PRD §1/§15), dan sekaligus mengikuti PRD
 // §18.3: "kunci lisensi sekolah menjadi penanda backup mana yang miliknya".
 public static class EnkripsiBackup
 {

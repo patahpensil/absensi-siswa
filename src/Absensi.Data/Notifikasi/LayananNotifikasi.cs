@@ -10,7 +10,7 @@ namespace Absensi.Data.Notifikasi;
 // dan §9.3 (yang real-time, tap Terlambat setelah jam rekap, ditangani
 // langsung di Absensi.Data.PemrosesTap — lihat catatan di sana). Dipanggil
 // oleh penjadwal (Absensi.App) pada jam yang dikonfigurasi jadwal_hari,
-// bukan mengirim sendiri (CLAUDE.md §4.4 aturan 15) — hanya mengantre ke
+// bukan mengirim sendiri (PRD §9.4) — hanya mengantre ke
 // `outbox`, lewat RepositoriOutbox.Antrekan yang aman dipanggil berulang.
 public sealed class LayananNotifikasi
 {

@@ -134,7 +134,7 @@ internal sealed class MigratedDatabase : IDisposable
     public const string SandiUji = "Rahasia123!";
 
     // guruId hanya relevan untuk peran wali_kelas (akun.guru_id, dibandingkan
-    // terhadap kelas.wali_guru_id — CLAUDE.md §4.5 aturan 20).
+    // terhadap kelas.wali_guru_id — PRD §3).
     public void TambahAkun(int id, string username, string peran, int? guruId)
     {
         using var command = Connection.CreateCommand();

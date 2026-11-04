@@ -6,8 +6,8 @@ namespace Absensi.Data.Repositori;
 public sealed class RepositoriPairing
 {
     // Hanya dipanggil lewat Absensi.Data.Notifikasi.LayananPairing (dibuat
-    // oleh tindakan admin — dibungkus JalurPerubahanData di sana, CLAUDE.md
-    // §4.1 aturan 4).
+    // oleh tindakan admin — dibungkus JalurPerubahanData di sana, PRD
+    // §12).
     public void BuatToken(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -32,7 +32,7 @@ public sealed class RepositoriPairing
     // PRD §16.6 langkah 9: "QR hilang → dibuatkan kembali (token lama
     // mati)" — berlaku baik token lama masih menunggu dipindai maupun
     // sudah tertaut (mis. HP orang tua rusak, perlu tertaut ulang ke HP
-    // baru). Tidak menghapus baris lama (CLAUDE.md §4.2 aturan 8).
+    // baru). Tidak menghapus baris lama (PRD §5.3/§12).
     public void BatalkanAktifUntukSubjek(SqliteConnection connection, SqliteTransaction transaction, JenisPemilikKartu subjekTipe, int subjekId)
     {
         using var command = connection.CreateCommand();

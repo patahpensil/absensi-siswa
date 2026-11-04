@@ -8,7 +8,7 @@ namespace Absensi.App.MasterData;
 //
 // Formulir tambah/ubah tampil di dialog (FormSiswaWindow) yang dibuka saat
 // SiswaViewModel.FormulirDiminta terpicu — hanya penyambung peristiwa,
-// tanpa logika (CLAUDE.md §4.1 aturan 3).
+// tanpa logika (PRD §24.1).
 public partial class SiswaView : UserControl
 {
     private SiswaViewModel? _viewModelTerhubung;

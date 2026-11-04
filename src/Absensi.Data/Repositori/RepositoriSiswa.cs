@@ -107,7 +107,7 @@ public sealed class RepositoriSiswa
     }
 
     // Hanya dipanggil lewat Absensi.Data.MasterData.LayananSiswa, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     public int Tambah(SqliteConnection connection, SqliteTransaction transaction, DataSiswa data)
     {
         using var command = connection.CreateCommand();
@@ -141,7 +141,7 @@ public sealed class RepositoriSiswa
     }
 
     // PRD §5.3: siswa keluar/pindah ditandai tidak aktif, tidak pernah
-    // dihapus (CLAUDE.md §4.2 aturan 8).
+    // dihapus (PRD §5.3/§12).
     public void TandaiTidakAktif(SqliteConnection connection, SqliteTransaction transaction, int id, string alasan)
     {
         using var command = connection.CreateCommand();

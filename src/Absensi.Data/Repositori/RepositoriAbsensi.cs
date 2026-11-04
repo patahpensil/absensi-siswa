@@ -5,7 +5,7 @@ namespace Absensi.Data.Repositori;
 
 public sealed class RepositoriAbsensi
 {
-    // CLAUDE.md §4.3 aturan 11: status awal setiap siswa setiap hari adalah
+    // PRD §8: status awal setiap siswa setiap hari adalah
     // alpa, dibuat saat pembukaan hari. INSERT OR IGNORE bersandar pada
     // UNIQUE(tanggal, siswa_id) (docs/SKEMA-DATABASE.md §7) supaya
     // menjalankan pembukaan hari berulang tidak menggandakan baris.
@@ -292,7 +292,7 @@ public sealed class RepositoriAbsensi
     }
 
     // Hanya dipanggil lewat Absensi.Data.Koreksi.LayananKoreksi, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     // jam_masuk/jam_pulang sengaja tidak disentuh — riwayat tap asli tetap
     // utuh, hanya status+keterangan yang berubah (PRD §16.10 langkah 5).
     public void KoreksiStatusSiswa(SqliteConnection connection, SqliteTransaction transaction, DateOnly tanggal, int siswaId, StatusAbsensiSiswa status, string? keterangan)

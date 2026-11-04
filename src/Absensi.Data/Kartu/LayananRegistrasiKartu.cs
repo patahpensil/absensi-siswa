@@ -6,7 +6,7 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.Data.Kartu;
 
 // RENCANA-TUGAS.md Tugas 8 — Registrasi Kartu (PRD §16.5, §16.11, §17.9).
-// Setiap perubahan lewat JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+// Setiap perubahan lewat JalurPerubahanData (PRD §12).
 public sealed class LayananRegistrasiKartu
 {
     private readonly RepositoriKartu _repositoriKartu = new();
@@ -85,7 +85,7 @@ public sealed class LayananRegistrasiKartu
     }
 
     // PRD §16.5 langkah 5: "Seluruh sesi tersimpan" — semua-atau-tidak
-    // sama sekali dalam satu transaksi (CLAUDE.md §4.2 aturan 10, sama
+    // sama sekali dalam satu transaksi (PRD §16.3, sama
     // seperti impor Excel; dikonfirmasi pemilik proyek 2026-09-18: kalau
     // aplikasi gagal di tengah, operator tidak boleh diminta mengulang
     // kartu yang sudah sempat ditap). Pemanggil (ViewModel) wajib sudah
@@ -123,8 +123,8 @@ public sealed class LayananRegistrasiKartu
             nilaiBaru: string.Join(", ", pendaftaran.Select(p => $"{p.Uid}->{p.NamaTampil}")));
     }
 
-    // PRD §16.11: kartu lama dinonaktifkan (bukan dihapus — CLAUDE.md §4.2
-    // aturan 8), kartu baru dikaitkan ke pemilik yang sama, satu transaksi.
+    // PRD §16.11: kartu lama dinonaktifkan (bukan dihapus — PRD
+    // §5.6/§12), kartu baru dikaitkan ke pemilik yang sama, satu transaksi.
     // Riwayat absensi tetap utuh karena menunjuk ke pemilik, bukan ke kartu
     // (aturan 7).
     public void GantiKartuHilang(

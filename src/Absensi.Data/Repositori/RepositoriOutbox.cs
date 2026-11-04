@@ -6,10 +6,10 @@ namespace Absensi.Data.Repositori;
 // `outbox` diisi lewat Absensi.Data.Notifikasi.LayananNotifikasi (dipanggil
 // dari titik pemicu PRD §9.2/§9.3) dan dikirim oleh Absensi.Telegram
 // (RENCANA-TUGAS.md Tugas 10). Pesan tidak pernah dikirim langsung dari
-// kode pemicunya (CLAUDE.md §4.4 aturan 15) — hanya dibuat di sini.
+// kode pemicunya (PRD §9.4) — hanya dibuat di sini.
 public sealed class RepositoriOutbox
 {
-    // Baris outbox tidak pernah dihapus (CLAUDE.md §4.2 aturan 8) — status
+    // Baris outbox tidak pernah dihapus (PRD §5.3/§12) — status
     // diubah jadi 'dibatalkan', riwayatnya tetap ada untuk ditelusuri.
     public int BatalkanAntreUntukTanggal(SqliteConnection connection, SqliteTransaction transaction, DateOnly tanggal)
     {
@@ -97,7 +97,7 @@ public sealed class RepositoriOutbox
 
     // Menyerah setelah percobaan berkali-kali (mis. chat_id tidak valid
     // lagi — pengguna memblokir bot) — berhenti diulang, tapi tetap
-    // tersimpan sebagai riwayat (CLAUDE.md §4.2 aturan 8).
+    // tersimpan sebagai riwayat (PRD §5.3/§12).
     public void TandaiGagalPermanen(SqliteConnection connection, int id, string galat)
     {
         using var command = connection.CreateCommand();

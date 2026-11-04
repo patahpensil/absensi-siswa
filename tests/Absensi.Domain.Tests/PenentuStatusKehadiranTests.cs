@@ -51,7 +51,7 @@ public sealed class PenentuStatusKehadiranTests
         bool modeRegistrasi = false) =>
         new(waktu, modeRegistrasi, hari, pemilik, siswa, guru);
 
-    // --- Kasus batas wajib CLAUDE.md §5 ---
+    // --- Kasus batas wajib PRD §16.8/§24.6 ---
 
     [Fact]
     public void Siswa_Tap0729_SebelumJamMasuk_Hadir()

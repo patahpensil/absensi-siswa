@@ -4,7 +4,7 @@ namespace Absensi.App.MasterData;
 
 // Dialog kecil dipakai bersama oleh layar Siswa (PRD §5.3: lulus/pindah/
 // keluar) dan Guru (pensiun/pindah) untuk meminta alasan sebelum menandai
-// tidak aktif — tidak ada penghapusan (CLAUDE.md §4.2 aturan 8).
+// tidak aktif — tidak ada penghapusan (PRD §5.3/§12).
 public sealed class AlasanTidakAktifViewModel : ObservableObject
 {
     private string _alasan;

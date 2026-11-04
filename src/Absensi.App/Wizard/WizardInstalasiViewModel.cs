@@ -340,7 +340,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
     }
 
     // PRD §7 — nilai bawaan pengisi awal formulir jadwal wizard, BUKAN
-    // nilai yang ditegakkan kode (CLAUDE.md §7 aturan 2): admin tetap bebas
+    // nilai yang ditegakkan kode (PRD §1/§15): admin tetap bebas
     // mengubahnya sebelum Selesaikan, dan CobaUraikanJam tetap memvalidasi
     // ulang teks yang akhirnya tersimpan di JadwalHarian, apa pun asalnya.
     // Sebelumnya keempat kolom diisi null (kosong) di sini, dan layar tidak
@@ -353,7 +353,7 @@ public sealed class WizardInstalasiViewModel : ObservableObject
     // sendiri tidak punya nilai untuk baris itu.
     // PRD §7 P-06: daftar belum tap wali kelas 08.00 dan rekap orang tua
     // 08.10 adalah dua kolom terpisah. Isian awal formulir, bukan nilai yang
-    // ditegakkan di kode (CLAUDE.md §4.1 aturan 2).
+    // ditegakkan di kode (PRD §1/§15).
     private static (string? JamMasuk, string? NotTappedListTime, string? JamRekap, string? BatasTapMasuk, string? MulaiPulang) JadwalBawaan(int hari)
     {
         if (hari == 7)

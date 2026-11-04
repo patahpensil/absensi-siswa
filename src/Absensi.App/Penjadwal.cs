@@ -207,8 +207,9 @@ public sealed class Penjadwal
         }
     }
 
-    // PRD §18.1 titik ke-2 ("setelah batas akhir tap masuk"). CLAUDE.md §7:
-    // "Backup dikejar bila terlewat, notifikasi tidak" — berbeda sengaja
+    // PRD §18.1 titik ke-2 ("setelah batas akhir tap masuk"). Ketentuan
+    // baseline desktop "backup dikejar bila terlewat, notifikasi tidak"
+    // (PRD §21.9 meninjaunya untuk server, D-02) — berbeda sengaja
     // dari CobaJalankan di atas, titik ini TIDAK dibuang walau aplikasi
     // baru dibuka jauh melewati jam batas tap harinya.
     private async Task JalankanBackupBatasAkhirBilaSaatnyaAsync(TimeOnly? batasTapMasuk, DateTime sekarang)

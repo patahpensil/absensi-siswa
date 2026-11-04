@@ -13,7 +13,7 @@ namespace Absensi.Data.Wizard;
 // selesai lewat ADA-tidaknya baris `sekolah`, jadi baris itu baru boleh
 // muncul kalau semuanya berhasil).
 //
-// Pengecualian tunggal terhadap CLAUDE.md §4.1 aturan 4 ("seluruh
+// Pengecualian tunggal terhadap PRD §12 ("seluruh
 // perubahan data lewat JalurPerubahanData") ada di sini: akun Kepala
 // Sekolah yang dibuat wizard adalah akun PERTAMA — belum ada akun lain
 // untuk berperan sebagai aktor JalurPerubahanData. Baris audit tetap

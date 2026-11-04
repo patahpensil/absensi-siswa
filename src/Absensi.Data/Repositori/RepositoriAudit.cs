@@ -3,7 +3,7 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.Data.Repositori;
 
 // Hanya dipanggil lewat Absensi.Data.Akun.JalurPerubahanData — itulah satu
-// jalur yang dilewati semua perubahan data (CLAUDE.md §4.1 aturan 4) —
+// jalur yang dilewati semua perubahan data (PRD §12) —
 // KECUALI Absensi.Data.Wizard.LayananWizard, yang menulis akun pertama
 // sekolah dan karena itu belum punya akun lain untuk berperan sebagai
 // aktor JalurPerubahanData (lihat catatan di LayananWizard).

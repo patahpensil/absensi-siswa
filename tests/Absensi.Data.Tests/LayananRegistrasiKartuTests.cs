@@ -76,7 +76,7 @@ public sealed class LayananRegistrasiKartuTests
         AssertAdaBarisAudit(database, "daftar_kartu", jumlahDiharapkan: 1);
     }
 
-    // CLAUDE.md §4.2 aturan 10 (impor utuh) + PRD §16.5 langkah 5, sesuai
+    // PRD §16.3 (impor utuh) + PRD §16.5 langkah 5, sesuai
     // keputusan pemilik proyek 2026-09-18: kalau satu baris gagal, TIDAK
     // ADA yang tersimpan — bukan tersimpan sebagian.
     [Fact]
@@ -134,7 +134,7 @@ public sealed class LayananRegistrasiKartuTests
 
     // Sebelumnya tes ini mengizinkan wali kelas mendaftarkan kartu siswa.
     // PRD §3 menyatakan wali kelas tidak dapat mendaftarkan kartu, dan PRD
-    // yang menang atas perilaku lama (CLAUDE.md §1).
+    // yang menang atas perilaku lama (PRD §21.12).
     [Fact]
     public void DaftarkanSesi_WaliKelasDaftarkanKartuSiswa_Ditolak()
     {

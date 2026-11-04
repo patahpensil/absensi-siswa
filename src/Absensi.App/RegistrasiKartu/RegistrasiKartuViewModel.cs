@@ -54,7 +54,7 @@ public sealed class RegistrasiKartuViewModel : ObservableObject
         // membuat ViewModel baru setiap dialog dibuka (tidak ada cache),
         // jadi ini otomatis mengambil kelas terbaru tanpa restart. Dibungkus
         // try/catch supaya kegagalan QUERY dibedakan dari kelas yang MEMANG
-        // belum ada (bukan menyembunyikan exception, CLAUDE.md §5).
+        // belum ada (bukan menyembunyikan exception, PRD §24.3).
         try
         {
             foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))

@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.Data.MasterData;
 
 // Layar Kelas (PRD §14.4 daftar layar, §5.2). Setiap perubahan lewat
-// JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+// JalurPerubahanData (PRD §12).
 public sealed class LayananKelas
 {
     private readonly RepositoriKelas _repositoriKelas = new();

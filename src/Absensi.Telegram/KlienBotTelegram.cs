@@ -5,7 +5,7 @@ using Absensi.Data.Diagnostik;
 namespace Absensi.Telegram;
 
 // RENCANA-TUGAS.md Tugas 10 — HTTPS langsung ke Bot API, tanpa pustaka
-// Telegram pihak ketiga (CLAUDE.md §2). Kegagalan jaringan/HTTP tidak
+// Telegram pihak ketiga (PRD §24.3). Kegagalan jaringan/HTTP tidak
 // pernah dilempar ke pemanggil sebagai galat fatal — PengirimOutbox dan
 // PemrosesPembaruanPairing berjalan tiap siklus penjadwal, jadi kegagalan
 // satu siklus cukup dicoba lagi siklus berikutnya (PRD §9.4: "internet

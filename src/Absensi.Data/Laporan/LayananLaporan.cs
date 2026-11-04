@@ -7,16 +7,16 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.Data.Laporan;
 
 // RENCANA-TUGAS.md Tugas 12 (PRD §11, §17.8). Hanya membaca — laporan
-// tidak mengubah data, jadi tidak lewat JalurPerubahanData (CLAUDE.md
-// §4.1 aturan 4 hanya berlaku untuk PERUBAHAN data). Mengembalikan DTO
+// tidak mengubah data, jadi tidak lewat JalurPerubahanData (PRD
+// §12 hanya berlaku untuk PERUBAHAN data). Mengembalikan DTO
 // murni Absensi.Domain.Laporan; Absensi.Laporan yang mencetaknya ke
 // Excel/PDF, App/Laporan yang menampilkan pratinjaunya di layar.
 //
 // PRD §3: "laporan" ada di daftar "Kewenangan penuh mencakup" (Kepala
 // Sekolah/Admin) — berbeda dari Koreksi/Kalender, wali kelas TIDAK
 // disebutkan berwenang sama sekali di sini (bukan "kelasnya sendiri
-// saja"), jadi ditolak total, bukan difilter per kelas (CLAUDE.md §4.5
-// aturan 19: pemeriksaan peran di lapisan layanan).
+// saja"), jadi ditolak total, bukan difilter per kelas (PRD §24.3:
+// pemeriksaan peran di lapisan layanan).
 public sealed class LayananLaporan
 {
     private readonly RepositoriAbsensi _repositoriAbsensi = new();

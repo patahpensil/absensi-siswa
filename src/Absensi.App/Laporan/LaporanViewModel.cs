@@ -81,7 +81,7 @@ public sealed class LaporanViewModel : ObservableObject
     // PRD §3: "laporan" ada di daftar kewenangan penuh Kepala Sekolah/Admin
     // — wali kelas tidak disebutkan berwenang sama sekali di sini (beda
     // dari Koreksi/Kalender yang membatasi per kelas). Diperiksa juga di
-    // LayananLaporan (CLAUDE.md §4.5 aturan 19) — ini cuma menyembunyikan
+    // LayananLaporan (PRD §24.3) — ini cuma menyembunyikan
     // kontrol supaya wali kelas tidak perlu mencoba dulu baru ditolak.
     public bool BolehAkses => _akun.Peran != PeranAkun.WaliKelas;
 

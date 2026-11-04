@@ -147,7 +147,7 @@ public sealed class LayananBackupTests : IDisposable
         Assert.Equal(1, Convert.ToInt32(command.ExecuteScalar()));
     }
 
-    // CLAUDE.md §4.5 aturan 19: pemeriksaan peran di lapisan layanan, bukan
+    // PRD §24.3: pemeriksaan peran di lapisan layanan, bukan
     // hanya menyembunyikan tombol Pulihkan di UI.
     [Fact]
     public async Task SiapkanRestore_WaliKelas_Ditolak()

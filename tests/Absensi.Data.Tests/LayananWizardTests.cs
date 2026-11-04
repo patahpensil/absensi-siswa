@@ -91,7 +91,7 @@ public sealed class LayananWizardTests
         Assert.Equal("SEKOLAH-001-ABCD", status.Kunci);
     }
 
-    // CLAUDE.md §4.1 aturan 4: perubahan tetap tercatat di audit walau akun
+    // PRD §12: perubahan tetap tercatat di audit walau akun
     // pelakunya baru dibuat pada transaksi yang sama (lihat catatan di
     // LayananWizard).
     [Fact]

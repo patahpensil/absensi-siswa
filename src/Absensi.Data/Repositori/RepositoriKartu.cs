@@ -54,7 +54,7 @@ public sealed class RepositoriKartu
     }
 
     // Hanya dipanggil lewat Absensi.Data.Kartu.LayananRegistrasiKartu, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     // Pemanggil wajib memeriksa duplikat lintas master lebih dulu (PRD
     // §17.9) — ix_kartu_uid_aktif di sini hanya jaring pengaman terakhir.
     public void Daftarkan(
@@ -78,8 +78,8 @@ public sealed class RepositoriKartu
         command.ExecuteNonQuery();
     }
 
-    // PRD §16.11: kartu lama dinonaktifkan, tidak pernah dihapus (CLAUDE.md
-    // §4.2 aturan 8) — riwayat absensi tetap utuh karena menunjuk ke
+    // PRD §16.11: kartu lama dinonaktifkan, tidak pernah dihapus (PRD
+    // §5.3/§12) — riwayat absensi tetap utuh karena menunjuk ke
     // pemilik, bukan ke kartu (aturan 7).
     public void Nonaktifkan(
         SqliteConnection connection,
