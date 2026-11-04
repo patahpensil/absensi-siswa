@@ -6,7 +6,7 @@ using Absensi.Domain.Akun;
 namespace Absensi.Data.Tests;
 
 // LayananSiswa/LayananGuru/LayananKelas: setiap perubahan lewat
-// JalurPerubahanData (CLAUDE.md §4.1 aturan 4) — satu baris audit per
+// JalurPerubahanData (PRD §12) — satu baris audit per
 // operasi, mencakup penandaan tidak aktif (§4.2 aturan 8: tidak pernah
 // dihapus).
 public sealed class LayananMasterDataTests

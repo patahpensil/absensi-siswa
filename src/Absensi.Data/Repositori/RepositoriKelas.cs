@@ -30,7 +30,7 @@ public sealed class RepositoriKelas
 
     // Dipakai LayananAkun.BolehMenyentuhKelas untuk menyelesaikan
     // kelas.wali_guru_id (docs/SKEMA-DATABASE.md §5) yang dibandingkan
-    // terhadap akun.guru_id (CLAUDE.md §4.5 aturan 20).
+    // terhadap akun.guru_id (PRD §3).
     public int? CariWaliGuruId(SqliteConnection connection, int kelasId)
     {
         using var command = connection.CreateCommand();
@@ -90,7 +90,7 @@ public sealed class RepositoriKelas
     }
 
     // Hanya dipanggil lewat Absensi.Data.MasterData.LayananKelas, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     public int Tambah(
         SqliteConnection connection,
         SqliteTransaction transaction,

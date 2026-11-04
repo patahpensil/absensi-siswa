@@ -7,7 +7,7 @@ namespace Absensi.Data.Koreksi;
 
 // RENCANA-TUGAS.md Tugas 11 — Kunci Bulan (PRD §10, §3). "Kewenangan penuh"
 // (Kepala Sekolah/Admin) — wali kelas tidak berwenang. Tidak ada jalur
-// buka-kunci: PRD tidak menjabarkannya, dan CLAUDE.md §4.2 aturan 8
+// buka-kunci: PRD tidak menjabarkannya, dan PRD §5.3/§12
 // ("tidak ada penghapusan") membuat mengunci sesuatu yang sengaja
 // dirancang tidak bisa dibatalkan lewat aplikasi.
 public sealed class LayananKuncimBulan

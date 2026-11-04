@@ -45,7 +45,7 @@ public sealed class AuditViewModel : ObservableObject
         }
     }
 
-    // A-40: diperiksa juga di LayananAudit (CLAUDE.md §4.5 aturan 19) --
+    // A-40: diperiksa juga di LayananAudit (PRD §24.3) --
     // properti ini cuma menyembunyikan konten DI DALAM layar ini sendiri.
     // Menu "Audit" di sidebar sudah difilter terpisah di MainWindowViewModel
     // supaya non-Admin tidak sampai membuka layar ini sama sekali.

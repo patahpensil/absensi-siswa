@@ -33,7 +33,7 @@ public sealed class RepositoriAkun
 
     // Hanya dipanggil lewat Absensi.Data.Akun.LayananAkun.BuatAkun, yang
     // membungkusnya dengan JalurPerubahanData supaya pembuatan akun selalu
-    // tercatat di audit (CLAUDE.md §4.1 aturan 4). Jangan dipanggil langsung
+    // tercatat di audit (PRD §12). Jangan dipanggil langsung
     // dari tempat lain.
     public int Tambah(
         SqliteConnection connection,
@@ -95,7 +95,7 @@ public sealed class RepositoriAkun
     }
 
     // Hanya dipanggil lewat Absensi.Data.Akun.LayananAkun — bukan
-    // penghapusan (CLAUDE.md §4.2 aturan 8), sesuai pola nonaktifkan siswa
+    // penghapusan (PRD §5.3/§12), sesuai pola nonaktifkan siswa
     // guru/kartu di tugas-tugas sebelumnya.
     public void Nonaktifkan(SqliteConnection connection, SqliteTransaction transaction, int id)
     {

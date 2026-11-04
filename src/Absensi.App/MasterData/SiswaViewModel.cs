@@ -237,7 +237,7 @@ public sealed class SiswaViewModel : ObservableObject
         var nisn = Nisn.Trim();
         var nama = Nama.Trim();
 
-        // Validasi (CLAUDE.md §4.2 aturan 9: NISN teks 10 digit, nol di depan bertahan).
+        // Validasi (PRD §5.4: NISN teks 10 digit, nol di depan bertahan).
         if (KelasTerpilih is null)
         {
             PesanGalat = "Pilih kelas terlebih dahulu.";

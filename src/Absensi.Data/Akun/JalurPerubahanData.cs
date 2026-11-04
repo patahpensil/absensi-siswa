@@ -9,7 +9,7 @@ namespace Absensi.Data.Akun;
 // (mis. baris baru tidak punya nilai lama).
 public sealed record CatatanPerubahan(int? EntitasId, string? NilaiLama, string? NilaiBaru);
 
-// CLAUDE.md §4.1 aturan 4: seluruh perubahan data melewati satu jalur yang
+// PRD §12: seluruh perubahan data melewati satu jalur yang
 // sekaligus menulis jejak audit. Setiap operasi yang mengubah data atas
 // tindakan seorang pengguna (bukan proses sistem seperti pembukaan hari di
 // Absensi.Data.PembukaanHari, yang tidak punya "pengguna" untuk diaudit)

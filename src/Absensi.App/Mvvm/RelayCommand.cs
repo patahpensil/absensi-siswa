@@ -3,7 +3,7 @@ using System.Windows.Input;
 namespace Absensi.App.Mvvm;
 
 // Implementasi ICommand sendiri, tanpa pustaka MVVM pihak ketiga
-// (CLAUDE.md §2: jangan menambah pustaka besar tanpa persetujuan).
+// (PRD §24.3–§24.4: pustaka baru harus beralasan dan diperiksa).
 public sealed class RelayCommand : ICommand
 {
     private readonly Action _eksekusi;

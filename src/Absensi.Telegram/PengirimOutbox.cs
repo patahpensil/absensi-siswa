@@ -4,8 +4,8 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.Telegram;
 
-// RENCANA-TUGAS.md Tugas 10 — pengirim outbox terpisah (CLAUDE.md §4.4
-// aturan 15: pesan tidak pernah dikirim langsung dari kode pemicunya).
+// RENCANA-TUGAS.md Tugas 10 — pengirim outbox terpisah (PRD §9.4/§15:
+// pesan tidak pernah dikirim langsung dari kode pemicunya).
 // Dipanggil berkala oleh penjadwal (Absensi.App) — membaca antrean,
 // menghormati batas kirim Telegram (jeda antar pesan), mengulang saat
 // gagal, menandai terkirim.

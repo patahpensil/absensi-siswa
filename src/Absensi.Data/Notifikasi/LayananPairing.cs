@@ -7,8 +7,8 @@ namespace Absensi.Data.Notifikasi;
 
 // RENCANA-TUGAS.md Tugas 10 — Pairing Orang Tua/Guru (PRD §16.6, §17.7).
 // Token acak 6 karakter sekali pakai; QR-nya berisi tautan mulai obrolan
-// bot (langkah 4). Setiap perubahan lewat JalurPerubahanData (CLAUDE.md
-// §4.1 aturan 4) — kecuali penautan chat_id, yang dipicu Telegram sendiri
+// bot (langkah 4). Setiap perubahan lewat JalurPerubahanData (PRD
+// §12) — kecuali penautan chat_id, yang dipicu Telegram sendiri
 // (lihat RepositoriPairing.TautkanChatId).
 public sealed class LayananPairing
 {

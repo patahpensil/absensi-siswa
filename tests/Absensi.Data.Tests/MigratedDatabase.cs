@@ -56,7 +56,7 @@ internal sealed class MigratedDatabase : IDisposable
 
     // Sekolah kecil lengkap untuk pengujian pembukaan hari dan pemrosesan
     // tap (Tugas 3): satu tahun ajaran aktif, jadwal_hari 1-7 (Minggu
-    // libur, Jumat beda batas tap dan jam pulang sesuai CLAUDE.md §7), satu
+    // libur, Jumat beda batas tap dan jam pulang sesuai PRD §7), satu
     // guru dan satu siswa aktif plus satu masing-masing yang nonaktif, dan
     // kartu untuk keempatnya.
     public void SeedSekolahUntukTap()
@@ -206,7 +206,7 @@ internal sealed class MigratedDatabase : IDisposable
     }
 
     // Sekolah kecil untuk pengujian LayananNotifikasi (Tugas 10, PRD
-    // §9.2/§9.3): jadwal Kamis 07.30/08.00/12.00/13.10 (CLAUDE.md §7).
+    // §9.2/§9.3): jadwal Kamis 07.30/08.00/12.00/13.10 (PRD §7).
     // Kelas 7A wali guru id=1 (tertaut Telegram). Siswa: id=1 Hadir
     // (tertaut), id=2 Terlambat (tertaut), id=3 Alpa/belum tap (tertaut),
     // id=4 Hadir+sudah tap pulang (tertaut, BUKAN kandidat bolos), id=5
@@ -314,7 +314,7 @@ internal sealed class MigratedDatabase : IDisposable
     // Sekolah kecil untuk pengujian LayananLaporan (Tugas 12, PRD §11):
     // tahun ajaran 1-30 September 2026 (dipersempit jadi semenjana supaya
     // batas semester gampang diuji), jadwal Senin-Sabtu hari sekolah
-    // (CLAUDE.md §7), satu kalender override 17 September (Kamis) jadi
+    // (PRD §7), satu kalender override 17 September (Kamis) jadi
     // libur mendadak. Baris absensi_siswa/absensi_guru SENGAJA tidak
     // diisi untuk 17 September — meniru PembukaanHari yang melewati hari
     // libur — supaya hari efektif (dihitung dari kalender) dan jumlah

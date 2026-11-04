@@ -10,7 +10,7 @@ public sealed class RepositoriKalender
     // Kalender hanya memuat tanggal yang menyimpang dari pola mingguan
     // (docs/SKEMA-DATABASE.md §4). Bila tidak ada baris untuk tanggal ini,
     // jenis hari diturunkan dari jadwal_hari.hari_sekolah — inilah yang
-    // membuat "Minggu libur" (CLAUDE.md §7) berlaku tanpa mencatat setiap
+    // membuat "Minggu libur" (PRD §7) berlaku tanpa mencatat setiap
     // hari Minggu di kalender.
     public JenisHariKalender TentukanJenisHari(SqliteConnection connection, DateOnly tanggal, int tahunAjaranId)
     {
@@ -31,7 +31,7 @@ public sealed class RepositoriKalender
     }
 
     // Hanya dipanggil lewat Absensi.Data.Waktu.LayananKalender, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     // Upsert per tanggal — menandai ulang tanggal yang sudah ditandai
     // sebelumnya (mis. mengembalikan hari libur jadi hari sekolah untuk
     // MPLS/Sumatif, PRD §6) mengganti baris lama, bukan menambah baris baru.

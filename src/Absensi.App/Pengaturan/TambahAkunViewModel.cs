@@ -13,8 +13,8 @@ public sealed record PeranPilihan(PeranAkun Peran, string Teks);
 // PRD §3.1: "Kepala Sekolah → akun Admin", "Admin → akun Wali Kelas" —
 // dropdown Peran hanya menawarkan pilihan yang memang berwenang dibuat
 // pembuatnya, supaya tidak menampilkan pilihan yang pasti ditolak
-// LayananAkun.BuatAkun (yang tetap memvalidasi ulang, CLAUDE.md §4.5
-// aturan 19 — dropdown ini sekadar kenyamanan, bukan satu-satunya penjaga).
+// LayananAkun.BuatAkun (yang tetap memvalidasi ulang, PRD §24.3
+// — dropdown ini sekadar kenyamanan, bukan satu-satunya penjaga).
 public sealed class TambahAkunViewModel : ObservableObject
 {
     private readonly SqliteConnection _connection;

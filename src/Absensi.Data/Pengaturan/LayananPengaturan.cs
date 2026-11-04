@@ -6,7 +6,7 @@ namespace Absensi.Data.Pengaturan;
 
 // RENCANA-TUGAS.md Tugas 10 — PRD §16.6 langkah 2: "Admin memasukkan token
 // bot dan username bot di menu Pengaturan". Setiap perubahan lewat
-// JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+// JalurPerubahanData (PRD §12).
 public sealed class LayananPengaturan
 {
     private readonly RepositoriPengaturan _repositoriPengaturan = new();

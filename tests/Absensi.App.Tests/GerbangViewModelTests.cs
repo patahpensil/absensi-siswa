@@ -185,7 +185,7 @@ public sealed class GerbangViewModelTests
 
     // RENCANA-TUGAS.md Tugas 8, "Selesai bila": tidak ada satu pun baris
     // absensi tertulis selama Mode Registrasi aktif — StatusModeRegistrasi
-    // dibagi dengan layar Registrasi Kartu (CLAUDE.md §4.3 aturan 14).
+    // dibagi dengan layar Registrasi Kartu (PRD §5.7).
     [Fact]
     public void ProsesTap_ModeRegistrasiAktif_TidakMenulisAbsensi()
     {

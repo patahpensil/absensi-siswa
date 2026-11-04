@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.Data.Waktu;
 
 // RENCANA-TUGAS.md Tugas 9 — layar Kalender (PRD §6). Setiap perubahan
-// lewat JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+// lewat JalurPerubahanData (PRD §12).
 public sealed class LayananKalender
 {
     private readonly RepositoriKalender _repositoriKalender = new();

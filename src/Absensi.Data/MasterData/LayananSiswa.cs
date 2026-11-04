@@ -7,7 +7,7 @@ namespace Absensi.Data.MasterData;
 // Layar Siswa (PRD §14.4): tambah/edit satu siswa, mutasi (tidak aktif),
 // dan unggah foto per orang. Impor massal ada di ImporSiswaExcel/
 // ImporFotoSiswa. Setiap perubahan lewat JalurPerubahanData
-// (CLAUDE.md §4.1 aturan 4).
+// (PRD §12).
 public sealed class LayananSiswa
 {
     private readonly RepositoriSiswa _repositoriSiswa = new();

@@ -8,7 +8,7 @@ namespace Absensi.Data.Waktu;
 // RENCANA-TUGAS.md Tugas 9 — bagian "jadwal harian" dari layar Pengaturan
 // (PRD §7, PANDUAN-UI-UX.md §9: "jadwal harian" ada di dalam Pengaturan,
 // bukan menu sendiri). Setiap perubahan lewat JalurPerubahanData
-// (CLAUDE.md §4.1 aturan 4).
+// (PRD §12).
 public sealed class LayananJadwalHari
 {
     private readonly RepositoriJadwalHari _repositoriJadwalHari = new();
@@ -19,7 +19,7 @@ public sealed class LayananJadwalHari
     // PRD §7: "seluruh nilai dapat diubah per hari" — ketujuh baris
     // disimpan sekaligus, satu transaksi (dikonfirmasi pemilik proyek
     // 2026-09-18, pola sama seperti Registrasi Kartu Tugas 8 dan impor
-    // Excel — CLAUDE.md §4.2 aturan 10).
+    // Excel — PRD §16.3).
     public void Perbarui(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int tahunAjaranId, IReadOnlyList<JadwalHariBaris> hari)
     {
         // PRD §3: pengaturan termasuk "kewenangan penuh" (Kepala

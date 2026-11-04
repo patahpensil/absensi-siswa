@@ -17,7 +17,7 @@ namespace Absensi.Data.Diagnostik;
 // BARU yang harus ditangani lagi (lihat §4.7.3).
 //
 // Waktu: baris log memakai DateTimeOffset.Now langsung, BUKAN
-// IPenyediaWaktu (CLAUDE.md §5 "Waktu" berlaku untuk keputusan ABSENSI yang
+// IPenyediaWaktu (PRD §24.3 sumber waktu berlaku untuk keputusan ABSENSI yang
 // perlu deterministik saat diuji — timestamp diagnostik di log galat bukan
 // aturan bisnis yang pernah diuji nilainya, sama seperti timestamp Windows
 // Event Log tidak melalui abstraksi aplikasi). Ini pengecualian yang

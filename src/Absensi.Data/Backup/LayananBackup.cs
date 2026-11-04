@@ -33,7 +33,8 @@ public sealed class LayananBackup
 
     // Titik normal (PRD §18.1): snapshot lokal, lalu — bila lisensi sudah
     // aktif — versi terenkripsinya "diunggah" (lihat catatan stub di
-    // IPenyimpanCloudBackup). CLAUDE.md §7: berbeda dari notifikasi, titik
+    // IPenyimpanCloudBackup). Ketentuan baseline desktop (PRD §21.9
+    // meninjaunya untuk server, D-02): berbeda dari notifikasi, titik
     // ini DIKEJAR walau aplikasi baru dibuka lama setelah jadwalnya —
     // pemanggil (Penjadwal) karena itu tidak membuang panggilan ini
     // walau sudah lewat toleransi, tidak seperti titik notifikasi lain.
@@ -68,7 +69,7 @@ public sealed class LayananBackup
     // memori DI SINI (bukan belakangan) supaya rotasi 7-berkas di atas
     // tidak pernah bisa menghapusnya duluan sebelum sungguh dipakai.
     //
-    // CLAUDE.md §4.5 aturan 19: pemeriksaan peran di lapisan layanan ini,
+    // PRD §24.3: pemeriksaan peran di lapisan layanan ini,
     // bukan hanya menyembunyikan tombol Pulihkan di PengaturanViewModel.
     public byte[] SiapkanRestore(SqliteConnection sumber, AkunTersimpan akun, DateTime waktu, BerkasBackup berkasSumberRestore)
     {

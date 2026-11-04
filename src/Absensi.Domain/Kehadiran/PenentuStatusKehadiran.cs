@@ -1,8 +1,8 @@
 namespace Absensi.Domain.Kehadiran;
 
-// Satu-satunya kelas penentuan status kehadiran (CLAUDE.md §4.1 aturan 1).
+// Satu-satunya kelas penentuan status kehadiran (PRD §24.1).
 // Urutan pemeriksaan mengikuti docs/PRD.md §16.8, §16.8.a, §16.8.b persis —
-// jangan disusun ulang "agar lebih efisien" (CLAUDE.md §4.3 aturan 12).
+// jangan disusun ulang "agar lebih efisien" (PRD §16.8).
 // Kelas ini tidak mengenal WPF maupun SQLite dan tidak menulis apa pun;
 // pemanggil yang menyimpan keputusan ke database.
 public sealed class PenentuStatusKehadiran

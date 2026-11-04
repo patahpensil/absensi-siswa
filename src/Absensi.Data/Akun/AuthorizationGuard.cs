@@ -3,7 +3,7 @@ using Absensi.Domain.Akun;
 
 namespace Absensi.Data.Akun;
 
-// CLAUDE.md §4.5 aturan 19: peran diperiksa di lapisan layanan, bukan hanya
+// PRD §24.3: peran diperiksa di lapisan layanan, bukan hanya
 // dengan menyembunyikan tombol. PRD §3: master siswa/guru/kelas, registrasi
 // dan penggantian kartu, impor, pengaturan, serta pairing termasuk
 // "kewenangan penuh" (Kepala Sekolah/Admin). Wali kelas hanya mengoreksi

@@ -85,14 +85,14 @@ public sealed class LayananAkun
 
     // RENCANA-TUGAS.md Tugas 14 — layar Manajemen Akun. Wali kelas "tidak
     // bisa akses menu ini sama sekali" (bukan sekadar tombol disembunyikan,
-    // CLAUDE.md §4.5 aturan 19) — dicek di sini, bukan cuma disembunyikan UI.
+    // PRD §24.3) — dicek di sini, bukan cuma disembunyikan UI.
     public IReadOnlyList<AkunDaftar> DaftarAkun(SqliteConnection connection, AkunTersimpan akun)
     {
         PastikanBolehMengelolaAkun(akun);
         return _repositoriAkun.DaftarSemua(connection);
     }
 
-    // Bukan penghapusan (CLAUDE.md §4.2 aturan 8) — akun keluar/dimutasi
+    // Bukan penghapusan (PRD §5.3/§12) — akun keluar/dimutasi
     // ditandai tidak aktif, sama seperti siswa/guru/kartu.
     public void NonaktifkanAkun(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget)
     {
@@ -163,7 +163,7 @@ public sealed class LayananAkun
         }
     }
 
-    // CLAUDE.md §4.5 aturan 20: dipakai pemanggil (mis. layar koreksi di
+    // PRD §3: dipakai pemanggil (mis. layar koreksi di
     // Tugas 11) sebelum mengizinkan perubahan pada kelas tertentu.
     public bool BolehMenyentuhKelas(SqliteConnection connection, AkunTersimpan akun, int kelasId)
     {

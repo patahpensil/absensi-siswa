@@ -34,7 +34,7 @@ public sealed class RepositoriJadwalHari
     // PRD §7 / layar Pengaturan: ketujuh hari sekaligus, termasuk yang
     // belum pernah disimpan (tahun ajaran baru) — diisi default supaya
     // layar selalu menampilkan 7 baris utuh, bukan sebagian. Default
-    // mengikuti CLAUDE.md §7 ("Minggu libur", sisanya hari sekolah) —
+    // mengikuti PRD §7 ("Minggu libur", sisanya hari sekolah) —
     // sekadar isian awal formulir, admin tetap bebas mengubahnya sebelum
     // Simpan; bukan nilai yang ditegakkan di kode (aturan 2).
     public IReadOnlyList<JadwalHariBaris> DaftarUntukTahunAjaran(SqliteConnection connection, int tahunAjaranId)
@@ -73,7 +73,7 @@ public sealed class RepositoriJadwalHari
     }
 
     // Hanya dipanggil lewat Absensi.Data.Waktu.LayananJadwalHari, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     // Upsert per hari — ketujuh baris ditulis dalam satu transaksi oleh
     // pemanggil (PRD §7: "seluruh nilai dapat diubah per hari").
     public void Perbarui(SqliteConnection connection, SqliteTransaction transaction, int tahunAjaranId, JadwalHariBaris data)

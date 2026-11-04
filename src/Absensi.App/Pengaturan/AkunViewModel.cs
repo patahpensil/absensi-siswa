@@ -14,7 +14,7 @@ namespace Absensi.App.Pengaturan;
 // akun Admin/Wali Kelas lewat aplikasi sama sekali — celah yang baru
 // ketahuan lewat panduan pemasangan Tugas 14. PRD §3: wali kelas "tidak
 // bisa akses menu ini sama sekali" — bukan sekadar tombol disembunyikan,
-// LayananAkun sendiri menolak (CLAUDE.md §4.5 aturan 19); BolehAkses di
+// LayananAkun sendiri menolak (PRD §24.3); BolehAkses di
 // sini hanya menentukan apakah tab ini ditampilkan sama sekali.
 public sealed class AkunViewModel : ObservableObject
 {

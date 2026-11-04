@@ -9,7 +9,7 @@ using Absensi.Domain.Kehadiran;
 
 namespace Absensi.Data.Tests;
 
-// T6 (PROGRES-DAN-UTANG.md §3) / CLAUDE.md §4.5 aturan 19: peran diperiksa di
+// T6 (PROGRES-DAN-UTANG.md §3) / PRD §24.3: peran diperiksa di
 // lapisan layanan. PRD §3: wali kelas tidak dapat mengubah master data,
 // mendaftarkan kartu, mengimpor, mengubah pengaturan, atau membuat pairing.
 // Penolakan harus terjadi sebelum transaksi: tidak ada data maupun audit yang

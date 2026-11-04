@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace Absensi.Data.Akun;
 
 // PBKDF2-HMAC-SHA256 bawaan .NET (System.Security.Cryptography) — tidak ada
-// pustaka pihak ketiga yang ditambahkan (CLAUDE.md §2). Format tersimpan
+// pustaka pihak ketiga yang ditambahkan (PRD §24.3). Format tersimpan
 // "pbkdf2-sha256$<iterasi>$<salt base64>$<hash base64>" bersifat
 // self-describing supaya jumlah iterasi bisa dinaikkan nanti tanpa merusak
 // hash lama yang sudah tersimpan.

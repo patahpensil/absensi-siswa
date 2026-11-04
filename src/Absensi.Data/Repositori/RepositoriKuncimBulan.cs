@@ -50,7 +50,7 @@ public sealed class RepositoriKuncimBulan
     }
 
     // Hanya dipanggil lewat Absensi.Data.Koreksi.LayananKuncimBulan, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     // PRIMARY KEY (tahun, bulan) menolak kunci ganda pada level database —
     // pemanggil tetap memeriksa SudahDikunci dulu supaya pesan galatnya
     // jelas, bukan SqliteException mentah.

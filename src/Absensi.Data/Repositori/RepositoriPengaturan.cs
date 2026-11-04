@@ -23,7 +23,7 @@ public sealed class RepositoriPengaturan
     }
 
     // Hanya dipanggil lewat Absensi.Data.Pengaturan.LayananPengaturan, yang
-    // membungkusnya dengan JalurPerubahanData (CLAUDE.md §4.1 aturan 4).
+    // membungkusnya dengan JalurPerubahanData (PRD §12).
     public void Tulis(SqliteConnection connection, SqliteTransaction transaction, string kunci, string nilai)
     {
         using var command = connection.CreateCommand();

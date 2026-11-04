@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.Data;
 
-// PRD/CLAUDE.md §11 skema: setiap koneksi wajib foreign_keys ON (SQLite
+// PRD/docs/SKEMA-DATABASE.md skema: setiap koneksi wajib foreign_keys ON (SQLite
 // mematikannya secara bawaan) dan journal_mode WAL (agar tap tidak terhalang
 // baca laporan).
 public static class SqliteConnectionFactory
