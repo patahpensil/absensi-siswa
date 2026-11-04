@@ -1,0 +1,91 @@
+# Deploy web uji ke Cloudflare Pages (akun khusus uji, di luar Indonesia).
+# Hanya data sintetis (utang D-12). Kredensial hanya dari GitHub Secrets:
+# CLOUDFLARE_API_TOKEN (izin Cloudflare Pages: Edit) dan CLOUDFLARE_ACCOUNT_ID.
+name: Web uji - deploy Cloudflare Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/Absensi.Web/**'
+      - 'src/Absensi.Data/**'
+      - 'src/Absensi.Domain/**'
+      - '.github/workflows/web-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-deploy
+  cancel-in-progress: false
+
+env:
+  PAGES_PROJECT: absensi-uji
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  deploy:
+    name: Publish dan deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Periksa secret Cloudflare tersedia
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=0
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::Secret CLOUDFLARE_API_TOKEN belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::Secret CLOUDFLARE_ACCOUNT_ID belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
+          exit $missing
+
+      - name: Pasang .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Runner memakai SDK terbaru yang terpasang, yang meminta workload
+      # wasm-tools-net8 untuk target net8.0 (terbukti pada web-bukti.yml).
+      - name: Pasang workload wasm-tools-net8
+        run: dotnet workload install wasm-tools-net8
+
+      - name: Publish web uji
+        run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -p:WasmBuildNative=true -o publish
+
+      - name: Pastikan proyek Pages ada
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
+          code=$(curl -sS -o /tmp/project.json -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${api}/${PAGES_PROJECT}")
+          if [ "$code" = "200" ]; then
+            echo "Proyek ${PAGES_PROJECT} sudah ada."
+          elif [ "$code" = "404" ]; then
+            echo "Proyek ${PAGES_PROJECT} belum ada, membuat..."
+            code=$(curl -sS -o /tmp/create.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" \
+              --data "{\"name\":\"${PAGES_PROJECT}\",\"production_branch\":\"master\"}" "${api}")
+            if [ "$code" != "200" ]; then
+              echo "::error::Gagal membuat proyek Pages (HTTP ${code}): $(head -c 600 /tmp/create.json)"
+              exit 1
+            fi
+          else
+            echo "::error::Gagal memeriksa proyek Pages (HTTP ${code}): $(head -c 600 /tmp/project.json). Periksa izin token (Cloudflare Pages: Edit) dan Account ID."
+            exit 1
+          fi
+
+      - name: Deploy ke Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy publish/wwwroot --project-name=${{ env.PAGES_PROJECT }} --branch=master --commit-dirty=true
