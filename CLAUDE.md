@@ -131,7 +131,7 @@ guru tap masuk saja  → tidak_lengkap
 siswa Izin/Sakit tap → status dan jam resmi tetap; percobaan dicatat
 ```
 
-Waktu di atas adalah konfigurasi contoh. P-06 menetapkan rekap orang tua 08.10 dan daftar belum tap wali kelas 08.00 sebagai dua jadwal berbeda; pemisahannya masih merupakan utang implementasi, bukan alasan mengubah batas Hadir. Perubahan jadwal tidak boleh diam-diam menulis ulang riwayat (P-15). Ketentuan offline/replay, kalender libur/ralat dan hak akses historis memakai PRD terbaru; rincian terbuka pada §25.1 tidak boleh ditebak dari perilaku baseline.
+Waktu di atas adalah konfigurasi contoh. P-06 menetapkan rekap orang tua 08.10 (`jadwal_hari.jam_rekap`) dan daftar belum tap wali kelas 08.00 (`jadwal_hari.not_tapped_list_time`, migrasi 004–005) sebagai dua jadwal berbeda; keduanya bukan toleransi dan tidak mengubah batas Hadir. Perubahan jadwal tidak boleh diam-diam menulis ulang riwayat (P-15). Ketentuan offline/replay, kalender libur/ralat dan hak akses historis memakai PRD terbaru; rincian terbuka pada §25.1 tidak boleh ditebak dari perilaku baseline.
 
 ---
 
@@ -163,7 +163,8 @@ Waktu di atas adalah konfigurasi contoh. P-06 menetapkan rekap orang tua 08.10 d
 | Jumat | Jam masuk sama (07.30); yang beda batas tap (10.00) dan jam pulang (11.30) |
 | Pergantian hari | Pukul 00.01 |
 | Terlambat dan bolos | **Dihitung hadir** untuk persentase, ditampilkan di kolom keterangan |
-| Rekap 08.00 | Hanya untuk siswa yang **sudah tap**; yang masih alpa ditahan |
+| Daftar belum tap 08.00 | Ke **wali kelas**: siswa kelasnya yang masih belum tap (PRD §9.3) |
+| Rekap orang tua 08.10 | Hanya siswa yang **sudah tap**, dengan status sebenarnya (Hadir/Terlambat) dan jam tap; yang masih alpa ditahan sampai batas akhir tap masuk. Tap mulai 08.10 dikirim real-time tanpa pengiriman ganda (P-06) |
 | Reader | 4 unit USB keyboard-emulation, **tidak dapat dibedakan** satu sama lain |
 | Kartu siswa dan guru | Satu tabel, UID unik lintas keduanya |
 | Backup | Dikejar bila terlewat. Notifikasi tidak |
@@ -174,8 +175,8 @@ Waktu di atas adalah konfigurasi contoh. P-06 menetapkan rekap orang tua 08.10 d
 
 Jangan membangun ini walau terasa mudah ditambahkan:
 
-- Akses wali kelas lewat HP atau jaringan
-- Notifikasi WhatsApp
+- Akses wali kelas lewat HP atau jaringan **pada desktop WPF** — portal sekolah berbasis browser (termasuk HP) masuk lingkup rancangan online PRD §20, bukan bagian aplikasi desktop
+- Notifikasi WhatsApp (masih dipertimbangkan, belum dipilih — D-03, P-16 ditangguhkan)
 - Pemberitahuan update otomatis dari server
 - Cetak kartu dari aplikasi
 - Absensi per mata pelajaran atau per jam pelajaran

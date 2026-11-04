@@ -29,8 +29,8 @@ ringkasan status terkini; rincian per butir ada di `MASTER-BUG-UIUX-REGISTER.md`
 ## 3. Utang yang MASIH TERBUKA (urut prioritas)
 **Dari pembacaan kode, belum dikerjakan:**
 1. **T3** Status Bolos hanya ditulis di job notifikasi (ikut toleransi 15 menit); `FinalisasiAkhirHariGuru` hanya jalan saat pergantian tanggal di dalam proses. PC mati pada jamnya → status tidak pernah ditetapkan. Perlu keputusan produk (final saat start untuk hari-hari lampau).
-2. **T6** Cek peran di lapisan layanan untuk `LayananSiswa/Guru/Kelas/Pengaturan/Pairing/Impor` (CLAUDE.md §4.5 aturan 19; A-42 hanya menyebut `LayananGuru`).
-3. **T8** Libur ditandai setelah hari dibuka meninggalkan baris `alpa` yang ikut rekap (belum diuji).
+2. ~~**T6** Cek peran di lapisan layanan~~ — selesai, lihat §9.
+3. ~~**T8** Libur ditandai setelah hari dibuka~~ — selesai, lihat §9.
 4. Jaga `GuruViewModel.Simpan` dengan `PenangananGalat.Coba`; `TapKartuTunggalViewModel.TapUid` dan `AkunViewModel.Tambah/Nonaktifkan` hanya menangkap `InvalidOperationException`.
 5. `HashSandi.Verifikasi` tak menjaga hash rusak; backup lokal tak terenkripsi; cadangan pra-restore ikut rotasi 7.
 6. Token bot lama yang **sudah** tertulis di audit instalasi yang ada tidak bisa dihapus (audit immutable) — sarankan ganti token lewat BotFather.
@@ -82,7 +82,7 @@ Tabel ini mencatat keputusan yang masih harus dibahas atau dibuktikan. Prinsip y
 | D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
 | D-10 | Pendaftaran hardware MFA, autentikator cadangan, pemulihan, posture perangkat, nilai umur sesi dan tata kelola bantuan | Tidak membuat login password saja sebagai pengecualian otomatis L3 |
 | D-11 | Tanggung jawab penyedia/sekolah, kewenangan pihak sekolah, pengaturan privasi/aliran data, dan proses permintaan data | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
-| D-12 | **Lingkungan uji sementara di GitHub** (Actions/runner di luar Indonesia) dipakai untuk menguji tooling dan kinerja aplikasi atas instruksi pemilik, 4 November 2026. Kebijakan data dan keamanan data lingkungan uji, serta pemindahan ke lingkungan uji di Indonesia, **belum dibahas** | Hanya data sintetis yang jelas ditandai. Tidak ada data siswa/guru nyata, kredensial produksi, atau token bot sungguhan di repo, log CI, maupun artefak. Bukan bukti kelayakan lokasi data, ASVS, atau kinerja produksi |
+| D-12 | **Lingkungan uji sementara di GitHub** (Actions/runner di luar Indonesia) dipakai untuk menguji tooling dan kinerja aplikasi atas instruksi pemilik, 4 November 2026. Pemilik juga memutuskan seluruh kode tetap di GitHub, sedangkan uji tampilan dan fitur lewat browser memakai **Cloudflare Pages** (akun khusus uji, di luar Indonesia) — lihat §10. Kebijakan data dan keamanan data lingkungan uji, serta pemindahan ke lingkungan uji di Indonesia, **belum dibahas** | Hanya data sintetis yang jelas ditandai. Tidak ada data siswa/guru nyata, kredensial produksi, atau token bot sungguhan di repo, log CI, maupun artefak. Bukan bukti kelayakan lokasi data, ASVS, atau kinerja produksi |
 
 Prioritas pembahasan berikutnya yang disarankan: kapasitas awal dan dana yang harus disiapkan pemilik layanan (D-06/D-07/PRD §23), lalu rincian offline/replay (D-01/D-02), backup/retensi dan pemulihan akun. Ini urutan usulan, bukan pemilihan provider, angka anggaran atau persetujuan pengadaan. Evaluasi biaya menghitung pengeluaran penyedia; tarif/tagihan sekolah belum ditentukan.
 
@@ -134,7 +134,7 @@ CLI `dotnet test`/VSTest terhalang pembacaan informasi proses pada lingkungan in
 ### 7.3 Pekerjaan berikutnya yang belum selesai
 
 1. Jalankan seluruh tes App/WPF dan UAT arahan gerbang pada Windows; pastikan tata letak, DPI dan input RFID benar.
-2. Selesaikan P-06: pisahkan konfigurasi/job daftar belum tap wali kelas 08.00 dari rekap orang tua 08.10. Baseline masih memakai satu `jam_rekap`; perubahan ini **belum** memisahkannya atau mengganti jadwal tersimpan.
+2. ~~Selesaikan P-06: pisahkan daftar belum tap wali kelas dari rekap orang tua~~ — selesai pada §9 (migrasi 004–005).
 3. Bangun backend ASP.NET Core, adapter PostgreSQL dan identitas/isolasi tenant mengikuti PRD; desktop saat ini masih menggunakan adapter SQLite. Belum ada portal online, provisioning atau migrasi data nyata.
 4. Lanjutkan DOC-01, T3/T6/T8, P-07–P-15/P-17/P-18 dan verifikasi keamanan sesuai cakupan masing-masing. D-01–D-11 tetap membutuhkan rincian/bukti sebagaimana §6; P-16 tetap ditangguhkan.
 
@@ -159,23 +159,24 @@ Dikerjakan atas instruksi pemilik untuk melanjutkan kode yang ada sampai dapat d
 
 | Butir | Perubahan | PR |
 |---|---|---|
-| T6 | `PenjagaKewenangan`: master siswa/guru/kelas, registrasi & ganti kartu, impor, pengaturan dan pairing hanya Kepala Sekolah/Admin, diperiksa di lapisan layanan sebelum transaksi. Unggah/impor foto memeriksa peran sebelum berkas disalin. Dialog tap kartu tunggal menampilkan penolakan sebagai pesan. **Perubahan perilaku:** wali kelas tidak lagi bisa mendaftarkan kartu siswa (tes lama mengizinkannya, bertentangan dengan PRD §3). | #13 |
-| P-06 | Migrasi 004 `jadwal_hari.jam_daftar_belum_tap` (baris lama diisi dari `jam_rekap`, tidak mengubah perilaku instalasi lama). Daftar belum tap wali kelas dan rekap orang tua dijalankan terpisah. Pengaturan/wizard punya kolom "Belum tap (wali)" dan "Rekap orang tua"; isian awal wizard 08.00/08.10. | #14 |
+| T6 | `AuthorizationGuard`: master siswa/guru/kelas, registrasi & ganti kartu, impor, pengaturan dan pairing hanya Kepala Sekolah/Admin, diperiksa di lapisan layanan sebelum transaksi. Unggah/impor foto memeriksa peran sebelum berkas disalin. Dialog tap kartu tunggal menampilkan penolakan sebagai pesan. **Perubahan perilaku:** wali kelas tidak lagi bisa mendaftarkan kartu siswa (tes lama mengizinkannya, bertentangan dengan PRD §3). | #13 |
+| P-06 | Migrasi 004 menambah kolom daftar belum tap pada `jadwal_hari` (baris lama diisi dari `jam_rekap`, tidak mengubah perilaku instalasi lama); migrasi 005 menamainya `not_tapped_list_time`. Daftar belum tap wali kelas dan rekap orang tua dijalankan terpisah. Pengaturan/wizard punya kolom "Belum tap (wali)" dan "Rekap orang tua"; isian awal wizard 08.00/08.10. | #14 |
 | T8 | Baris absensi pada tanggal yang ditetapkan libur setelah hari dibuka tetap tersimpan, tetapi tidak dihitung pada seluruh laporan (P-13). | #15 |
-| CI | Workflow `CI`: build dan seluruh tes di Windows untuk setiap push/PR. Workflow `Rilis build uji`: setelah CI `master` lulus, `.exe` self-contained diterbitkan ke prarilis `uji-terbaru`. Dependabot mingguan aktif. | #1, #4, PR ini |
+| CI | Workflow `CI`: build dan seluruh tes di Windows untuk setiap push/PR. Dependabot mingguan aktif. (Workflow build `.exe` sempat dibuat lalu dihapus, lihat §10.) | #1, #4, #16 |
 
 **Bukti:** CI `master` commit `0b8151c` lulus — Domain 66, Data 266, Telegram 10, Laporan 32, App 266 (**640 tes**, 0 gagal), dijalankan di runner Windows GitHub.
 
 **Belum dikerjakan / tetap terbuka:**
-- T3 (finalisasi Bolos/guru saat PC mati), DOC-01 (penyelarasan CLAUDE.md, SKEMA-DATABASE.md — kolom baru migrasi 004 belum tercatat di sana), P-14 (pemberitahuan koreksi kalender), butir 4–7 §3, register UAT, serta D-01–D-12.
+- T3 (finalisasi Bolos/guru saat PC mati), DOC-01 (sisa penyelarasan dokumen turunan, lihat §10), P-14 (pemberitahuan koreksi kalender), butir 4–7 §3, register UAT, serta D-01–D-12.
 - UAT manual pada Windows dengan reader RFID sungguhan untuk perubahan T6 (pesan penolakan) dan P-06 (dua kolom jadwal) belum dilakukan.
 - PR Dependabot #2–#12 belum ditinjau; sebagian versi mayor (mis. Microsoft.Data.Sqlite 10, xunit runner 4) perlu keputusan pemilik.
 
-## 10. Simulator browser dan perubahan setelah tinjauan PRD §24 — 4 November 2026
+## 10. Penyelarasan setelah tinjauan PRD §24 dan rencana uji browser — 4 November 2026
 
 - **Identifier berbahasa Inggris (§24.2):** identifier baru dari T6/P-06/T8 diganti ke bahasa Inggris. Migrasi 005 mengganti nama kolom `jam_daftar_belum_tap` menjadi `not_tapped_list_time`; migrasi 004 tidak diubah.
 - **Atribusi (§24.5):** commit baru tanpa trailer atribusi. Deskripsi PR #1, #4, #13–#16 tidak bisa dibersihkan dari lingkungan kerja ini (proxy menambahkan kembali baris atribusi); perlu disunting manual oleh pemilik bila diinginkan. Aturan dicatat di CLAUDE.md §5–§6.
-- **Build .exe dihapus** atas keputusan pemilik; workflow `Rilis build uji` dihapus. Prarilis `uji-terbaru` dan tag-nya masih ada di GitHub dan perlu dihapus manual (penghapusan ditolak dari lingkungan kerja ini).
-- **Simulator browser (keputusan pemilik):** `Absensi.Simulator.Core` + `Absensi.Simulator.Web` (Blazor WebAssembly) menjalankan `PenentuStatusKehadiran` asli pada satu hari di memori, dengan data contoh. Pilihan Blazor ini untuk simulator uji; teknologi frontend portal produksi tetap keputusan D-08. Workflow `Simulator browser` menyimpan hasil publish di cabang `simulator-build`; halaman uji diterbitkan sebagai artifact pribadi pemilik dan diperbarui manual dari cabang itu.
-- **Bukti:** CI `feat/simulator-browser` lulus (Domain 66, Data 266, Telegram 10, Laporan 32, App 266, Simulator 8). Uji Chromium lokal atas hasil publish: tap 07.29.00 Hadir, 07.30.01 Terlambat, 13/13 kasus batas sesuai, tanpa galat konsol.
-- **Batas simulator:** tidak memuat database, notifikasi, akun/hak akses, laporan, atau reader RFID; hanya aturan tap dan finalisasi akhir hari.
+- **Build `.exe` uji dihapus** atas keputusan pemilik (workflow `Rilis build uji`).
+- **Simulator aturan tap dihapus.** `Absensi.Simulator.Core`, `Absensi.Simulator.Web`, tesnya dan workflow `Simulator browser` dihapus karena hanya mencakup aturan tap, bukan seluruh fitur yang ingin diuji pemilik. Aturan batas tetap diuji oleh `Absensi.Domain.Tests`.
+- **Rencana uji yang disepakati pemilik:** seluruh kode tetap di GitHub; GitHub Actions membangun aplikasi web uji dan menerbitkannya ke Cloudflare Pages (akun khusus uji) pada tautan tetap. Tahap 1 menjalankan kode asli Domain/Data di browser dengan data sintetis tersimpan di browser untuk menguji seluruh menu, alur dan UI/UX; login masih simulasi dan data tidak dibagi antar-perangkat. Tahap 2 (belum diputuskan) menjalankan backend C# ASP.NET Core + PostgreSQL di server staging. Teknologi frontend produksi tetap keputusan D-08.
+- **DOC-01 (sebagian):** `CLAUDE.md` §5, §7, §8 dan `SKEMA-DATABASE.md` (`jadwal_hari`) diselaraskan dengan P-06/§20/D-03. Sisa: `README.md`, `RENCANA-TUGAS.md`, panduan pemasangan/tester dan `CLAUDE.md` §2 (tumpukan teknologi baseline) belum ditinjau.
+- **Perlu dihapus manual oleh pemilik** (penghapusan ditolak dari lingkungan kerja ini): prarilis `uji-terbaru` dan tag-nya; cabang `simulator-build`; cabang yang sudah digabung `ci/github-actions-uji`, `ci/rilis-build-uji`, `feat/p06-pisah-jadwal-rekap`, `feat/simulator-browser`, `fix/simulator-tema`, `fix/t6-cek-peran-layanan`, `fix/t8-libur-setelah-hari-dibuka`, `refactor/identifier-inggris`, `chore/rapikan-sesuai-prd`; cabang usang `docs/revisi-online-prd-claude` (isinya digantikan PRD 1.0 di `master`).
