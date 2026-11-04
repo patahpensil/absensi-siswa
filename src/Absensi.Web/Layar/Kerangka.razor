@@ -10,7 +10,7 @@
         </div>
         <div class="kepala-kanan">
             <span id="akun-aktif">@TeksPeran · @Status.Akun!.Username</span>
-            <span class="jam" id="jam-simulasi">@Status.Jam.Sekarang.ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("id-ID")) WITA</span>
+            <span class="jam" id="jam-simulasi">@TeksJam() WITA</span>
             <button id="tombol-keluar" class="kecil" @onclick="Keluar">Keluar</button>
         </div>
     </header>
@@ -67,6 +67,14 @@
     {
         var semua = new[] { "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
         return Status.Akun!.Peran == PeranAkun.Admin ? semua : semua.Where(m => m != "Audit");
+    }
+
+    private static readonly string[] NamaHari = { "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu" };
+
+    private string TeksJam()
+    {
+        var t = Status.Jam.Sekarang;
+        return $"{NamaHari[(int)t.DayOfWeek]}, {t:dd/MM/yyyy HH:mm}";
     }
 
     private async Task Keluar()

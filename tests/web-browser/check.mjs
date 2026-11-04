@@ -8,7 +8,7 @@ const browser = await chromium.launch();
 const context = await browser.newContext();
 const page = await context.newPage();
 const consoleErrors = [];
-page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+page.on('console', (m) => { if (['error', 'critical'].includes(m.type()) || m.text().startsWith('crit:')) consoleErrors.push(m.text()); });
 page.on('pageerror', (e) => consoleErrors.push(String(e)));
 
 let failed = 0;
@@ -22,7 +22,7 @@ const langkah = async (nama, fn) => {
     lapor(false, `${nama}: ${String(e.message).split('\n')[0]}`);
     const isi = await page.evaluate(() => document.body.innerText.slice(0, 300)).catch(() => '(halaman tidak terbaca)');
     console.log(`::warning::Isi halaman saat gagal: ${isi.replace(/\s+/g, ' ')}`);
-    for (const t of consoleErrors.splice(0)) console.log(`::warning::Konsol: ${t.slice(0, 400)}`);
+    for (const t of consoleErrors.splice(0)) console.log(`::warning::Konsol: ${t.slice(0, 1500)}`);
   }
 };
 const tegas = (kondisi, pesan) => { if (!kondisi) throw new Error(pesan); };
