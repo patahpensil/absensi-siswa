@@ -1,0 +1,29 @@
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<h2>Pengaturan</h2>
+
+<h3>Jam simulasi</h3>
+<p class="teks-kedua">Geser jam untuk menguji jadwal (mis. rekap 08.10) tanpa menunggu. Hanya di web uji.</p>
+<p>
+    <button id="jam-1" @onclick="() => Geser(TimeSpan.FromHours(1))">+1 jam</button>
+    <button id="jam-min1" @onclick="() => Geser(TimeSpan.FromHours(-1))">−1 jam</button>
+    <button id="jam-reset" @onclick="() => Geser(TimeSpan.Zero, true)">Kembali ke jam sebenarnya</button>
+</p>
+
+<h3>Data uji</h3>
+<p class="teks-kedua">@Status.CatatanPenyimpanan</p>
+<p><button id="reset-data" class="bahaya" @onclick="Reset">Hapus data uji dan buat ulang</button></p>
+
+@code {
+    [Parameter] public EventCallback OnReset { get; set; }
+
+    private void Geser(TimeSpan selisih, bool ulang = false) =>
+        Status.Jam.SelisihSimulasi = ulang ? TimeSpan.Zero : Status.Jam.SelisihSimulasi + selisih;
+
+    private async Task Reset()
+    {
+        await Status.ResetAsync();
+        await OnReset.InvokeAsync();
+    }
+}

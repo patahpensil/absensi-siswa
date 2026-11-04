@@ -1,0 +1,20 @@
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<h2>Guru</h2>
+<table id="tabel-guru">
+    <thead><tr><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Kartu</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var g in daftar)
+    {
+        <tr><td>@g.Nip</td><td>@g.Nama</td><td>@g.Jabatan</td><td>@(g.PunyaKartu ? "Terdaftar" : "Belum")</td><td>@(g.Aktif ? "Aktif" : "Tidak aktif")</td></tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<GuruDaftar> daftar = Array.Empty<GuruDaftar>();
+
+    protected override void OnInitialized() => daftar = new RepositoriGuru().DaftarLengkap(Status.Koneksi!);
+}

@@ -1,0 +1,72 @@
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<main class="masuk">
+    <section class="kartu-masuk">
+        <h1 id="nama-sekolah">@Status.NamaSekolah</h1>
+        <p class="teks-kedua">Absensi RFID · Tahun ajaran @Status.TahunAjaran</p>
+
+        <form @onsubmit="Kirim" @onsubmit:preventDefault>
+            <label for="username">Username</label>
+            <input id="username" @bind="username" autocomplete="username" />
+            <label for="sandi">Sandi</label>
+            <input id="sandi" type="password" @bind="sandi" autocomplete="current-password" />
+            @if (galat is not null)
+            {
+                <p class="pesan-galat" id="galat-masuk">@galat</p>
+            }
+            <button id="tombol-masuk" type="submit" class="utama">Masuk</button>
+        </form>
+
+        <div class="kotak-uji">
+            <strong>Web uji — data contoh</strong>
+            <p>Semua data di sini sintetis. Gunakan salah satu akun uji:</p>
+            <table>
+                <thead><tr><th>Peran</th><th>Username</th><th>Sandi</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var akun in DataContoh.Akun)
+                {
+                    <tr>
+                        <td>@akun.Peran</td><td>@akun.Username</td><td>@akun.Sandi</td>
+                        <td><button type="button" class="kecil" id="isi-@akun.Username" @onclick="() => Isi(akun)">Isi</button></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter] public EventCallback OnMasuk { get; set; }
+
+    private string username = "";
+    private string sandi = "";
+    private string? galat;
+
+    private void Isi(AkunContoh akun)
+    {
+        username = akun.Username;
+        sandi = akun.Sandi;
+        galat = null;
+    }
+
+    private async Task Kirim()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(sandi))
+        {
+            galat = "Username dan sandi wajib diisi.";
+            return;
+        }
+
+        var akun = Status.Masuk(username, sandi);
+        if (akun is null)
+        {
+            galat = "Username atau sandi salah.";
+            return;
+        }
+
+        galat = null;
+        await OnMasuk.InvokeAsync();
+    }
+}

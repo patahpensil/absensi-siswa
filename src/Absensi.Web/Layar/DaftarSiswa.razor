@@ -1,0 +1,21 @@
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<h2>Siswa</h2>
+<table id="tabel-siswa">
+    <thead><tr><th>NISN</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Kartu</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var s in daftar)
+    {
+        <tr><td>@s.Nisn</td><td>@s.Nama</td><td>@s.JenisKelamin</td><td>@s.KelasNama</td><td>@(s.PunyaKartu ? "Terdaftar" : "Belum")</td><td>@(s.Aktif ? "Aktif" : "Tidak aktif")</td></tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<SiswaDaftar> daftar = Array.Empty<SiswaDaftar>();
+
+    protected override void OnInitialized() =>
+        daftar = new RepositoriSiswa().DaftarUntukTahunAjaran(Status.Koneksi!, Status.TahunAjaranId ?? 0);
+}

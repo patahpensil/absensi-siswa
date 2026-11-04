@@ -1,32 +1,40 @@
-<main>
-    <h1>Bukti teknis: kode asli berjalan di browser</h1>
-    <p>Halaman ini hanya memeriksa kelayakan teknis. Data sintetis dan tidak tersimpan setelah halaman ditutup.</p>
+@using Absensi.Web.Layanan
+@using Absensi.Web.Layar
+@inject StatusAplikasi Status
+@inject NavigationManager Navigasi
 
-    @if (results is null)
-    {
-        <p id="status">Menjalankan pemeriksaan…</p>
-    }
-    else
-    {
-        <p id="status">Selesai: @results.Count(r => r.Passed) dari @results.Count lulus.</p>
-        <ul id="results">
-            @foreach (var result in results)
-            {
-                <li class="@(result.Passed ? "ok" : "fail")" data-passed="@(result.Passed ? "ya" : "tidak")">
-                    @(result.Passed ? "LULUS" : "GAGAL") — @result.Name: @result.Detail
-                </li>
-            }
-        </ul>
-    }
-</main>
+@if (Navigasi.Uri.Contains("diagnostik", StringComparison.OrdinalIgnoreCase))
+{
+    <Diagnostik />
+}
+else if (!muatSelesai)
+{
+    <p class="memuat" id="memuat">Menyiapkan aplikasi…</p>
+}
+else if (Status.PesanGalat is not null)
+{
+    <p class="galat" id="galat-awal">@Status.PesanGalat</p>
+}
+else if (Status.Akun is null)
+{
+    <Masuk OnMasuk="StateHasChanged" />
+}
+else
+{
+    <Kerangka OnKeluar="StateHasChanged" />
+}
 
 @code {
-    private IReadOnlyList<CheckResult>? results;
+    private bool muatSelesai;
 
     protected override async Task OnInitializedAsync()
     {
-        // Beri kesempatan layar "Menjalankan…" tampil sebelum pemeriksaan sinkron berjalan.
-        await Task.Delay(50);
-        results = BrowserFeasibilityChecks.RunAll();
+        if (!Navigasi.Uri.Contains("diagnostik", StringComparison.OrdinalIgnoreCase))
+        {
+            await Task.Delay(50);
+            await Status.MulaiAsync();
+        }
+
+        muatSelesai = true;
     }
 }

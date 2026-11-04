@@ -1,0 +1,77 @@
+@using Absensi.Domain.Akun
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<div class="kerangka">
+    <header class="kepala">
+        <div>
+            <strong id="judul-sekolah">@Status.NamaSekolah</strong>
+            <span class="teks-kedua-terang">Tahun ajaran @Status.TahunAjaran</span>
+        </div>
+        <div class="kepala-kanan">
+            <span id="akun-aktif">@TeksPeran · @Status.Akun!.Username</span>
+            <span class="jam" id="jam-simulasi">@Status.Jam.Sekarang.ToString("dddd, dd/MM/yyyy HH:mm", new System.Globalization.CultureInfo("id-ID")) WITA</span>
+            <button id="tombol-keluar" class="kecil" @onclick="Keluar">Keluar</button>
+        </div>
+    </header>
+
+    <div class="badan">
+        <nav class="menu" aria-label="Menu utama">
+            @foreach (var item in DaftarMenu())
+            {
+                <button class="@(item == aktif ? "menu-aktif" : "")" id="menu-@item.ToLowerInvariant()" @onclick="() => aktif = item">@item</button>
+            }
+        </nav>
+
+        <section class="isi" id="isi">
+            @switch (aktif)
+            {
+                case "Dashboard":
+                    <Dasbor />
+                    break;
+                case "Siswa":
+                    <DaftarSiswa />
+                    break;
+                case "Guru":
+                    <DaftarGuru />
+                    break;
+                case "Kelas":
+                    <DaftarKelas />
+                    break;
+                case "Pengaturan":
+                    <PengaturanWeb OnReset="Keluar" />
+                    break;
+                default:
+                    <BelumDibangun Nama="@aktif" />
+                    break;
+            }
+        </section>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnKeluar { get; set; }
+
+    private string aktif = "Dashboard";
+
+    private string TeksPeran => Status.Akun!.Peran switch
+    {
+        PeranAkun.KepalaSekolah => "Kepala Sekolah",
+        PeranAkun.Admin => "Admin",
+        PeranAkun.WaliKelas => "Wali Kelas",
+        _ => Status.Akun.Peran.ToString(),
+    };
+
+    // Sama dengan MainWindowViewModel.DaftarMenuUntukPeran (A-40): hanya Admin melihat Audit.
+    private IEnumerable<string> DaftarMenu()
+    {
+        var semua = new[] { "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
+        return Status.Akun!.Peran == PeranAkun.Admin ? semua : semua.Where(m => m != "Audit");
+    }
+
+    private async Task Keluar()
+    {
+        Status.Keluar();
+        await OnKeluar.InvokeAsync();
+    }
+}

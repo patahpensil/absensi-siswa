@@ -1,0 +1,38 @@
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<h2>Dashboard</h2>
+<p class="teks-kedua">Hari ini: @tanggal.ToString("dd/MM/yyyy")</p>
+
+<div class="kartu-ringkas" id="ringkasan">
+    @foreach (var (label, nilai, gaya) in kartu)
+    {
+        <div class="ringkas @gaya"><span class="angka">@nilai</span><span>@label</span></div>
+    }
+</div>
+
+@code {
+    private DateOnly tanggal;
+    private List<(string Label, int Nilai, string Gaya)> kartu = new();
+
+    protected override void OnInitialized()
+    {
+        tanggal = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        var koneksi = Status.Koneksi!;
+        var repo = new RepositoriAbsensi();
+        var idTahun = Status.TahunAjaranId ?? 0;
+
+        kartu.Add(("Siswa aktif", new RepositoriSiswa().DaftarUntukTahunAjaran(koneksi, idTahun).Count(s => s.Aktif), "netral"));
+        kartu.Add(("Guru aktif", new RepositoriGuru().DaftarIdAktif(koneksi).Count, "netral"));
+        kartu.Add(("Kelas", new RepositoriKelas().DaftarUntukTahunAjaran(koneksi, idTahun).Count, "netral"));
+        kartu.Add(("Hadir", repo.HitungSiswaBerdasarkanStatus(koneksi, tanggal, StatusAbsensiSiswa.Hadir), "hadir"));
+        kartu.Add(("Terlambat", repo.HitungSiswaBerdasarkanStatus(koneksi, tanggal, StatusAbsensiSiswa.Terlambat), "terlambat"));
+        kartu.Add(("Izin / Sakit",
+            repo.HitungSiswaBerdasarkanStatus(koneksi, tanggal, StatusAbsensiSiswa.Izin)
+            + repo.HitungSiswaBerdasarkanStatus(koneksi, tanggal, StatusAbsensiSiswa.Sakit), "izin"));
+        kartu.Add(("Belum tap / Alpa", repo.HitungSiswaBerdasarkanStatus(koneksi, tanggal, StatusAbsensiSiswa.Alpa), "alpa"));
+        kartu.Add(("Guru sudah tap masuk", repo.HitungGuruSudahTapMasuk(koneksi, tanggal), "hadir"));
+    }
+}

@@ -1,0 +1,21 @@
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<h2>Kelas</h2>
+<table id="tabel-kelas">
+    <thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali kelas</th></tr></thead>
+    <tbody>
+    @foreach (var k in daftar)
+    {
+        <tr><td>@k.Nama</td><td>@k.Tingkat</td><td>@(k.WaliGuruNama ?? "Belum ditetapkan")</td></tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyList<KelasDaftar> daftar = Array.Empty<KelasDaftar>();
+
+    protected override void OnInitialized() =>
+        daftar = new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, Status.TahunAjaranId ?? 0);
+}
