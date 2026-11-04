@@ -20,7 +20,7 @@ await page.waitForFunction(
 );
 
 const items = await page.$$eval('#results li', (nodes) =>
-  nodes.map((node) => ({ passed: node.dataset.passed === 'True', text: node.textContent.trim() })),
+  nodes.map((node) => ({ passed: node.dataset.passed === 'ya', text: node.textContent.trim() })),
 );
 await browser.close();
 

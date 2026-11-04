@@ -12,7 +12,7 @@
         <ul id="results">
             @foreach (var result in results)
             {
-                <li class="@(result.Passed ? "ok" : "fail")" data-passed="@result.Passed">
+                <li class="@(result.Passed ? "ok" : "fail")" data-passed="@(result.Passed ? "ya" : "tidak")">
                     @(result.Passed ? "LULUS" : "GAGAL") — @result.Name: @result.Detail
                 </li>
             }
