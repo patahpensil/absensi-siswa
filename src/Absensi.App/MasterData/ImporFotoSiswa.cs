@@ -16,7 +16,7 @@ public sealed class ImporFotoSiswa
     public HasilImporFoto Impor(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string folderSumber)
     {
         // T6: tolak sebelum berkas apa pun disalin ke data/foto (PRD §3).
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor foto siswa");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengimpor foto siswa");
 
         var siswaBerdasarkanNisn = _repositoriSiswa.DaftarAktifRingkas(connection)
             .ToDictionary(s => s.Nisn, s => s.Id);

@@ -233,8 +233,8 @@ public sealed class GuruViewModel : ObservableObject
         // kewenangan tidak bisa menimpa berkas di data/foto walau database
         // menolak (PRD §3).
         if (!PenangananGalat.Coba(
-            () => PenjagaKewenangan.PastikanKewenanganPenuh(_akun, "mengubah foto guru"),
-            pesan => { PesanGalat = pesan; PesanStatus = null; },
+            () => AuthorizationGuard.EnsureFullAuthority(_akun, "mengubah foto guru"),
+            message => { PesanGalat = message; PesanStatus = null; },
             "GuruViewModel.UnggahFotoDariBerkas"))
         {
             return;

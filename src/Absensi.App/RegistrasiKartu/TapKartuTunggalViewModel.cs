@@ -90,7 +90,7 @@ public sealed class TapKartuTunggalViewModel : ObservableObject
         // Penolakan layanan (peran, integritas kartu) atau galat database
         // ditampilkan sebagai PesanGalat; jendela tetap terbuka dan tidak
         // menutup seolah kartu tersimpan.
-        var tersimpan = PenangananGalat.Coba(
+        var saved = PenangananGalat.Coba(
             () =>
             {
                 if (_modeGanti)
@@ -102,10 +102,10 @@ public sealed class TapKartuTunggalViewModel : ObservableObject
                     _layanan.DaftarkanSesi(_connection, _akun, waktu, new[] { new PendaftaranKartu(uid, _pemilikTipe, _pemilikId, NamaPemilik) });
                 }
             },
-            pesan => PesanGalat = pesan,
+            message => PesanGalat = message,
             "TapKartuTunggalViewModel.TapUid");
 
-        if (!tersimpan)
+        if (!saved)
         {
             return;
         }

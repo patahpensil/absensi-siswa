@@ -11,16 +11,16 @@ namespace Absensi.Data.Tests;
 // dalam laporan apa pun. Seed laporan menandai 17 Sept 2026 sebagai libur;
 // tes di sini menambahkan baris absensi pada tanggal itu untuk meniru libur
 // yang ditetapkan belakangan.
-public sealed class LaporanLiburSetelahHariDibukaTests
+public sealed class ReportHolidayAfterDayOpenedTests
 {
     private static readonly DateOnly Senin = new(2026, 9, 14);
     private static readonly DateOnly Sabtu = new(2026, 9, 19);
-    private static readonly DateOnly TanggalLibur = new(2026, 9, 17);
+    private static readonly DateOnly HolidayDate = new(2026, 9, 17);
     private static readonly AkunTersimpan Admin = new(1, "admin1", "x", PeranAkun.Admin, null, true);
 
     private readonly LayananLaporan _layanan = new();
 
-    private static void TambahBarisPadaTanggalLibur(MigratedDatabase database) => database.Execute("""
+    private static void AddRowsOnHolidayDate(MigratedDatabase database) => database.Execute("""
         INSERT INTO absensi_siswa (tanggal, siswa_id, kelas_id, status, jam_masuk, jam_pulang, keterangan, sumber) VALUES
             ('2026-09-17', 1, 1, 'terlambat', '07:45', NULL, NULL, 'tap'),
             ('2026-09-17', 2, 1, 'alpa', NULL, NULL, NULL, 'sistem');
@@ -29,66 +29,66 @@ public sealed class LaporanLiburSetelahHariDibukaTests
         """);
 
     [Fact]
-    public void Bulanan_BarisPadaTanggalLibur_TidakMengubahRekapDanTidakTampilDiGrid()
+    public void Monthly_RowsOnHolidayDate_DoNotChangeRecapOrAppearInGrid()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukLaporan();
-        var sebelum = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: 1, JenisSubjekLaporan.Siswa);
+        var before = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: 1, JenisSubjekLaporan.Siswa);
 
-        TambahBarisPadaTanggalLibur(database);
-        var sesudah = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: 1, JenisSubjekLaporan.Siswa);
+        AddRowsOnHolidayDate(database);
+        var after = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: 1, JenisSubjekLaporan.Siswa);
 
-        foreach (var baris in sesudah.Baris)
+        foreach (var baris in after.Baris)
         {
-            var barisSebelum = sebelum.Baris.Single(b => b.Nama == baris.Nama);
-            Assert.Equal(barisSebelum.Rekap, baris.Rekap);
-            Assert.False(baris.KodePerTanggal.ContainsKey(TanggalLibur));
+            var rowBefore = before.Baris.Single(b => b.Nama == baris.Nama);
+            Assert.Equal(rowBefore.Rekap, baris.Rekap);
+            Assert.False(baris.KodePerTanggal.ContainsKey(HolidayDate));
         }
 
-        Assert.True(sesudah.Kolom.Single(k => k.Tanggal == TanggalLibur).Libur);
+        Assert.True(after.Kolom.Single(k => k.Tanggal == HolidayDate).Libur);
     }
 
     [Fact]
-    public void PerOrangDanSemester_BarisPadaTanggalLibur_TidakDihitungDanTidakMasukRincian()
+    public void PerPersonAndSemester_RowsOnHolidayDate_NotCountedOrListed()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukLaporan();
-        var kartuSebelum = _layanan.PerOrang(database.Connection, Admin, id: 2, JenisSubjekLaporan.Siswa, tahunAjaranId: 1, Senin, Sabtu);
-        var semesterSebelum = _layanan.Semester(database.Connection, Admin, tahunAjaranId: 1, kelasId: 1, JenisSubjekLaporan.Siswa);
+        var cardBefore = _layanan.PerOrang(database.Connection, Admin, id: 2, JenisSubjekLaporan.Siswa, tahunAjaranId: 1, Senin, Sabtu);
+        var semesterBefore = _layanan.Semester(database.Connection, Admin, tahunAjaranId: 1, kelasId: 1, JenisSubjekLaporan.Siswa);
 
-        TambahBarisPadaTanggalLibur(database);
+        AddRowsOnHolidayDate(database);
         var kartu = _layanan.PerOrang(database.Connection, Admin, id: 2, JenisSubjekLaporan.Siswa, tahunAjaranId: 1, Senin, Sabtu);
         var semester = _layanan.Semester(database.Connection, Admin, tahunAjaranId: 1, kelasId: 1, JenisSubjekLaporan.Siswa);
 
-        Assert.Equal(kartuSebelum.Rekap, kartu.Rekap);
-        Assert.DoesNotContain(kartu.Rincian, r => r.Tanggal == TanggalLibur);
+        Assert.Equal(cardBefore.Rekap, kartu.Rekap);
+        Assert.DoesNotContain(kartu.Rincian, r => r.Tanggal == HolidayDate);
         foreach (var baris in semester)
         {
-            Assert.Equal(semesterSebelum.Single(b => b.Nama == baris.Nama).Rekap, baris.Rekap);
+            Assert.Equal(semesterBefore.Single(b => b.Nama == baris.Nama).Rekap, baris.Rekap);
         }
     }
 
     [Fact]
-    public void KejadianDanGuru_BarisPadaTanggalLibur_TidakTampil()
+    public void EventsAndTeachers_RowsOnHolidayDate_NotShown()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukLaporan();
-        var guruSebelum = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: null, JenisSubjekLaporan.Guru);
+        var teachersBefore = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: null, JenisSubjekLaporan.Guru);
 
-        TambahBarisPadaTanggalLibur(database);
+        AddRowsOnHolidayDate(database);
 
-        Assert.Empty(_layanan.Kejadian(database.Connection, Admin, TanggalLibur, TanggalLibur, kelasId: 1, JenisSubjekLaporan.Siswa));
-        Assert.Empty(_layanan.Kejadian(database.Connection, Admin, TanggalLibur, TanggalLibur, kelasId: null, JenisSubjekLaporan.Guru));
+        Assert.Empty(_layanan.Kejadian(database.Connection, Admin, HolidayDate, HolidayDate, kelasId: 1, JenisSubjekLaporan.Siswa));
+        Assert.Empty(_layanan.Kejadian(database.Connection, Admin, HolidayDate, HolidayDate, kelasId: null, JenisSubjekLaporan.Guru));
         var guru = _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: null, JenisSubjekLaporan.Guru);
-        Assert.Equal(guruSebelum.Baris.Single().Rekap, guru.Baris.Single().Rekap);
+        Assert.Equal(teachersBefore.Baris.Single().Rekap, guru.Baris.Single().Rekap);
     }
 
     [Fact]
-    public void BarisPadaTanggalLibur_TetapTersimpanSebagaiJejakKejadian()
+    public void RowsOnHolidayDate_RemainStoredAsHistory()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukLaporan();
-        TambahBarisPadaTanggalLibur(database);
+        AddRowsOnHolidayDate(database);
 
         _layanan.Bulanan(database.Connection, Admin, tahunAjaranId: 1, tahun: 2026, bulan: 9, kelasId: 1, JenisSubjekLaporan.Siswa);
 

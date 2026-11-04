@@ -49,7 +49,7 @@ public sealed class Penjadwal
 
     private DateOnly? _tanggalTerakhirDiproses;
     private bool _rekapSudahDiproses;
-    private bool _daftarBelumTapSudahDiproses;
+    private bool _homeroomListProcessed;
     private bool _batasAkhirSudahDiproses;
     private bool _bolosSudahDiproses;
     private bool _backupBatasAkhirSudahDiproses;
@@ -101,7 +101,7 @@ public sealed class Penjadwal
 
             _tanggalTerakhirDiproses = tanggal;
             _rekapSudahDiproses = false;
-            _daftarBelumTapSudahDiproses = false;
+            _homeroomListProcessed = false;
             _batasAkhirSudahDiproses = false;
             _bolosSudahDiproses = false;
             _backupBatasAkhirSudahDiproses = false;
@@ -169,11 +169,11 @@ public sealed class Penjadwal
 
         // PRD §7 P-06: dua jadwal terpisah — daftar belum tap ke wali kelas
         // (sekolah rujukan 08.00) dan rekap orang tua (08.10).
-        CobaJalankan(ref _daftarBelumTapSudahDiproses, jadwal.JamDaftarBelumTap, sekarang, toleransi,
-            () => _layananNotifikasi.JalankanDaftarBelumTapWali(_connection, tanggal, sekarang));
+        CobaJalankan(ref _homeroomListProcessed, jadwal.NotTappedListTime, sekarang, toleransi,
+            () => _layananNotifikasi.RunHomeroomNotTappedList(_connection, tanggal, sekarang));
 
         CobaJalankan(ref _rekapSudahDiproses, jadwal.JamRekap, sekarang, toleransi,
-            () => _layananNotifikasi.JalankanRekapOrangTua(_connection, tanggal, sekarang));
+            () => _layananNotifikasi.RunParentRecap(_connection, tanggal, sekarang));
 
         CobaJalankan(ref _batasAkhirSudahDiproses, jadwal.BatasTapMasuk, sekarang, toleransi,
             () => _layananNotifikasi.JalankanBatasAkhirTapMasuk(_connection, tanggal, sekarang));

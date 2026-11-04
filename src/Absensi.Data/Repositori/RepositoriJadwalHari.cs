@@ -9,7 +9,7 @@ public sealed class RepositoriJadwalHari
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, jam_daftar_belum_tap
+            SELECT hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, not_tapped_list_time
             FROM jadwal_hari
             WHERE tahun_ajaran_id = $tahunAjaranId AND hari = $hari;
             """;
@@ -28,7 +28,7 @@ public sealed class RepositoriJadwalHari
             JamRekap: BacaJam(reader, 2),
             BatasTapMasuk: BacaJam(reader, 3),
             MulaiPulang: BacaJam(reader, 4),
-            JamDaftarBelumTap: BacaJam(reader, 5));
+            NotTappedListTime: BacaJam(reader, 5));
     }
 
     // PRD §7 / layar Pengaturan: ketujuh hari sekaligus, termasuk yang
@@ -43,7 +43,7 @@ public sealed class RepositoriJadwalHari
 
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, jam_daftar_belum_tap
+            SELECT hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, not_tapped_list_time
             FROM jadwal_hari WHERE tahun_ajaran_id = $tahunAjaranId;
             """;
         command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
@@ -57,7 +57,7 @@ public sealed class RepositoriJadwalHari
                     hari,
                     reader.GetInt32(1) == 1,
                     BacaJam(reader, 2), BacaJam(reader, 3), BacaJam(reader, 4), BacaJam(reader, 5),
-                    JamDaftarBelumTap: BacaJam(reader, 6));
+                    NotTappedListTime: BacaJam(reader, 6));
             }
         }
 
@@ -81,15 +81,15 @@ public sealed class RepositoriJadwalHari
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
-            INSERT INTO jadwal_hari (tahun_ajaran_id, hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, jam_daftar_belum_tap)
-            VALUES ($tahunAjaranId, $hari, $hariSekolah, $jamMasuk, $jamRekap, $batasTapMasuk, $mulaiPulang, $jamDaftarBelumTap)
+            INSERT INTO jadwal_hari (tahun_ajaran_id, hari, hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, not_tapped_list_time)
+            VALUES ($tahunAjaranId, $hari, $hariSekolah, $jamMasuk, $jamRekap, $batasTapMasuk, $mulaiPulang, $notTappedListTime)
             ON CONFLICT(tahun_ajaran_id, hari) DO UPDATE SET
                 hari_sekolah = excluded.hari_sekolah,
                 jam_masuk = excluded.jam_masuk,
                 jam_rekap = excluded.jam_rekap,
                 batas_tap_masuk = excluded.batas_tap_masuk,
                 mulai_pulang = excluded.mulai_pulang,
-                jam_daftar_belum_tap = excluded.jam_daftar_belum_tap;
+                not_tapped_list_time = excluded.not_tapped_list_time;
             """;
         command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
         command.Parameters.AddWithValue("$hari", data.Hari);
@@ -98,7 +98,7 @@ public sealed class RepositoriJadwalHari
         command.Parameters.AddWithValue("$jamRekap", (object?)data.JamRekap?.ToString("HH:mm") ?? DBNull.Value);
         command.Parameters.AddWithValue("$batasTapMasuk", (object?)data.BatasTapMasuk?.ToString("HH:mm") ?? DBNull.Value);
         command.Parameters.AddWithValue("$mulaiPulang", (object?)data.MulaiPulang?.ToString("HH:mm") ?? DBNull.Value);
-        command.Parameters.AddWithValue("$jamDaftarBelumTap", (object?)data.JamDaftarBelumTap?.ToString("HH:mm") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$notTappedListTime", (object?)data.NotTappedListTime?.ToString("HH:mm") ?? DBNull.Value);
         command.ExecuteNonQuery();
     }
 

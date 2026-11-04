@@ -355,8 +355,8 @@ public sealed class SiswaViewModel : ObservableObject
         // kewenangan tidak bisa menimpa berkas di data/foto walau database
         // menolak (PRD §3).
         if (!PenangananGalat.Coba(
-            () => PenjagaKewenangan.PastikanKewenanganPenuh(_akun, "mengubah foto siswa"),
-            pesan => { PesanGalat = pesan; PesanStatus = null; },
+            () => AuthorizationGuard.EnsureFullAuthority(_akun, "mengubah foto siswa"),
+            message => { PesanGalat = message; PesanStatus = null; },
             "SiswaViewModel.UnggahFotoDariBerkas"))
         {
             return;

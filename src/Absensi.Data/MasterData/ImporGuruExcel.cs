@@ -100,7 +100,7 @@ public sealed class ImporGuruExcel
         DateTime waktu,
         IReadOnlyList<BarisImporGuru> barisTervalidasi)
     {
-        PenjagaKewenangan.PastikanKewenanganPenuh(akun, "mengimpor data guru");
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengimpor data guru");
 
         if (barisTervalidasi.Any(b => !b.Sah))
         {

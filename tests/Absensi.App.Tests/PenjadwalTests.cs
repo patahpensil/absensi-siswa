@@ -92,26 +92,26 @@ public sealed class PenjadwalTests
 
     // PRD §7 P-06: daftar belum tap wali kelas dan rekap orang tua dijalankan
     // pada jamnya masing-masing, tidak lagi bersamaan.
-    private static void SeedJadwalTerpisahDanPairingWali(MigratedDatabase database) => database.Execute("""
-        UPDATE jadwal_hari SET jam_daftar_belum_tap = '08:00', jam_rekap = '08:10' WHERE hari = 4;
+    private static void SeedSplitScheduleAndHomeroomPairing(MigratedDatabase database) => database.Execute("""
+        UPDATE jadwal_hari SET not_tapped_list_time = '08:00', jam_rekap = '08:10' WHERE hari = 4;
         INSERT INTO pairing (subjek_tipe, subjek_id, token, status, chat_id, dibuat_pada, tertaut_pada)
         VALUES ('guru', 1, 'TOKWALI', 'tertaut', 'chat-wali-uji', '2026-09-01T00:00:00', '2026-09-01T00:00:00');
         """);
 
-    private static int HitungOutbox(MigratedDatabase database, string kondisi)
+    private static int CountOutbox(MigratedDatabase database, string condition)
     {
         using var command = database.Connection.CreateCommand();
-        command.CommandText = $"SELECT COUNT(*) FROM outbox WHERE {kondisi};";
+        command.CommandText = $"SELECT COUNT(*) FROM outbox WHERE {condition};";
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
     [Fact]
-    public async Task DetakAsync_JamDaftarBelumTap_HanyaWaliYangDikirimiBelumRekapOrangTua()
+    public async Task TickAsync_AtNotTappedListTime_OnlyHomeroomTeacherNotifiedBeforeParentRecap()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
-        SeedJadwalTerpisahDanPairingWali(database);
+        SeedSplitScheduleAndHomeroomPairing(database);
         var waktu = new PenyediaWaktuUji(Waktu(7, 0));
         var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
         await penjadwal.DetakAsync();
@@ -120,17 +120,17 @@ public sealed class PenjadwalTests
         waktu.Sekarang = Waktu(8, 5);
         await penjadwal.DetakAsync();
 
-        Assert.Equal(1, HitungOutbox(database, "chat_id = 'chat-wali-uji' AND jenis = 'rekap_wali_belum_tap'"));
-        Assert.Equal(0, HitungOutbox(database, "chat_id = 'chat-siswa-uji'"));
+        Assert.Equal(1, CountOutbox(database, "chat_id = 'chat-wali-uji' AND jenis = 'rekap_wali_belum_tap'"));
+        Assert.Equal(0, CountOutbox(database, "chat_id = 'chat-siswa-uji'"));
     }
 
     [Fact]
-    public async Task DetakAsync_JamRekapOrangTua_SiswaHadirDiantreSekali()
+    public async Task TickAsync_AtParentRecapTime_PresentStudentQueuedOnce()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukGerbang();
         SeedPairingSiswaSatu(database);
-        SeedJadwalTerpisahDanPairingWali(database);
+        SeedSplitScheduleAndHomeroomPairing(database);
         var waktu = new PenyediaWaktuUji(Waktu(7, 0));
         var penjadwal = new Penjadwal(database.Connection, waktu, new KlienBotTelegramPalsu(), BuatLayananBackup());
         await penjadwal.DetakAsync();
@@ -143,7 +143,7 @@ public sealed class PenjadwalTests
         waktu.Sekarang = Waktu(8, 13);
         await penjadwal.DetakAsync();
 
-        Assert.Equal(1, HitungOutbox(database, "chat_id = 'chat-siswa-uji' AND jenis = 'hadir'"));
+        Assert.Equal(1, CountOutbox(database, "chat_id = 'chat-siswa-uji' AND jenis = 'hadir'"));
     }
 
     // PRD §9.4: "Tanggal diblok → seluruh jadwal dibatalkan".
