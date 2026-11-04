@@ -40,6 +40,15 @@ jobs:
       - name: Build Release
         run: dotnet build Absensi.sln -c Release --no-restore
 
+      # Tes tata letak WPF membuka jendela sungguhan berukuran 1366x768 (PRD/Panduan UI:
+      # layar minimal 1366x768). Layar bawaan runner lebih kecil, jadi diperbesar dulu.
+      - name: Perbesar resolusi layar runner
+        shell: pwsh
+        run: |
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force
+          Add-Type -AssemblyName System.Windows.Forms
+          [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+
       - name: Tes
         run: >
           dotnet test Absensi.sln -c Release --no-build
