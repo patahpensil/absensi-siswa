@@ -98,6 +98,8 @@ public sealed class KewenanganLayananTests
     {
         using var database = new MigratedDatabase();
         database.SeedMasterDataUntukUji();
+        // Aktor audit wajib ada di tabel akun (FK audit.akun_id).
+        database.Execute("INSERT INTO akun (id, username, sandi_hash, peran, guru_id, aktif, dibuat_pada) VALUES (3, 'kepsek', 'x', 'kepala_sekolah', NULL, 1, '2026-09-01T00:00:00');");
 
         var id = new LayananKelas().Tambah(database.Connection, KepalaSekolah, Waktu, tahunAjaranId: 1, "7B", 7, null);
 
