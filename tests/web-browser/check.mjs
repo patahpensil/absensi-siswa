@@ -100,6 +100,8 @@ await langkah('Registrasi satu siswa satu kartu menjaga UID nol depan dan dapat 
     await page.click('#save-registration');
     await page.waitForSelector('#registration-success');
     tegas((await page.textContent('#registration-success')).includes(uid), 'UID tersimpan berbeda');
+    await page.keyboard.press('Tab');
+    tegas(await page.evaluate(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement)), 'fokus keluar dari dialog setelah Simpan');
     await page.getByRole('button', { name: 'Tutup registrasi', exact: true }).click();
   }
   await page.click('#register-card-3');

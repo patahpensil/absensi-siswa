@@ -185,8 +185,35 @@ Dikerjakan atas instruksi pemilik untuk melanjutkan kode yang ada sampai dapat d
 
 ## 11. Web uji tahap 1 — 4 November 2026 (malam)
 
+**Checkpoint historis:** uraian "belum ada login/menu" dan belum terbuktinya IndexedDB di bawah sudah digantikan oleh implementasi pada §12.
+
 - **Bukti teknis lulus (CI, Chromium):** `Absensi.Web` (Blazor WebAssembly) memakai `Absensi.Data` asli: SQLite terbuka dengan `journal_mode = wal` dan `foreign_keys` aktif, migrasi sampai versi 5 (19 tabel), tulis-baca satu baris, dan Excel (ClosedXML) dibuat di memori. SQLite native ditautkan saat publish dengan `-p:WasmBuildNative=true` dan workload `wasm-tools-net8` (runner memakai SDK 10; tanpa `global.json`).
 - **Peringatan yang diketahui:** penautan SQLite memberi peringatan WASM0001 untuk fungsi varargs `sqlite3_config`/`sqlite3_db_config`; tidak dipanggil oleh pemeriksaan di atas, tetapi belum diperiksa untuk seluruh alur aplikasi.
 - **Belum dibuktikan:** penyimpanan tetap setelah halaman ditutup (SQLite berada di memori browser; perlu salinan ke IndexedDB), PDF (QuestPDF) di browser, dan seluruh layar PRD. Hanya halaman pemeriksaan teknis yang ada; belum ada login atau menu.
 - **Deploy:** workflow `Web uji - deploy Cloudflare Pages` mempublikasikan `master` ke proyek Pages `absensi-uji` (akun khusus uji, di luar Indonesia; data sintetis saja, D-12). Situs bersifat publik kecuali dikunci dengan Cloudflare Access. Kredensial hanya dari GitHub Secrets.
 - **Cara kerja bersama (keputusan pemilik):** tidak memakai cabang kerja; perubahan langsung ke `master` dengan `pull --rebase` sebelum push dan commit kecil agar mudah saling ditinjau.
+
+## 12. Ruang kerja web uji dan UI/UX — 4 November 2026
+
+**Instruksi pemilik:** Cloudflare hanya lingkungan uji sementara selama pengembangan. Seluruh perubahan dan penambahan fitur diperbarui pada tautan tetap `https://absensi-uji.pages.dev/` untuk ditinjau melalui browser. Fondasi tetap PRD, termasuk arsitektur produksi, data Indonesia, C# dan target ASVS L3. Arah tampilan memakai susunan panel Binance dan terminal Bloomberg dengan warna biru/putih/abu-abu sekolah.
+
+### 12.1 Implementasi
+
+- Kerangka navigasi atas, identitas sekolah/tahun ajaran, bilah perintah, angka monospace, header panel, dan status lingkungan uji. Ctrl+K memfokuskan perintah; F2 membuka Absensi; F3 membuka Siswa. Nama/NISN pada bilah perintah membuka pencarian siswa.
+- Login dengan pilihan akun contoh. Dashboard membaca data asli SQLite: ringkasan status, tap masuk terbaru, daftar belum tap/Izin/Sakit, jadwal sekolah, kartu/foto/pairing yang belum lengkap. Tidak mengisi angka atau aktivitas fiktif agar dashboard tampak ramai.
+- Daftar siswa/guru dapat dicari; siswa dapat difilter per kelas. Nomor kartu aktif ditampilkan utuh. Kelas menampilkan wali dan jumlah siswa aktif.
+- Registrasi kartu untuk siswa yang sudah tersimpan: pilih siswa → input UID untuk uji browser → Simpan → verifikasi ulang pasangan. Satu siswa/satu kartu melalui `LayananRegistrasiKartu.DaftarkanSatu`; UID kosong/duplikat ditolak, nol depan dipertahankan, UID sementara dibuang saat dialog ditutup. Dialog tetap terbuka sesudah berhasil. Akun wali kelas tidak memiliki tindakan registrasi.
+- Layar Absensi memproses UID melalui `PemrosesTap` asli, menampilkan hasil/alasan serta jam masuk/pulang tersimpan. Tidak menulis ulang aturan status ke JavaScript. Akun wali kelas hanya melihat kelasnya; tidak mendapat input pemrosesan kartu.
+- Pengaturan menyediakan waktu skenario yang berhenti untuk uji batas detik, serta penyimpanan ulang dan reset data sintetis dengan konfirmasi. Kegagalan IndexedDB dibedakan dari perubahan yang masih berada dalam sesi.
+- Dukungan data globalisasi WebAssembly diaktifkan karena pemroses tap/notifikasi menggunakan kultur `id-ID`.
+- Workflow deploy menjalankan uji browser sebelum memperbarui Cloudflare, kemudian menguji hasil deploy. Pekerjaan deploy yang sudah tertinggal dibatalkan bila revisi baru masuk.
+
+### 12.2 Batas implementasi dan pekerjaan berikutnya
+
+Web uji belum menyediakan modul Koreksi, Kalender, Laporan, Notifikasi, dan Audit; halaman tersebut menyatakan belum tersedia. CRUD master lengkap, input siswa baru, impor Excel termasuk `NO_KARTU`, unggah foto dan penggantian kartu juga masih perlu ditambahkan pada browser. Registrasi yang tersedia pada checkpoint ini untuk siswa contoh yang sudah tersimpan.
+
+Reader fisik, gerbang desktop dua monitor, pengiriman pesan eksternal, backend ASP.NET Core/PostgreSQL, MFA produksi, antrean offline dan isolasi tenant produksi belum dibuktikan oleh pengujian web ini. D-01–D-12, celah otorisasi/transaksi koreksi hasil review, riwayat data dan utang keamanan/UAT tetap terbuka. PRD tidak diganti dengan arsitektur Cloudflare.
+
+### 12.3 Pengujian
+
+Pengujian browser diperluas menjadi 16 kelompok: diagnostik; login dan sandi salah; peran/menu; jumlah master; pencarian/filter; perintah/pintasan; registrasi dan pembatalan; batas 07.30.00/07.30.01; penolakan jeda/kartu asing; tap pulang; empat ukuran layar; halaman belum tersedia; logout; dan data/lingkup wali setelah reload. Hasil final beserta commit dicatat setelah workflow selesai; daftar skenario bukan klaim lulus.
