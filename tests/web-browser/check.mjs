@@ -96,7 +96,9 @@ await langkah('Registrasi satu siswa satu kartu menjaga UID nol depan dan dapat 
   await page.click('#menu-siswa');
   for (const [id, uid] of [[1, '0000111101'], [2, '0000111102']]) {
     await page.click(`#register-card-${id}`);
-    await page.fill('#registration-uid', uid);
+    await page.locator('#registration-uid').pressSequentially(uid);
+    await page.press('#registration-uid', 'Enter');
+    tegas(await page.locator('#registration-success').count() === 0, 'Enter menyimpan tanpa konfirmasi');
     await page.click('#save-registration');
     await page.waitForSelector('#registration-success');
     tegas((await page.textContent('#registration-success')).includes(uid), 'UID tersimpan berbeda');
@@ -122,8 +124,9 @@ const setClock = async value => {
   await page.waitForSelector('#tap-uid');
 };
 const tapCard = async uid => {
-  await page.fill('#tap-uid', uid);
-  await page.click('#process-tap');
+  await page.locator('#tap-uid').pressSequentially(uid);
+  await page.press('#tap-uid', 'Enter');
+  await page.waitForFunction(() => document.querySelector('#tap-uid')?.value === '' && document.activeElement?.id === 'tap-uid');
 };
 
 await langkah('Tap tepat 07.30 Hadir; 07.30.01 Terlambat memakai layanan asli', async () => {
@@ -133,6 +136,7 @@ await langkah('Tap tepat 07.30 Hadir; 07.30.01 Terlambat memakai layanan asli', 
   await setClock('2026-11-04T07:30:01');
   await tapCard('0000111102');
   await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat ·'));
+  tegas((await page.locator('#attendance-table tbody tr').filter({hasText:'Siswa 7A-2'}).textContent()).includes('07:30:01'), 'detik jam masuk hilang');
   await page.selectOption('#attendance-status', 'Terlambat');
   await page.waitForFunction(() => document.querySelectorAll('#attendance-table tbody tr').length === 1);
 });

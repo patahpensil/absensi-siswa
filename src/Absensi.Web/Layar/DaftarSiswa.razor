@@ -23,11 +23,11 @@
         <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="registration-title">
             <header class="panel-header"><h2 id="registration-title">Registrasi kartu siswa</h2><button class="icon-button" aria-label="Tutup registrasi" @onclick="CloseRegistration">×</button></header>
             <div class="dialog-body"><p class="eyebrow">SISWA TERPILIH</p><h3>@selectedStudent.Nama</h3><p class="mono muted">@selectedStudent.Nisn · @selectedStudent.KelasNama</p><p>Pilih siswa dahulu, lalu baca kartu. Input ini menerima UID untuk pengujian browser.</p>
-                <form @onsubmit="RegisterCard" @onsubmit:preventDefault><label for="registration-uid">Nomor RFID</label><input id="registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@registrationComplete" /><p class="field-help">UID belum tersimpan sebelum tombol Simpan ditekan. Nol di depan dipertahankan.</p>
+                <form @onsubmit:preventDefault><label for="registration-uid">Nomor RFID</label><input id="registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@registrationComplete" /><p class="field-help">UID belum tersimpan sebelum tombol Simpan ditekan. Nol di depan dipertahankan.</p>
                     @if (registrationError is not null) { <p class="message danger" role="alert">@registrationError</p> }
                     @if (registrationComplete) { <p id="registration-success" class="message positive" role="status">Kartu @pendingUid tersimpan dan sudah diverifikasi untuk @selectedStudent.Nama.</p> }
                     @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
-                    <div class="dialog-actions"><button type="button" @onclick="CloseRegistration">Tutup</button><button id="save-registration" type="submit" class="primary" disabled="@(registrationComplete || saving || string.IsNullOrWhiteSpace(pendingUid))">@(saving ? "Menyimpan…" : "Simpan kartu")</button></div>
+                    <div class="dialog-actions"><button type="button" @onclick="CloseRegistration">Tutup</button><button id="save-registration" type="button" @onclick="RegisterCard" class="primary" disabled="@(registrationComplete || saving || string.IsNullOrWhiteSpace(pendingUid))">@(saving ? "Menyimpan…" : "Simpan kartu")</button></div>
                 </form>
             </div>
         </section>

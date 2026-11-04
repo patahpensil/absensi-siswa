@@ -13,7 +13,7 @@
             <div class="reader-body">
                 @if (WorkspaceView.CanManage(Status))
                 {
-                    <form class="reader-form" @onsubmit="ProcessCard" @onsubmit:preventDefault><label for="tap-uid">Nomor kartu RFID</label><div class="input-action"><input id="tap-uid" aria-describedby="reader-help" maxlength="64" @bind="uid" @bind:event="oninput" autocomplete="off" placeholder="Baca kartu atau masukkan UID contoh" /><button id="process-tap" type="submit" class="primary" disabled="@(processing || string.IsNullOrWhiteSpace(uid))">@(processing ? "Memproses…" : "Proses tap")</button></div><p id="reader-help" class="field-help">Gunakan kartu yang sudah didaftarkan melalui menu Siswa. Pengujian reader fisik dilakukan tersendiri.</p></form>
+                    <form class="reader-form" @onsubmit="ProcessCard" @onsubmit:preventDefault><label for="tap-uid">Nomor kartu RFID</label><div class="input-action"><input id="tap-uid" @ref="readerInput" aria-describedby="reader-help" maxlength="64" @bind="uid" @bind:event="oninput" autocomplete="off" placeholder="Baca kartu atau masukkan UID contoh" /><button id="process-tap" type="submit" class="primary" disabled="@(processing || string.IsNullOrWhiteSpace(uid))">@(processing ? "Memproses…" : "Proses tap")</button></div><p id="reader-help" class="field-help">Gunakan kartu yang sudah didaftarkan melalui menu Siswa. Pengujian reader fisik dilakukan tersendiri.</p></form>
                 }
                 else { <p class="notice">Akun wali kelas melihat absensi kelas yang ditugaskan. Pemrosesan kartu tersedia bagi admin/kepala sekolah.</p> }
                 <div id="tap-result" class="reader-result @resultTone" role="status" aria-live="polite"><span class="reader-symbol"><UiIcon Name="card" /></span><div><span class="eyebrow">HASIL PEMBACAAN</span><h3>@resultTitle</h3><p>@resultDetail</p></div></div>
@@ -36,6 +36,16 @@
     private string resultDetail = "Belum ada kartu yang diproses pada layar ini.";
     private string resultTone = "neutral";
     private bool processing;
+    private bool restoreReaderFocus;
+    private ElementReference readerInput;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if ((firstRender || restoreReaderFocus) && WorkspaceView.CanManage(Status))
+        {
+            restoreReaderFocus = false;
+            await readerInput.FocusAsync();
+        }
+    }
     protected override void OnInitialized() => Reload();
     private void Reload() => rows = WorkspaceView.Attendance(Status);
     private IEnumerable<AbsensiSiswaUntukNotifikasi> Filtered() => rows.Where(r => r.NamaSiswa.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) && (statusFilter.Length == 0 || r.Status.ToString() == statusFilter));
@@ -77,6 +87,6 @@
         }
         catch (InvalidOperationException) { resultTitle = "Tap belum tercatat"; resultDetail = "Periksa tahun ajaran, jadwal, dan data siswa sebelum mencoba kembali."; resultTone = "danger"; }
         catch (Microsoft.Data.Sqlite.SqliteException) { resultTitle = "Tap belum dapat dipastikan"; resultDetail = "Penyimpanan mengalami kendala. Periksa catatan kehadiran sebelum mencoba kembali."; resultTone = "danger"; }
-        finally { processing = false; }
+        finally { uid = ""; processing = false; restoreReaderFocus = true; }
     }
 }

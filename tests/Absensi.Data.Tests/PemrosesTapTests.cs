@@ -129,7 +129,7 @@ public sealed class PemrosesTapTests
         using var reader = command.ExecuteReader();
         Assert.True(reader.Read());
         Assert.Equal("hadir", reader.GetString(0));
-        Assert.Equal("07:29", reader.GetString(1));
+        Assert.Equal("07:29:00", reader.GetString(1));
 
         AssertTapLogTunggal(database, hasilDiharapkan: "hadir", pemilikTipe: "siswa", pemilikId: 1);
     }
@@ -155,8 +155,8 @@ public sealed class PemrosesTapTests
         using var reader = commandAbsensi.ExecuteReader();
         Assert.True(reader.Read());
         Assert.Equal("hadir", reader.GetString(0));
-        Assert.Equal("07:29", reader.GetString(1));
-        Assert.Equal("13:15", reader.GetString(2));
+        Assert.Equal("07:29:00", reader.GetString(1));
+        Assert.Equal("13:15:00", reader.GetString(2));
     }
 
     [Fact]
