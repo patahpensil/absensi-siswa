@@ -1,85 +1,97 @@
 @using Absensi.Domain.Akun
 @using Absensi.Web.Layanan
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
 @inject StatusAplikasi Status
+@inject IJSRuntime JS
 
-<div class="kerangka">
-    <header class="kepala">
-        <div>
-            <strong id="judul-sekolah">@Status.NamaSekolah</strong>
-            <span class="teks-kedua-terang">Tahun ajaran @Status.TahunAjaran</span>
-        </div>
-        <div class="kepala-kanan">
-            <span id="akun-aktif">@TeksPeran · @Status.Akun!.Username</span>
-            <span class="jam" id="jam-simulasi">@TeksJam() WITA</span>
-            <button id="tombol-keluar" class="kecil" @onclick="Keluar">Keluar</button>
-        </div>
+<div class="workspace">
+    <a class="skip-link" href="#isi">Lewati navigasi</a>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark"><UiIcon Name="school" /></span><strong>Absensi<span> / SMP</span></strong></div>
+        <span class="environment-tag"><span class="dot"></span> Lingkungan uji</span>
+        <div class="account"><span id="akun-aktif">@RoleLabel · @Status.Akun!.Username</span><span class="avatar">@WorkspaceView.Initials(Status.Akun.Username)</span><button id="tombol-keluar" class="text-button" @onclick="Logout">Keluar</button></div>
     </header>
-
-    <div class="badan">
-        <nav class="menu" aria-label="Menu utama">
-            @foreach (var item in DaftarMenu())
-            {
-                <button class="@(item == aktif ? "menu-aktif" : "")" id="menu-@item.ToLowerInvariant()" @onclick="() => aktif = item">@item</button>
-            }
-        </nav>
-
-        <section class="isi" id="isi">
-            @switch (aktif)
-            {
-                case "Dashboard":
-                    <Dasbor />
-                    break;
-                case "Siswa":
-                    <DaftarSiswa />
-                    break;
-                case "Guru":
-                    <DaftarGuru />
-                    break;
-                case "Kelas":
-                    <DaftarKelas />
-                    break;
-                case "Pengaturan":
-                    <PengaturanWeb OnReset="Keluar" />
-                    break;
-                default:
-                    <BelumDibangun Nama="@aktif" />
-                    break;
-            }
-        </section>
+    <nav class="navigation" aria-label="Menu utama">
+        @foreach (var item in MenuItems())
+        {
+            <button class="@(item == activePage ? "active" : "")" id="menu-@item.ToLowerInvariant()" aria-current="@(item == activePage ? "page" : null)" @onclick="() => Navigate(item)">@item</button>
+        }
+    </nav>
+    <div class="schoolbar">
+        <span class="school-symbol"><UiIcon Name="school" /></span>
+        <div><strong id="judul-sekolah">@Status.NamaSekolah</strong><small>Monitoring kehadiran siswa dan guru</small></div>
+        <div class="school-context"><span>Tahun ajaran<strong>@Status.TahunAjaran</strong></span><span>@(Status.Jam.IsScenario ? "Waktu uji · simulasi" : "Waktu sekolah")<strong id="jam-simulasi" class="mono">@Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm:ss") WITA</strong></span></div>
     </div>
+    <div class="command-strip">
+        <span class="terminal-label">TERMINAL <b>01</b></span>
+        <form class="command-form" @onsubmit="RunCommand" @onsubmit:preventDefault>
+            <span class="command-prompt">›</span><input id="workspace-command" aria-label="Perintah navigasi atau pencarian siswa" placeholder="Ketik menu atau cari nama / NISN…" @bind="command" autocomplete="off" /><kbd>Ctrl K</kbd>
+        </form>
+        <span class="command-hint">F2 Absensi <span>·</span> F3 Siswa</span>
+    </div>
+    <main class="content" id="isi" tabindex="-1">
+        @if (commandMessage is not null) { <p class="notice" role="status">@commandMessage</p> }
+        @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
+        @switch (activePage)
+        {
+            case "Dashboard": <Dasbor OnNavigate="Navigate" /> break;
+            case "Absensi": <AttendanceDesk /> break;
+            case "Siswa": <DaftarSiswa Search="studentSearch" /> break;
+            case "Guru": <DaftarGuru /> break;
+            case "Kelas": <DaftarKelas /> break;
+            case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
+            default: <BelumDibangun Nama="@activePage" /> break;
+        }
+    </main>
+    <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>07.30 batas hadir <b>·</b> 08.00 daftar wali <b>·</b> 08.10 rekap orang tua</span><span class="mono">WEB UJI / 01</span></footer>
 </div>
 
 @code {
     [Parameter] public EventCallback OnKeluar { get; set; }
+    private string activePage = "Dashboard";
+    private string command = "";
+    private string studentSearch = "";
+    private string? commandMessage;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<Kerangka>? reference;
+    private string RoleLabel => Status.Akun!.Peran switch { PeranAkun.KepalaSekolah => "Kepala Sekolah", PeranAkun.Admin => "Admin", _ => "Wali Kelas" };
 
-    private string aktif = "Dashboard";
-
-    private string TeksPeran => Status.Akun!.Peran switch
+    private IEnumerable<string> MenuItems()
     {
-        PeranAkun.KepalaSekolah => "Kepala Sekolah",
-        PeranAkun.Admin => "Admin",
-        PeranAkun.WaliKelas => "Wali Kelas",
-        _ => Status.Akun.Peran.ToString(),
-    };
-
-    // Sama dengan MainWindowViewModel.DaftarMenuUntukPeran (A-40): hanya Admin melihat Audit.
-    private IEnumerable<string> DaftarMenu()
-    {
-        var semua = new[] { "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
-        return Status.Akun!.Peran == PeranAkun.Admin ? semua : semua.Where(m => m != "Audit");
+        var items = new[] { "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
+        return Status.Akun!.Peran == PeranAkun.Admin ? items : items.Where(m => m != "Audit");
     }
-
-    private static readonly string[] NamaHari = { "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu" };
-
-    private string TeksJam()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var t = Status.Jam.Sekarang;
-        return $"{NamaHari[(int)t.DayOfWeek]}, {t:dd/MM/yyyy HH:mm}";
+        if (!firstRender) return;
+        module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/workspace.js");
+        reference = DotNetObjectReference.Create(this);
+        await module.InvokeVoidAsync("attach", reference);
     }
-
-    private async Task Keluar()
+    [JSInvokable] public Task OpenPage(string page) { Navigate(page); return InvokeAsync(StateHasChanged); }
+    private void Navigate(string page)
     {
-        Status.Keluar();
-        await OnKeluar.InvokeAsync();
+        if (!MenuItems().Contains(page)) return;
+        activePage = page;
+        commandMessage = null;
+        if (page != "Siswa") studentSearch = "";
+    }
+    private void RunCommand()
+    {
+        var query = command.Trim();
+        if (query.Length == 0) return;
+        var page = MenuItems().FirstOrDefault(m => m.Equals(query, StringComparison.OrdinalIgnoreCase));
+        if (query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase)) page = "Absensi";
+        if (page is not null) Navigate(page);
+        else if (query.Equals("BANTUAN", StringComparison.OrdinalIgnoreCase)) commandMessage = "Ketik nama menu, GERBANG, atau nama/NISN siswa. Ctrl+K membuka perintah, F2 Absensi, F3 Siswa.";
+        else { Navigate("Siswa"); studentSearch = query; }
+        command = "";
+    }
+    private async Task Logout() { Status.Keluar(); await OnKeluar.InvokeAsync(); }
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null) { await module.InvokeVoidAsync("detach"); await module.DisposeAsync(); }
+        reference?.Dispose();
     }
 }

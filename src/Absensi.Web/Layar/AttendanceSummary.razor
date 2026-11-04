@@ -1,0 +1,21 @@
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+<div class="summary-strip" id="ringkasan">
+    <div class="summary-context"><span class="eyebrow">KEHADIRAN HARI INI</span><strong class="mono">@DateLabel</strong><small>@Students siswa aktif</small></div>
+    @foreach (var metric in Metrics())
+    {
+        <div class="metric @metric.Tone"><span><i class="dot"></i>@metric.Label</span><strong class="mono">@metric.Count.ToString("D2")</strong><small>@metric.Note</small></div>
+    }
+</div>
+@code {
+    [Parameter] public IReadOnlyList<AbsensiSiswaUntukNotifikasi> Rows { get; set; } = Array.Empty<AbsensiSiswaUntukNotifikasi>();
+    [Parameter] public int Students { get; set; }
+    [Parameter] public string DateLabel { get; set; } = "";
+    private IEnumerable<(string Label, int Count, string Tone, string Note)> Metrics()
+    {
+        yield return ("Hadir", Rows.Count(r => r.Status == StatusAbsensiSiswa.Hadir), "positive", "Tepat waktu");
+        yield return ("Terlambat", Rows.Count(r => r.Status == StatusAbsensiSiswa.Terlambat), "warning", "Melewati batas hadir");
+        yield return ("Izin / Sakit", Rows.Count(r => r.Status is StatusAbsensiSiswa.Izin or StatusAbsensiSiswa.Sakit), "info", "Status dari koreksi");
+        yield return ("Belum tap / Alpa", Rows.Count(r => r.Status == StatusAbsensiSiswa.Alpa), "neutral", "Status resmi hari ini");
+    }
+}

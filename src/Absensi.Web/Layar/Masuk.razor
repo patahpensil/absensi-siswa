@@ -1,72 +1,24 @@
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-
-<main class="masuk">
-    <section class="kartu-masuk">
-        <h1 id="nama-sekolah">@Status.NamaSekolah</h1>
-        <p class="teks-kedua">Absensi RFID · Tahun ajaran @Status.TahunAjaran</p>
-
-        <form @onsubmit="Kirim" @onsubmit:preventDefault>
-            <label for="username">Username</label>
-            <input id="username" @bind="username" autocomplete="username" />
-            <label for="sandi">Sandi</label>
-            <input id="sandi" type="password" @bind="sandi" autocomplete="current-password" />
-            @if (galat is not null)
-            {
-                <p class="pesan-galat" id="galat-masuk">@galat</p>
-            }
-            <button id="tombol-masuk" type="submit" class="utama">Masuk</button>
-        </form>
-
-        <div class="kotak-uji">
-            <strong>Web uji — data contoh</strong>
-            <p>Semua data di sini sintetis. Gunakan salah satu akun uji:</p>
-            <table>
-                <thead><tr><th>Peran</th><th>Username</th><th>Sandi</th><th></th></tr></thead>
-                <tbody>
-                @foreach (var akun in DataContoh.Akun)
-                {
-                    <tr>
-                        <td>@akun.Peran</td><td>@akun.Username</td><td>@akun.Sandi</td>
-                        <td><button type="button" class="kecil" id="isi-@akun.Username" @onclick="() => Isi(akun)">Isi</button></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </section>
+<main class="login-layout">
+    <section class="login-story"><div class="brand"><span class="brand-mark"><UiIcon Name="school" /></span><strong>Absensi<span> / SMP</span></strong></div><div><p class="eyebrow">RUANG KERJA SEKOLAH</p><h2>Setiap kedatangan.<br />Tercatat dengan jelas.</h2><p>Pantau kehadiran siswa dan guru dalam satu ruang kerja yang teratur.</p><div class="login-timeline"><span><b class="mono">07.30</b>Batas hadir</span><span><b class="mono">08.00</b>Daftar wali</span><span><b class="mono">08.10</b>Rekap orang tua</span></div></div><small>Versi pengembangan · gunakan data sintetis saja</small></section>
+    <section class="login-form-area"><div class="login-card"><span class="environment-tag"><span class="dot"></span> Lingkungan uji</span><h1 id="nama-sekolah">@Status.NamaSekolah</h1><p class="muted">Masuk ke ruang kerja · Tahun ajaran @Status.TahunAjaran</p><form @onsubmit="Submit" @onsubmit:preventDefault><label for="username">Username</label><input id="username" @bind="username" autocomplete="username" required /><label for="sandi">Sandi</label><input id="sandi" type="password" @bind="password" autocomplete="current-password" required />@if (error is not null) { <p class="message danger" id="galat-masuk" role="alert">@error</p> }<button id="tombol-masuk" type="submit" class="primary login-submit">Masuk <UiIcon Name="arrow" /></button></form>
+    <div class="test-accounts"><p class="eyebrow">AKUN CONTOH</p><p class="muted">Pilih peran untuk mengisi formulir. Sandi: <code>contoh123</code></p>@foreach (var account in DataContoh.Akun) { <button type="button" id="isi-@account.Username" @onclick="() => Fill(account)"><span>@account.Peran<small class="mono">@account.Username</small></span><UiIcon Name="arrow" /></button> }<p class="field-help">Login ini untuk pengujian lokal browser. Identitas dan MFA produksi mengikuti PRD.</p></div></div></section>
 </main>
-
 @code {
     [Parameter] public EventCallback OnMasuk { get; set; }
-
-    private string username = "";
-    private string sandi = "";
-    private string? galat;
-
-    private void Isi(AkunContoh akun)
+    private string username = "", password = "";
+    private string? error;
+    private void Fill(AkunContoh account) { username = account.Username; password = account.Sandi; error = null; }
+    private async Task Submit()
     {
-        username = akun.Username;
-        sandi = akun.Sandi;
-        galat = null;
-    }
-
-    private async Task Kirim()
-    {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(sandi))
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(password)) { error = "Username dan sandi wajib diisi."; return; }
+        try
         {
-            galat = "Username dan sandi wajib diisi.";
-            return;
+            if (Status.Masuk(username, password) is null) { error = "Username atau sandi salah."; return; }
+            error = null;
+            await OnMasuk.InvokeAsync();
         }
-
-        var akun = Status.Masuk(username, sandi);
-        if (akun is null)
-        {
-            galat = "Username atau sandi salah.";
-            return;
-        }
-
-        galat = null;
-        await OnMasuk.InvokeAsync();
+        catch (Exception) { error = "Login belum dapat diproses. Muat ulang halaman lalu coba kembali."; }
     }
 }

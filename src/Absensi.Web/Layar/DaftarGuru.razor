@@ -1,20 +1,15 @@
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-
-<h2>Guru</h2>
-<table id="tabel-guru">
-    <thead><tr><th>NIP</th><th>Nama</th><th>Jabatan</th><th>Kartu</th><th>Status</th></tr></thead>
-    <tbody>
-    @foreach (var g in daftar)
-    {
-        <tr><td>@g.Nip</td><td>@g.Nama</td><td>@g.Jabatan</td><td>@(g.PunyaKartu ? "Terdaftar" : "Belum")</td><td>@(g.Aktif ? "Aktif" : "Tidak aktif")</td></tr>
-    }
-    </tbody>
-</table>
-
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA / GURU</p><h1>Data guru</h1><p>Identitas guru dan kartu pegawai.</p></div><span class="page-total"><strong class="mono">@teachers.Count</strong> guru</span></div>
+@if (!WorkspaceView.CanManage(Status)) { <p class="notice">Akun wali kelas tidak memiliki kewenangan mengakses master guru.</p> }
+else
+{
+    <section class="panel"><header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header><div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div><span class="muted">@teachers.Count(g => g.Aktif) aktif · @teachers.Count(g => !g.PunyaKartu) belum punya kartu</span></div><div class="table-wrap"><table id="tabel-guru"><thead><tr><th>Guru</th><th>NIP</th><th>Jabatan</th><th>Kartu RFID</th><th>Status</th></tr></thead><tbody>@foreach (var teacher in Filtered()) { <tr><td class="name-cell"><span class="mini-avatar">@WorkspaceView.Initials(teacher.Nama)</span>@teacher.Nama</td><td class="mono muted">@teacher.Nip</td><td>@teacher.Jabatan</td><td class="mono">@(teacher.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(teacher.Aktif ? "positive" : "neutral")">@(teacher.Aktif ? "Aktif" : teacher.AlasanNonaktif ?? "Tidak aktif")</span></td></tr> }</tbody></table></div>@if (!Filtered().Any()) { <div class="empty-state">Tidak ada guru yang cocok dengan pencarian.</div> }<div class="panel-footer">Data guru dan penugasan wali menggunakan identitas orang yang sama.</div></section>
+}
 @code {
-    private IReadOnlyList<GuruDaftar> daftar = Array.Empty<GuruDaftar>();
-
-    protected override void OnInitialized() => daftar = new RepositoriGuru().DaftarLengkap(Status.Koneksi!);
+    private string query = "";
+    private IReadOnlyList<GuruDaftar> teachers = Array.Empty<GuruDaftar>();
+    protected override void OnInitialized() { if (WorkspaceView.CanManage(Status)) teachers = new RepositoriGuru().DaftarLengkap(Status.Koneksi!); }
+    private IEnumerable<GuruDaftar> Filtered() => teachers.Where(g => g.Nama.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) || g.Nip.Contains(query.Trim(), StringComparison.Ordinal));
 }

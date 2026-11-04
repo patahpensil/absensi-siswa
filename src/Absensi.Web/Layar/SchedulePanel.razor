@@ -1,0 +1,24 @@
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+<section class="panel">
+    <header class="panel-header"><h2><UiIcon Name="clock" /> Jadwal sekolah</h2><span class="panel-code">WITA</span></header>
+    @if (schedule is { HariSekolah: true })
+    {
+        <div class="schedule-list">
+            <div><span>Batas hadir</span><strong class="mono">@Format(schedule.JamMasuk)</strong></div>
+            <div><span>Daftar belum tap · wali</span><strong class="mono">@Format(schedule.NotTappedListTime)</strong></div>
+            <div><span>Rekap · orang tua</span><strong class="mono">@Format(schedule.JamRekap)</strong></div>
+            <div><span>Batas tap masuk</span><strong class="mono">@Format(schedule.BatasTapMasuk)</strong></div>
+            <div><span>Mulai tap pulang</span><strong class="mono">@Format(schedule.MulaiPulang)</strong></div>
+        </div>
+    }
+    else { <div class="empty-state compact">Tidak ada jadwal sekolah untuk hari ini.</div> }
+    <p class="panel-footnote">Jam rekap bukan toleransi kedatangan.</p>
+</section>
+@code {
+    private JadwalHariKonfigurasi? schedule;
+    protected override void OnInitialized() => schedule = new RepositoriJadwalHari().CariUntukHari(Status.Koneksi!, Status.TahunAjaranId ?? 0, HariKalender.DariTanggal(DateOnly.FromDateTime(Status.Jam.Sekarang)));
+    private static string Format(TimeOnly? time) => time?.ToString("HH:mm") ?? "—";
+}

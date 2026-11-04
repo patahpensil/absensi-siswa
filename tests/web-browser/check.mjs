@@ -69,6 +69,100 @@ await langkah('Siswa 24, Guru 4, Kelas 3 (data contoh lewat layanan asli)', asyn
   tegas((await baris('#tabel-kelas')) === 3, 'jumlah kelas salah');
 });
 
+await langkah('Pencarian siswa dan filter kelas bekerja tanpa mengubah data', async () => {
+  await page.click('#menu-siswa');
+  await page.selectOption('#student-class', '7A');
+  await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 8);
+  await page.fill('#student-search', '9000000001');
+  await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 1);
+  await page.fill('#student-search', 'tidak-ada');
+  await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 0);
+  await page.fill('#student-search', '');
+  await page.selectOption('#student-class', '');
+});
+
+await langkah('Bilah perintah mencari NISN dan pintasan keyboard membuka menu', async () => {
+  await page.keyboard.press('Control+k');
+  tegas(await page.$eval('#workspace-command', el => el === document.activeElement), 'fokus bukan di bilah perintah');
+  await page.fill('#workspace-command', '9000000002');
+  await page.press('#workspace-command', 'Enter');
+  await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 1 && document.querySelector('#tabel-siswa').textContent.includes('9000000002'));
+  await page.locator('#student-search').blur();
+  await page.keyboard.press('F2');
+  await page.waitForSelector('#tap-uid');
+});
+
+await langkah('Registrasi satu siswa satu kartu menjaga UID nol depan dan dapat dibatalkan', async () => {
+  await page.click('#menu-siswa');
+  for (const [id, uid] of [[1, '0000111101'], [2, '0000111102']]) {
+    await page.click(`#register-card-${id}`);
+    await page.fill('#registration-uid', uid);
+    await page.click('#save-registration');
+    await page.waitForSelector('#registration-success');
+    tegas((await page.textContent('#registration-success')).includes(uid), 'UID tersimpan berbeda');
+    await page.getByRole('button', { name: 'Tutup registrasi', exact: true }).click();
+  }
+  await page.click('#register-card-3');
+  await page.fill('#registration-uid', '0000111199');
+  await page.press('#registration-uid', 'Escape');
+  await page.waitForSelector('[role="dialog"]', { state: 'hidden' });
+  await page.click('#register-card-3');
+  tegas(await page.inputValue('#registration-uid') === '', 'UID sementara tertinggal setelah Batal');
+  await page.press('#registration-uid', 'Escape');
+});
+
+const setClock = async value => {
+  await page.click('#menu-pengaturan');
+  await page.fill('#scenario-time', value);
+  await page.click('#apply-scenario');
+  await page.waitForFunction(expected => document.querySelector('#jam-simulasi')?.textContent?.includes(expected), value.slice(11));
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#tap-uid');
+};
+const tapCard = async uid => {
+  await page.fill('#tap-uid', uid);
+  await page.click('#process-tap');
+};
+
+await langkah('Tap tepat 07.30 Hadir; 07.30.01 Terlambat memakai layanan asli', async () => {
+  await setClock('2026-11-04T07:30:00');
+  await tapCard('0000111101');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Hadir ·'));
+  await setClock('2026-11-04T07:30:01');
+  await tapCard('0000111102');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat ·'));
+  await page.selectOption('#attendance-status', 'Terlambat');
+  await page.waitForFunction(() => document.querySelectorAll('#attendance-table tbody tr').length === 1);
+});
+
+await langkah('Tap terlalu cepat dan kartu tidak dikenal ditolak dengan alasan', async () => {
+  await tapCard('0000111102');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('belum mencapai 15 detik'));
+  await tapCard('KARTU-TIDAK-TERDAFTAR');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Kartu belum terdaftar'));
+});
+
+await langkah('Tap pulang mengisi jam tanpa menghapus status masuk', async () => {
+  await setClock('2026-11-04T13:10:00');
+  await tapCard('0000111101');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Tap pulang tercatat'));
+  const row = page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-1' });
+  tegas((await row.textContent()).includes('13:10:00'), 'jam pulang tidak tersimpan');
+});
+
+await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
+  for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(size);
+    for (const menu of ['dashboard', 'siswa', 'absensi', 'pengaturan']) {
+      await page.click(`#menu-${menu}`);
+      await page.waitForTimeout(100);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+      tegas(!overflow, `luapan ${menu} pada ${size.width}px`);
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+});
+
 await langkah('Menu yang belum dibangun diberi tahu apa adanya', async () => {
   await page.click('#menu-laporan');
   await page.waitForSelector('#belum-dibangun');
@@ -91,6 +185,15 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.waitForSelector('#tombol-masuk', { timeout: 120_000 });
   await masuk('wali7a', 'contoh123');
   await page.waitForSelector('#ringkasan');
+  await page.click('#menu-siswa');
+  await page.waitForSelector('#tabel-siswa');
+  tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
+  tegas((await page.textContent('#tabel-siswa')).includes('0000111101'), 'kartu tidak bertahan setelah reload');
+  tegas(await page.locator('[id^="register-card-"]').count() === 0, 'wali mendapat tindakan registrasi kartu');
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#attendance-table');
+  tegas(await page.locator('#tap-uid').count() === 0, 'wali mendapat input pemrosesan kartu');
+  tegas((await page.textContent('#attendance-table')).includes('13:10:00'), 'jam pulang tidak bertahan setelah reload');
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');

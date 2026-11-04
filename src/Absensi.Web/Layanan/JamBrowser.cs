@@ -10,5 +10,12 @@ public sealed class JamBrowser : IPenyediaWaktu
 
     public TimeSpan SelisihSimulasi { get; set; } = TimeSpan.Zero;
 
-    public DateTime Sekarang => DateTime.UtcNow.AddHours(SelisihWitaJam) + SelisihSimulasi;
+    private DateTime? scenarioTime;
+    public bool IsScenario => scenarioTime is not null || SelisihSimulasi != TimeSpan.Zero;
+    public DateTime Sekarang => scenarioTime ?? DateTime.UtcNow.AddHours(SelisihWitaJam) + SelisihSimulasi;
+
+    // A frozen test clock makes second-boundary scenarios reproducible in the browser.
+    public void SetScenario(DateTime value) { scenarioTime = DateTime.SpecifyKind(value, DateTimeKind.Unspecified); SelisihSimulasi = TimeSpan.Zero; }
+    public void ResetScenario() { scenarioTime = null; SelisihSimulasi = TimeSpan.Zero; }
+    public void Advance(TimeSpan amount) { if (scenarioTime is { } time) scenarioTime = time + amount; else SelisihSimulasi += amount; }
 }

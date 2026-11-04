@@ -59,6 +59,18 @@ jobs:
       - name: Publish web uji
         run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -p:WasmBuildNative=true -o publish
 
+      - name: Pasang Playwright dan Chromium
+        working-directory: tests/web-browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Uji alur browser sebelum memperbarui tautan Cloudflare
+        working-directory: tests/web-browser
+        run: |
+          python3 -m http.server 8080 --directory ../../publish/wwwroot &
+          node check.mjs http://127.0.0.1:8080/
+
       - name: Pastikan proyek Pages ada
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -100,12 +112,6 @@ jobs:
 
       # Memastikan Cloudflare benar-benar menyajikan aplikasi (tipe berkas .wasm,
       # jalur _framework), bukan hanya bahwa unggahan berhasil.
-      - name: Pasang Playwright dan Chromium
-        working-directory: tests/web-browser
-        run: |
-          npm install --no-audit --no-fund
-          npx playwright install --with-deps chromium
-
       - name: Periksa hasil deploy di Chromium
         working-directory: tests/web-browser
         env:

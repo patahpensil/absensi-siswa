@@ -1,0 +1,81 @@
+@using Absensi.Data
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / ABSENSI</p><h1>Absensi harian</h1><p>Hasil pembacaan kartu dan catatan kehadiran hari ini.</p></div><span class="badge info">Mode absensi</span></div>
+<AttendanceSummary Rows="rows" Students="WorkspaceView.Students(Status).Count(s => s.Aktif)" DateLabel='@Status.Jam.Sekarang.ToString("dd / MM / yyyy")' />
+<div class="terminal-grid">
+    <div class="main-column">
+        <section class="panel">
+            <header class="panel-header"><h2><UiIcon Name="card" /> Pembacaan kartu</h2><span class="panel-code">RFID / UJI BROWSER</span></header>
+            <div class="reader-body">
+                @if (WorkspaceView.CanManage(Status))
+                {
+                    <form class="reader-form" @onsubmit="ProcessCard" @onsubmit:preventDefault><label for="tap-uid">Nomor kartu RFID</label><div class="input-action"><input id="tap-uid" aria-describedby="reader-help" maxlength="64" @bind="uid" @bind:event="oninput" autocomplete="off" placeholder="Baca kartu atau masukkan UID contoh" /><button id="process-tap" type="submit" class="primary" disabled="@(processing || string.IsNullOrWhiteSpace(uid))">@(processing ? "Memproses…" : "Proses tap")</button></div><p id="reader-help" class="field-help">Gunakan kartu yang sudah didaftarkan melalui menu Siswa. Pengujian reader fisik dilakukan tersendiri.</p></form>
+                }
+                else { <p class="notice">Akun wali kelas melihat absensi kelas yang ditugaskan. Pemrosesan kartu tersedia bagi admin/kepala sekolah.</p> }
+                <div id="tap-result" class="reader-result @resultTone" role="status" aria-live="polite"><span class="reader-symbol"><UiIcon Name="card" /></span><div><span class="eyebrow">HASIL PEMBACAAN</span><h3>@resultTitle</h3><p>@resultDetail</p></div></div>
+            </div>
+        </section>
+        <section class="panel"><header class="panel-header"><h2>Catatan kehadiran</h2><span class="panel-code">HARI INI</span></header>
+            <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="attendance-search" aria-label="Cari siswa pada absensi" placeholder="Cari siswa…" @bind="query" @bind:event="oninput" /></div><select id="attendance-status" aria-label="Filter status absensi" @bind="statusFilter"><option value="">Semua status</option>@foreach (var status in Enum.GetValues<StatusAbsensiSiswa>()) { <option value="@status">@status</option> }</select><span class="muted">@Filtered().Count() siswa</span></div>
+            <div class="table-wrap"><table id="attendance-table"><thead><tr><th>Siswa</th><th>Kelas</th><th>Status</th><th>Tap masuk</th><th>Tap pulang</th></tr></thead><tbody>@foreach (var row in Filtered()) { <tr><td class="name-cell">@row.NamaSiswa</td><td>@row.NamaKelas</td><td><span class="badge @WorkspaceView.Tone(row.Status)">@row.Status</span></td><td class="mono">@WorkspaceView.Time(row.JamMasuk)</td><td class="mono">@WorkspaceView.Time(row.JamPulang)</td></tr> }</tbody></table></div>
+            @if (!Filtered().Any()) { <div class="empty-state">Tidak ada catatan yang sesuai dengan filter hari ini.</div> }
+        </section>
+    </div>
+    <aside class="side-column"><SchedulePanel /><section class="info-panel"><span class="eyebrow">CARA MENGUJI</span><h3>Mulai dari kartu siswa.</h3><p>Daftarkan kartu pada menu Siswa. Atur waktu uji pada Pengaturan, lalu proses UID yang sama di sini.</p><p>Jeda antartap minimum 15 detik tetap berlaku. Pengiriman pesan eksternal belum diaktifkan.</p></section></aside>
+</div>
+
+@code {
+    private IReadOnlyList<AbsensiSiswaUntukNotifikasi> rows = Array.Empty<AbsensiSiswaUntukNotifikasi>();
+    private string uid = "", query = "", statusFilter = "";
+    private string resultTitle = "Siap membaca kartu";
+    private string resultDetail = "Belum ada kartu yang diproses pada layar ini.";
+    private string resultTone = "neutral";
+    private bool processing;
+    protected override void OnInitialized() => Reload();
+    private void Reload() => rows = WorkspaceView.Attendance(Status);
+    private IEnumerable<AbsensiSiswaUntukNotifikasi> Filtered() => rows.Where(r => r.NamaSiswa.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) && (statusFilter.Length == 0 || r.Status.ToString() == statusFilter));
+    private async Task ProcessCard()
+    {
+        if (processing || !WorkspaceView.CanManage(Status) || string.IsNullOrWhiteSpace(uid)) return;
+        processing = true;
+        try
+        {
+            var value = uid.Trim();
+            var owner = new RepositoriKartu().CariAktifBerdasarkanUid(Status.Koneksi!, value);
+            var decision = new PemrosesTap().Proses(Status.Koneksi!, value, Status.Jam.Sekarang, false);
+            var name = owner is null ? "Kartu tidak dikenal" : owner.PemilikTipe == JenisPemilikKartu.Siswa
+                ? new RepositoriSiswa().CariNamaUntukAudit(Status.Koneksi!, owner.PemilikId)
+                : new RepositoriGuru().CariNama(Status.Koneksi!, owner.PemilikId);
+            resultTone = decision.Tindakan == JenisTindakanTap.Ditolak ? "danger" : decision.StatusSiswaBaru == StatusAbsensiSiswa.Terlambat ? "warning" : "positive";
+            resultTitle = decision.Tindakan switch
+            {
+                JenisTindakanTap.IsiJamMasuk => $"{decision.StatusSiswaBaru?.ToString() ?? decision.StatusGuruBaru?.ToString()} · {name}",
+                JenisTindakanTap.IsiJamPulang => $"Tap pulang tercatat · {name}",
+                JenisTindakanTap.TidakBerubah => $"Status tetap {decision.StatusSiswaBaru?.ToString() ?? decision.StatusGuruBaru?.ToString()}",
+                JenisTindakanTap.Diabaikan => "Tap diabaikan · sudah tercatat",
+                _ => "Tap ditolak",
+            };
+            resultDetail = decision.Alasan switch
+            {
+                AlasanTap.TanggalLibur => "Tanggal ini merupakan hari libur. Absensi tidak diubah.",
+                AlasanTap.KartuTidakTerdaftar => "Kartu belum terdaftar. Pilih siswa pada menu Siswa untuk registrasi.",
+                AlasanTap.PemilikTidakAktif => "Pemilik kartu sudah tidak aktif.",
+                AlasanTap.JedaTapTerlaluCepat => "Jeda tap belum mencapai 15 detik. Tunggu sebelum mencoba kembali.",
+                AlasanTap.BelumPunyaCatatanMasuk => "Belum ada tap masuk. Hubungi wali kelas atau admin untuk koreksi.",
+                AlasanTap.LewatBatasTapMasuk => "Batas tap masuk sudah lewat. Hubungi wali kelas atau admin untuk koreksi.",
+                AlasanTap.StatusSudahDitetapkanDiMuka => "Hubungi wali kelas atau admin untuk koreksi. Status dan jam resmi tidak diubah.",
+                AlasanTap.JadwalBelumDiatur => "Jadwal sekolah belum lengkap. Periksa pengaturan.",
+                _ => $"UID {value} · {Status.Jam.Sekarang:HH:mm:ss} WITA · hasil tersimpan pada database uji.",
+            };
+            await Status.SimpanAsync();
+            Reload();
+        }
+        catch (InvalidOperationException) { resultTitle = "Tap belum tercatat"; resultDetail = "Periksa tahun ajaran, jadwal, dan data siswa sebelum mencoba kembali."; resultTone = "danger"; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { resultTitle = "Tap belum dapat dipastikan"; resultDetail = "Penyimpanan mengalami kendala. Periksa catatan kehadiran sebelum mencoba kembali."; resultTone = "danger"; }
+        finally { processing = false; }
+    }
+}

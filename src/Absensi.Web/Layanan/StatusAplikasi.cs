@@ -42,6 +42,8 @@ public sealed class StatusAplikasi
 
     public string CatatanPenyimpanan { get; private set; } = "";
 
+    public bool StorageFailed { get; private set; }
+
     public async Task MulaiAsync()
     {
         try
@@ -82,6 +84,7 @@ public sealed class StatusAplikasi
 
     public async Task SimpanAsync()
     {
+        StorageFailed = false;
         try
         {
             using (var perintah = Koneksi!.CreateCommand())
@@ -92,10 +95,17 @@ public sealed class StatusAplikasi
 
             await _js.InvokeVoidAsync("absensiStorage.save", KunciPenyimpanan, File.ReadAllBytes(BerkasDb));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            CatatanPenyimpanan = $"Penyimpanan ke browser gagal: {ex.Message}";
+            StorageFailed = true;
+            CatatanPenyimpanan = "Perubahan ada pada sesi ini, tetapi belum tersimpan ke browser. Jangan tutup halaman; coba Simpan ulang di Pengaturan.";
         }
+    }
+
+    public async Task OpenCurrentDayAsync()
+    {
+        new PembukaanHari().Jalankan(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
+        await SimpanAsync();
     }
 
     public async Task ResetAsync()

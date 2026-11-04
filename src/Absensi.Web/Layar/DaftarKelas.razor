@@ -1,21 +1,10 @@
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-
-<h2>Kelas</h2>
-<table id="tabel-kelas">
-    <thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali kelas</th></tr></thead>
-    <tbody>
-    @foreach (var k in daftar)
-    {
-        <tr><td>@k.Nama</td><td>@k.Tingkat</td><td>@(k.WaliGuruNama ?? "Belum ditetapkan")</td></tr>
-    }
-    </tbody>
-</table>
-
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA / KELAS</p><h1>Kelas dan wali</h1><p>Penugasan kelas pada tahun ajaran @Status.TahunAjaran.</p></div><span class="page-total"><strong class="mono">@classes.Count</strong> kelas</span></div>
+<section class="panel"><header class="panel-header"><h2><UiIcon Name="school" /> Daftar kelas</h2><span class="panel-code">MASTER / 03</span></header><div class="table-wrap"><table id="tabel-kelas"><thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali kelas</th><th>Siswa aktif</th></tr></thead><tbody>@foreach (var classroom in classes) { <tr><td><strong class="class-label">@classroom.Nama</strong></td><td>Tingkat @classroom.Tingkat</td><td>@(classroom.WaliGuruNama ?? "Belum ditetapkan")</td><td class="mono">@students.Count(s => s.Aktif && s.KelasNama == classroom.Nama)</td></tr> }</tbody></table></div>@if (classes.Count == 0) { <div class="empty-state">Belum ada kelas dalam lingkup akun ini.</div> }</section>
 @code {
-    private IReadOnlyList<KelasDaftar> daftar = Array.Empty<KelasDaftar>();
-
-    protected override void OnInitialized() =>
-        daftar = new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, Status.TahunAjaranId ?? 0);
+    private IReadOnlyList<KelasDaftar> classes = Array.Empty<KelasDaftar>();
+    private IReadOnlyList<SiswaDaftar> students = Array.Empty<SiswaDaftar>();
+    protected override void OnInitialized() { classes = WorkspaceView.Classes(Status); students = WorkspaceView.Students(Status); }
 }

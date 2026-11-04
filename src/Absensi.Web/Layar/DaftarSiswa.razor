@@ -1,21 +1,74 @@
+@using Absensi.Data.Kartu
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<h2>Siswa</h2>
-<table id="tabel-siswa">
-    <thead><tr><th>NISN</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Kartu</th><th>Status</th></tr></thead>
-    <tbody>
-    @foreach (var s in daftar)
-    {
-        <tr><td>@s.Nisn</td><td>@s.Nama</td><td>@s.JenisKelamin</td><td>@s.KelasNama</td><td>@(s.PunyaKartu ? "Terdaftar" : "Belum")</td><td>@(s.Aktif ? "Aktif" : "Tidak aktif")</td></tr>
-    }
-    </tbody>
-</table>
+<div class="page-heading"><div><p class="eyebrow">MASTER DATA / SISWA</p><h1>Data siswa</h1><p>Identitas, kelas, dan kartu RFID dalam satu daftar.</p></div><span class="page-total"><strong class="mono">@students.Count</strong> siswa</span></div>
+<section class="panel">
+    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar siswa</h2><span class="panel-code">MASTER / 01</span></header>
+    <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="student-search" aria-label="Cari nama atau NISN siswa" placeholder="Cari nama atau NISN…" @bind="query" @bind:event="oninput" /></div><select id="student-class" aria-label="Filter kelas siswa" @bind="className"><option value="">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Nama">@c.Nama</option> }</select><span class="muted">@Filtered().Count() hasil · @students.Count(s => s.Aktif && !s.PunyaKartu) belum punya kartu</span></div>
+    <div class="table-wrap"><table id="tabel-siswa"><thead><tr><th>Siswa</th><th>NISN</th><th>L/P</th><th>Kelas</th><th>Kartu RFID</th><th>Status</th>@if (WorkspaceView.CanManage(Status)) { <th>Tindakan</th> }</tr></thead><tbody>
+        @foreach (var student in Filtered())
+        {
+            <tr><td class="name-cell"><span class="mini-avatar">@WorkspaceView.Initials(student.Nama)</span>@student.Nama @if (!student.Aktif) { <small class="muted">(@student.AlasanNonaktif)</small> }</td><td class="mono muted">@student.Nisn</td><td>@student.JenisKelamin</td><td>@student.KelasNama</td><td class="mono">@(student.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(student.Aktif ? "positive" : "neutral")">@(student.Aktif ? "Aktif" : "Tidak aktif")</span></td>@if (WorkspaceView.CanManage(Status)) { <td>@if (student.Aktif && !student.PunyaKartu) { <button class="text-button" id="register-card-@student.Id" @onclick="() => OpenRegistration(student)">Daftarkan kartu</button> } else { <span class="muted">—</span> }</td> }</tr>
+        }
+    </tbody></table></div>
+    @if (!Filtered().Any()) { <div class="empty-state">Tidak ada siswa yang cocok. Ubah pencarian atau filter kelas.</div> }
+    <div class="panel-footer"><span>@students.Count(s => !s.PunyaFoto) belum berfoto · Tahun ajaran @Status.TahunAjaran</span><span>Nomor kartu ditampilkan utuh.</span></div>
+</section>
+
+@if (selectedStudent is not null)
+{
+    <div class="modal-backdrop" @onkeydown="HandleDialogKey">
+        <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="registration-title">
+            <header class="panel-header"><h2 id="registration-title">Registrasi kartu siswa</h2><button class="icon-button" aria-label="Tutup registrasi" @onclick="CloseRegistration">×</button></header>
+            <div class="dialog-body"><p class="eyebrow">SISWA TERPILIH</p><h3>@selectedStudent.Nama</h3><p class="mono muted">@selectedStudent.Nisn · @selectedStudent.KelasNama</p><p>Pilih siswa dahulu, lalu baca kartu. Input ini menerima UID untuk pengujian browser.</p>
+                <form @onsubmit="RegisterCard" @onsubmit:preventDefault><label for="registration-uid">Nomor RFID</label><input id="registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@registrationComplete" /><p class="field-help">UID belum tersimpan sebelum tombol Simpan ditekan. Nol di depan dipertahankan.</p>
+                    @if (registrationError is not null) { <p class="message danger" role="alert">@registrationError</p> }
+                    @if (registrationComplete) { <p id="registration-success" class="message positive" role="status">Kartu @pendingUid tersimpan dan sudah diverifikasi untuk @selectedStudent.Nama.</p> }
+                    <div class="dialog-actions"><button type="button" @onclick="CloseRegistration">Tutup</button><button id="save-registration" type="submit" class="primary" disabled="@(registrationComplete || saving || string.IsNullOrWhiteSpace(pendingUid))">@(saving ? "Menyimpan…" : "Simpan kartu")</button></div>
+                </form>
+            </div>
+        </section>
+    </div>
+}
 
 @code {
-    private IReadOnlyList<SiswaDaftar> daftar = Array.Empty<SiswaDaftar>();
-
-    protected override void OnInitialized() =>
-        daftar = new RepositoriSiswa().DaftarUntukTahunAjaran(Status.Koneksi!, Status.TahunAjaranId ?? 0);
+    [Parameter] public string Search { get; set; } = "";
+    private string previousSearch = "";
+    private string query = "";
+    private string className = "";
+    private IReadOnlyList<SiswaDaftar> students = Array.Empty<SiswaDaftar>();
+    private SiswaDaftar? selectedStudent;
+    private string pendingUid = "";
+    private string? registrationError;
+    private bool registrationComplete, saving, focusCard;
+    private ElementReference cardInput;
+    private readonly LayananRegistrasiKartu cards = new();
+    protected override void OnInitialized() => Reload();
+    protected override void OnParametersSet() { if (Search != previousSearch) { query = Search; previousSearch = Search; } }
+    private void Reload() => students = WorkspaceView.Students(Status);
+    private IEnumerable<SiswaDaftar> Filtered() => students.Where(s => (className.Length == 0 || s.KelasNama == className) && (s.Nama.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) || s.Nisn.Contains(query.Trim(), StringComparison.Ordinal)));
+    private void OpenRegistration(SiswaDaftar student) { selectedStudent = student; pendingUid = ""; registrationError = null; registrationComplete = false; focusCard = true; }
+    private void CloseRegistration() { selectedStudent = null; pendingUid = ""; registrationError = null; registrationComplete = false; }
+    private void HandleDialogKey(KeyboardEventArgs e) { if (e.Key == "Escape") CloseRegistration(); }
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (focusCard) { focusCard = false; await cardInput.FocusAsync(); } }
+    private async Task RegisterCard()
+    {
+        if (saving || registrationComplete || selectedStudent is null || string.IsNullOrWhiteSpace(pendingUid)) return;
+        saving = true;
+        registrationError = null;
+        try
+        {
+            pendingUid = pendingUid.Trim();
+            cards.DaftarkanSatu(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, pendingUid, selectedStudent.Id, selectedStudent.Nama);
+            registrationComplete = cards.CariUidAktifSiswa(Status.Koneksi!, selectedStudent.Id) == pendingUid;
+            if (!registrationComplete) throw new InvalidOperationException("Pasangan siswa dan kartu belum dapat diverifikasi. Muat ulang daftar.");
+            await Status.SimpanAsync();
+            Reload();
+        }
+        catch (InvalidOperationException ex) { registrationError = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { registrationError = "Kartu belum dapat disimpan. Periksa daftar siswa lalu coba kembali."; }
+        finally { saving = false; }
+    }
 }

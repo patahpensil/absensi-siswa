@@ -1,6 +1,3 @@
-<h2>@Nama</h2>
-<p class="belum" id="belum-dibangun">Layar ini belum dibangun di versi web uji. Layar yang sudah ada: Dashboard, Siswa, Guru, Kelas, Pengaturan.</p>
-
-@code {
-    [Parameter] public string Nama { get; set; } = "";
-}
+<div class="page-heading"><div><p class="eyebrow">RUANG KERJA / @Nama.ToUpperInvariant()</p><h1>@Nama</h1></div><span class="badge neutral">Dalam pengembangan</span></div>
+<section class="panel"><div class="empty-state development-state" id="belum-dibangun"><span class="empty-icon"><UiIcon /></span><h2>Modul @Nama belum tersedia di web uji.</h2><p>Modul ini akan ditambahkan mengikuti PRD. Menu yang sudah bisa dicoba: Dashboard, Absensi, Siswa, Guru, Kelas, dan Pengaturan.</p><p class="muted">Tidak ada perubahan data yang dijalankan dari halaman ini.</p></div></section>
+@code { [Parameter] public string Nama { get; set; } = ""; }

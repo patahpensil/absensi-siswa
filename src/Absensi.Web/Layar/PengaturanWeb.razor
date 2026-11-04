@@ -1,29 +1,36 @@
+@using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<h2>Pengaturan</h2>
-
-<h3>Jam simulasi</h3>
-<p class="teks-kedua">Geser jam untuk menguji jadwal (mis. rekap 08.10) tanpa menunggu. Hanya di web uji.</p>
-<p>
-    <button id="jam-1" @onclick="() => Geser(TimeSpan.FromHours(1))">+1 jam</button>
-    <button id="jam-min1" @onclick="() => Geser(TimeSpan.FromHours(-1))">−1 jam</button>
-    <button id="jam-reset" @onclick="() => Geser(TimeSpan.Zero, true)">Kembali ke jam sebenarnya</button>
-</p>
-
-<h3>Data uji</h3>
-<p class="teks-kedua">@Status.CatatanPenyimpanan</p>
-<p><button id="reset-data" class="bahaya" @onclick="Reset">Hapus data uji dan buat ulang</button></p>
+<div class="page-heading"><div><p class="eyebrow">KONFIGURASI / LINGKUNGAN UJI</p><h1>Pengaturan pengujian</h1><p>Atur waktu skenario dan kelola data contoh pada browser ini.</p></div></div>
+<div class="settings-grid">
+    <section class="panel"><header class="panel-header"><h2><UiIcon Name="clock" /> Waktu skenario</h2><span class="panel-code">WITA</span></header><div class="settings-body"><p>Jam skenario berhenti pada waktu yang dipilih agar batas detik bisa diuji dengan tepat.</p><form @onsubmit="ApplyScenario" @onsubmit:preventDefault><label for="scenario-time">Tanggal dan waktu WITA</label><input id="scenario-time" type="datetime-local" step="1" @bind="scenario" @bind:format="yyyy-MM-ddTHH:mm:ss" /><button id="apply-scenario" type="submit" class="primary">Terapkan waktu uji</button></form><div class="button-row"><button id="jam-1" @onclick="() => Advance(TimeSpan.FromHours(1))">+1 jam</button><button id="jam-min1" @onclick="() => Advance(TimeSpan.FromHours(-1))">−1 jam</button><button id="jam-reset" @onclick="ResetClock">Jam sebenarnya</button></div>@if (message is not null) { <p class="notice" role="status">@message</p> }<p class="field-help">Perubahan waktu tidak menjalankan pengiriman Telegram dan tidak menghitung ulang hasil tap sebelumnya.</p></div></section>
+    <section class="panel"><header class="panel-header"><h2>Penyimpanan data uji</h2><span class="panel-code">BROWSER LOKAL</span></header><div class="settings-body"><p>@Status.CatatanPenyimpanan</p><p class="muted">Data contoh pada browser ini tidak dibagikan ke perangkat lain. Gunakan data sintetis selama pengembangan.</p><button id="retry-storage" @onclick="Status.SimpanAsync">Simpan ulang ke browser</button><hr /><h3>Mulai ulang pengujian</h3><p class="muted">Menghapus data contoh di browser ini dan membuat data contoh baru.</p>@if (!confirmReset) { <button id="reset-data" class="bahaya" @onclick="() => confirmReset = true">Hapus data uji dan buat ulang</button> } else { <div class="message danger"><p>Hapus seluruh perubahan data contoh di browser ini?</p><div class="button-row"><button @onclick="() => confirmReset = false">Batal</button><button class="bahaya" id="confirm-reset-data" @onclick="ResetData">Hapus dan mulai ulang</button></div></div> }</div></section>
+</div>
 
 @code {
     [Parameter] public EventCallback OnReset { get; set; }
-
-    private void Geser(TimeSpan selisih, bool ulang = false) =>
-        Status.Jam.SelisihSimulasi = ulang ? TimeSpan.Zero : Status.Jam.SelisihSimulasi + selisih;
-
-    private async Task Reset()
+    [Parameter] public EventCallback OnClockChanged { get; set; }
+    private DateTime scenario;
+    private string? message;
+    private bool confirmReset;
+    protected override void OnInitialized() => scenario = Status.Jam.Sekarang;
+    private async Task ApplyScenario()
     {
-        await Status.ResetAsync();
-        await OnReset.InvokeAsync();
+        var range = new RepositoriTahunAjaran().CariRentang(Status.Koneksi!, Status.TahunAjaranId ?? 0);
+        var date = DateOnly.FromDateTime(scenario);
+        if (range is null || date < range.Value.TglMulai || date > range.Value.TglSelesai) { message = "Pilih tanggal dalam rentang tahun ajaran aktif."; return; }
+        Status.Jam.SetScenario(scenario);
+        await ClockChanged();
     }
+    private async Task Advance(TimeSpan amount) { Status.Jam.Advance(amount); await ClockChanged(); }
+    private async Task ResetClock() { Status.Jam.ResetScenario(); await ClockChanged(); }
+    private async Task ClockChanged()
+    {
+        scenario = Status.Jam.Sekarang;
+        await Status.OpenCurrentDayAsync();
+        message = $"Waktu {(Status.Jam.IsScenario ? "uji" : "sekolah")}: {scenario:dd/MM/yyyy HH:mm:ss} WITA.";
+        await OnClockChanged.InvokeAsync();
+    }
+    private async Task ResetData() { Status.Jam.ResetScenario(); await Status.ResetAsync(); await OnReset.InvokeAsync(); }
 }
