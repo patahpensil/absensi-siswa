@@ -79,11 +79,15 @@ CREATE TABLE jadwal_hari (
   hari             INTEGER NOT NULL CHECK (hari BETWEEN 1 AND 7), -- 1=Senin
   hari_sekolah     INTEGER NOT NULL DEFAULT 1,
   jam_masuk        TEXT,        -- '07:30'
-  jam_rekap        TEXT,        -- '08:00'
+  jam_rekap        TEXT,        -- '08:10'  rekap orang tua (P-06)
   batas_tap_masuk  TEXT,        -- '12:00'  Jumat '10:00'
   mulai_pulang     TEXT,        -- '13:10'  Jumat '11:30'
+  not_tapped_list_time TEXT,    -- '08:00'  daftar belum tap wali kelas (P-06)
   UNIQUE (tahun_ajaran_id, hari)
 );
+-- Migrasi 004 menambah kolom daftar belum tap dan mengisinya dari jam_rekap
+-- agar instalasi lama tidak berubah perilaku; migrasi 005 mengganti namanya
+-- ke bahasa Inggris (PRD §24.2).
 
 CREATE TABLE kalender (
   tanggal      TEXT PRIMARY KEY,           -- 'YYYY-MM-DD'
