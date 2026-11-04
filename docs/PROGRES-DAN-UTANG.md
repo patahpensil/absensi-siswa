@@ -170,3 +170,12 @@ Dikerjakan atas instruksi pemilik untuk melanjutkan kode yang ada sampai dapat d
 - T3 (finalisasi Bolos/guru saat PC mati), DOC-01 (penyelarasan CLAUDE.md, SKEMA-DATABASE.md — kolom baru migrasi 004 belum tercatat di sana), P-14 (pemberitahuan koreksi kalender), butir 4–7 §3, register UAT, serta D-01–D-12.
 - UAT manual pada Windows dengan reader RFID sungguhan untuk perubahan T6 (pesan penolakan) dan P-06 (dua kolom jadwal) belum dilakukan.
 - PR Dependabot #2–#12 belum ditinjau; sebagian versi mayor (mis. Microsoft.Data.Sqlite 10, xunit runner 4) perlu keputusan pemilik.
+
+## 10. Simulator browser dan perubahan setelah tinjauan PRD §24 — 4 November 2026
+
+- **Identifier berbahasa Inggris (§24.2):** identifier baru dari T6/P-06/T8 diganti ke bahasa Inggris. Migrasi 005 mengganti nama kolom `jam_daftar_belum_tap` menjadi `not_tapped_list_time`; migrasi 004 tidak diubah.
+- **Atribusi (§24.5):** commit baru tanpa trailer atribusi. Deskripsi PR #1, #4, #13–#16 tidak bisa dibersihkan dari lingkungan kerja ini (proxy menambahkan kembali baris atribusi); perlu disunting manual oleh pemilik bila diinginkan. Aturan dicatat di CLAUDE.md §5–§6.
+- **Build .exe dihapus** atas keputusan pemilik; workflow `Rilis build uji` dihapus. Prarilis `uji-terbaru` dan tag-nya masih ada di GitHub dan perlu dihapus manual (penghapusan ditolak dari lingkungan kerja ini).
+- **Simulator browser (keputusan pemilik):** `Absensi.Simulator.Core` + `Absensi.Simulator.Web` (Blazor WebAssembly) menjalankan `PenentuStatusKehadiran` asli pada satu hari di memori, dengan data contoh. Pilihan Blazor ini untuk simulator uji; teknologi frontend portal produksi tetap keputusan D-08. Workflow `Simulator browser` menyimpan hasil publish di cabang `simulator-build`; halaman uji diterbitkan sebagai artifact pribadi pemilik dan diperbarui manual dari cabang itu.
+- **Bukti:** CI `feat/simulator-browser` lulus (Domain 66, Data 266, Telegram 10, Laporan 32, App 266, Simulator 8). Uji Chromium lokal atas hasil publish: tap 07.29.00 Hadir, 07.30.01 Terlambat, 13/13 kasus batas sesuai, tanpa galat konsol.
+- **Batas simulator:** tidak memuat database, notifikasi, akun/hak akses, laporan, atau reader RFID; hanya aturan tap dan finalisasi akhir hari.
