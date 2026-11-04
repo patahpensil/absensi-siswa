@@ -35,7 +35,7 @@ public sealed class LayananLaporan
 
         if (subjek == JenisSubjekLaporan.Guru)
         {
-            return _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
+            return BarisGuruHariEfektif(connection, tanggalAwal, tanggalAkhir)
                 .Select(b => new BarisKejadian(
                     b.Tanggal, b.Nama, b.Nip, null,
                     KodeStatus.Huruf(b.Status), b.JamMasuk, b.JamPulang,
@@ -43,7 +43,7 @@ public sealed class LayananLaporan
                 .ToList();
         }
 
-        return _repositoriAbsensi.DaftarSiswaUntukRentang(connection, tanggalAwal, tanggalAkhir, kelasId)
+        return BarisSiswaHariEfektif(connection, tanggalAwal, tanggalAkhir, kelasId)
             .Select(b => new BarisKejadian(
                 b.Tanggal, b.Nama, b.Nisn, b.KelasNama,
                 KodeStatus.Huruf(b.Status), b.JamMasuk, b.JamPulang,
@@ -70,7 +70,7 @@ public sealed class LayananLaporan
 
         if (subjek == JenisSubjekLaporan.Guru)
         {
-            var baris = _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
+            var baris = BarisGuruHariEfektif(connection, tanggalAwal, tanggalAkhir)
                 .GroupBy(b => (b.GuruId, b.Nama, b.Nip))
                 .OrderBy(g => g.Key.Nama)
                 .Select(g => new BarisBulanan(
@@ -81,7 +81,7 @@ public sealed class LayananLaporan
             return new LaporanBulanan(kolom, baris);
         }
 
-        var barisSiswa = _repositoriAbsensi.DaftarSiswaUntukRentang(connection, tanggalAwal, tanggalAkhir, kelasId)
+        var barisSiswa = BarisSiswaHariEfektif(connection, tanggalAwal, tanggalAkhir, kelasId)
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
             .Select(g => new BarisBulanan(
@@ -108,7 +108,7 @@ public sealed class LayananLaporan
         {
             var identitas = _repositoriGuru.CariIdentitasUntukLaporan(connection, id)
                 ?? throw new InvalidOperationException($"Guru {id} tidak ditemukan.");
-            var baris = _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
+            var baris = BarisGuruHariEfektif(connection, tanggalAwal, tanggalAkhir)
                 .Where(b => b.GuruId == id)
                 .ToList();
             return BangunKartuGuru(connection, id, identitas.Nama, identitas.Nip, baris, hariEfektif);
@@ -116,7 +116,7 @@ public sealed class LayananLaporan
 
         var identitasSiswa = _repositoriSiswa.CariIdentitasUntukLaporan(connection, id, tahunAjaranId)
             ?? throw new InvalidOperationException($"Siswa {id} tidak ditemukan.");
-        var barisSiswa = _repositoriAbsensi.DaftarSiswaUntukRentang(connection, tanggalAwal, tanggalAkhir, kelasId: null)
+        var barisSiswa = BarisSiswaHariEfektif(connection, tanggalAwal, tanggalAkhir, kelasId: null)
             .Where(b => b.SiswaId == id)
             .ToList();
         return BangunKartuSiswa(connection, id, identitasSiswa.Nama, identitasSiswa.Nisn, identitasSiswa.KelasNama, barisSiswa, hariEfektif);
@@ -133,14 +133,14 @@ public sealed class LayananLaporan
 
         if (subjek == JenisSubjekLaporan.Guru)
         {
-            return _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
+            return BarisGuruHariEfektif(connection, tanggalAwal, tanggalAkhir)
                 .GroupBy(b => (b.GuruId, b.Nama, b.Nip))
                 .OrderBy(g => g.Key.Nama)
                 .Select(g => BangunKartuGuru(connection, g.Key.GuruId, g.Key.Nama, g.Key.Nip, g.ToList(), hariEfektif))
                 .ToList();
         }
 
-        return _repositoriAbsensi.DaftarSiswaUntukRentang(connection, tanggalAwal, tanggalAkhir, kelasId)
+        return BarisSiswaHariEfektif(connection, tanggalAwal, tanggalAkhir, kelasId)
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
             .Select(g => BangunKartuSiswa(connection, g.Key.SiswaId, g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, g.ToList(), hariEfektif))
@@ -162,14 +162,14 @@ public sealed class LayananLaporan
 
         if (subjek == JenisSubjekLaporan.Guru)
         {
-            return _repositoriAbsensi.DaftarGuruUntukRentang(connection, rentang.TglMulai, rentang.TglSelesai)
+            return BarisGuruHariEfektif(connection, rentang.TglMulai, rentang.TglSelesai)
                 .GroupBy(b => (b.GuruId, b.Nama, b.Nip))
                 .OrderBy(g => g.Key.Nama)
                 .Select(g => new BarisSemester(g.Key.Nama, g.Key.Nip, null, HitungRekapGuru(g.Select(b => b.Status).ToList(), hariEfektif)))
                 .ToList();
         }
 
-        return _repositoriAbsensi.DaftarSiswaUntukRentang(connection, rentang.TglMulai, rentang.TglSelesai, kelasId)
+        return BarisSiswaHariEfektif(connection, rentang.TglMulai, rentang.TglSelesai, kelasId)
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
             .Select(g => new BarisSemester(g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, HitungRekapSiswa(g.Select(b => b.Status).ToList(), hariEfektif)))
@@ -182,6 +182,30 @@ public sealed class LayananLaporan
         {
             throw new InvalidOperationException("Wali kelas tidak berwenang mengakses laporan (PRD §3).");
         }
+    }
+
+    // T8 / PRD §6, §16.12 keputusan P-13: tanggal yang ditetapkan libur
+    // SETELAH hari dibuka masih punya baris absensi (Alpa dari pembukaan hari,
+    // atau tap yang sempat tercatat). Baris itu tetap tersimpan sebagai jejak
+    // kejadian, tetapi tidak dihitung dalam laporan: tidak masuk rekap,
+    // rincian, maupun daftar kejadian, sama seperti hari efektif yang juga
+    // tidak menghitung tanggal libur.
+    private IReadOnlyList<BarisAbsensiSiswaMentah> BarisSiswaHariEfektif(
+        SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir, int? kelasId)
+    {
+        var tanggalLibur = _repositoriKalender.DaftarTanggalLiburDitandai(connection, tanggalAwal, tanggalAkhir);
+        return _repositoriAbsensi.DaftarSiswaUntukRentang(connection, tanggalAwal, tanggalAkhir, kelasId)
+            .Where(b => !tanggalLibur.Contains(b.Tanggal))
+            .ToList();
+    }
+
+    private IReadOnlyList<BarisAbsensiGuruMentah> BarisGuruHariEfektif(
+        SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    {
+        var tanggalLibur = _repositoriKalender.DaftarTanggalLiburDitandai(connection, tanggalAwal, tanggalAkhir);
+        return _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
+            .Where(b => !tanggalLibur.Contains(b.Tanggal))
+            .ToList();
     }
 
     private int HitungHariEfektif(SqliteConnection connection, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir) =>
