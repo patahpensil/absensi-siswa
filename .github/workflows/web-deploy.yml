@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: web-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PAGES_PROJECT: absensi-uji
