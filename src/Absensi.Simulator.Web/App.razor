@@ -1,0 +1,313 @@
+@using System.Globalization
+
+<header class="page-header">
+    <div>
+        <h1>Simulator Aturan Absensi</h1>
+        <p>Keputusan tap dihitung oleh <code>Absensi.Domain</code> yang sama dengan aplikasi desktop. Seluruh data di halaman ini adalah data contoh dan hanya tersimpan selama halaman terbuka.</p>
+    </div>
+</header>
+
+<main class="content">
+    <section class="panel">
+        <h2>Pengaturan hari</h2>
+        <div class="form-grid">
+            <label>Tanggal
+                <input type="date" @bind="selectedDate" @bind:after="StartNewDay" />
+            </label>
+            <label>Jenis hari
+                <select @bind="dayType" @bind:after="ApplySettings">
+                    <option value="@JenisHariKalender.Sekolah">Hari sekolah</option>
+                    <option value="@JenisHariKalender.Libur">Libur</option>
+                </select>
+            </label>
+            <label>Jam masuk (batas Hadir)
+                <input @bind="entryTimeText" @bind:after="ApplySettings" placeholder="HH:mm:ss" />
+            </label>
+            <label>Batas akhir tap masuk
+                <input @bind="entryDeadlineText" @bind:after="ApplySettings" placeholder="HH:mm:ss" />
+            </label>
+            <label>Mulai absen pulang
+                <input @bind="departureStartText" @bind:after="ApplySettings" placeholder="HH:mm:ss" />
+            </label>
+            <label>Jeda tap minimal (detik)
+                <input type="number" min="0" @bind="tapIntervalSeconds" @bind:after="ApplySettings" />
+            </label>
+            <label class="checkbox">
+                <input type="checkbox" @bind="registrationMode" @bind:after="ApplySettings" /> Mode registrasi kartu aktif
+            </label>
+        </div>
+        <p class="note">Mengganti tanggal memulai hari baru: status kembali Alpa dan riwayat dikosongkan. Isian awal mengikuti jadwal PRD §7.</p>
+    </section>
+
+    <section class="panel">
+        <h2>Gerbang</h2>
+        <div class="clock-row">
+            <label>Jam sekarang
+                <input class="clock" @bind="clockText" placeholder="HH:mm:ss" />
+            </label>
+            <button class="secondary" @onclick="() => AdvanceClock(TimeSpan.FromSeconds(10))">+10 detik</button>
+            <button class="secondary" @onclick="() => AdvanceClock(TimeSpan.FromMinutes(1))">+1 menit</button>
+            <button class="secondary" @onclick="() => AdvanceClock(TimeSpan.FromMinutes(10))">+10 menit</button>
+            <label>UID kartu lain
+                <input @bind="manualUid" placeholder="mis. KARTU-BARU" />
+            </label>
+            <button class="secondary" @onclick="TapManualCard">Tap kartu ini</button>
+        </div>
+
+        @if (message is not null)
+        {
+            <p class="@(messageIsError ? "message error" : "message")">@message</p>
+        }
+
+        <table>
+            <thead>
+                <tr><th>Nama</th><th>Kartu</th><th>Jenis</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var person in session.People)
+                {
+                    <tr class="@(person.Active ? null : "inactive")">
+                        <td>@person.Name</td>
+                        <td><code>@person.CardUid</code></td>
+                        <td>@(person.Kind == JenisPemilikKartu.Siswa ? "Siswa" : "Guru")</td>
+                        <td><span class="badge">@person.StatusText</span></td>
+                        <td>@(FormatTime(person.EntryTime))</td>
+                        <td>@(FormatTime(person.DepartureTime))</td>
+                        <td class="actions">
+                            <button @onclick="() => Tap(person.CardUid)">Tap</button>
+                            @if (person.Kind == JenisPemilikKartu.Siswa)
+                            {
+                                <button class="secondary" @onclick="() => CorrectStudent(person.CardUid, StatusAbsensiSiswa.Izin)">Izin</button>
+                                <button class="secondary" @onclick="() => CorrectStudent(person.CardUid, StatusAbsensiSiswa.Sakit)">Sakit</button>
+                            }
+                            else
+                            {
+                                <select value="@(person.TeacherPresetStatus?.ToString() ?? "")" @onchange="e => SetTeacherPreset(person.CardUid, e.Value?.ToString())">
+                                    <option value="">Tanpa status di muka</option>
+                                    <option value="@StatusAbsensiGuru.Izin">Izin</option>
+                                    <option value="@StatusAbsensiGuru.Sakit">Sakit</option>
+                                    <option value="@StatusAbsensiGuru.DinasLuar">Dinas luar</option>
+                                    <option value="@StatusAbsensiGuru.Cuti">Cuti</option>
+                                </select>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="button-row">
+            <button @onclick="FinishDay">Akhiri hari (finalisasi)</button>
+            <button class="secondary" @onclick="StartNewDay">Mulai ulang hari ini</button>
+        </div>
+
+        @if (endOfDayChanges is not null)
+        {
+            <div class="end-of-day">
+                <strong>Finalisasi akhir hari:</strong>
+                @if (endOfDayChanges.Count == 0)
+                {
+                    <span> tidak ada status yang berubah.</span>
+                }
+                else
+                {
+                    <ul>
+                        @foreach (var change in endOfDayChanges)
+                        {
+                            <li>@change</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="panel">
+        <h2>Riwayat tap</h2>
+        @if (session.Log.Count == 0)
+        {
+            <p class="note">Belum ada tap.</p>
+        }
+        else
+        {
+            <table>
+                <thead><tr><th>Jam</th><th>Kartu</th><th>Pemilik</th><th>Keputusan</th></tr></thead>
+                <tbody>
+                    @foreach (var entry in session.Log)
+                    {
+                        <tr>
+                            <td>@(entry.Time.ToString("HH:mm:ss", CultureInfo.InvariantCulture))</td>
+                            <td><code>@entry.CardUid</code></td>
+                            <td>@(entry.PersonName ?? "—")</td>
+                            <td>@entry.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="panel">
+        <h2>Kasus batas wajib</h2>
+        <p class="note">Menjalankan daftar kasus batas di CLAUDE.md §5 dengan aturan yang sama.</p>
+        <button @onclick="RunScenarios">Jalankan semua kasus</button>
+        @if (scenarioResults is not null)
+        {
+            <p class="@(scenarioResults.All(h => h.Passed) ? "message" : "message error")">
+                @(scenarioResults.Count(h => h.Passed)) dari @(scenarioResults.Count) kasus sesuai harapan.
+            </p>
+            <table>
+                <thead><tr><th>Kasus</th><th>Diharapkan</th><th>Hasil</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var result in scenarioResults)
+                    {
+                        <tr>
+                            <td>@result.Name</td>
+                            <td>@result.Expected</td>
+                            <td>@result.Actual</td>
+                            <td>@(result.Passed ? "✔" : "✘")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+</main>
+
+@code {
+    private static readonly string[] AcceptedTimeFormats = { "HH:mm:ss", "H:mm:ss", "HH:mm", "H:mm" };
+
+    private SimulationSession session = SimulationSession.CreateWithSampleData(new DateOnly(2026, 9, 17));
+    private DateOnly selectedDate = new(2026, 9, 17);
+    private JenisHariKalender dayType;
+    private string entryTimeText = "";
+    private string entryDeadlineText = "";
+    private string departureStartText = "";
+    private int tapIntervalSeconds;
+    private bool registrationMode;
+    private string clockText = "07:00:00";
+    private string manualUid = "";
+    private string? message;
+    private bool messageIsError;
+    private IReadOnlyList<string>? endOfDayChanges;
+    private IReadOnlyList<BoundaryScenarioResult>? scenarioResults;
+
+    protected override void OnInitialized() => LoadFormFromSettings();
+
+    private void LoadFormFromSettings()
+    {
+        var s = session.Settings;
+        dayType = s.DayType;
+        entryTimeText = s.EntryTime.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        entryDeadlineText = s.EntryDeadline.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        departureStartText = s.DepartureStart.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        tapIntervalSeconds = (int)s.MinimumTapInterval.TotalSeconds;
+        registrationMode = s.RegistrationModeActive;
+    }
+
+    private void StartNewDay()
+    {
+        var date = selectedDate;
+        session.ResetDay();
+        session.Settings = DaySettings.DefaultFor(date);
+        LoadFormFromSettings();
+        clockText = "07:00:00";
+        endOfDayChanges = null;
+        ShowInfo($"Hari baru: {DateLabels.Indonesian(date)}.");
+    }
+
+    private void ApplySettings()
+    {
+        if (!TryParseTime(entryTimeText, "Jam masuk", out var entryTime)
+            || !TryParseTime(entryDeadlineText, "Batas akhir tap masuk", out var entryDeadline)
+            || !TryParseTime(departureStartText, "Mulai absen pulang", out var departureStart))
+        {
+            return;
+        }
+
+        session.Settings = session.Settings with
+        {
+            DayType = dayType,
+            EntryTime = entryTime,
+            EntryDeadline = entryDeadline,
+            DepartureStart = departureStart,
+            MinimumTapInterval = TimeSpan.FromSeconds(Math.Max(0, tapIntervalSeconds)),
+            RegistrationModeActive = registrationMode,
+        };
+        ShowInfo("Pengaturan diterapkan untuk tap berikutnya.");
+    }
+
+    private void Tap(string cardUid)
+    {
+        if (!TryParseTime(clockText, "Jam sekarang", out var time))
+        {
+            return;
+        }
+
+        var result = session.Tap(cardUid, time);
+        ShowInfo($"{result.Time:HH:mm:ss} · {result.PersonName ?? result.CardUid}: {result.Description}");
+    }
+
+    private void TapManualCard()
+    {
+        if (string.IsNullOrWhiteSpace(manualUid))
+        {
+            ShowError("Isi UID kartu terlebih dahulu.");
+            return;
+        }
+
+        Tap(manualUid);
+    }
+
+    private void AdvanceClock(TimeSpan interval)
+    {
+        if (TryParseTime(clockText, "Jam sekarang", out var time))
+        {
+            clockText = time.Add(interval).ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        }
+    }
+
+    private void CorrectStudent(string cardUid, StatusAbsensiSiswa status)
+    {
+        session.CorrectStudentStatus(cardUid, status);
+        ShowInfo($"Koreksi: {session.FindPerson(cardUid)!.Name} ditetapkan {StatusLabels.Student(status)}.");
+    }
+
+    private void SetTeacherPreset(string cardUid, string? value)
+    {
+        StatusAbsensiGuru? status = Enum.TryParse<StatusAbsensiGuru>(value, out var result) ? result : null;
+        session.SetTeacherPresetStatus(cardUid, status);
+        ShowInfo(status is { } s
+            ? $"{session.FindPerson(cardUid)!.Name} ditetapkan {StatusLabels.Teacher(s)} di muka."
+            : $"Status di muka {session.FindPerson(cardUid)!.Name} dihapus.");
+    }
+
+    private void FinishDay() => endOfDayChanges = session.FinishDay();
+
+    private void RunScenarios() => scenarioResults = BoundaryScenarios.RunAll();
+
+    private bool TryParseTime(string text, string fieldName, out TimeOnly time)
+    {
+        if (TimeOnly.TryParseExact(text?.Trim(), AcceptedTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out time))
+        {
+            return true;
+        }
+
+        ShowError($"{fieldName} tidak valid. Gunakan format 24 jam HH:mm atau HH:mm:ss.");
+        return false;
+    }
+
+    private static string FormatTime(TimeOnly? time) => time?.ToString("HH:mm:ss", CultureInfo.InvariantCulture) ?? "—";
+
+    private void ShowInfo(string text)
+    {
+        message = text;
+        messageIsError = false;
+    }
+
+    private void ShowError(string text)
+    {
+        message = text;
+        messageIsError = true;
+    }
+}
