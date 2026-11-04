@@ -209,7 +209,8 @@ public sealed class PengaturanViewModel : ObservableObject
                 FormatJam(baris.JamMasuk),
                 FormatJam(baris.JamRekap),
                 FormatJam(baris.BatasTapMasuk),
-                FormatJam(baris.MulaiPulang)));
+                FormatJam(baris.MulaiPulang),
+                FormatJam(baris.JamDaftarBelumTap)));
         }
     }
 
@@ -222,7 +223,8 @@ public sealed class PengaturanViewModel : ObservableObject
         foreach (var baris in JadwalHarian)
         {
             if (!CobaUraikanJam(baris.NamaHari, "jam masuk", baris.JamMasuk, baris.HariSekolah, out var jamMasuk)
-                || !CobaUraikanJam(baris.NamaHari, "jam rekap", baris.JamRekap, baris.HariSekolah, out var jamRekap)
+                || !CobaUraikanJam(baris.NamaHari, "jam daftar belum tap", baris.JamDaftarBelumTap, baris.HariSekolah, out var jamDaftarBelumTap)
+                || !CobaUraikanJam(baris.NamaHari, "jam rekap orang tua", baris.JamRekap, baris.HariSekolah, out var jamRekap)
                 || !CobaUraikanJam(baris.NamaHari, "batas akhir tap masuk", baris.BatasTapMasuk, baris.HariSekolah, out var batasTapMasuk)
                 || !CobaUraikanJam(baris.NamaHari, "mulai absen pulang", baris.MulaiPulang, baris.HariSekolah, out var mulaiPulang))
             {
@@ -230,7 +232,7 @@ public sealed class PengaturanViewModel : ObservableObject
                 return;
             }
 
-            hasil.Add(new JadwalHariBaris(baris.Hari, baris.HariSekolah, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang));
+            hasil.Add(new JadwalHariBaris(baris.Hari, baris.HariSekolah, jamMasuk, jamRekap, batasTapMasuk, mulaiPulang, jamDaftarBelumTap));
         }
 
         PesanGalat = null;

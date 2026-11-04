@@ -11,7 +11,8 @@ using Microsoft.Data.Sqlite;
 namespace Absensi.App;
 
 // RENCANA-TUGAS.md Tugas 10 — menjalankan titik pengiriman batch PRD §9.2
-// (rekap 08.00, batas akhir tap masuk, finalisasi Bolos) tepat pada jam
+// (daftar belum tap wali kelas, rekap orang tua, batas akhir tap masuk,
+// finalisasi Bolos) tepat pada jam
 // yang dikonfigurasi jadwal_hari, plus memutar pengirim outbox dan
 // penerima pairing secara berkala. PRD §9.4: toleransi jadwal (bawaan 15
 // menit, dari pengaturan) — jadwal yang terlewat lebih dari itu dibuang,
@@ -48,6 +49,7 @@ public sealed class Penjadwal
 
     private DateOnly? _tanggalTerakhirDiproses;
     private bool _rekapSudahDiproses;
+    private bool _daftarBelumTapSudahDiproses;
     private bool _batasAkhirSudahDiproses;
     private bool _bolosSudahDiproses;
     private bool _backupBatasAkhirSudahDiproses;
@@ -99,6 +101,7 @@ public sealed class Penjadwal
 
             _tanggalTerakhirDiproses = tanggal;
             _rekapSudahDiproses = false;
+            _daftarBelumTapSudahDiproses = false;
             _batasAkhirSudahDiproses = false;
             _bolosSudahDiproses = false;
             _backupBatasAkhirSudahDiproses = false;
@@ -164,8 +167,13 @@ public sealed class Penjadwal
 
         var toleransi = TimeSpan.FromMinutes(_repositoriPengaturan.BacaInt(_connection, "toleransi_jadwal_menit", 15));
 
+        // PRD §7 P-06: dua jadwal terpisah — daftar belum tap ke wali kelas
+        // (sekolah rujukan 08.00) dan rekap orang tua (08.10).
+        CobaJalankan(ref _daftarBelumTapSudahDiproses, jadwal.JamDaftarBelumTap, sekarang, toleransi,
+            () => _layananNotifikasi.JalankanDaftarBelumTapWali(_connection, tanggal, sekarang));
+
         CobaJalankan(ref _rekapSudahDiproses, jadwal.JamRekap, sekarang, toleransi,
-            () => _layananNotifikasi.JalankanRekapPagi(_connection, tanggal, sekarang));
+            () => _layananNotifikasi.JalankanRekapOrangTua(_connection, tanggal, sekarang));
 
         CobaJalankan(ref _batasAkhirSudahDiproses, jadwal.BatasTapMasuk, sekarang, toleransi,
             () => _layananNotifikasi.JalankanBatasAkhirTapMasuk(_connection, tanggal, sekarang));

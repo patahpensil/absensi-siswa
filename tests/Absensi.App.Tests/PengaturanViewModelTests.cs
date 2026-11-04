@@ -64,12 +64,14 @@ public sealed class PengaturanViewModelTests
         foreach (var indeks in new[] { 0, 1, 2, 3, 5 })
         {
             viewModel.JadwalHarian[indeks].JamMasuk = "07:30";
+            viewModel.JadwalHarian[indeks].JamDaftarBelumTap = "08:00";
             viewModel.JadwalHarian[indeks].JamRekap = "08:00";
             viewModel.JadwalHarian[indeks].BatasTapMasuk = "12:00";
             viewModel.JadwalHarian[indeks].MulaiPulang = "13:10";
         }
 
         viewModel.JadwalHarian[4].JamMasuk = "07:30";
+        viewModel.JadwalHarian[4].JamDaftarBelumTap = "08:00";
         viewModel.JadwalHarian[4].JamRekap = "08:00";
         viewModel.JadwalHarian[4].BatasTapMasuk = "10:00";
         viewModel.JadwalHarian[4].MulaiPulang = "11:30";
@@ -155,12 +157,14 @@ public sealed class PengaturanViewModelTests
         foreach (var indeks in new[] { 0, 1, 2, 3, 5 })
         {
             viewModel.JadwalHarian[indeks].JamMasuk = "07:30";
+            viewModel.JadwalHarian[indeks].JamDaftarBelumTap = "08:00";
             viewModel.JadwalHarian[indeks].JamRekap = "08:00";
             viewModel.JadwalHarian[indeks].BatasTapMasuk = "12:00";
             viewModel.JadwalHarian[indeks].MulaiPulang = "13:10";
         }
 
         viewModel.JadwalHarian[4].JamMasuk = "07:30";
+        viewModel.JadwalHarian[4].JamDaftarBelumTap = "08:00";
         viewModel.JadwalHarian[4].JamRekap = "08:00";
         viewModel.JadwalHarian[4].BatasTapMasuk = "10:00";
         viewModel.JadwalHarian[4].MulaiPulang = "11:30";
@@ -222,6 +226,7 @@ public sealed class PengaturanViewModelTests
         foreach (var indeks in new[] { 0, 1, 2, 3, 4, 5 })
         {
             viewModel.JadwalHarian[indeks].JamMasuk = "07:30";
+            viewModel.JadwalHarian[indeks].JamDaftarBelumTap = "08:00";
             viewModel.JadwalHarian[indeks].JamRekap = "08:00";
             viewModel.JadwalHarian[indeks].BatasTapMasuk = "12:00";
             viewModel.JadwalHarian[indeks].MulaiPulang = "13:10";
@@ -254,6 +259,7 @@ public sealed class PengaturanViewModelTests
         foreach (var indeks in new[] { 1, 2, 3, 4, 5 })
         {
             viewModel.JadwalHarian[indeks].JamMasuk = "07:30";
+            viewModel.JadwalHarian[indeks].JamDaftarBelumTap = "08:00";
             viewModel.JadwalHarian[indeks].JamRekap = "08:00";
             viewModel.JadwalHarian[indeks].BatasTapMasuk = "12:00";
             viewModel.JadwalHarian[indeks].MulaiPulang = "13:10";
