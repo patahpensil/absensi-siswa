@@ -87,7 +87,7 @@ await langkah('Bilah perintah mencari NISN dan pintasan keyboard membuka menu', 
   await page.fill('#workspace-command', '9000000002');
   await page.press('#workspace-command', 'Enter');
   await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 1 && document.querySelector('#tabel-siswa').textContent.includes('9000000002'));
-  await page.locator('#student-search').blur();
+  await page.locator('#workspace-command').blur();
   await page.keyboard.press('F2');
   await page.waitForSelector('#tap-uid');
 });

@@ -26,6 +26,7 @@
                 <form @onsubmit="RegisterCard" @onsubmit:preventDefault><label for="registration-uid">Nomor RFID</label><input id="registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@registrationComplete" /><p class="field-help">UID belum tersimpan sebelum tombol Simpan ditekan. Nol di depan dipertahankan.</p>
                     @if (registrationError is not null) { <p class="message danger" role="alert">@registrationError</p> }
                     @if (registrationComplete) { <p id="registration-success" class="message positive" role="status">Kartu @pendingUid tersimpan dan sudah diverifikasi untuk @selectedStudent.Nama.</p> }
+                    @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
                     <div class="dialog-actions"><button type="button" @onclick="CloseRegistration">Tutup</button><button id="save-registration" type="submit" class="primary" disabled="@(registrationComplete || saving || string.IsNullOrWhiteSpace(pendingUid))">@(saving ? "Menyimpan…" : "Simpan kartu")</button></div>
                 </form>
             </div>

@@ -17,6 +17,7 @@
                 }
                 else { <p class="notice">Akun wali kelas melihat absensi kelas yang ditugaskan. Pemrosesan kartu tersedia bagi admin/kepala sekolah.</p> }
                 <div id="tap-result" class="reader-result @resultTone" role="status" aria-live="polite"><span class="reader-symbol"><UiIcon Name="card" /></span><div><span class="eyebrow">HASIL PEMBACAAN</span><h3>@resultTitle</h3><p>@resultDetail</p></div></div>
+                @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
             </div>
         </section>
         <section class="panel"><header class="panel-header"><h2>Catatan kehadiran</h2><span class="panel-code">HARI INI</span></header>

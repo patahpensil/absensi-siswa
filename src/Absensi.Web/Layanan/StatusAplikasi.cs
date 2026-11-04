@@ -84,6 +84,7 @@ public sealed class StatusAplikasi
 
     public async Task SimpanAsync()
     {
+        var retrying = StorageFailed;
         StorageFailed = false;
         try
         {
@@ -94,6 +95,7 @@ public sealed class StatusAplikasi
             }
 
             await _js.InvokeVoidAsync("absensiStorage.save", KunciPenyimpanan, File.ReadAllBytes(BerkasDb));
+            if (retrying) CatatanPenyimpanan = "Perubahan berhasil disimpan ulang ke penyimpanan browser.";
         }
         catch (Exception)
         {
