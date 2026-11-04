@@ -71,11 +71,18 @@ jobs:
             echo "Proyek ${PAGES_PROJECT} sudah ada."
           elif [ "$code" = "404" ]; then
             echo "Proyek ${PAGES_PROJECT} belum ada, membuat..."
-            code=$(curl -sS -o /tmp/create.json -w '%{http_code}' -X POST \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" \
-              --data "{\"name\":\"${PAGES_PROJECT}\",\"production_branch\":\"master\"}" "${api}")
+            # Galat 5xx dari Cloudflare dicoba ulang (setiap percobaan tercatat);
+            # galat lain langsung dilaporkan.
+            for attempt in 1 2 3; do
+              code=$(curl -sS -o /tmp/create.json -w '%{http_code}' -X POST \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" \
+                --data "{\"name\":\"${PAGES_PROJECT}\",\"production_branch\":\"master\"}" "${api}")
+              echo "Percobaan ${attempt}: HTTP ${code}"
+              [ "$code" = "200" ] && break
+              case "$code" in 5*) [ "$attempt" -lt 3 ] && sleep 20 ;; *) break ;; esac
+            done
             if [ "$code" != "200" ]; then
-              echo "::error::Gagal membuat proyek Pages (HTTP ${code}): $(head -c 600 /tmp/create.json)"
+              echo "::error::Gagal membuat proyek Pages (HTTP ${code}): $(tr -d '\n' < /tmp/create.json | head -c 600)"
               exit 1
             fi
           else
