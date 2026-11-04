@@ -95,7 +95,7 @@ P-01–P-15, P-17 dan P-18 dicatat pada PRD §25.5: koreksi berwenang, kartu tet
 ### 6.3 Utang sinkronisasi dokumen dan bukti implementasi
 
 - **DOC-01 — terbuka:** selaraskan `CLAUDE.md`, `README.md`, `SKEMA-DATABASE.md`, `RENCANA-TUGAS.md`, panduan pemasangan/tester dan dokumen turunan lain dengan PRD baru sebelum tugas implementasi terkait. Contoh konflik yang masih ada: standalone/SQLite sebagai penyimpanan resmi, migrasi setiap desktop, rekap 08.00, contoh tap 07.30 menjadi Terlambat, larangan notifikasi libur tanpa pengecualian koreksi kalender, serta akses wali yang hanya mengikuti penunjuk master saat ini. PRD tetap menjadi rujukan tertinggi; jangan mengubah aturan yang telah disepakati dari dokumen lama.
-- **T3/T6/T8 dan bug/UAT lama tetap terbuka** sesuai §3: perubahan PRD tidak memperbaiki kode finalisasi, otorisasi, kalender libur atau bug gerbang secara otomatis. Kebutuhan produk terkait sudah diperjelas, bukti implementasinya belum tersedia.
+- **T3 dan bug/UAT lama tetap terbuka** sesuai §3. T6 dan T8 sudah dikerjakan pada checkpoint §9; tidak lagi dianggap belum diimplementasikan. UAT perangkat fisik tetap terpisah dari tes otomatis dan web uji.
 - **VALIDASI-01 — belum dilakukan:** implementasi/migrasi, build dan regresi aturan baru, verifikasi ASVS lengkap, pengujian kapasitas/sinkronisasi, uji backup/restore, penawaran provider serta perhitungan biaya aktual. Skenario U-01–U-28 pada PRD merupakan kriteria penerimaan yang harus diuji, bukan hasil tes yang telah lulus.
 
 ### 6.4 Lingkup checkpoint dokumentasi
@@ -216,4 +216,16 @@ Reader fisik, gerbang desktop dua monitor, pengiriman pesan eksternal, backend A
 
 ### 12.3 Pengujian
 
-Pengujian browser diperluas menjadi 16 kelompok: diagnostik; login dan sandi salah; peran/menu; jumlah master; pencarian/filter; perintah/pintasan; registrasi dan pembatalan; batas 07.30.00/07.30.01; penolakan jeda/kartu asing; tap pulang; empat ukuran layar; halaman belum tersedia; logout; dan data/lingkup wali setelah reload. Hasil final beserta commit dicatat setelah workflow selesai; daftar skenario bukan klaim lulus.
+Pengujian browser diperluas menjadi 16 kelompok: diagnostik; login dan sandi salah; peran/menu; jumlah master; pencarian/filter; perintah/pintasan; registrasi dan pembatalan; batas 07.30.00/07.30.01; penolakan jeda/kartu asing; tap pulang; empat ukuran layar; halaman belum tersedia; logout; dan data/lingkup wali setelah reload. Registrasi juga memeriksa fokus keyboard tetap di dalam dialog sesudah Simpan.
+
+**Bukti final, 4 November 2026 pukul 22.04–22.05 WITA, commit kode `f91cdd97bfd6413c8b5ea67ef25f60a854f06d5d`:**
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Build Release dan pengujian Windows | Domain 66, Data 266, Telegram 10, Laporan 32, App 266: **640 lulus**. [CI](https://github.com/patahpensil/absensi-smp1/actions/runs/41843369567) |
+| Build native SQLite WebAssembly dan Chromium | **16 kelompok lulus**. [Bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/41843369676) |
+| Pengujian sebelum deploy | **16 kelompok lulus**, termasuk layout 1440×900, 1366×768, 768×1024, dan 390×844 |
+| Pengujian setelah deploy | **16 kelompok lulus** pada hasil unggahan Cloudflare. [Workflow deploy](https://github.com/patahpensil/absensi-smp1/actions/runs/41843369569) |
+| Pemeriksaan langsung di tautan tetap | Login contoh, daftar 24 siswa, registrasi UID dengan nol depan, waktu skenario berbahasa Indonesia, tap 07.30 → Hadir dan pembaruan dashboard terverifikasi |
+
+Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan lulus ASVS L3, kesiapan produksi, uji kapasitas, ataupun reader RFID fisik. Build lokal tidak dinyatakan lulus karena runtime lingkungan lokal gagal membaca informasi proses; bukti build dan pengujian berasal dari runner GitHub di atas. Peringatan native SQLite WASM0001 yang telah dicatat pada §11 tetap perlu ditriase untuk alur lain yang belum diuji.
