@@ -38,10 +38,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Pasang workload yang dibutuhkan proyek web
+      # Runner memakai SDK terbaru yang terpasang (log menunjukkan 10.0.x), yang
+      # meminta workload wasm-tools-net8 untuk target net8.0; "workload restore"
+      # tidak mendeteksinya, jadi dipasang eksplisit.
+      - name: Pasang workload wasm-tools-net8
         run: |
           dotnet --version
-          dotnet workload restore src/Absensi.Web/Absensi.Web.csproj -p:WasmBuildNative=true
+          dotnet workload install wasm-tools-net8
 
       - name: Publish web uji
         run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -p:WasmBuildNative=true -o publish
