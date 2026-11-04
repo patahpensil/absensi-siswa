@@ -138,3 +138,15 @@ CLI `dotnet test`/VSTest terhalang pembacaan informasi proses pada lingkungan in
 4. Lanjutkan DOC-01, T3/T6/T8, P-07–P-15/P-17/P-18 dan verifikasi keamanan sesuai cakupan masing-masing. D-01–D-11 tetap membutuhkan rincian/bukti sebagaimana §6; P-16 tetap ditangguhkan.
 
 Perubahan ini tidak membuktikan ASVS L3, kapasitas, lokasi hosting, sinkronisasi offline atau kelayakan biaya. Tidak ada deployment, pengadaan maupun perubahan data sekolah nyata.
+
+
+## 8. Pratinjau UI/UX HTML — 4 November 2026
+
+Pratinjau terbaru disimpan di [docs/ui-preview/index.html](ui-preview/index.html), dengan [petunjuk penggunaan dan batas pemeriksaan](ui-preview/README.md).
+
+- Navigasi atas dan susunan panel mengadaptasi Binance Advanced; bilah perintah, pintasan keyboard, angka monospace dan header panel mengadaptasi pola terminal. Warna utama biru seragam, putih dan abu muda dipertahankan.
+- Tersedia pantauan gerbang, daftar absensi, riwayat tap, filter siswa belum tap/Izin/Sakit, filter aktivitas dan simulasi kartu.
+- Bilah perintah menerima GERBANG, HARIAN/SISWA, LOG/RIWAYAT, UJI, TAP, BANTUAN serta pencarian nama/NISN. Ctrl+K memfokuskan perintah dan F2 membuka simulasi.
+- Pemeriksaan browser terakhir: 14 aturan HTML lulus; perintah, pencarian, bantuan dan pintasan diperiksa; empat ukuran bingkai diperiksa tanpa luapan horizontal/kartu terpotong. Sintaks dua blok JavaScript diperiksa kembali sebelum commit.
+- **Batas implementasi:** masih prototipe HTML dengan data contoh di memori browser. Belum mengubah tampilan WPF, menambahkan backend online, menghubungkan RFID/database, atau mengirim pesan. Utang pada §6–§7 tetap terbuka.
+- Commit/push pratinjau diminta pemilik. Penyimpanan berkas ini ke GitHub tidak merupakan deployment aplikasi.
