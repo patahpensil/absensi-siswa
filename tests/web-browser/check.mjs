@@ -113,7 +113,7 @@ await langkah('Registrasi satu siswa satu kartu menjaga UID nol depan dan dapat 
 
 const setClock = async value => {
   await page.click('#menu-pengaturan');
-  await page.fill('#scenario-time', value);
+  await page.fill('#scenario-time', value.replace(/:00$/, ''));
   await page.click('#apply-scenario');
   await page.waitForFunction(expected => document.querySelector('#jam-simulasi')?.textContent?.includes(expected), value.slice(11));
   await page.click('#menu-absensi');

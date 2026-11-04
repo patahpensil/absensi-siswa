@@ -37,7 +37,7 @@
         {
             case "Dashboard": <Dasbor OnNavigate="Navigate" /> break;
             case "Absensi": <AttendanceDesk /> break;
-            case "Siswa": <DaftarSiswa Search="studentSearch" /> break;
+            case "Siswa": <DaftarSiswa Search="@studentSearch" /> break;
             case "Guru": <DaftarGuru /> break;
             case "Kelas": <DaftarKelas /> break;
             case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
