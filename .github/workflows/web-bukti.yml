@@ -1,0 +1,58 @@
+# Bukti teknis tahap 1 web uji: kode asli Absensi.Data berjalan di browser
+# (SQLite WebAssembly, migrasi, Excel). Hanya data sintetis (utang D-12).
+name: Web uji - bukti browser
+
+on:
+  push:
+    paths:
+      - 'src/Absensi.Web/**'
+      - 'src/Absensi.Data/**'
+      - 'src/Absensi.Domain/**'
+      - 'tests/web-browser/**'
+      - '.github/workflows/web-bukti.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-bukti-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bukti-browser:
+    name: Publish dan uji di Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Pasang .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pasang workload wasm-tools
+        run: dotnet workload install wasm-tools
+
+      - name: Publish web uji
+        run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -o publish
+
+      - name: Pasang Playwright dan Chromium
+        working-directory: tests/web-browser
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Jalankan web uji dan periksa di Chromium
+        working-directory: tests/web-browser
+        run: |
+          python3 -m http.server 8080 --directory ../../publish/wwwroot &
+          sleep 2
+          node check.mjs http://127.0.0.1:8080/

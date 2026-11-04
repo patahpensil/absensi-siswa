@@ -1,0 +1,5 @@
+:root { color-scheme: light dark; --ok: #0a7a3d; --fail: #b3261e; }
+body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 48rem; padding: 1rem 16px; line-height: 1.5; }
+.ok { color: var(--ok); }
+.fail { color: var(--fail); font-weight: 600; }
+li { margin: .4rem 0; }

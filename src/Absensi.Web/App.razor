@@ -1,0 +1,32 @@
+<main>
+    <h1>Bukti teknis: kode asli berjalan di browser</h1>
+    <p>Halaman ini hanya memeriksa kelayakan teknis. Data sintetis dan tidak tersimpan setelah halaman ditutup.</p>
+
+    @if (results is null)
+    {
+        <p id="status">Menjalankan pemeriksaan…</p>
+    }
+    else
+    {
+        <p id="status">Selesai: @results.Count(r => r.Passed) dari @results.Count lulus.</p>
+        <ul id="results">
+            @foreach (var result in results)
+            {
+                <li class="@(result.Passed ? "ok" : "fail")" data-passed="@result.Passed">
+                    @(result.Passed ? "LULUS" : "GAGAL") — @result.Name: @result.Detail
+                </li>
+            }
+        </ul>
+    }
+</main>
+
+@code {
+    private IReadOnlyList<CheckResult>? results;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Beri kesempatan layar "Menjalankan…" tampil sebelum pemeriksaan sinkron berjalan.
+        await Task.Delay(50);
+        results = BrowserFeasibilityChecks.RunAll();
+    }
+}
