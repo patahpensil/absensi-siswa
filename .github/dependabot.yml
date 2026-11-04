@@ -1,0 +1,19 @@
+# Pembaruan dependensi otomatis. Setiap PR Dependabot diuji oleh workflow CI
+# (lingkungan uji sementara, utang D-12) sebelum digabung pemilik.
+version: 2
+updates:
+  - package-ecosystem: "nuget"        # paket .NET proyek
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Asia/Makassar"
+    open-pull-requests-limit: 5
+    groups:
+      minor-dan-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"   # action di workflow CI
+    directory: "/"
+    schedule:
+      interval: "weekly"
