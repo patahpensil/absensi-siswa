@@ -1,0 +1,99 @@
+/* Layout: satu kolom panel kerja (pengaturan, gerbang, riwayat, kasus batas). */
+:root {
+  --navy: #1f3a5f;
+  --navy-hover: #2d5286;
+  --on-navy: #ffffff;
+  --background: #f3f5f9;
+  --surface: #ffffff;
+  --surface-alt: #eef2f8;
+  --border: #d7dde7;
+  --text: #1b2330;
+  --muted: #5a6577;
+  --ok-bg: #e5f3ea;
+  --ok-fg: #1d6b3f;
+  --bad-bg: #fbe9e8;
+  --bad-fg: #a3241c;
+  --font-body: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-mono: Consolas, "SFMono-Regular", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #8fb3e6; --navy-hover: #a9c6ef; --on-navy: #0f1a2a;
+    --background: #11161e; --surface: #18202b; --surface-alt: #202b39;
+    --border: #2e3a4b; --text: #e3e8ef; --muted: #9aa6b6;
+    --ok-bg: #16301f; --ok-fg: #8fd6a8; --bad-bg: #3a1a18; --bad-fg: #f2a59f;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --navy: #8fb3e6; --navy-hover: #a9c6ef; --on-navy: #0f1a2a;
+  --background: #11161e; --surface: #18202b; --surface-alt: #202b39;
+  --border: #2e3a4b; --text: #e3e8ef; --muted: #9aa6b6;
+  --ok-bg: #16301f; --ok-fg: #8fd6a8; --bad-bg: #3a1a18; --bad-fg: #f2a59f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  background: var(--background);
+  color: var(--text);
+}
+
+.page-header {
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  padding-block: 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.page-header > div { max-width: 1100px; margin: 0 auto; }
+.page-header h1 { margin: 0 0 6px; font-size: 22px; color: var(--navy); text-wrap: balance; }
+.page-header p { margin: 0; max-width: 65ch; line-height: 1.5; color: var(--muted); }
+
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.panel { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; }
+.panel h2 { margin: 0 0 12px; font-size: 17px; color: var(--navy); }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+label.checkbox { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+input, select { font: inherit; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); max-width: 100%; }
+input.clock { font-family: var(--font-mono); font-size: 18px; width: 130px; font-variant-numeric: tabular-nums; }
+
+.clock-row, .button-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.clock-row { margin-bottom: 12px; }
+.button-row { margin-top: 12px; }
+
+button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--navy); background: var(--navy); color: var(--on-navy); cursor: pointer; }
+button:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+button.secondary { background: var(--surface); color: var(--navy); }
+button.secondary:hover { background: var(--surface-alt); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+td.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+tr.inactive td { color: var(--muted); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--surface-alt); color: var(--navy); font-size: 13px; }
+code { font-family: var(--font-mono); font-size: 13px; }
+
+.message { padding: 8px 12px; border-radius: 6px; background: var(--ok-bg); color: var(--ok-fg); }
+.message.error { background: var(--bad-bg); color: var(--bad-fg); }
+.note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.end-of-day { margin-top: 12px; padding: 10px 12px; background: var(--surface-alt); border-radius: 6px; }
+.loading { padding: 24px; color: var(--muted); }
