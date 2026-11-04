@@ -18,7 +18,12 @@ const lapor = (lulus, teks) => {
 };
 const langkah = async (nama, fn) => {
   try { await fn(); lapor(true, nama); }
-  catch (e) { lapor(false, `${nama}: ${String(e.message).split('\n')[0]}`); }
+  catch (e) {
+    lapor(false, `${nama}: ${String(e.message).split('\n')[0]}`);
+    const isi = await page.evaluate(() => document.body.innerText.slice(0, 300)).catch(() => '(halaman tidak terbaca)');
+    console.log(`::warning::Isi halaman saat gagal: ${isi.replace(/\s+/g, ' ')}`);
+    for (const t of consoleErrors.splice(0)) console.log(`::warning::Konsol: ${t.slice(0, 400)}`);
+  }
 };
 const tegas = (kondisi, pesan) => { if (!kondisi) throw new Error(pesan); };
 const masuk = async (u, s) => {
