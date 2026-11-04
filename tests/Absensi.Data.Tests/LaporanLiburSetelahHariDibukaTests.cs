@@ -1,4 +1,5 @@
 using Absensi.Data.Laporan;
+using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 using Absensi.Domain.Laporan;
 
