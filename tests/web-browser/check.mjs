@@ -189,6 +189,13 @@ await langkah('Admin melihat menu Audit', async () => {
 await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async () => {
   await page.reload();
   await page.waitForSelector('#tombol-masuk', { timeout: 120_000 });
+  // Reload resets the in-memory scenario clock; restore the same school date
+  // before checking persisted attendance. Opening the day is idempotent.
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await setClock('2026-11-04T13:10:00');
+  await page.click('#tombol-keluar');
+  await page.waitForSelector('#tombol-masuk');
   await masuk('wali7a', 'contoh123');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-siswa');
@@ -199,7 +206,10 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.click('#menu-absensi');
   await page.waitForSelector('#attendance-table');
   tegas(await page.locator('#tap-uid').count() === 0, 'wali mendapat input pemrosesan kartu');
-  tegas((await page.textContent('#attendance-table')).includes('13:10:00'), 'jam pulang tidak bertahan setelah reload');
+  const persistedFirst = await page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-1 (contoh)' }).textContent();
+  const persistedSecond = await page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-2 (contoh)' }).textContent();
+  tegas(persistedFirst.includes('07:30:00') && persistedFirst.includes('13:10:00'), 'jam masuk/pulang tidak bertahan pada tanggal skenario yang sama');
+  tegas(persistedSecond.includes('07:30:01'), 'detik jam masuk tidak bertahan setelah reload');
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');
