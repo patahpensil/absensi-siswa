@@ -282,6 +282,7 @@ await langkah('Laporan: pratinjau harian/bulanan/semester dan unduh Excel memaka
 
 await langkah('Laporan PDF: hasil di browser dicatat apa adanya', async () => {
   await page.selectOption('#report-kind', 'Daily');
+  await page.fill('#report-date', '2026-11-04');
   await page.click('#report-show');
   await page.waitForSelector('#report-table');
   const pending = page.waitForEvent('download', { timeout: 60_000 }).catch(() => null);
