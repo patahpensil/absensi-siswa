@@ -253,3 +253,15 @@ Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan 
 **Batas:** tombol Cetak laporan dan Koreksi status di panel nonaktif sampai modulnya dibangun. Foto belum tampil (unggah foto belum ada di web). Data contoh tidak memiliki riwayat sebelum tanggal uji, sehingga bulan lampau tampil kosong sementara hari efektif tetap dihitung dari kalender; ketentuan P-18 (siswa masuk/keluar tengah periode) belum diterapkan pada perhitungan laporan.
 
 **Bukti §13–§14, 5 November 2026 pukul 15.33–15.45 WITA, commit `75e2126`:** CI Windows Domain 66, Data 274 (8 tes baru `StoredTimeCultureTests`), Telegram 10, Laporan 32, App 266 — **648 lulus**, 0 gagal. Tes `IndonesianCulture_SeparatorIsDot` lulus di runner Windows, artinya risiko pemisah titik pada `id-ID` memang terjadi di sana. Uji Chromium **17 kelompok lulus** sebelum deploy dan 17 lulus pada hasil deploy Cloudflare (termasuk langkah panel detail). Belum ada pemeriksaan visual oleh pemilik dan belum ada UAT desktop/RFID fisik.
+
+## 15. Modul Koreksi di web uji — 5 November 2026
+
+**Keputusan pemilik (5 Nov):** isi panel detail siswa/guru disetujui. Wali kelas boleh melihat riwayat siswanya **dan mengedit** (mengoreksi) riwayat siswa kelasnya, karena wali kelas paling dekat dengan siswa. Ini sejalan dengan PRD §3/§3.2/§10. Data bulan lampau yang kosong pada tahap uji diterima pemilik.
+
+- **Menu Koreksi:** pilih kelas dan tanggal, daftar dari `RepositoriAbsensi.DaftarUntukKoreksi`, tombol Ubah status per siswa. Wali kelas hanya melihat kelasnya sendiri.
+- **Dari panel detail:** setiap baris riwayat siswa punya tombol Ubah bila akun berwenang atas kelas pada tanggal itu.
+- **Formulir:** pilihan Hadir/Terlambat/Izin/Sakit/Alpa (PRD §16.10 langkah 4), alasan wajib, kolom "atas permintaan" (wali kelas pemohon) hanya untuk admin/kepala sekolah. Bulan terkunci menolak koreksi. Hasil berhasil baru tampil setelah status tersimpan dibaca ulang. Penyimpanan, otorisasi kelas, kunci bulan, audit dan antrean notifikasi tetap melalui `LayananKoreksi` asli; jam tap asli tidak diubah.
+- **Perubahan layanan:** `LayananKoreksi.KoreksiStatusSiswa` kini menolak alasan kosong (PRD §10: alasan wajib, diperiksa di layanan). Tes lama yang mengoreksi tanpa alasan diperbarui; tes baru memastikan penolakan dan status tidak berubah. WPF menampilkan penolakan ini sebagai pesan biasa.
+- **Uji Chromium:** admin mengoreksi dengan atas permintaan; alasan kosong tidak dapat disimpan; penanda koreksi tampil di panel; wali kelas mengoreksi dari panel tanpa kolom atas permintaan dan hanya melihat satu kelas.
+
+**Utang:** alasan koreksi disimpan di kolom `keterangan` absensi; jejak audit mencatat status lama/baru dan pemohon, tetapi belum memuat alasan sebagai kolom audit tersendiri (PRD §10 menyebut audit mencatat alasan). Kunci bulan belum tersedia di web. Pesan notifikasi koreksi hanya masuk antrean outbox; pengiriman tetap nonaktif.

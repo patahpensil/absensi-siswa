@@ -40,6 +40,7 @@
             case "Siswa": <DaftarSiswa Search="@studentSearch" /> break;
             case "Guru": <DaftarGuru /> break;
             case "Kelas": <DaftarKelas /> break;
+            case "Koreksi": <KoreksiWeb /> break;
             case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
             default: <BelumDibangun Nama="@activePage" /> break;
         }

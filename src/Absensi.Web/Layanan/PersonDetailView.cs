@@ -8,7 +8,9 @@ namespace Absensi.Web.Layanan;
 public enum PersonKind { Student, Teacher }
 
 public sealed record PersonHistoryRow(
-    DateOnly Date, string Status, string Tone, TimeOnly? TimeIn, TimeOnly? TimeOut, string? Note, bool Corrected, bool MarkedHoliday);
+    DateOnly Date, string Status, string Tone, TimeOnly? TimeIn, TimeOnly? TimeOut, string? Note, bool Corrected, bool MarkedHoliday,
+    // Student rows only: what the correction form needs (PRD §16.10).
+    int? ClassId = null, StatusAbsensiSiswa? StudentStatus = null, string? StoredNote = null, bool CanCorrect = false);
 
 public sealed record PersonDetail(
     PersonKind Kind,
@@ -48,7 +50,8 @@ public static class PersonDetailView
             .Where(r => r.SiswaId == studentId)
             .OrderByDescending(r => r.Tanggal)
             .Select(r => new PersonHistoryRow(r.Tanggal, r.Status.ToString(), WorkspaceView.Tone(r.Status), r.JamMasuk, r.JamPulang,
-                KodeStatus.Keterangan(r.Status, r.JamMasuk, r.Keterangan), r.Sumber == "koreksi", holidays.Contains(r.Tanggal)))
+                KodeStatus.Keterangan(r.Status, r.JamMasuk, r.Keterangan), r.Sumber == "koreksi", holidays.Contains(r.Tanggal),
+                r.KelasId, r.Status, r.Keterangan, WorkspaceView.CanCorrect(state, r.KelasId)))
             .ToList();
         var (recap, note) = Recap(state, studentId, JenisSubjekLaporan.Siswa, start, end);
 

@@ -194,6 +194,33 @@ await langkah('Klik nama membuka detail siswa/guru beserta riwayat dan rekap bul
   await page.waitForSelector('#tap-uid');
 });
 
+await langkah('Koreksi status: alasan wajib, atas permintaan wali, tersimpan dan ditandai koreksi', async () => {
+  await page.click('#menu-koreksi');
+  await page.waitForSelector('#correction-table');
+  tegas(await page.inputValue('#correction-date') === '2026-11-04', 'tanggal koreksi bukan tanggal skenario');
+  await page.click('#correct-2');
+  await page.waitForSelector('#correction-form');
+  tegas(await page.$eval('#correction-save', b => b.disabled), 'koreksi tanpa alasan dapat disimpan');
+  await page.selectOption('#correction-status', 'Izin');
+  await page.fill('#correction-reason', 'Surat izin orang tua (contoh)');
+  await page.selectOption('#correction-requester', { index: 1 });
+  await page.click('#correction-save');
+  await page.waitForSelector('#correction-success');
+  await page.click('#correction-cancel');
+  await page.waitForSelector('#correction-form', { state: 'detached' });
+  const row = await page.locator('#correction-table tbody tr').filter({ hasText: 'Siswa 7A-2' }).textContent();
+  tegas(row.includes('Izin') && row.includes('07:30:01'), `status/jam setelah koreksi salah: ${row}`);
+  await page.click('#menu-siswa');
+  await page.click('#student-detail-2');
+  await page.waitForSelector('#person-detail');
+  const history = await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent();
+  tegas(history.includes('Izin') && history.includes('koreksi'), `penanda koreksi tidak tampil: ${history}`);
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#tap-uid');
+});
+
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
@@ -208,7 +235,7 @@ await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => 
 });
 
 await langkah('Menu yang belum dibangun diberi tahu apa adanya', async () => {
-  await page.click('#menu-laporan');
+  await page.click('#menu-kalender');
   await page.waitForSelector('#belum-dibangun');
 });
 
@@ -252,8 +279,20 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.waitForSelector('#person-detail');
   tegas((await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent()).includes('13:10:00'), 'wali tidak melihat riwayat siswanya');
   tegas(await page.locator('#person-detail-recap-note').count() === 1, 'wali mendapat rekap laporan');
-  await page.keyboard.press('Escape');
+  await page.click('#history-correct-20261104');
+  await page.waitForSelector('#correction-form');
+  tegas(await page.locator('#correction-requester').count() === 0, 'wali mendapat kolom atas permintaan');
+  await page.selectOption('#correction-status', 'Sakit');
+  await page.fill('#correction-reason', 'Surat dokter (contoh)');
+  await page.click('#correction-save');
+  await page.waitForSelector('#correction-success');
+  await page.waitForFunction(() => document.querySelector('#person-history tbody tr')?.textContent?.includes('Sakit'));
+  await page.click('#correction-cancel');
+  await page.click('#close-person-detail');
   await page.waitForSelector('#person-detail', { state: 'detached' });
+  await page.click('#menu-koreksi');
+  await page.waitForSelector('#correction-class');
+  tegas(await page.locator('#correction-class option').count() === 1, 'wali melihat kelas lain di Koreksi');
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');

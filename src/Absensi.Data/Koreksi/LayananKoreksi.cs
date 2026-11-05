@@ -42,6 +42,12 @@ public sealed class LayananKoreksi
             throw new InvalidOperationException($"Bulan {tanggal:MM/yyyy} sudah terkunci — koreksi ditolak.");
         }
 
+        // PRD §10/§16.10 langkah 4: alasan koreksi wajib, diperiksa di layanan.
+        if (string.IsNullOrWhiteSpace(keterangan))
+        {
+            throw new InvalidOperationException("Alasan koreksi wajib diisi.");
+        }
+
         if (!_layananAkun.BolehMenyentuhKelas(connection, akun, kelasId))
         {
             throw new InvalidOperationException("Anda tidak berwenang mengoreksi absensi kelas ini.");

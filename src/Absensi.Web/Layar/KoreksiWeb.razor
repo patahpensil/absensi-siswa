@@ -1,0 +1,65 @@
+@using System.Globalization
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / KOREKSI</p><h1>Koreksi status</h1><p>Pilih kelas dan tanggal, lalu ubah status siswa dengan alasan yang jelas.</p></div><span class="badge info">@(WorkspaceView.IsClassTeacher(Status) ? "Kelas Anda" : "Semua kelas")</span></div>
+<section class="panel">
+    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar kehadiran</h2><span class="panel-code">KOREKSI / 01</span></header>
+    <div class="panel-toolbar">
+        <select id="correction-class" aria-label="Pilih kelas" @bind="classId" @bind:after="Reload">
+            @foreach (var c in classes) { <option value="@c.Id">@c.Nama</option> }
+        </select>
+        <input id="correction-date" type="date" aria-label="Tanggal kehadiran" @bind="dateText" @bind:after="Reload" />
+        <span class="muted">@rows.Count siswa · @(locked ? "bulan terkunci" : "bulan terbuka")</span>
+    </div>
+    @if (classes.Count == 0) { <div class="empty-state">Akun ini belum ditugaskan pada kelas mana pun.</div> }
+    else if (rows.Count == 0) { <div id="correction-empty" class="empty-state">Belum ada catatan kehadiran untuk kelas dan tanggal ini. Koreksi hanya untuk hari yang sudah dibuka.</div> }
+    else
+    {
+        <div class="table-wrap"><table id="correction-table"><thead><tr><th>Siswa</th><th>NISN</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Keterangan</th><th>Tindakan</th></tr></thead><tbody>
+            @foreach (var row in rows)
+            {
+                <tr><td class="name-cell">@row.Nama</td><td class="mono muted">@row.Nisn</td><td><span class="badge @WorkspaceView.Tone(row.Status)">@row.Status</span></td><td class="mono">@WorkspaceView.Time(row.JamMasuk)</td><td class="mono">@WorkspaceView.Time(row.JamPulang)</td><td>@(row.Keterangan ?? "—")</td>
+                    <td><button class="text-button" id="correct-@row.SiswaId" disabled="@locked" @onclick="() => selected = row">Ubah status</button></td></tr>
+            }
+        </tbody></table></div>
+    }
+    <div class="panel-footer"><span>Setiap koreksi tercatat di audit beserta akun pelaku.</span><span>Jam tap asli tidak diubah.</span></div>
+</section>
+
+@if (selected is not null)
+{
+    <div class="modal-backdrop">
+        <section class="dialog panel" role="dialog" aria-modal="true" aria-label="Koreksi status siswa">
+            <div class="dialog-body">
+                <CorrectionForm ClassId="classId" StudentId="selected.SiswaId" StudentName="@selected.Nama" Date="date" CurrentStatus="selected.Status" OnSaved="Reload" OnClose="() => selected = null" />
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<KelasDaftar> classes = Array.Empty<KelasDaftar>();
+    private IReadOnlyList<SiswaUntukKoreksi> rows = Array.Empty<SiswaUntukKoreksi>();
+    private SiswaUntukKoreksi? selected;
+    private int classId;
+    private string dateText = "";
+    private DateOnly date;
+    private bool locked;
+
+    protected override void OnInitialized()
+    {
+        classes = WorkspaceView.Classes(Status);
+        classId = classes.FirstOrDefault()?.Id ?? 0;
+        dateText = DateOnly.FromDateTime(Status.Jam.Sekarang).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        Reload();
+    }
+
+    private void Reload()
+    {
+        if (!DateOnly.TryParseExact(dateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date)) date = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        locked = new Absensi.Data.Koreksi.LayananKoreksi().BulanTerkunci(Status.Koneksi!, date);
+        rows = classes.Any(c => c.Id == classId) ? new RepositoriAbsensi().DaftarUntukKoreksi(Status.Koneksi!, date, classId) : Array.Empty<SiswaUntukKoreksi>();
+    }
+}

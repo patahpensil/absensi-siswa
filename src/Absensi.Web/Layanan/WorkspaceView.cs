@@ -10,6 +10,12 @@ public static class WorkspaceView
 {
     public static bool CanManage(StatusAplikasi state) => state.Akun?.Peran is PeranAkun.Admin or PeranAkun.KepalaSekolah;
 
+    public static bool IsClassTeacher(StatusAplikasi state) => state.Akun?.Peran == PeranAkun.WaliKelas;
+
+    // PRD §3/§3.2: wali kelas corrects only their own class; the service checks again.
+    public static bool CanCorrect(StatusAplikasi state, int classId) =>
+        state.Akun is { } account && new LayananAkun().BolehMenyentuhKelas(state.Koneksi!, account, classId);
+
     public static IReadOnlyList<KelasDaftar> Classes(StatusAplikasi state)
     {
         var classes = new RepositoriKelas().DaftarUntukTahunAjaran(state.Koneksi!, state.TahunAjaranId ?? 0);

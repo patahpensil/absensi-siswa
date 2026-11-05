@@ -1865,3 +1865,34 @@ tbody tr:hover {
     width:100%
   }
 }
+
+/* Formulir koreksi status (PRD §16.10). */
+.correction-form {
+  display:grid;
+  gap:6px
+}
+
+.correction-form h3,.correction-form p {
+  margin:0
+}
+
+.correction-form label {
+  margin-top:8px;
+  font-weight:600
+}
+
+.correction-form select,.correction-form textarea {
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  font:inherit
+}
+
+.drawer-correction {
+  margin-bottom:14px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper)
+}

@@ -87,7 +87,7 @@ public sealed class LayananKoreksiTests
         database.SeedSekolahUntukKoreksi();
         var layanan = new LayananKoreksi();
 
-        layanan.KoreksiStatusSiswa(database.Connection, WaliA, Waktu, kelasId: 1, siswaId: 1, "Siswa Satu", Tanggal, StatusAbsensiSiswa.Hadir, null, null);
+        layanan.KoreksiStatusSiswa(database.Connection, WaliA, Waktu, kelasId: 1, siswaId: 1, "Siswa Satu", Tanggal, StatusAbsensiSiswa.Hadir, "Hadir, kartu tertinggal", null);
 
         using var command = database.Connection.CreateCommand();
         command.CommandText = "SELECT jenis, isi FROM outbox WHERE chat_id = 'chat-siswa-1';";
@@ -148,5 +148,22 @@ public sealed class LayananKoreksiTests
         using var commandOutbox = database.Connection.CreateCommand();
         commandOutbox.CommandText = "SELECT COUNT(*) FROM outbox;";
         Assert.Equal(0, Convert.ToInt32(commandOutbox.ExecuteScalar()));
+    }
+
+    // PRD §10: alasan koreksi wajib; ditolak sebelum data berubah.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void KoreksiStatusSiswa_TanpaAlasan_DitolakDanStatusTidakBerubah(string? alasan)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukKoreksi();
+        var layanan = new LayananKoreksi();
+
+        var galat = Assert.Throws<InvalidOperationException>(() =>
+            layanan.KoreksiStatusSiswa(database.Connection, WaliA, Waktu, kelasId: 1, siswaId: 1, "Siswa Satu", Tanggal, StatusAbsensiSiswa.Hadir, alasan, null));
+
+        Assert.Contains("Alasan", galat.Message);
+        Assert.Equal(StatusAbsensiSiswa.Terlambat, new RepositoriAbsensi().CariHariIniSiswa(database.Connection, Tanggal, 1)!.Status);
     }
 }

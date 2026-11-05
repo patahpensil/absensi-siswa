@@ -55,16 +55,20 @@
 
             <section aria-labelledby="history-title">
                 <h4 id="history-title" class="eyebrow">RIWAYAT ABSENSI</h4>
+                @if (correcting is { ClassId: { } correctionClass, StudentStatus: { } correctionStatus })
+                {
+                    <div class="drawer-correction"><CorrectionForm ClassId="correctionClass" StudentId="detail.Id" StudentName="@detail.Name" Date="correcting.Date" CurrentStatus="correctionStatus" OnSaved="Load" OnClose="() => correcting = null" /></div>
+                }
                 @if (detail.History.Count == 0)
                 {
                     <div id="person-detail-empty" class="empty-state">Belum ada catatan absensi pada bulan ini.</div>
                 }
                 else
                 {
-                    <div class="table-wrap"><table id="person-history"><thead><tr><th>Tanggal</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Keterangan</th></tr></thead><tbody>
+                    <div class="table-wrap"><table id="person-history"><thead><tr><th>Tanggal</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Keterangan</th>@if (AnyCorrectable) { <th>Tindakan</th> }</tr></thead><tbody>
                         @foreach (var row in detail.History)
                         {
-                            <tr><td class="mono">@row.Date.ToString("ddd dd'/'MM", Indonesian)</td><td><span class="badge @row.Tone">@row.Status</span>@if (row.Corrected) { <small class="badge neutral correction-mark">koreksi</small> }</td><td class="mono">@WorkspaceView.Time(row.TimeIn)</td><td class="mono">@WorkspaceView.Time(row.TimeOut)</td><td>@(row.MarkedHoliday ? "Ditetapkan libur, tidak dihitung" : row.Note ?? "—")</td></tr>
+                            <tr><td class="mono">@row.Date.ToString("ddd dd'/'MM", Indonesian)</td><td><span class="badge @row.Tone">@row.Status</span>@if (row.Corrected) { <small class="badge neutral correction-mark">koreksi</small> }</td><td class="mono">@WorkspaceView.Time(row.TimeIn)</td><td class="mono">@WorkspaceView.Time(row.TimeOut)</td><td>@(row.MarkedHoliday ? "Ditetapkan libur, tidak dihitung" : row.Note ?? "—")</td>@if (AnyCorrectable) { <td>@if (row.CanCorrect) { <button class="text-button" id="history-correct-@row.Date.ToString("yyyyMMdd")" @onclick="() => correcting = row">Ubah</button> } else { <span class="muted">—</span> }</td> }</tr>
                         }
                     </tbody></table></div>
                 }
@@ -72,9 +76,8 @@
 
             <div class="dialog-actions">
                 <button type="button" disabled title="Modul laporan belum tersedia di web uji">Cetak laporan</button>
-                @if (detail.Kind == PersonKind.Student) { <button type="button" disabled title="Modul koreksi belum tersedia di web uji">Koreksi status</button> }
             </div>
-            <p class="field-help">Cetak laporan dan koreksi status menunggu modulnya dibangun.</p>
+            @if (AnyCorrectable) { <p class="field-help">Untuk mengoreksi status, pilih Ubah pada baris riwayat. Alasan wajib diisi dan tercatat di audit.</p> }
         </div>
     }
 </aside>
@@ -85,6 +88,8 @@
     [Parameter, EditorRequired] public int Id { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     private PersonDetail? detail;
+    private PersonHistoryRow? correcting;
+    private bool AnyCorrectable => detail?.History.Any(r => r.CanCorrect) == true;
     private DateOnly month;
     private ElementReference drawer;
     private bool focusDrawer = true;
@@ -94,8 +99,13 @@
     protected override void OnParametersSet() { if (loaded != (Kind, Id)) { loaded = (Kind, Id); month = CurrentMonth; Load(); } }
     private static string Subtitle(PersonDetail d) => string.Join(" · ", new[] { d.Identity, d.ClassName, d.Gender }.Where(x => !string.IsNullOrWhiteSpace(x)));
     private void Load() => detail = Kind == PersonKind.Student ? PersonDetailView.Student(Status, Id, month) : PersonDetailView.Teacher(Status, Id, month);
-    private void Shift(int months) { var next = month.AddMonths(months); if (next <= CurrentMonth) { month = next; Load(); } }
+    private void Shift(int months) { var next = month.AddMonths(months); if (next <= CurrentMonth) { month = next; correcting = null; Load(); } }
     private Task Close() => OnClose.InvokeAsync();
-    private Task HandleKey(KeyboardEventArgs e) => e.Key == "Escape" ? Close() : Task.CompletedTask;
+    private Task HandleKey(KeyboardEventArgs e)
+    {
+        if (e.Key != "Escape") return Task.CompletedTask;
+        if (correcting is not null) { correcting = null; return Task.CompletedTask; }
+        return Close();
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender) { if (focusDrawer) { focusDrawer = false; await drawer.FocusAsync(); } }
 }

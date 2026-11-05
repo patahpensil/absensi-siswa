@@ -1,0 +1,88 @@
+@using Absensi.Data.Koreksi
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PRD §10/§16.10: status choices, mandatory reason and "atas permintaan" for
+   admin help. Authorization, month lock and audit stay in LayananKoreksi. *@
+<form id="correction-form" class="correction-form" @onsubmit="Save" @onsubmit:preventDefault>
+    <p class="eyebrow">KOREKSI STATUS</p>
+    <h3>@StudentName</h3>
+    <p class="mono muted">@Date.ToString("dddd, d MMMM yyyy", Indonesian) · status sekarang @CurrentStatus</p>
+    @if (locked)
+    {
+        <p id="correction-locked" class="message danger" role="alert">Bulan @Date.ToString("MMMM yyyy", Indonesian) sudah dikunci. Koreksi tidak dapat dilakukan.</p>
+    }
+    else
+    {
+        <label for="correction-status">Status baru</label>
+        <select id="correction-status" @bind="newStatus" disabled="@done">
+            @foreach (var option in Options) { <option value="@option">@option</option> }
+        </select>
+        <label for="correction-reason">Alasan koreksi <span class="muted">(wajib)</span></label>
+        <textarea id="correction-reason" rows="2" maxlength="200" @bind="reason" @bind:event="oninput" disabled="@done" placeholder="Contoh: surat izin orang tua diterima"></textarea>
+        @if (!WorkspaceView.IsClassTeacher(Status))
+        {
+            <label for="correction-requester">Atas permintaan</label>
+            <select id="correction-requester" @bind="requester" disabled="@done">
+                <option value="">Tidak ada — koreksi oleh akun ini sendiri</option>
+                @if (!string.IsNullOrWhiteSpace(classTeacher)) { <option value="@classTeacher">Wali kelas: @classTeacher</option> }
+            </select>
+        }
+        else { <p class="field-help">Koreksi dicatat atas nama akun wali kelas Anda.</p> }
+        @if (error is not null) { <p id="correction-error" class="message danger" role="alert">@error</p> }
+        @if (done) { <p id="correction-success" class="message positive" role="status">Status @StudentName tersimpan menjadi @newStatus.</p> }
+        @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
+    }
+    <div class="dialog-actions">
+        <button type="button" id="correction-cancel" @onclick="OnClose">@(done ? "Tutup" : "Batal")</button>
+        @if (!locked && !done) { <button id="correction-save" type="submit" class="primary" disabled="@(saving || string.IsNullOrWhiteSpace(reason))">@(saving ? "Menyimpan…" : "Simpan koreksi")</button> }
+    </div>
+</form>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Indonesian = new("id-ID");
+    // PRD §16.10 langkah 4: Hadir / Terlambat / Izin / Sakit / Alpa.
+    private static readonly StatusAbsensiSiswa[] Options = [StatusAbsensiSiswa.Hadir, StatusAbsensiSiswa.Terlambat, StatusAbsensiSiswa.Izin, StatusAbsensiSiswa.Sakit, StatusAbsensiSiswa.Alpa];
+    [Parameter, EditorRequired] public int ClassId { get; set; }
+    [Parameter, EditorRequired] public int StudentId { get; set; }
+    [Parameter, EditorRequired] public string StudentName { get; set; } = "";
+    [Parameter, EditorRequired] public DateOnly Date { get; set; }
+    [Parameter, EditorRequired] public StatusAbsensiSiswa CurrentStatus { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private readonly LayananKoreksi corrections = new();
+    private StatusAbsensiSiswa newStatus;
+    private string reason = "", requester = "";
+    private string? error, classTeacher;
+    private bool locked, saving, done;
+
+    protected override void OnInitialized()
+    {
+        newStatus = CurrentStatus;
+        locked = corrections.BulanTerkunci(Status.Koneksi!, Date);
+        classTeacher = WorkspaceView.Classes(Status).FirstOrDefault(c => c.Id == ClassId)?.WaliGuruNama;
+    }
+
+    private async Task Save()
+    {
+        if (saving || done || locked) return;
+        saving = true;
+        error = null;
+        try
+        {
+            corrections.KoreksiStatusSiswa(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, ClassId, StudentId, StudentName, Date,
+                newStatus, reason.Trim(), WorkspaceView.IsClassTeacher(Status) || requester.Length == 0 ? null : requester);
+            // PRD §16.10 langkah 6: report success only after the stored state is confirmed.
+            var stored = new RepositoriAbsensi().CariHariIniSiswa(Status.Koneksi!, Date, StudentId);
+            if (stored?.Status != newStatus) throw new InvalidOperationException("Perubahan belum dapat dipastikan. Muat ulang data lalu periksa kembali.");
+            await Status.SimpanAsync();
+            done = true;
+            await OnSaved.InvokeAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { error = "Koreksi belum dapat disimpan. Periksa data lalu coba kembali."; }
+        finally { saving = false; }
+    }
+}
