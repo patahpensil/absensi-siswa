@@ -1,8 +1,9 @@
+@using Microsoft.JSInterop
 @using Absensi.Data.Repositori
 @using Absensi.Domain.Laporan
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-@inject Microsoft.JSInterop.IJSRuntime JS
+@inject IJSRuntime JS
 
 <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / LAPORAN</p><h1>Laporan</h1><p>Pilih jenis laporan, tampilkan pratinjau, lalu unduh Excel atau PDF.</p></div><span class="badge info">Excel · PDF</span></div>
 @if (!WorkspaceView.CanManage(Status))
