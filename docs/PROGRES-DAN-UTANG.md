@@ -251,3 +251,5 @@ Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan 
 - Apakah wali kelas boleh melihat rekap bulan siswanya sendiri di panel? Saat ini tidak, karena PRD §3 menyatakan laporan hanya untuk kepala sekolah/admin.
 
 **Batas:** tombol Cetak laporan dan Koreksi status di panel nonaktif sampai modulnya dibangun. Foto belum tampil (unggah foto belum ada di web). Data contoh tidak memiliki riwayat sebelum tanggal uji, sehingga bulan lampau tampil kosong sementara hari efektif tetap dihitung dari kalender; ketentuan P-18 (siswa masuk/keluar tengah periode) belum diterapkan pada perhitungan laporan.
+
+**Bukti §13–§14, 5 November 2026 pukul 15.33–15.45 WITA, commit `75e2126`:** CI Windows Domain 66, Data 274 (8 tes baru `StoredTimeCultureTests`), Telegram 10, Laporan 32, App 266 — **648 lulus**, 0 gagal. Tes `IndonesianCulture_SeparatorIsDot` lulus di runner Windows, artinya risiko pemisah titik pada `id-ID` memang terjadi di sana. Uji Chromium **17 kelompok lulus** sebelum deploy dan 17 lulus pada hasil deploy Cloudflare (termasuk langkah panel detail). Belum ada pemeriksaan visual oleh pemilik dan belum ada UAT desktop/RFID fisik.
