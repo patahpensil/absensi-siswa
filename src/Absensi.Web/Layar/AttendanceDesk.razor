@@ -22,14 +22,21 @@
         </section>
         <section class="panel"><header class="panel-header"><h2>Catatan kehadiran</h2><span class="panel-code">HARI INI</span></header>
             <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="attendance-search" aria-label="Cari siswa pada absensi" placeholder="Cari siswa…" @bind="query" @bind:event="oninput" /></div><select id="attendance-status" aria-label="Filter status absensi" @bind="statusFilter"><option value="">Semua status</option>@foreach (var status in Enum.GetValues<StatusAbsensiSiswa>()) { <option value="@status">@status</option> }</select><span class="muted">@Filtered().Count() siswa</span></div>
-            <div class="table-wrap"><table id="attendance-table"><thead><tr><th>Siswa</th><th>Kelas</th><th>Status</th><th>Tap masuk</th><th>Tap pulang</th></tr></thead><tbody>@foreach (var row in Filtered()) { <tr><td class="name-cell">@row.NamaSiswa</td><td>@row.NamaKelas</td><td><span class="badge @WorkspaceView.Tone(row.Status)">@row.Status</span></td><td class="mono">@WorkspaceView.Time(row.JamMasuk)</td><td class="mono">@WorkspaceView.Time(row.JamPulang)</td></tr> }</tbody></table></div>
+            <div class="table-wrap"><table id="attendance-table"><thead><tr><th>Siswa</th><th>Kelas</th><th>Status</th><th>Tap masuk</th><th>Tap pulang</th></tr></thead><tbody>@foreach (var row in Filtered()) { <tr><td class="name-cell"><button type="button" class="name-link" id="attendance-detail-@row.SiswaId" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = row.SiswaId">@row.NamaSiswa</button></td><td>@row.NamaKelas</td><td><span class="badge @WorkspaceView.Tone(row.Status)">@row.Status</span></td><td class="mono">@WorkspaceView.Time(row.JamMasuk)</td><td class="mono">@WorkspaceView.Time(row.JamPulang)</td></tr> }</tbody></table></div>
             @if (!Filtered().Any()) { <div class="empty-state">Tidak ada catatan yang sesuai dengan filter hari ini.</div> }
         </section>
     </div>
     <aside class="side-column"><SchedulePanel /><section class="info-panel"><span class="eyebrow">CARA MENGUJI</span><h3>Mulai dari kartu siswa.</h3><p>Daftarkan kartu pada menu Siswa. Atur waktu uji pada Pengaturan, lalu proses UID yang sama di sini.</p><p>Jeda antartap minimum 15 detik tetap berlaku. Pengiriman pesan eksternal belum diaktifkan.</p></section></aside>
 </div>
 
+@if (detailId is { } openStudentId)
+{
+    <PersonDetailPanel Kind="PersonKind.Student" Id="openStudentId" OnClose="CloseDetail" />
+}
+
 @code {
+    private int? detailId;
+    private void CloseDetail() { detailId = null; restoreReaderFocus = true; }
     private IReadOnlyList<AbsensiSiswaUntukNotifikasi> rows = Array.Empty<AbsensiSiswaUntukNotifikasi>();
     private string uid = "", query = "", statusFilter = "";
     private string resultTitle = "Siap membaca kartu";

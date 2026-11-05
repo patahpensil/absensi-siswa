@@ -1722,3 +1722,146 @@ tbody tr:hover {
     scroll-behavior:auto!important
   }
 }
+
+/* Panel detail siswa/guru (PRD §14.6): muncul di samping tanpa berpindah halaman. */
+.name-link {
+  display:inline-flex;
+  align-items:center;
+  gap:inherit;
+  padding:0;
+  border:0;
+  background:none;
+  color:var(--navy);
+  font-weight:600;
+  text-align:left;
+  cursor:pointer
+}
+
+.name-link:hover {
+  text-decoration:underline
+}
+
+.name-link:focus-visible,.drawer:focus-visible {
+  outline:2px solid var(--blue);
+  outline-offset:2px
+}
+
+.drawer-backdrop {
+  position:fixed;
+  inset:0;
+  z-index:30;
+  background:#11233b55
+}
+
+.drawer {
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  z-index:31;
+  width:min(560px,100vw);
+  margin:0;
+  border-radius:0;
+  overflow-y:auto;
+  box-shadow:-12px 0 48px #0e244b40
+}
+
+.drawer-body {
+  display:grid;
+  gap:18px;
+  padding:20px 22px 28px
+}
+
+.detail-identity {
+  display:flex;
+  gap:14px;
+  align-items:flex-start
+}
+
+.detail-identity h3 {
+  margin:0 0 2px
+}
+
+.detail-identity p {
+  margin:0 0 8px
+}
+
+.detail-avatar {
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:52px;
+  height:52px;
+  border-radius:999px;
+  background:var(--navy);
+  color:var(--white);
+  font-weight:700
+}
+
+.detail-facts {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;
+  margin:0
+}
+
+.detail-facts div {
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper)
+}
+
+.detail-facts dt {
+  color:var(--muted);
+  font-size:11px
+}
+
+.detail-facts dd {
+  margin:2px 0 0;
+  word-break:break-all
+}
+
+.detail-month {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+.recap-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(78px,1fr));
+  gap:8px
+}
+
+.recap-grid div {
+  display:grid;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  text-align:center
+}
+
+.recap-grid strong {
+  font-size:20px
+}
+
+.recap-grid small {
+  color:var(--muted)
+}
+
+.correction-mark {
+  margin-left:6px
+}
+
+@media(max-width:640px) {
+  .drawer-body {
+    padding:16px
+  }
+  .detail-month strong {
+    order:-1;
+    width:100%
+  }
+}

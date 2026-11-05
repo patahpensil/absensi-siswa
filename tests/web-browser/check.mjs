@@ -156,6 +156,44 @@ await langkah('Tap pulang mengisi jam tanpa menghapus status masuk', async () =>
   tegas((await row.textContent()).includes('13:10:00'), 'jam pulang tidak tersimpan');
 });
 
+await langkah('Klik nama membuka detail siswa/guru beserta riwayat dan rekap bulan', async () => {
+  const historyRow = date => page.locator('#person-history tbody tr').filter({ hasText: date });
+  await page.click('#attendance-detail-1');
+  await page.waitForSelector('#person-detail');
+  tegas((await page.textContent('#person-detail-name')).includes('Siswa 7A-1'), 'nama di panel salah');
+  tegas((await page.textContent('#person-detail-month')).includes('November 2026'), 'bulan panel bukan bulan skenario');
+  const first = await historyRow('04/11').textContent();
+  tegas(first.includes('07:30:00') && first.includes('13:10:00') && first.includes('Hadir'), `riwayat tap tidak tampil: ${first}`);
+  tegas((await page.textContent('#person-detail-recap')).includes('Hadir'), 'rekap bulan tidak tampil');
+  tegas((await page.textContent('#person-detail-card')).includes('0000111101'), 'kartu RFID tidak tampil');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+
+  await page.click('#menu-siswa');
+  await page.click('#student-detail-2');
+  await page.waitForSelector('#person-detail');
+  const second = await historyRow('04/11').textContent();
+  tegas(second.includes('07:30:01') && second.includes('Terlambat'), `riwayat terlambat tidak tampil: ${second}`);
+  await page.click('#person-detail-prev');
+  await page.waitForFunction(() => document.querySelector('#person-detail-month')?.textContent?.includes('Oktober 2026'));
+  tegas(await page.$eval('#person-detail-next', b => !b.disabled), 'tidak bisa kembali ke bulan berjalan');
+  await page.setViewportSize({ width: 390, height: 844 });
+  tegas(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)), 'panel detail meluap di HP');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+
+  await page.click('#menu-guru');
+  await page.click('#teacher-detail-1');
+  await page.waitForSelector('#person-detail');
+  tegas(await page.locator('#person-history, #person-detail-empty').count() === 1, 'riwayat guru tidak tampil');
+  tegas(await page.locator('#person-detail-recap').count() === 1, 'rekap guru tidak tampil');
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#tap-uid');
+});
+
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
@@ -210,6 +248,12 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   const persistedSecond = await page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-2 (contoh)' }).textContent();
   tegas(persistedFirst.includes('07:30:00') && persistedFirst.includes('13:10:00'), 'jam masuk/pulang tidak bertahan pada tanggal skenario yang sama');
   tegas(persistedSecond.includes('07:30:01'), 'detik jam masuk tidak bertahan setelah reload');
+  await page.click('#attendance-detail-1');
+  await page.waitForSelector('#person-detail');
+  tegas((await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent()).includes('13:10:00'), 'wali tidak melihat riwayat siswanya');
+  tegas(await page.locator('#person-detail-recap-note').count() === 1, 'wali mendapat rekap laporan');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');

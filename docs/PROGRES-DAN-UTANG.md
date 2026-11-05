@@ -236,3 +236,18 @@ Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan 
 - **Perubahan:** `StoredTime` (Absensi.Data) menulis jam selalu `HH:mm`/`HH:mm:ss` dengan `InvariantCulture` dan membaca format tersebut serta format lama bertitik (`07.30`, `07.30.05`) yang mungkin sudah tersimpan. Dipakai `RepositoriJadwalHari` dan `RepositoriAbsensi`. Teks pesan notifikasi tidak diubah.
 - **Tes:** `StoredTimeCultureTests` — simpan jadwal di kultur `id-ID` lalu baca di `en-US`, isi kolom mentah bertitik dua, baca data lama bertitik di `en-US`/`id-ID`/invariant.
 - **Belum dibuktikan:** data nyata di instalasi desktop lama belum diperiksa. Parse tanggal/waktu lain (`DateTime.Parse` atas teks ISO/`"o"`) belum diaudit untuk kultur; risikonya lebih rendah karena format ISO tidak memakai pemisah kultur, tetapi tetap utang.
+
+## 14. Panel detail siswa/guru di web uji — 5 November 2026
+
+**Laporan pemilik:** nama siswa/guru diklik tidak menampilkan riwayat absensi. **Penyebab:** panel detail (PRD §14.6, PANDUAN-UI-UX §9 "Panel detail siswa") belum dibangun; nama hanya teks. Bukan masalah penautan kartu RFID.
+
+- **Perubahan:** nama pada menu Absensi (sesuai PRD §14.6), daftar Siswa dan daftar Guru kini membuka panel samping tanpa berpindah halaman: identitas, status hari ini, kartu RFID, nama orang tua (siswa), status Telegram, rekap bulan, riwayat per tanggal (status, jam masuk/pulang, keterangan, penanda **koreksi** dari `absensi_*.sumber`, tanggal yang ditetapkan libur ditandai tidak dihitung) dan navigasi bulan. Esc/× menutup panel.
+- **Layanan asli:** rekap memakai `LayananLaporan.PerOrang` (aturan hari efektif dan libur P-13 tidak ditulis ulang). Riwayat memakai `RepositoriAbsensi.DaftarSiswaUntukRentang/DaftarGuruUntukRentang`, yang kini juga mengembalikan `Sumber`.
+- **Hak akses:** wali kelas hanya membuka siswa kelasnya dan melihat riwayatnya; rekap tidak ditampilkan karena `LayananLaporan` menolak wali kelas (PRD §3, laporan hanya kepala sekolah/admin). Panel guru hanya untuk kepala sekolah/admin, mengikuti menu Guru.
+- **Uji Chromium:** langkah baru membuka detail dari Absensi, Siswa dan Guru, memeriksa jam 07:30:00/07:30:01/13:10:00, rekap, kartu, pindah bulan, lebar 390 px, dan pembatasan rekap wali setelah reload.
+
+**Butuh keputusan Edgar:**
+- PRD §14.6 hanya mengatur panel **siswa** di menu Absensi. Panel guru dan pembukaan dari daftar Siswa/Guru ditambahkan atas laporan pemilik; isinya belum diatur PRD.
+- Apakah wali kelas boleh melihat rekap bulan siswanya sendiri di panel? Saat ini tidak, karena PRD §3 menyatakan laporan hanya untuk kepala sekolah/admin.
+
+**Batas:** tombol Cetak laporan dan Koreksi status di panel nonaktif sampai modulnya dibangun. Foto belum tampil (unggah foto belum ada di web). Data contoh tidak memiliki riwayat sebelum tanggal uji, sehingga bulan lampau tampil kosong sementara hari efektif tetap dihitung dari kalender; ketentuan P-18 (siswa masuk/keluar tengah periode) belum diterapkan pada perhitungan laporan.

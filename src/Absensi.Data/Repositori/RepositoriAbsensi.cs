@@ -404,7 +404,7 @@ public sealed class RepositoriAbsensi
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT a.tanggal, a.siswa_id, s.nama, s.nisn, a.kelas_id, k.nama, a.status, a.jam_masuk, a.jam_pulang, a.keterangan
+            SELECT a.tanggal, a.siswa_id, s.nama, s.nisn, a.kelas_id, k.nama, a.status, a.jam_masuk, a.jam_pulang, a.keterangan, a.sumber
             FROM absensi_siswa a
             JOIN siswa s ON s.id = a.siswa_id
             JOIN kelas k ON k.id = a.kelas_id
@@ -430,7 +430,8 @@ public sealed class RepositoriAbsensi
                 PemetaanEnum.StatusSiswaDariTeks(reader.GetString(6)),
                 BacaJam(reader, 7),
                 BacaJam(reader, 8),
-                reader.IsDBNull(9) ? null : reader.GetString(9)));
+                reader.IsDBNull(9) ? null : reader.GetString(9),
+                reader.GetString(10)));
         }
 
         return daftar;
@@ -443,7 +444,7 @@ public sealed class RepositoriAbsensi
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT a.tanggal, a.guru_id, g.nama, g.nip, a.status, a.jam_masuk, a.jam_pulang, a.keterangan
+            SELECT a.tanggal, a.guru_id, g.nama, g.nip, a.status, a.jam_masuk, a.jam_pulang, a.keterangan, a.sumber
             FROM absensi_guru a
             JOIN guru g ON g.id = a.guru_id
             WHERE a.tanggal BETWEEN $awal AND $akhir
@@ -464,7 +465,8 @@ public sealed class RepositoriAbsensi
                 PemetaanEnum.StatusGuruDariTeks(reader.GetString(4)),
                 BacaJam(reader, 5),
                 BacaJam(reader, 6),
-                reader.IsDBNull(7) ? null : reader.GetString(7)));
+                reader.IsDBNull(7) ? null : reader.GetString(7),
+                reader.GetString(8)));
         }
 
         return daftar;

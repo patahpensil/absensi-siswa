@@ -16,4 +16,6 @@ public sealed record BarisAbsensiSiswaMentah(
     StatusAbsensiSiswa Status,
     TimeOnly? JamMasuk,
     TimeOnly? JamPulang,
-    string? Keterangan);
+    string? Keterangan,
+    // absensi_*.sumber: 'tap', 'koreksi' atau 'sistem' (PRD §14.6 penanda koreksi).
+    string Sumber = "tap");

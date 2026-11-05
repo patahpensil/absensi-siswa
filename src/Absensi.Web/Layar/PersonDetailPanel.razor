@@ -1,0 +1,101 @@
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<div class="drawer-backdrop" @onclick="Close"></div>
+<aside id="person-detail" class="drawer panel" role="dialog" aria-modal="true" aria-labelledby="person-detail-title" tabindex="-1" @ref="drawer" @onkeydown="HandleKey">
+    <header class="panel-header"><h2 id="person-detail-title">@(Kind == PersonKind.Student ? "Detail siswa" : "Detail guru")</h2><button id="close-person-detail" class="icon-button" aria-label="Tutup detail" @onclick="Close">×</button></header>
+    @if (detail is null)
+    {
+        <div class="drawer-body"><p class="notice">Data tidak ditemukan atau tidak termasuk kewenangan akun ini.</p></div>
+    }
+    else
+    {
+        <div class="drawer-body">
+            <section class="detail-identity">
+                <span class="detail-avatar" aria-hidden="true">@WorkspaceView.Initials(detail.Name)</span>
+                <div>
+                    <h3 id="person-detail-name">@detail.Name</h3>
+                    <p class="mono muted">@Subtitle(detail)</p>
+                    <span id="person-detail-today" class="badge @detail.TodayTone">Hari ini: @detail.TodayStatus</span>
+                    @if (!detail.Active) { <span class="badge neutral">Tidak aktif</span> }
+                </div>
+            </section>
+
+            <dl class="detail-facts">
+                <div><dt>Kartu RFID</dt><dd id="person-detail-card" class="mono">@(detail.CardUid is null ? "Belum terdaftar" : $"{detail.CardUid} · aktif")</dd></div>
+                @if (detail.Kind == PersonKind.Student)
+                {
+                    <div><dt>Orang tua</dt><dd>@(string.IsNullOrWhiteSpace(detail.ParentName) ? "Belum diisi" : detail.ParentName)</dd></div>
+                }
+                <div><dt>Telegram</dt><dd>@(detail.TelegramLinked ? "Tertaut" : "Belum tertaut")</dd></div>
+            </dl>
+
+            <div class="detail-month">
+                <button id="person-detail-prev" class="text-button" @onclick="() => Shift(-1)">‹ Bulan sebelumnya</button>
+                <strong id="person-detail-month">@month.ToString("MMMM yyyy", Indonesian)</strong>
+                <button id="person-detail-next" class="text-button" disabled="@(month >= CurrentMonth)" @onclick="() => Shift(1)">Bulan berikutnya ›</button>
+            </div>
+
+            <section aria-labelledby="recap-title">
+                <h4 id="recap-title" class="eyebrow">REKAP BULAN</h4>
+                @if (detail.Recap is { } r)
+                {
+                    <div id="person-detail-recap" class="recap-grid">
+                        <div><strong class="mono">@r.Hadir</strong><small>Hadir</small></div>
+                        @if (detail.Kind == PersonKind.Student) { <div><strong class="mono">@r.Terlambat</strong><small>Terlambat</small></div> }
+                        <div><strong class="mono">@(r.Sakit + r.Izin)</strong><small>Sakit/Izin</small></div>
+                        <div><strong class="mono">@r.Alpa</strong><small>Alpa</small></div>
+                        @if (detail.Kind == PersonKind.Student) { <div><strong class="mono">@r.Bolos</strong><small>Bolos</small></div> }
+                        else { <div><strong class="mono">@(r.DinasLuar + r.Cuti)</strong><small>Dinas/Cuti</small></div><div><strong class="mono">@r.TidakLengkap</strong><small>Tidak lengkap</small></div> }
+                    </div>
+                    <p class="field-help">@r.HariEfektif hari efektif sampai hari ini · kehadiran @r.Persentase.ToString("0.#", Indonesian)%</p>
+                }
+                else { <p id="person-detail-recap-note" class="notice">@detail.RecapNote</p> }
+            </section>
+
+            <section aria-labelledby="history-title">
+                <h4 id="history-title" class="eyebrow">RIWAYAT ABSENSI</h4>
+                @if (detail.History.Count == 0)
+                {
+                    <div id="person-detail-empty" class="empty-state">Belum ada catatan absensi pada bulan ini.</div>
+                }
+                else
+                {
+                    <div class="table-wrap"><table id="person-history"><thead><tr><th>Tanggal</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Keterangan</th></tr></thead><tbody>
+                        @foreach (var row in detail.History)
+                        {
+                            <tr><td class="mono">@row.Date.ToString("ddd dd'/'MM", Indonesian)</td><td><span class="badge @row.Tone">@row.Status</span>@if (row.Corrected) { <small class="badge neutral correction-mark">koreksi</small> }</td><td class="mono">@WorkspaceView.Time(row.TimeIn)</td><td class="mono">@WorkspaceView.Time(row.TimeOut)</td><td>@(row.MarkedHoliday ? "Ditetapkan libur, tidak dihitung" : row.Note ?? "—")</td></tr>
+                        }
+                    </tbody></table></div>
+                }
+            </section>
+
+            <div class="dialog-actions">
+                <button type="button" disabled title="Modul laporan belum tersedia di web uji">Cetak laporan</button>
+                @if (detail.Kind == PersonKind.Student) { <button type="button" disabled title="Modul koreksi belum tersedia di web uji">Koreksi status</button> }
+            </div>
+            <p class="field-help">Cetak laporan dan koreksi status menunggu modulnya dibangun.</p>
+        </div>
+    }
+</aside>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Indonesian = new("id-ID");
+    [Parameter, EditorRequired] public PersonKind Kind { get; set; }
+    [Parameter, EditorRequired] public int Id { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private PersonDetail? detail;
+    private DateOnly month;
+    private ElementReference drawer;
+    private bool focusDrawer = true;
+    private DateOnly CurrentMonth => new(Status.Jam.Sekarang.Year, Status.Jam.Sekarang.Month, 1);
+
+    private (PersonKind, int)? loaded;
+    protected override void OnParametersSet() { if (loaded != (Kind, Id)) { loaded = (Kind, Id); month = CurrentMonth; Load(); } }
+    private static string Subtitle(PersonDetail d) => string.Join(" · ", new[] { d.Identity, d.ClassName, d.Gender }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    private void Load() => detail = Kind == PersonKind.Student ? PersonDetailView.Student(Status, Id, month) : PersonDetailView.Teacher(Status, Id, month);
+    private void Shift(int months) { var next = month.AddMonths(months); if (next <= CurrentMonth) { month = next; Load(); } }
+    private Task Close() => OnClose.InvokeAsync();
+    private Task HandleKey(KeyboardEventArgs e) => e.Key == "Escape" ? Close() : Task.CompletedTask;
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (focusDrawer) { focusDrawer = false; await drawer.FocusAsync(); } }
+}
