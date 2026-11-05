@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Absensi.Data\Absensi.Data.csproj" />
+    <!-- Penulis Excel/PDF laporan asli (PRD §11). PDF memakai QuestPDF (pustaka native);
+         dukungannya di WebAssembly dibuktikan lewat uji browser, bukan diasumsikan. -->
+    <ProjectReference Include="..\Absensi.Laporan\Absensi.Laporan.csproj" />
   </ItemGroup>
 
 </Project>

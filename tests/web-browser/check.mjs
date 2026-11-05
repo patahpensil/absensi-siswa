@@ -251,6 +251,62 @@ await langkah('Unggah foto siswa dan guru: dikecilkan 200×200, berkas bukan gam
   await page.waitForSelector('#tap-uid');
 });
 
+const downloadBytes = async (selector) => {
+  const [download] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.click(selector)]);
+  const chunks = [];
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+  return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
+};
+
+await langkah('Laporan: pratinjau harian/bulanan/semester dan unduh Excel memakai penulis asli', async () => {
+  await page.click('#menu-laporan');
+  await page.waitForSelector('#report-show');
+  tegas(await page.inputValue('#report-date') === '2026-11-04', 'tanggal laporan bukan tanggal skenario');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table');
+  tegas((await page.textContent('#report-table')).includes('Siswa 7A-1'), 'laporan harian tidak memuat tap hari ini');
+  const excel = await downloadBytes('#report-excel');
+  tegas(excel.name.endsWith('.xlsx') && excel.bytes.length > 1000 && excel.bytes.subarray(0, 2).toString() === 'PK', `berkas Excel tidak valid: ${excel.name} ${excel.bytes.length} B`);
+  await page.selectOption('#report-kind', 'Monthly');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table.report-grid');
+  tegas(await page.locator('#report-table thead th').count() === 30 + 7, 'kolom tanggal bulanan tidak lengkap');
+  await page.selectOption('#report-kind', 'Semester');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table');
+  await page.selectOption('#report-kind', 'PerPerson');
+  await page.selectOption('#report-person', { index: 1 });
+  await page.click('#report-show');
+  await page.waitForSelector('#report-card');
+});
+
+await langkah('Laporan PDF: hasil di browser dicatat apa adanya', async () => {
+  await page.selectOption('#report-kind', 'Daily');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table');
+  const pending = page.waitForEvent('download', { timeout: 60_000 }).catch(() => null);
+  await page.click('#report-pdf');
+  await page.waitForSelector('#report-message', { timeout: 60_000 });
+  let result = `ditolak: ${await page.textContent('#report-message')}`;
+  if (await page.locator('#report-message.positive').count() === 1) {
+    const download = await pending;
+    const chunks = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+    const bytes = Buffer.concat(chunks);
+    result = `unduhan ${download.suggestedFilename()} ${bytes.length} B, header ${bytes.subarray(0, 4).toString()}`;
+  }
+  console.log(`::notice::PDF laporan — ${result}`);
+  await page.click('#menu-siswa');
+  await page.click('#student-detail-1');
+  await page.waitForSelector('#person-detail');
+  const card = await downloadBytes('#person-report-excel');
+  tegas(card.name.includes('Siswa 7A-1') && card.bytes.subarray(0, 2).toString() === 'PK', `laporan per siswa dari panel tidak valid: ${card.name}`);
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#tap-uid');
+});
+
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
@@ -329,6 +385,8 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.click('#menu-koreksi');
   await page.waitForSelector('#correction-class');
   tegas(await page.locator('#correction-class option').count() === 1, 'wali melihat kelas lain di Koreksi');
+  await page.click('#menu-laporan');
+  await page.waitForSelector('#report-not-allowed');
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');

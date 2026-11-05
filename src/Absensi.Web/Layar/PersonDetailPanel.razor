@@ -1,6 +1,7 @@
 @using Absensi.Web.Layanan
 @using Microsoft.AspNetCore.Components.Forms
 @inject StatusAplikasi Status
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 <div class="drawer-backdrop" @onclick="Close"></div>
 <aside id="person-detail" class="drawer panel" role="dialog" aria-modal="true" aria-labelledby="person-detail-title" tabindex="-1" @ref="drawer" @onkeydown="HandleKey">
@@ -85,8 +86,13 @@
             </section>
 
             <div class="dialog-actions">
-                <button type="button" disabled title="Modul laporan belum tersedia di web uji">Cetak laporan</button>
+                @if (WorkspaceView.CanManage(Status))
+                {
+                    <button type="button" id="person-report-excel" disabled="@exporting" @onclick="() => ExportReport(true)">Laporan Excel</button>
+                    <button type="button" id="person-report-pdf" disabled="@exporting" @onclick="() => ExportReport(false)">Laporan PDF</button>
+                }
             </div>
+            @if (reportMessage is not null) { <p id="person-report-message" class="message @(reportOk ? "positive" : "danger")" role="status">@reportMessage</p> }
             @if (AnyCorrectable) { <p class="field-help">Untuk mengoreksi status, pilih Ubah pada baris riwayat. Alasan wajib diisi dan tercatat di audit.</p> }
         </div>
     }
@@ -99,7 +105,34 @@
     [Parameter] public EventCallback OnClose { get; set; }
     private PersonDetail? detail;
     private PersonHistoryRow? correcting;
-    private bool uploading, photoOk;
+    private bool uploading, photoOk, exporting, reportOk;
+    private string? reportMessage;
+
+    // PRD §11.3: laporan per siswa (and §17.8 per guru) for the month shown in the panel.
+    private async Task ExportReport(bool excel)
+    {
+        if (detail is null) return;
+        exporting = true;
+        reportMessage = null;
+        try
+        {
+            var today = DateOnly.FromDateTime(Status.Jam.Sekarang);
+            var end = month.AddMonths(1).AddDays(-1) is var last && last < today ? last : today;
+            var subject = Kind == PersonKind.Student ? Absensi.Domain.Laporan.JenisSubjekLaporan.Siswa : Absensi.Domain.Laporan.JenisSubjekLaporan.Guru;
+            var file = ReportView.Export(Status, new ReportRequest(ReportKind.PerPerson, subject, null, month, end, detail.Id), excel);
+            await JS.InvokeVoidAsync("absensiDownload.save", file.Name, file.Mime, file.Bytes);
+            reportOk = true;
+            reportMessage = $"{file.Name} diunduh.";
+        }
+        catch (InvalidOperationException ex) { reportOk = false; reportMessage = ex.Message; }
+        catch (Exception ex) when (!excel)
+        {
+            reportOk = false;
+            reportMessage = $"PDF belum dapat dibuat di browser ini ({ex.GetType().Name}). Gunakan Laporan Excel atau menu Laporan → Cetak.";
+            Console.WriteLine($"PDF gagal: {ex}");
+        }
+        finally { exporting = false; }
+    }
     private string? photoMessage;
 
     private async Task UploadPhoto(InputFileChangeEventArgs e)

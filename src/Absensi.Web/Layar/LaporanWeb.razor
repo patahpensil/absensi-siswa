@@ -1,0 +1,166 @@
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Laporan
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+@inject Microsoft.JSInterop.IJSRuntime JS
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / LAPORAN</p><h1>Laporan</h1><p>Pilih jenis laporan, tampilkan pratinjau, lalu unduh Excel atau PDF.</p></div><span class="badge info">Excel · PDF</span></div>
+@if (!WorkspaceView.CanManage(Status))
+{
+    <p id="report-not-allowed" class="notice">Laporan tersedia untuk kepala sekolah dan admin (PRD §3). Riwayat siswa kelas Anda dapat dilihat dari menu Siswa atau Absensi.</p>
+}
+else
+{
+    <section class="panel">
+        <header class="panel-header"><h2><UiIcon Name="grid" /> Pengaturan laporan</h2><span class="panel-code">LAPORAN / 01</span></header>
+        <div class="panel-toolbar report-toolbar">
+            <label>Jenis<select id="report-kind" @bind="kind" @bind:after="Changed">
+                <option value="@ReportKind.Daily">Harian</option><option value="@ReportKind.Weekly">Mingguan</option><option value="@ReportKind.Monthly">Bulanan</option><option value="@ReportKind.PerPerson">Per orang</option><option value="@ReportKind.Semester">Semester</option>
+            </select></label>
+            <label>Subjek<select id="report-subject" @bind="subject" @bind:after="Changed"><option value="@JenisSubjekLaporan.Siswa">Siswa</option><option value="@JenisSubjekLaporan.Guru">Guru</option></select></label>
+            @if (subject == JenisSubjekLaporan.Siswa)
+            {
+                <label>Kelas<select id="report-class" @bind="classId" @bind:after="Changed"><option value="0">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Id">@c.Nama</option> }</select></label>
+            }
+            @if (kind != ReportKind.Semester)
+            {
+                <label>@(kind == ReportKind.PerPerson ? "Dari" : kind == ReportKind.Monthly ? "Bulan (pilih tanggal)" : "Tanggal")<input id="report-date" type="date" @bind="date" @bind:after="Changed" /></label>
+            }
+            @if (kind == ReportKind.PerPerson)
+            {
+                <label>Sampai<input id="report-end" type="date" @bind="endDate" @bind:after="Changed" /></label>
+                <label>Orang<select id="report-person" @bind="personId" @bind:after="Changed"><option value="0">Semua (@(subject == JenisSubjekLaporan.Siswa ? "satu kelas" : "seluruh guru"))</option>@foreach (var p in People()) { <option value="@p.Id">@p.Name</option> }</select></label>
+            }
+        </div>
+        <div class="report-actions">
+            <button id="report-show" class="primary" @onclick="Show">Tampilkan</button>
+            <button id="report-excel" disabled="@(busy || !shown)" @onclick="() => Export(true)">Unduh Excel</button>
+            <button id="report-pdf" disabled="@(busy || !shown)" @onclick="() => Export(false)">Unduh PDF</button>
+            <button id="report-print" disabled="@(!shown)" @onclick="Print">Cetak</button>
+            <span class="muted">@ReportView.RangeText(Status, Request)</span>
+        </div>
+        @if (message is not null) { <p id="report-message" class="message @(messageOk ? "positive" : "danger")" role="@(messageOk ? "status" : "alert")">@message</p> }
+    </section>
+
+    @if (shown)
+    {
+        <section id="report-preview" class="panel report-preview">
+            <header class="panel-header"><h2>@ReportView.Title(Request)</h2><span class="panel-code">@Status.NamaSekolah · @ReportView.RangeText(Status, Request)</span></header>
+            @switch (kind)
+            {
+                case ReportKind.Daily or ReportKind.Weekly:
+                    if (events.Count == 0) { <div class="empty-state">Tidak ada catatan pada rentang ini.</div> }
+                    else
+                    {
+                        <div class="table-wrap"><table id="report-table"><thead><tr><th>Tanggal</th><th>Nama</th><th>@(subject == JenisSubjekLaporan.Siswa ? "NISN" : "NIP")</th>@if (subject == JenisSubjekLaporan.Siswa) { <th>Kelas</th> }<th>Status</th><th>Masuk</th><th>Pulang</th><th>Keterangan</th></tr></thead><tbody>
+                            @foreach (var e in events) { <tr><td class="mono">@e.Tanggal.ToString("dd'/'MM", Indonesian)</td><td>@e.Nama</td><td class="mono muted">@e.Identitas</td>@if (subject == JenisSubjekLaporan.Siswa) { <td>@e.Kelas</td> }<td class="mono">@e.StatusHuruf</td><td class="mono">@WorkspaceView.Time(e.JamMasuk)</td><td class="mono">@WorkspaceView.Time(e.JamPulang)</td><td>@(e.Keterangan ?? "—")</td></tr> }
+                        </tbody></table></div>
+                    }
+                    break;
+                case ReportKind.Monthly when monthly is not null:
+                    <div class="table-wrap"><table id="report-table" class="report-grid"><thead><tr><th>Nama</th>@foreach (var col in monthly.Kolom) { <th class="@(col.Libur ? "holiday" : "")" title="@col.Alasan">@col.Tanggal.Day</th> }<th>H</th><th>S</th><th>I</th><th>A</th><th>T</th><th>%</th></tr></thead><tbody>
+                        @foreach (var row in monthly.Baris) { <tr><td>@row.Nama</td>@foreach (var col in monthly.Kolom) { <td class="mono @(col.Libur ? "holiday" : "")">@(row.KodePerTanggal.TryGetValue(col.Tanggal, out var code) ? code : "")</td> }<td class="mono">@row.Rekap.Hadir</td><td class="mono">@row.Rekap.Sakit</td><td class="mono">@row.Rekap.Izin</td><td class="mono">@row.Rekap.Alpa</td><td class="mono">@row.Rekap.Terlambat</td><td class="mono">@row.Rekap.Persentase.ToString("0.#", Indonesian)</td></tr> }
+                    </tbody></table></div>
+                    if (monthly.Baris.Count == 0) { <div class="empty-state">Tidak ada catatan pada bulan ini.</div> }
+                    foreach (var col in monthly.Kolom.Where(c => c.Libur && !string.IsNullOrWhiteSpace(c.Alasan))) { <p class="field-help">@col.Tanggal.ToString("d MMMM", Indonesian): @col.Alasan</p> }
+                    break;
+                case ReportKind.PerPerson when card is not null:
+                    <div id="report-card" class="report-card">
+                        <h3>@card.Nama</h3><p class="mono muted">@(card.Kelas is null ? card.Identitas : $"{card.Identitas} · {card.Kelas}")</p>
+                        <p>Hadir @card.Rekap.Hadir · Sakit @card.Rekap.Sakit · Izin @card.Rekap.Izin · Alpa @card.Rekap.Alpa · Terlambat @card.Rekap.Terlambat · @card.Rekap.HariEfektif hari efektif · kehadiran @card.Rekap.Persentase.ToString("0.#", Indonesian)%</p>
+                        @if (card.Rincian.Count == 0) { <p class="muted">Tidak ada hari tidak hadir atau terlambat.</p> }
+                        else { <ul>@foreach (var item in card.Rincian) { <li><span class="mono">@item.Tanggal.ToString("dd'/'MM", Indonesian) @item.StatusHuruf</span> @item.Keterangan</li> }</ul> }
+                    </div>
+                    break;
+                default:
+                    if (summary.Count == 0) { <div class="empty-state">Tidak ada catatan pada rentang ini.</div> }
+                    else
+                    {
+                        <div class="table-wrap"><table id="report-table"><thead><tr><th>Nama</th><th>Identitas</th><th>Kelas</th><th>H</th><th>S</th><th>I</th><th>A</th><th>T</th><th>B</th><th>Hari efektif</th><th>%</th></tr></thead><tbody>
+                            @foreach (var row in summary) { <tr><td>@row.Nama</td><td class="mono muted">@row.Identitas</td><td>@(row.Kelas ?? "—")</td><td class="mono">@row.Rekap.Hadir</td><td class="mono">@row.Rekap.Sakit</td><td class="mono">@row.Rekap.Izin</td><td class="mono">@row.Rekap.Alpa</td><td class="mono">@row.Rekap.Terlambat</td><td class="mono">@row.Rekap.Bolos</td><td class="mono">@row.Rekap.HariEfektif</td><td class="mono">@row.Rekap.Persentase.ToString("0.#", Indonesian)</td></tr> }
+                        </tbody></table></div>
+                    }
+                    break;
+            }
+        </section>
+    }
+}
+
+@code {
+    private static readonly System.Globalization.CultureInfo Indonesian = new("id-ID");
+    private ReportKind kind = ReportKind.Daily;
+    private JenisSubjekLaporan subject = JenisSubjekLaporan.Siswa;
+    private int classId, personId;
+    private DateOnly date, endDate;
+    private bool shown, busy, messageOk;
+    private string? message;
+    private IReadOnlyList<BarisKejadian> events = Array.Empty<BarisKejadian>();
+    private IReadOnlyList<BarisSemester> summary = Array.Empty<BarisSemester>();
+    private LaporanBulanan? monthly;
+    private KartuOrang? card;
+
+    private ReportRequest Request => new(kind, subject, subject == JenisSubjekLaporan.Siswa && classId != 0 ? classId : null, date, endDate,
+        kind == ReportKind.PerPerson && personId != 0 ? personId : null);
+
+    protected override void OnInitialized()
+    {
+        endDate = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        date = endDate;
+    }
+
+    private void Changed()
+    {
+        shown = false;
+        message = null;
+        if (kind == ReportKind.PerPerson && date == endDate) date = new DateOnly(endDate.Year, endDate.Month, 1);
+        if (personId != 0 && People().All(p => p.Id != personId)) personId = 0;
+    }
+
+    private IEnumerable<(int Id, string Name)> People() => subject == JenisSubjekLaporan.Siswa
+        ? WorkspaceView.Students(Status).Where(s => s.Aktif && (classId == 0 || WorkspaceView.Classes(Status).FirstOrDefault(c => c.Id == classId)?.Nama == s.KelasNama)).Select(s => (s.Id, s.Nama))
+        : new RepositoriGuru().DaftarLengkap(Status.Koneksi!).Where(g => g.Aktif).Select(g => (g.Id, g.Nama));
+
+    private void Show()
+    {
+        message = null;
+        try
+        {
+            if (kind == ReportKind.PerPerson && endDate < date) throw new ArgumentException("Tanggal akhir harus sesudah tanggal awal.");
+            var r = Request;
+            switch (kind)
+            {
+                case ReportKind.Daily or ReportKind.Weekly: events = ReportView.Events(Status, r); break;
+                case ReportKind.Monthly: monthly = ReportView.Monthly(Status, r); break;
+                case ReportKind.PerPerson when r.PersonId is not null: card = ReportView.Person(Status, r); break;
+                case ReportKind.PerPerson: card = null; summary = ReportView.People(Status, r).Select(k => new BarisSemester(k.Nama, k.Identitas, k.Kelas, k.Rekap)).ToList(); break;
+                default: summary = ReportView.Semester(Status, r); break;
+            }
+            shown = true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { shown = false; messageOk = false; message = ex.Message; }
+    }
+
+    private async Task Export(bool excel)
+    {
+        busy = true;
+        message = null;
+        try
+        {
+            var file = ReportView.Export(Status, Request, excel);
+            await JS.InvokeVoidAsync("absensiDownload.save", file.Name, file.Mime, file.Bytes);
+            messageOk = true;
+            message = $"{file.Name} diunduh ({file.Bytes.Length / 1024.0:0.#} KB).";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { messageOk = false; message = ex.Message; }
+        catch (Exception ex) when (!excel)
+        {
+            // QuestPDF depends on a native library; report the browser limitation honestly.
+            messageOk = false;
+            message = $"PDF belum dapat dibuat di browser ini ({ex.GetType().Name}). Gunakan Cetak lalu pilih Simpan sebagai PDF, atau unduh Excel.";
+            Console.WriteLine($"PDF gagal: {ex}");
+        }
+        finally { busy = false; }
+    }
+
+    private async Task Print() => await JS.InvokeVoidAsync("absensiDownload.print");
+}

@@ -274,3 +274,16 @@ Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan 
 - **Uji Chromium:** gambar 300×400 menjadi 200×200, teks ditolak, foto tampil di daftar siswa, foto guru, foto bertahan setelah reload, wali kelas tidak mendapat tombol unggah.
 
 **Batas:** impor foto massal per folder (PRD §16.4 langkah 1–5) tetap tanpa entry point, sesuai revisi 2026-09-23. Bila pencatatan database gagal setelah foto tersimpan, berkas foto dengan nama yang sama sudah tertimpa (sama dengan perilaku desktop). Foto di situs uji publik harus foto contoh, bukan foto siswa asli (D-12).
+
+**Bukti §15–§16, 5 November 2026 ±16.40 WITA, commit `fd3cf03`:** CI Windows 650 lulus (Data 276), uji Chromium 19 kelompok lulus sebelum dan sesudah deploy, termasuk koreksi dan unggah foto.
+
+## 17. Modul Laporan di web uji — 5 November 2026
+
+- **Menu Laporan** (kepala sekolah/admin): Harian, Mingguan (Senin–Sabtu), Bulanan (kolom libur diarsir, alasan libur dicatat), Per orang (satu orang atau satu kelas/seluruh guru) dan Semester, untuk siswa atau guru, dengan filter kelas. Pratinjau tampil di layar; Unduh Excel dan Unduh PDF memakai `PenulisExcelLaporan`/`PenulisPdfLaporan` asli, data dari `LayananLaporan`. Judul dan rentang mengikuti `LaporanViewModel` desktop. Tombol Cetak memakai dialog cetak browser untuk pratinjau.
+- **Panel detail:** tombol Laporan Excel/PDF membuat laporan per siswa/guru (PRD §11.3/§17.8) untuk bulan yang sedang ditampilkan; foto ikut bila ada.
+- **Wali kelas:** menu Laporan menampilkan pemberitahuan; `LayananLaporan` tetap menolak wali kelas (PRD §3).
+- **PDF di browser:** QuestPDF memakai pustaka native. Uji Chromium mencatat hasil PDF sebagai catatan (bukan lulus/gagal) sampai terbukti; bila gagal, aplikasi menampilkan alasan dan menyarankan Excel atau Cetak.
+
+**Butuh keputusan Edgar:** PRD §11.1 menyebut laporan mingguan "dipakai wali kelas", tetapi PRD §3 dan `LayananLaporan` membatasi laporan untuk kepala sekolah/admin. Keputusan 5 Nov mengizinkan wali kelas melihat dan mengoreksi riwayat siswanya, belum menyebut laporan/rekap. Saat ini wali kelas tidak mendapat rekap di panel dan tidak bisa membuka menu Laporan.
+
+**Batas:** logo sekolah belum ada di web (unggah logo belum dibuat). Siswa masuk/keluar tengah periode (P-18) belum diterapkan pada perhitungan laporan.
