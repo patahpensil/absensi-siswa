@@ -27,7 +27,8 @@ public sealed record PersonDetail(
     bool TelegramLinked,
     RekapKehadiran? Recap,
     string? RecapNote,
-    IReadOnlyList<PersonHistoryRow> History);
+    IReadOnlyList<PersonHistoryRow> History,
+    string? PhotoName = null);
 
 // Read-only panel data for PRD §14.6 (student detail). Visibility follows the
 // same scoping as the lists; the monthly recap comes from LayananLaporan so
@@ -58,7 +59,7 @@ public static class PersonDetailView
         return new PersonDetail(PersonKind.Student, student.Id, student.Nama, student.Nisn, student.KelasNama, student.JenisKelamin, student.Aktif,
             todayRow?.Status.ToString() ?? "Belum ada catatan", todayRow is null ? "neutral" : WorkspaceView.Tone(todayRow.Status),
             student.KartuUid, new RepositoriSiswa().CariUntukAudit(connection, null, studentId)?.Data.NamaOrtu, student.TertautTelegram,
-            recap, note, history);
+            recap, note, history, new RepositoriSiswa().CariFotoPath(connection, studentId));
     }
 
     public static PersonDetail? Teacher(StatusAplikasi state, int teacherId, DateOnly month)
@@ -83,7 +84,7 @@ public static class PersonDetailView
 
         return new PersonDetail(PersonKind.Teacher, teacher.Id, teacher.Nama, teacher.Nip, teacher.Jabatan, null, teacher.Aktif,
             todayRow is null ? "Belum ada catatan" : TeacherStatus(todayRow.Status), todayRow is null ? "neutral" : TeacherTone(todayRow.Status),
-            teacher.KartuUid, null, teacher.TertautTelegram, recap, note, history);
+            teacher.KartuUid, null, teacher.TertautTelegram, recap, note, history, new RepositoriGuru().CariFotoPath(connection, teacherId));
     }
 
     // History and recap cover the selected month up to today; future days have no rows yet.

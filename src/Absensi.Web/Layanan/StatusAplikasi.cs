@@ -10,7 +10,7 @@ namespace Absensi.Web.Layanan;
 // Pemegang basis data dan sesi login web uji. Berkas SQLite hidup di memori
 // browser (/tmp) dan disalin ke IndexedDB setelah perubahan supaya data
 // bertahan saat halaman dimuat ulang.
-public sealed class StatusAplikasi
+public sealed partial class StatusAplikasi
 {
     private const string BerkasDb = "/tmp/absensi-web.db";
     private const string KunciPenyimpanan = "absensi.db";
@@ -67,6 +67,7 @@ public sealed class StatusAplikasi
             }
 
             MuatIdentitas();
+            await LoadPhotosAsync();
         }
         catch (Exception ex)
         {
@@ -125,6 +126,7 @@ public sealed class StatusAplikasi
         }
 
         await _js.InvokeVoidAsync("absensiStorage.remove", KunciPenyimpanan);
+        await RemovePhotosAsync();
         await MulaiAsync();
     }
 

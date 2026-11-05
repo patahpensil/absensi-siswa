@@ -1,4 +1,5 @@
 @using Absensi.Web.Layanan
+@using Microsoft.AspNetCore.Components.Forms
 @inject StatusAplikasi Status
 
 <div class="drawer-backdrop" @onclick="Close"></div>
@@ -12,7 +13,15 @@
     {
         <div class="drawer-body">
             <section class="detail-identity">
-                <span class="detail-avatar" aria-hidden="true">@WorkspaceView.Initials(detail.Name)</span>
+                <div class="detail-photo">
+                    @if (Status.PhotoUrl(detail.PhotoName) is { } photo) { <img id="person-detail-photo" class="detail-avatar" src="@photo" alt="Foto @detail.Name" /> }
+                    else { <span id="person-detail-initials" class="detail-avatar" aria-hidden="true">@WorkspaceView.Initials(detail.Name)</span> }
+                    @if (WorkspaceView.CanManage(Status))
+                    {
+                        <label class="text-button photo-upload" for="person-photo-input">@(uploading ? "Mengunggah…" : detail.PhotoName is null ? "Unggah foto" : "Ganti foto")</label>
+                        <InputFile id="person-photo-input" class="visually-hidden" accept="image/png,image/jpeg,image/webp" OnChange="UploadPhoto" disabled="@uploading" />
+                    }
+                </div>
                 <div>
                     <h3 id="person-detail-name">@detail.Name</h3>
                     <p class="mono muted">@Subtitle(detail)</p>
@@ -21,6 +30,7 @@
                 </div>
             </section>
 
+            @if (photoMessage is not null) { <p id="person-photo-message" class="message @(photoOk ? "positive" : "danger")" role="@(photoOk ? "status" : "alert")">@photoMessage</p> }
             <dl class="detail-facts">
                 <div><dt>Kartu RFID</dt><dd id="person-detail-card" class="mono">@(detail.CardUid is null ? "Belum terdaftar" : $"{detail.CardUid} · aktif")</dd></div>
                 @if (detail.Kind == PersonKind.Student)
@@ -89,6 +99,31 @@
     [Parameter] public EventCallback OnClose { get; set; }
     private PersonDetail? detail;
     private PersonHistoryRow? correcting;
+    private bool uploading, photoOk;
+    private string? photoMessage;
+
+    private async Task UploadPhoto(InputFileChangeEventArgs e)
+    {
+        if (detail is null || uploading) return;
+        uploading = true;
+        photoMessage = null;
+        try
+        {
+            byte[] bytes;
+            try
+            {
+                using var buffer = new MemoryStream();
+                await using (var stream = e.File.OpenReadStream(Status.MaxPhotoBytes)) { await stream.CopyToAsync(buffer); }
+                bytes = buffer.ToArray();
+            }
+            catch (IOException) { photoOk = false; photoMessage = "Berkas terlalu besar atau tidak dapat dibaca (maksimal 8 MB)."; return; }
+            var error = await Status.UploadPhotoAsync(detail.Kind, detail.Id, detail.Identity, bytes);
+            photoOk = error is null;
+            photoMessage = error ?? $"Foto {detail.Name} berhasil diunggah.";
+            Load();
+        }
+        finally { uploading = false; }
+    }
     private bool AnyCorrectable => detail?.History.Any(r => r.CanCorrect) == true;
     private DateOnly month;
     private ElementReference drawer;

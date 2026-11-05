@@ -1896,3 +1896,41 @@ tbody tr:hover {
   border-radius:var(--radius);
   background:var(--paper)
 }
+
+/* Foto siswa/guru (PRD §5.5): tanpa foto tampil lingkaran inisial. */
+.visually-hidden {
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip:rect(0 0 0 0);
+  white-space:nowrap
+}
+
+.detail-photo {
+  display:grid;
+  justify-items:center;
+  gap:4px
+}
+
+img.detail-avatar,img.mini-avatar {
+  object-fit:contain;
+  background:var(--paper);
+  border:1px solid var(--line)
+}
+
+img.detail-avatar {
+  width:64px;
+  height:64px;
+  padding:0
+}
+
+.photo-upload {
+  font-size:11px;
+  cursor:pointer
+}
+
+.detail-photo:focus-within .photo-upload {
+  outline:2px solid var(--blue);
+  outline-offset:2px
+}

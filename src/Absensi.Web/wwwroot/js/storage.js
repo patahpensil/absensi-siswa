@@ -25,6 +25,14 @@ window.absensiStorage = {
             req.onerror = function () { reject(req.error); };
         });
     },
+    keys: async function (prefix) {
+        var db = await this.open();
+        return new Promise(function (resolve, reject) {
+            var req = db.transaction('berkas', 'readonly').objectStore('berkas').getAllKeys();
+            req.onsuccess = function () { db.close(); resolve(req.result.filter(function (k) { return String(k).startsWith(prefix); })); };
+            req.onerror = function () { reject(req.error); };
+        });
+    },
     remove: async function (key) {
         var db = await this.open();
         return new Promise(function (resolve, reject) {

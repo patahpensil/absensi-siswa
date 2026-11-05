@@ -221,6 +221,36 @@ await langkah('Koreksi status: alasan wajib, atas permintaan wali, tersimpan dan
   await page.waitForSelector('#tap-uid');
 });
 
+await langkah('Unggah foto siswa dan guru: dikecilkan 200×200, berkas bukan gambar ditolak', async () => {
+  const portrait = Buffer.from(await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 300; c.height = 400;
+    const g = c.getContext('2d'); g.fillStyle = '#275baa'; g.fillRect(0, 0, 300, 400);
+    return c.toDataURL('image/png').split(',')[1];
+  }), 'base64');
+  await page.click('#menu-siswa');
+  await page.click('#student-detail-3');
+  await page.waitForSelector('#person-detail-initials');
+  await page.setInputFiles('#person-photo-input', { name: 'catatan.txt', mimeType: 'text/plain', buffer: Buffer.from('bukan gambar') });
+  await page.waitForSelector('#person-photo-message.danger');
+  tegas(await page.locator('#person-detail-photo').count() === 0, 'berkas bukan gambar tersimpan sebagai foto');
+  await page.setInputFiles('#person-photo-input', { name: 'siswa.png', mimeType: 'image/png', buffer: portrait });
+  await page.waitForSelector('#person-photo-message.positive');
+  await page.waitForSelector('#person-detail-photo');
+  const size = await page.$eval('#person-detail-photo', img => img.complete ? [img.naturalWidth, img.naturalHeight] : [0, 0]);
+  tegas(size[0] === 200 && size[1] === 200, `ukuran foto ${size.join('×')}`);
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+  tegas(await page.locator('#student-detail-3 img.mini-avatar').count() === 1, 'foto tidak tampil di daftar siswa');
+  await page.click('#menu-guru');
+  await page.click('#teacher-detail-1');
+  await page.setInputFiles('#person-photo-input', { name: 'guru.png', mimeType: 'image/png', buffer: portrait });
+  await page.waitForSelector('#person-detail-photo');
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#tap-uid');
+});
+
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
@@ -268,6 +298,12 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
   tegas((await page.textContent('#tabel-siswa')).includes('0000111101'), 'kartu tidak bertahan setelah reload');
   tegas(await page.locator('[id^="register-card-"]').count() === 0, 'wali mendapat tindakan registrasi kartu');
+  tegas(await page.locator('#student-detail-3 img.mini-avatar').count() === 1, 'foto siswa tidak bertahan setelah reload');
+  await page.click('#student-detail-3');
+  await page.waitForSelector('#person-detail-photo');
+  tegas(await page.locator('#person-photo-input').count() === 0, 'wali mendapat tombol unggah foto');
+  await page.click('#close-person-detail');
+  await page.waitForSelector('#person-detail', { state: 'detached' });
   await page.click('#menu-absensi');
   await page.waitForSelector('#attendance-table');
   tegas(await page.locator('#tap-uid').count() === 0, 'wali mendapat input pemrosesan kartu');

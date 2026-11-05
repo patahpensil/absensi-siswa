@@ -265,3 +265,12 @@ Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan 
 - **Uji Chromium:** admin mengoreksi dengan atas permintaan; alasan kosong tidak dapat disimpan; penanda koreksi tampil di panel; wali kelas mengoreksi dari panel tanpa kolom atas permintaan dan hanya melihat satu kelas.
 
 **Utang:** alasan koreksi disimpan di kolom `keterangan` absensi; jejak audit mencatat status lama/baru dan pemohon, tetapi belum memuat alasan sebagai kolom audit tersendiri (PRD §10 menyebut audit mencatat alasan). Kunci bulan belum tersedia di web. Pesan notifikasi koreksi hanya masuk antrean outbox; pengiriman tetap nonaktif.
+
+## 16. Unggah foto siswa dan guru di web uji — 5 November 2026
+
+- **Perubahan:** panel detail siswa/guru punya tombol Unggah/Ganti foto untuk kepala sekolah/admin (PRD §16.4 langkah 6: foto susulan satu per satu). Wali kelas tidak mendapat tombol ini (PRD §3: master data hanya kewenangan penuh).
+- **Pengolahan:** di browser foto dikecilkan seperti `PengolahFoto` desktop: muat ke 200×200 tanpa dipotong, ditengahkan, PNG. Berkas yang bukan gambar ditolak dengan pesan. Nama berkas mengikuti desktop (`<NISN>.png` / `<NIP>.png`) dan dicatat lewat `LayananSiswa/LayananGuru.SimpanFoto` asli (audit lewat `JalurPerubahanData`). Pesan berhasil baru tampil setelah foto tersimpan dan perubahan database berhasil.
+- **Penyimpanan uji:** isi foto disimpan di IndexedDB (`foto/<nama>`), dimuat ke memori sekali saat aplikasi dibuka (PRD §5.5), dan disalin ke `/tmp/foto` untuk kode laporan berbasis berkas. Reset data contoh ikut menghapus foto. Tanpa foto tetap tampil lingkaran inisial.
+- **Uji Chromium:** gambar 300×400 menjadi 200×200, teks ditolak, foto tampil di daftar siswa, foto guru, foto bertahan setelah reload, wali kelas tidak mendapat tombol unggah.
+
+**Batas:** impor foto massal per folder (PRD §16.4 langkah 1–5) tetap tanpa entry point, sesuai revisi 2026-09-23. Bila pencatatan database gagal setelah foto tersimpan, berkas foto dengan nama yang sama sudah tertimpa (sama dengan perilaku desktop). Foto di situs uji publik harus foto contoh, bukan foto siswa asli (D-12).
