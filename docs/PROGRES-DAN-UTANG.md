@@ -229,3 +229,10 @@ Pengujian browser diperluas menjadi 16 kelompok: diagnostik; login dan sandi sal
 | Pemeriksaan langsung di tautan tetap | Login contoh, daftar 24 siswa, registrasi UID dengan nol depan, waktu skenario berbahasa Indonesia, tap 07.30 → Hadir dan pembaruan dashboard terverifikasi |
 
 Tautan tetap tetap `https://absensi-uji.pages.dev/`. Bukti ini tidak menyatakan lulus ASVS L3, kesiapan produksi, uji kapasitas, ataupun reader RFID fisik. Build lokal tidak dinyatakan lulus karena runtime lingkungan lokal gagal membaca informasi proses; bukti build dan pengujian berasal dari runner GitHub di atas. Peringatan native SQLite WASM0001 yang telah dicatat pada §11 tetap perlu ditriase untuk alur lain yang belum diuji.
+
+## 13. Format jam tidak bergantung bahasa perangkat — 5 November 2026
+
+- **Masalah:** jadwal sekolah (`jadwal_hari`) ditulis dengan `ToString("HH:mm")` tanpa kultur. Pada format kustom .NET, `:` berarti pemisah jam milik kultur aktif; untuk `id-ID` pemisahnya titik, sehingga PC/browser berbahasa Indonesia menyimpan `07.30`, sedangkan perangkat lain `07:30`. Pembacaan `TimeOnly.Parse` juga mengikuti kultur. Uji Chromium CI berbahasa Inggris sehingga tidak menangkapnya. Commit `475e0d4` (format detik jam absensi) belum dicatat di berkas ini; perbaikannya kini disatukan di sini.
+- **Perubahan:** `StoredTime` (Absensi.Data) menulis jam selalu `HH:mm`/`HH:mm:ss` dengan `InvariantCulture` dan membaca format tersebut serta format lama bertitik (`07.30`, `07.30.05`) yang mungkin sudah tersimpan. Dipakai `RepositoriJadwalHari` dan `RepositoriAbsensi`. Teks pesan notifikasi tidak diubah.
+- **Tes:** `StoredTimeCultureTests` — simpan jadwal di kultur `id-ID` lalu baca di `en-US`, isi kolom mentah bertitik dua, baca data lama bertitik di `en-US`/`id-ID`/invariant.
+- **Belum dibuktikan:** data nyata di instalasi desktop lama belum diperiksa. Parse tanggal/waktu lain (`DateTime.Parse` atas teks ISO/`"o"`) belum diaudit untuk kultur; risikonya lebih rendah karena format ISO tidak memakai pemisah kultur, tetapi tetap utang.

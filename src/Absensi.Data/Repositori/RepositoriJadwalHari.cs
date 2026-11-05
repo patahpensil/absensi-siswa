@@ -94,14 +94,16 @@ public sealed class RepositoriJadwalHari
         command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
         command.Parameters.AddWithValue("$hari", data.Hari);
         command.Parameters.AddWithValue("$hariSekolah", data.HariSekolah ? 1 : 0);
-        command.Parameters.AddWithValue("$jamMasuk", (object?)data.JamMasuk?.ToString("HH:mm") ?? DBNull.Value);
-        command.Parameters.AddWithValue("$jamRekap", (object?)data.JamRekap?.ToString("HH:mm") ?? DBNull.Value);
-        command.Parameters.AddWithValue("$batasTapMasuk", (object?)data.BatasTapMasuk?.ToString("HH:mm") ?? DBNull.Value);
-        command.Parameters.AddWithValue("$mulaiPulang", (object?)data.MulaiPulang?.ToString("HH:mm") ?? DBNull.Value);
-        command.Parameters.AddWithValue("$notTappedListTime", (object?)data.NotTappedListTime?.ToString("HH:mm") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$jamMasuk", TimeValue(data.JamMasuk));
+        command.Parameters.AddWithValue("$jamRekap", TimeValue(data.JamRekap));
+        command.Parameters.AddWithValue("$batasTapMasuk", TimeValue(data.BatasTapMasuk));
+        command.Parameters.AddWithValue("$mulaiPulang", TimeValue(data.MulaiPulang));
+        command.Parameters.AddWithValue("$notTappedListTime", TimeValue(data.NotTappedListTime));
         command.ExecuteNonQuery();
     }
 
+    private static object TimeValue(TimeOnly? time) => time is { } value ? StoredTime.Minutes(value) : DBNull.Value;
+
     private static TimeOnly? BacaJam(SqliteDataReader reader, int kolom) =>
-        reader.IsDBNull(kolom) ? null : TimeOnly.Parse(reader.GetString(kolom));
+        reader.IsDBNull(kolom) ? null : StoredTime.Parse(reader.GetString(kolom));
 }

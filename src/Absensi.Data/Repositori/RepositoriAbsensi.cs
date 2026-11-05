@@ -489,8 +489,8 @@ public sealed class RepositoriAbsensi
 
     private static string TanggalTeks(DateOnly tanggal) => tanggal.ToString("yyyy-MM-dd");
 
-    private static string JamTeks(DateTime waktu) => TimeOnly.FromDateTime(waktu).ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+    private static string JamTeks(DateTime waktu) => StoredTime.Seconds(TimeOnly.FromDateTime(waktu));
 
     private static TimeOnly? BacaJam(SqliteDataReader reader, int kolom) =>
-        reader.IsDBNull(kolom) ? null : TimeOnly.Parse(reader.GetString(kolom));
+        reader.IsDBNull(kolom) ? null : StoredTime.Parse(reader.GetString(kolom));
 }
