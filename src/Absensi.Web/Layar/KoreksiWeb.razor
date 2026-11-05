@@ -1,4 +1,3 @@
-@using System.Globalization
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
@@ -10,7 +9,7 @@
         <select id="correction-class" aria-label="Pilih kelas" @bind="classId" @bind:after="Reload">
             @foreach (var c in classes) { <option value="@c.Id">@c.Nama</option> }
         </select>
-        <input id="correction-date" type="date" aria-label="Tanggal kehadiran" @bind="dateText" @bind:after="Reload" />
+        <input id="correction-date" type="date" aria-label="Tanggal kehadiran" @bind="date" @bind:after="Reload" />
         <span class="muted">@rows.Count siswa · @(locked ? "bulan terkunci" : "bulan terbuka")</span>
     </div>
     @if (classes.Count == 0) { <div class="empty-state">Akun ini belum ditugaskan pada kelas mana pun.</div> }
@@ -44,7 +43,6 @@
     private IReadOnlyList<SiswaUntukKoreksi> rows = Array.Empty<SiswaUntukKoreksi>();
     private SiswaUntukKoreksi? selected;
     private int classId;
-    private string dateText = "";
     private DateOnly date;
     private bool locked;
 
@@ -52,13 +50,12 @@
     {
         classes = WorkspaceView.Classes(Status);
         classId = classes.FirstOrDefault()?.Id ?? 0;
-        dateText = DateOnly.FromDateTime(Status.Jam.Sekarang).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        date = DateOnly.FromDateTime(Status.Jam.Sekarang);
         Reload();
     }
 
     private void Reload()
     {
-        if (!DateOnly.TryParseExact(dateText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date)) date = DateOnly.FromDateTime(Status.Jam.Sekarang);
         locked = new Absensi.Data.Koreksi.LayananKoreksi().BulanTerkunci(Status.Koneksi!, date);
         rows = classes.Any(c => c.Id == classId) ? new RepositoriAbsensi().DaftarUntukKoreksi(Status.Koneksi!, date, classId) : Array.Empty<SiswaUntukKoreksi>();
     }
