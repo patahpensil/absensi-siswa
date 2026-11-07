@@ -61,6 +61,7 @@
 
 @code {
     [Parameter] public bool PageActive { get; set; }
+    [Parameter] public EventCallback OnTapRecorded { get; set; }
     private GateController gate = default!;
     private IJSObjectReference? bridge;
     private DotNetObjectReference<GateHost>? reference;
@@ -159,7 +160,7 @@
         processing = true;
         try
         {
-            if (await gate.ProcessAsync(uid)) { gate.Error = null; message = "Hasil tap diperbarui pada TV dan catatan absensi."; }
+            if (await gate.ProcessAsync(uid)) { gate.Error = null; message = "Hasil tap diperbarui pada TV dan catatan absensi."; await OnTapRecorded.InvokeAsync(); }
             await PublishAsync();
         }
         catch (InvalidOperationException ex) { gate.Error = ex.Message; }

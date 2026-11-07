@@ -35,7 +35,7 @@
         @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
         @switch (activePage)
         {
-            case "Dashboard": <Dasbor OnNavigate="Navigate" /> break;
+            case "Dashboard": <Dasbor @key="attendanceRevision" OnNavigate="Navigate" /> break;
             case "Absensi": <AttendanceDesk /> break;
             case "Siswa": <DaftarSiswa Search="@studentSearch" /> break;
             case "Guru": <DaftarGuru /> break;
@@ -46,13 +46,15 @@
             case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
             default: <BelumDibangun Nama="@activePage" /> break;
         }
-        <GateHost PageActive='@(activePage == "Layar gerbang")' />
+        <GateHost PageActive='@(activePage == "Layar gerbang")' OnTapRecorded="RefreshAttendance" />
     </main>
     <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>07.30 batas hadir <b>·</b> 08.00 daftar wali <b>·</b> 08.10 rekap orang tua</span><span class="mono">WEB UJI / 01</span></footer>
 </div>
 
 @code {
     [Parameter] public EventCallback OnKeluar { get; set; }
+    private int attendanceRevision;
+    private void RefreshAttendance() { attendanceRevision++; StateHasChanged(); }
     private string activePage = "Dashboard";
     private string command = "";
     private string studentSearch = "";
@@ -86,6 +88,12 @@
     {
         var query = command.Trim();
         if (query.Length == 0) return;
+        if ((query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase) || query.Equals("Layar gerbang", StringComparison.OrdinalIgnoreCase)) && !WorkspaceView.CanManage(Status))
+        {
+            commandMessage = "Akun wali kelas tidak berwenang mengakses pengendali layar gerbang.";
+            command = "";
+            return;
+        }
         var page = MenuItems().FirstOrDefault(m => m.Equals(query, StringComparison.OrdinalIgnoreCase));
         if (query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase)) page = WorkspaceView.CanManage(Status) ? "Layar gerbang" : null;
         if (page is not null) Navigate(page);

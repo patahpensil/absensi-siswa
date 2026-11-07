@@ -391,6 +391,7 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
 
   await page.click('#menu-dashboard');
   tegas(await page.locator('#ringkasan').count() === 1 && !tv.isClosed(), 'dashboard dan layar TV tidak dapat dibuka terpisah');
+  tegas((await page.textContent('.tap-cards')).includes('Siswa 7A-1'), 'dashboard tidak menampilkan tap dari TV');
   await page.click('#menu-layar-gerbang');
   await page.click('#gate-stop');
   await page.fill('#gate-confirm-password', 'salah');
@@ -498,6 +499,7 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.fill('#workspace-command', 'Layar gerbang');
   await page.press('#workspace-command', 'Enter');
   tegas(await page.locator('#gate-controls, #gate-open').count() === 0, 'wali dapat membuka gerbang melalui perintah');
+  tegas((await page.textContent('#isi')).includes('tidak berwenang'), 'perintah gerbang wali tidak menjelaskan penolakan');
   await page.click('#menu-siswa');
   await page.waitForSelector('#tabel-siswa');
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
