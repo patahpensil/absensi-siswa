@@ -150,6 +150,106 @@ public sealed class LayananRegistrasiKartuTests
         Assert.Null(new RepositoriKartu().CariAktifBerdasarkanUid(database.Connection, "UID-BARU-1"));
     }
 
+    [Theory]
+    [InlineData(PeranAkun.Admin)]
+    [InlineData(PeranAkun.KepalaSekolah)]
+    public void RegisterTeacherCard_AuthorizedAccount_PreservesUidAndWritesAudit(PeranAkun role)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var account = Admin with { Peran = role };
+        var service = new LayananRegistrasiKartu();
+
+        service.RegisterTeacherCard(database.Connection, account, Waktu, "0001338253", 1);
+
+        var owner = service.CariPemilikAktif(database.Connection, "0001338253", 1);
+        Assert.NotNull(owner);
+        Assert.Equal(JenisPemilikKartu.Guru, owner!.Tipe);
+        Assert.Equal(1, owner.Id);
+        Assert.Equal("Guru Belum Kartu", owner.Nama);
+        AssertAdaBarisAudit(database, "daftar_kartu", 1);
+        using var audit = database.Connection.CreateCommand();
+        audit.CommandText = "SELECT nilai_baru FROM audit WHERE aksi = 'daftar_kartu';";
+        Assert.Equal("0001338253->Guru Belum Kartu", audit.ExecuteScalar());
+    }
+
+    [Theory]
+    [InlineData("UID-SISWA-LAMA", JenisPemilikKartu.Siswa)]
+    [InlineData("UID-GURU-LAMA", JenisPemilikKartu.Guru)]
+    public void RegisterTeacherCard_UidAlreadyAssigned_RejectsWithoutChangingOwner(string uid, JenisPemilikKartu existingKind)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var service = new LayananRegistrasiKartu();
+
+        Assert.Throws<InvalidOperationException>(() => service.RegisterTeacherCard(database.Connection, Admin, Waktu, uid, 1));
+
+        Assert.Equal(existingKind, service.CariPemilikAktif(database.Connection, uid, 1)!.Tipe);
+        Assert.Null(new RepositoriKartu().CariUidAktifUntukPemilik(database.Connection, JenisPemilikKartu.Guru, 1));
+        AssertAdaBarisAudit(database, "daftar_kartu", 0);
+    }
+
+    [Fact]
+    public void RegisterTeacherCard_TeacherAlreadyHasCard_RejectsSecondCard()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var service = new LayananRegistrasiKartu();
+        service.RegisterTeacherCard(database.Connection, Admin, Waktu, "0001338253", 1);
+
+        Assert.Throws<InvalidOperationException>(() => service.RegisterTeacherCard(database.Connection, Admin, Waktu, "0001338254", 1));
+
+        Assert.Equal("0001338253", new RepositoriKartu().CariUidAktifUntukPemilik(database.Connection, JenisPemilikKartu.Guru, 1));
+        Assert.Null(service.CariPemilikAktif(database.Connection, "0001338254", 1));
+        AssertAdaBarisAudit(database, "daftar_kartu", 1);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(999)]
+    public void RegisterTeacherCard_InactiveOrMissingTeacher_Rejects(int teacherId)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "UPDATE guru SET aktif = 0 WHERE id = 1;";
+        command.ExecuteNonQuery();
+        var service = new LayananRegistrasiKartu();
+
+        Assert.Throws<InvalidOperationException>(() => service.RegisterTeacherCard(database.Connection, Admin, Waktu, "0001338253", teacherId));
+
+        Assert.Null(service.CariPemilikAktif(database.Connection, "0001338253", 1));
+        AssertAdaBarisAudit(database, "daftar_kartu", 0);
+    }
+
+    [Fact]
+    public void RegisterTeacherCard_HomeroomAccount_RejectsWithoutSaving()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var service = new LayananRegistrasiKartu();
+
+        Assert.Throws<InvalidOperationException>(() => service.RegisterTeacherCard(database.Connection, WaliKelas, Waktu, "0001338253", 1));
+
+        Assert.Null(service.CariPemilikAktif(database.Connection, "0001338253", 1));
+        AssertAdaBarisAudit(database, "daftar_kartu", 0);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(65)]
+    public void RegisterTeacherCard_InvalidUidLength_Rejects(int length)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var service = new LayananRegistrasiKartu();
+
+        Assert.Throws<InvalidOperationException>(() => service.RegisterTeacherCard(database.Connection, Admin, Waktu, new string('0', length), 1));
+
+        Assert.Null(new RepositoriKartu().CariUidAktifUntukPemilik(database.Connection, JenisPemilikKartu.Guru, 1));
+        AssertAdaBarisAudit(database, "daftar_kartu", 0);
+    }
+
     private static void AssertAdaBarisAudit(MigratedDatabase database, string aksi, int jumlahDiharapkan)
     {
         using var command = database.Connection.CreateCommand();
@@ -158,3 +258,4 @@ public sealed class LayananRegistrasiKartuTests
         Assert.Equal(jumlahDiharapkan, Convert.ToInt32(command.ExecuteScalar()));
     }
 }
+

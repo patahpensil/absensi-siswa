@@ -1,20 +1,164 @@
+@using Absensi.Data.Kartu
 @using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA / GURU</p><h1>Data guru</h1><p>Identitas guru dan kartu pegawai.</p></div><span class="page-total"><strong class="mono">@teachers.Count</strong> guru</span></div>
-@if (!WorkspaceView.CanManage(Status)) { <p class="notice">Akun wali kelas tidak memiliki kewenangan mengakses master guru.</p> }
+
+<div class="page-heading">
+    <div><p class="eyebrow">MASTER DATA / GURU</p><h1>Data guru</h1><p>Identitas guru dan kartu pegawai.</p></div>
+    <span class="page-total"><strong class="mono">@teachers.Count</strong> guru</span>
+</div>
+@if (!WorkspaceView.CanManage(Status))
+{
+    <p class="notice">Akun wali kelas tidak memiliki kewenangan mengakses master guru.</p>
+}
 else
 {
-    <section class="panel"><header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header><div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div><span class="muted">@teachers.Count(g => g.Aktif) aktif · @teachers.Count(g => !g.PunyaKartu) belum punya kartu</span></div><div class="table-wrap"><table id="tabel-guru"><thead><tr><th>Guru</th><th>NIP</th><th>Jabatan</th><th>Kartu RFID</th><th>Status</th></tr></thead><tbody>@foreach (var teacher in Filtered()) { <tr><td class="name-cell"><button type="button" class="name-link" id="teacher-detail-@teacher.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = teacher.Id">@if (Status.PhotoUrl($"{teacher.Nip}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> } else { <span class="mini-avatar">@WorkspaceView.Initials(teacher.Nama)</span> }@teacher.Nama</button></td><td class="mono muted">@teacher.Nip</td><td>@teacher.Jabatan</td><td class="mono">@(teacher.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(teacher.Aktif ? "positive" : "neutral")">@(teacher.Aktif ? "Aktif" : teacher.AlasanNonaktif ?? "Tidak aktif")</span></td></tr> }</tbody></table></div>@if (!Filtered().Any()) { <div class="empty-state">Tidak ada guru yang cocok dengan pencarian.</div> }<div class="panel-footer">Data guru dan penugasan wali menggunakan identitas orang yang sama.</div></section>
+    <section class="panel">
+        <header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header>
+        <div class="panel-toolbar">
+            <div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div>
+            <span class="muted">@teachers.Count(g => g.Aktif) aktif · @teachers.Count(g => g.Aktif && !g.PunyaKartu) belum punya kartu</span>
+        </div>
+        <div class="table-wrap">
+            <table id="tabel-guru">
+                <thead><tr><th>Guru</th><th>NIP</th><th>Jabatan</th><th>Kartu RFID</th><th>Status</th><th>Tindakan</th></tr></thead>
+                <tbody>
+                    @foreach (var teacher in Filtered())
+                    {
+                        <tr>
+                            <td class="name-cell">
+                                <button type="button" class="name-link" id="teacher-detail-@teacher.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = teacher.Id">
+                                    @if (Status.PhotoUrl($"{teacher.Nip}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> }
+                                    else { <span class="mini-avatar">@WorkspaceView.Initials(teacher.Nama)</span> }
+                                    @teacher.Nama
+                                </button>
+                            </td>
+                            <td class="mono muted">@teacher.Nip</td><td>@teacher.Jabatan</td>
+                            <td class="mono">@(teacher.KartuUid ?? "Belum terdaftar")</td>
+                            <td><span class="badge @(teacher.Aktif ? "positive" : "neutral")">@(teacher.Aktif ? "Aktif" : teacher.AlasanNonaktif ?? "Tidak aktif")</span></td>
+                            <td>
+                                @if (teacher.Aktif && !teacher.PunyaKartu)
+                                {
+                                    <button type="button" class="text-button" id="register-teacher-card-@teacher.Id" @onclick="() => OpenRegistration(teacher)">Daftarkan kartu</button>
+                                }
+                                else { <span class="muted">—</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Filtered().Any()) { <div class="empty-state">Tidak ada guru yang cocok dengan pencarian.</div> }
+        <div class="panel-footer">Pilih guru, tap kartu, lalu konfirmasi Simpan kartu. Nomor kartu harus unik untuk seluruh siswa dan guru.</div>
+    </section>
 }
 @if (detailId is { } openTeacherId)
 {
-    <PersonDetailPanel Kind="PersonKind.Teacher" Id="openTeacherId" OnClose="() => detailId = null" />
+    <PersonDetailPanel Kind="PersonKind.Teacher" Id="openTeacherId" OnClose="CloseDetail" />
 }
+@if (selectedTeacher is not null && WorkspaceView.CanManage(Status))
+{
+    <div class="modal-backdrop" @onkeydown="HandleDialogKey">
+        <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="teacher-registration-title">
+            <header class="panel-header">
+                <h2 id="teacher-registration-title">Registrasi kartu guru</h2>
+                <button type="button" class="icon-button" aria-label="Tutup registrasi guru" disabled="@saving" @onclick="CloseRegistration">×</button>
+            </header>
+            <div class="dialog-body">
+                <p class="eyebrow">GURU TERPILIH</p><h3>@selectedTeacher.Nama</h3><p class="mono muted">NIP @selectedTeacher.Nip</p>
+                <p>Tap kartu pada reader, periksa nomor dan identitas guru, lalu simpan. Pembacaan di formulir ini tidak dicatat sebagai absensi.</p>
+                <form @onsubmit:preventDefault>
+                    <label for="teacher-registration-uid">Nomor RFID</label>
+                    <input id="teacher-registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@(registrationComplete || saving)" aria-describedby="teacher-registration-help" />
+                    <p id="teacher-registration-help" class="field-help">Nol di depan dipertahankan. Kartu baru ditautkan setelah Simpan kartu ditekan.</p>
+                    @if (registrationError is not null) { <p id="teacher-registration-error" class="message danger" role="alert">@registrationError</p> }
+                    @if (registrationComplete) { <p id="teacher-registration-success" class="message positive" role="status">Kartu @pendingUid ditautkan dan sudah diverifikasi untuk @selectedTeacher.Nama.</p> }
+                    @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
+                    <div class="dialog-actions">
+                        <button type="button" @onclick="CloseRegistration" disabled="@saving">Tutup</button>
+                        <button id="save-teacher-registration" type="button" @onclick="RegisterCard" class="primary" disabled="@(registrationComplete || saving || string.IsNullOrWhiteSpace(pendingUid))">@(saving ? "Menyimpan…" : "Simpan kartu")</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+}
+
 @code {
     private int? detailId;
     private string query = "";
     private IReadOnlyList<GuruDaftar> teachers = Array.Empty<GuruDaftar>();
-    protected override void OnInitialized() { if (WorkspaceView.CanManage(Status)) teachers = new RepositoriGuru().DaftarLengkap(Status.Koneksi!); }
-    private IEnumerable<GuruDaftar> Filtered() => teachers.Where(g => g.Nama.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) || g.Nip.Contains(query.Trim(), StringComparison.Ordinal));
+    private GuruDaftar? selectedTeacher;
+    private string pendingUid = "";
+    private string? registrationError;
+    private bool registrationComplete, saving, focusCard;
+    private ElementReference cardInput;
+    private readonly LayananRegistrasiKartu cards = new();
+
+    protected override void OnInitialized() => Reload();
+
+    private void Reload()
+    {
+        teachers = WorkspaceView.CanManage(Status)
+            ? new RepositoriGuru().DaftarLengkap(Status.Koneksi!)
+            : Array.Empty<GuruDaftar>();
+    }
+
+    private IEnumerable<GuruDaftar> Filtered() => teachers.Where(g =>
+        g.Nama.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        g.Nip.Contains(query.Trim(), StringComparison.Ordinal));
+
+    private void CloseDetail() { detailId = null; Reload(); }
+
+    private void OpenRegistration(GuruDaftar teacher)
+    {
+        if (!WorkspaceView.CanManage(Status) || !teacher.Aktif || teacher.PunyaKartu) return;
+        selectedTeacher = teacher;
+        pendingUid = "";
+        registrationError = null;
+        registrationComplete = false;
+        focusCard = true;
+    }
+
+    private void CloseRegistration()
+    {
+        if (saving) return;
+        selectedTeacher = null;
+        pendingUid = "";
+        registrationError = null;
+        registrationComplete = false;
+        focusCard = false;
+    }
+
+    private void HandleDialogKey(KeyboardEventArgs e) { if (e.Key == "Escape") CloseRegistration(); }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusCard && selectedTeacher is not null)
+        {
+            focusCard = false;
+            await cardInput.FocusAsync();
+        }
+    }
+
+    private async Task RegisterCard()
+    {
+        if (saving || registrationComplete || selectedTeacher is null || !WorkspaceView.CanManage(Status) || string.IsNullOrWhiteSpace(pendingUid)) return;
+        saving = true;
+        registrationError = null;
+        try
+        {
+            pendingUid = pendingUid.Trim();
+            cards.RegisterTeacherCard(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, pendingUid, selectedTeacher.Id);
+            var storedUid = new RepositoriKartu().CariUidAktifUntukPemilik(Status.Koneksi!, JenisPemilikKartu.Guru, selectedTeacher.Id);
+            if (storedUid != pendingUid) throw new InvalidOperationException("Pasangan guru dan kartu belum dapat diverifikasi. Muat ulang daftar guru.");
+            registrationComplete = true;
+            await Status.SimpanAsync();
+            Reload();
+        }
+        catch (InvalidOperationException ex) { registrationError = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { registrationError = "Kartu belum dapat disimpan. Periksa daftar guru lalu coba kembali."; }
+        finally { saving = false; }
+    }
 }

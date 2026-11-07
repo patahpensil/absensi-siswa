@@ -84,6 +84,44 @@ public sealed class LayananRegistrasiKartu
             nilaiBaru: $"{uid}->{namaSiswa}");
     }
 
+    public void RegisterTeacherCard(SqliteConnection connection, AkunTersimpan account, DateTime time, string uid, int teacherId)
+    {
+        AuthorizationGuard.EnsureFullAuthority(account, "mendaftarkan kartu guru");
+        uid = uid.Trim();
+        if (uid.Length is 0 or > 64)
+        {
+            throw new InvalidOperationException("Nomor RFID wajib diisi, maksimal 64 karakter.");
+        }
+
+        _jalurPerubahanData.JalankanDenganCatatan(
+            connection,
+            account,
+            time,
+            aksi: "daftar_kartu",
+            entitas: "kartu",
+            perubahan: transaction =>
+            {
+                var teacher = _repositoriGuru.CariUntukAudit(connection, transaction, teacherId);
+                if (teacher is null || !teacher.Aktif)
+                {
+                    throw new InvalidOperationException("Guru tidak ditemukan atau sudah tidak aktif. Muat ulang daftar guru.");
+                }
+
+                if (_repositoriKartu.CariAktifBerdasarkanUid(connection, uid, transaction) is not null)
+                {
+                    throw new InvalidOperationException("Kartu sudah terdaftar untuk siswa atau guru. Gunakan kartu yang berbeda.");
+                }
+
+                if (_repositoriKartu.CariUidAktifUntukPemilik(connection, JenisPemilikKartu.Guru, teacherId, transaction) is not null)
+                {
+                    throw new InvalidOperationException("Guru sudah memiliki kartu aktif. Pendaftaran ini tidak mengganti kartu lama.");
+                }
+
+                _repositoriKartu.Daftarkan(connection, transaction, uid, JenisPemilikKartu.Guru, teacherId, time);
+                return new CatatanPerubahan(teacherId, null, $"{uid}->{teacher.Nama}");
+            });
+    }
+
     // PRD §16.5 langkah 5: "Seluruh sesi tersimpan" — semua-atau-tidak
     // sama sekali dalam satu transaksi (PRD §16.3, sama
     // seperti impor Excel; dikonfirmasi pemilik proyek 2026-09-18: kalau
@@ -164,3 +202,4 @@ public sealed class LayananRegistrasiKartu
             });
     }
 }
+

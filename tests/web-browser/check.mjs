@@ -115,6 +115,48 @@ await langkah('Registrasi satu siswa satu kartu menjaga UID nol depan dan dapat 
   await page.press('#registration-uid', 'Escape');
 });
 
+await langkah('Registrasi kartu guru: konfirmasi wajib, UID siswa/guru duplikat ditolak, Batal tanpa menyimpan', async () => {
+  await page.click('#menu-guru');
+  await page.click('#register-teacher-card-1');
+  tegas(await page.locator('#teacher-registration-uid').evaluate(el => el === document.activeElement), 'kolom kartu guru tidak mendapat fokus');
+  await page.locator('#teacher-registration-uid').pressSequentially('0000222201');
+  await page.press('#teacher-registration-uid', 'Enter');
+  tegas(await page.locator('#teacher-registration-success').count() === 0, 'Enter reader menyimpan kartu guru tanpa konfirmasi');
+  await page.click('#save-teacher-registration');
+  await page.waitForSelector('#teacher-registration-success');
+  tegas((await page.textContent('#teacher-registration-success')).includes('0000222201'), 'nol depan UID guru berubah');
+  await page.keyboard.press('Tab');
+  tegas(await page.evaluate(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement)), 'fokus keluar dari dialog guru');
+  await page.getByRole('button', { name: 'Tutup registrasi guru', exact: true }).click();
+  tegas(await page.locator('#register-teacher-card-1').count() === 0, 'guru dengan kartu aktif masih dapat didaftarkan ulang');
+  const registered = page.locator('#tabel-guru tbody tr').filter({ hasText: 'Ibu Sari' });
+  tegas((await registered.textContent()).includes('0000222201'), 'UID tidak tampil pada baris guru');
+
+  await page.click('#register-teacher-card-2');
+  for (const uid of ['0000111101', '0000222201']) {
+    await page.fill('#teacher-registration-uid', uid);
+    await page.click('#save-teacher-registration');
+    await page.waitForSelector('#teacher-registration-error');
+    tegas((await page.textContent('#teacher-registration-error')).includes('sudah terdaftar'), 'duplikat lintas siswa/guru tidak dijelaskan');
+    tegas(await page.locator('#teacher-registration-success').count() === 0, 'duplikat dilaporkan berhasil');
+  }
+  await page.fill('#teacher-registration-uid', '0000222299');
+  await page.press('#teacher-registration-uid', 'Escape');
+  await page.waitForSelector('[role="dialog"]', { state: 'detached' });
+  await page.click('#register-teacher-card-2');
+  tegas(await page.inputValue('#teacher-registration-uid') === '', 'UID batal tertinggal');
+  tegas(!(await page.textContent('#tabel-guru')).includes('0000222299'), 'Batal menyimpan kartu');
+  await page.press('#teacher-registration-uid', 'Escape');
+
+  await page.click('#menu-siswa');
+  await page.click('#register-card-3');
+  await page.fill('#registration-uid', '0000222201');
+  await page.click('#save-registration');
+  await page.waitForSelector('[role="dialog"] [role="alert"]');
+  tegas(await page.locator('#registration-success').count() === 0, 'kartu guru dapat dipakai ulang untuk siswa');
+  await page.press('#registration-uid', 'Escape');
+});
+
 const setClock = async value => {
   await page.click('#menu-pengaturan');
   await page.fill('#scenario-time', value.replace(/:00$/, ''));
@@ -154,6 +196,22 @@ await langkah('Tap pulang mengisi jam tanpa menghapus status masuk', async () =>
   await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Tap pulang tercatat'));
   const row = page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-1' });
   tegas((await row.textContent()).includes('13:10:00'), 'jam pulang tidak tersimpan');
+});
+
+await langkah('Kartu guru diproses reader bersama: Masuk lalu Hadir dan riwayat tersimpan', async () => {
+  await setClock('2026-11-04T07:25:00');
+  await tapCard('0000222201');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Masuk · Ibu Sari'));
+  await setClock('2026-11-04T13:10:00');
+  await tapCard('0000222201');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Tap pulang tercatat · Ibu Sari'));
+  await page.click('#menu-guru');
+  await page.click('#teacher-detail-1');
+  await page.waitForSelector('#person-history');
+  const row = await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent();
+  tegas(row.includes('07:25:00') && row.includes('13:10:00') && row.includes('Hadir'), `riwayat guru salah: ${row}`);
+  await page.click('#close-person-detail');
+  await page.click('#menu-absensi');
 });
 
 await langkah('Klik nama membuka detail siswa/guru beserta riwayat dan rekap bulan', async () => {
@@ -311,7 +369,7 @@ await langkah('Laporan PDF: hasil di browser dicatat apa adanya', async () => {
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
-    for (const menu of ['dashboard', 'siswa', 'absensi', 'pengaturan']) {
+    for (const menu of ['dashboard', 'siswa', 'guru', 'absensi', 'pengaturan']) {
       await page.click(`#menu-${menu}`);
       await page.waitForTimeout(100);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
@@ -346,6 +404,13 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await masuk('admin', 'contoh123');
   await page.waitForSelector('#ringkasan');
   await setClock('2026-11-04T13:10:00');
+  await page.click('#menu-guru');
+  tegas((await page.textContent('#tabel-guru')).includes('0000222201'), 'kartu guru hilang setelah reload');
+  await page.click('#teacher-detail-1');
+  await page.waitForSelector('#person-history');
+  const teacherHistory = await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent();
+  tegas(teacherHistory.includes('07:25:00') && teacherHistory.includes('13:10:00'), 'riwayat guru hilang setelah reload');
+  await page.click('#close-person-detail');
   await page.click('#tombol-keluar');
   await page.waitForSelector('#tombol-masuk');
   await masuk('wali7a', 'contoh123');
@@ -398,3 +463,4 @@ await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);
 process.exit(failed === 0 ? 0 : 1);
+
