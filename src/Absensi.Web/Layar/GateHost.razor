@@ -3,6 +3,7 @@
 @using Microsoft.JSInterop
 @implements IAsyncDisposable
 @inject StatusAplikasi Status
+@inject GateController Gate
 @inject IJSRuntime JS
 
 @if (PageActive)
@@ -62,7 +63,7 @@
 @code {
     [Parameter] public bool PageActive { get; set; }
     [Parameter] public EventCallback OnTapRecorded { get; set; }
-    private GateController gate = default!;
+    private GateController gate => Gate;
     private IJSObjectReference? bridge;
     private DotNetObjectReference<GateHost>? reference;
     private readonly CancellationTokenSource cancellation = new();
@@ -71,7 +72,6 @@
     private string password = "", controllerUid = "";
     private bool fullscreen, disposed, processing;
 
-    protected override void OnInitialized() => gate = new GateController(Status);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

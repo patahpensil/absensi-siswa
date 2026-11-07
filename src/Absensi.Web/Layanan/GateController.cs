@@ -11,6 +11,7 @@ public sealed class GateController(StatusAplikasi state)
 {
     private readonly GateAccess access = new();
     private readonly List<GateCard> cards = new();
+    public bool HasSession { get; private set; }
     public bool Receiving { get; private set; }
     public bool DisplayOpen { get; private set; }
     public string? Error { get; set; }
@@ -21,12 +22,14 @@ public sealed class GateController(StatusAplikasi state)
     {
         Authorize();
         if (!DisplayOpen) access.Record(state.Koneksi!, state.Akun, state.Jam.Sekarang, GateAction.OpenDisplay);
+        HasSession = true;
         DisplayOpen = true;
     }
 
     public void SetReceiving(bool receiving)
     {
         Authorize();
+        HasSession = true;
         if (Receiving == receiving) return;
         access.Record(state.Koneksi!, state.Akun, state.Jam.Sekarang,
             receiving ? GateAction.StartReceiving : GateAction.StopReceiving);
@@ -44,6 +47,7 @@ public sealed class GateController(StatusAplikasi state)
 
     public void LoseSession()
     {
+        HasSession = false;
         Receiving = false;
         DisplayOpen = false;
         cards.Clear();

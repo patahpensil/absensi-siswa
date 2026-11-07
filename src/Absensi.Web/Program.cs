@@ -8,5 +8,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddSingleton<JamBrowser>();
 builder.Services.AddSingleton<StatusAplikasi>();
+builder.Services.AddSingleton<GateController>();
 
 await builder.Build().RunAsync();
+

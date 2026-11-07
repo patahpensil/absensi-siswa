@@ -403,6 +403,10 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   await page.waitForFunction(() => document.querySelector('#gate-receiving-state')?.textContent?.includes('dihentikan'));
   tegas(!tv.isClosed(), 'Hentikan tap ikut menutup TV');
   await tv.waitForFunction(() => document.querySelector('#gate-reader')?.disabled === true);
+  await page.click('#menu-absensi');
+  await page.waitForSelector('#attendance-reader-stopped');
+  tegas(await page.locator('#tap-uid').isDisabled(), 'halaman Absensi masih menerima reader ketika gerbang dihentikan');
+  await page.click('#menu-layar-gerbang');
   await page.click('#gate-start');
   await tv.waitForFunction(() => document.querySelector('#gate-reader')?.disabled === false);
 

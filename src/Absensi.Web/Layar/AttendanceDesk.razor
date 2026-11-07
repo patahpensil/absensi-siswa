@@ -3,6 +3,7 @@
 @using Absensi.Domain.Kehadiran
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
+@inject GateController Gate
 
 <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / ABSENSI</p><h1>Absensi harian</h1><p>Hasil pembacaan kartu dan catatan kehadiran hari ini.</p></div><span class="badge info">Mode absensi</span></div>
 <AttendanceSummary Rows="rows" Students="WorkspaceView.Students(Status).Count(s => s.Aktif)" DateLabel='@Status.Jam.Sekarang.ToString("dd / MM / yyyy")' />
@@ -13,7 +14,8 @@
             <div class="reader-body">
                 @if (WorkspaceView.CanManage(Status))
                 {
-                    <form class="reader-form" @onsubmit="ProcessCard" @onsubmit:preventDefault><label for="tap-uid">Nomor kartu RFID</label><div class="input-action"><input id="tap-uid" @ref="readerInput" aria-describedby="reader-help" maxlength="64" @bind="uid" @bind:event="oninput" autocomplete="off" placeholder="Baca kartu atau masukkan UID contoh" /><button id="process-tap" type="submit" class="primary" disabled="@(processing || string.IsNullOrWhiteSpace(uid))">@(processing ? "Memproses…" : "Proses tap")</button></div><p id="reader-help" class="field-help">Gunakan kartu yang sudah didaftarkan melalui menu Siswa atau Guru. Pastikan kolom pembacaan aktif saat tap.</p></form>
+                    @if (Gate.HasSession && !Gate.Receiving) { <p id="attendance-reader-stopped" class="notice">Penerimaan tap dihentikan. Mulai kembali melalui menu Layar gerbang.</p> }
+                    <form class="reader-form" @onsubmit="ProcessCard" @onsubmit:preventDefault><label for="tap-uid">Nomor kartu RFID</label><div class="input-action"><input id="tap-uid" disabled="@(Gate.HasSession && !Gate.Receiving)" @ref="readerInput" aria-describedby="reader-help" maxlength="64" @bind="uid" @bind:event="oninput" autocomplete="off" placeholder="Baca kartu atau masukkan UID contoh" /><button id="process-tap" type="submit" class="primary" disabled="@(processing || (Gate.HasSession && !Gate.Receiving) || string.IsNullOrWhiteSpace(uid))">@(processing ? "Memproses…" : "Proses tap")</button></div><p id="reader-help" class="field-help">Gunakan kartu yang sudah didaftarkan melalui menu Siswa atau Guru. Pastikan kolom pembacaan aktif saat tap.</p></form>
                 }
                 else { <p class="notice">Akun wali kelas melihat absensi kelas yang ditugaskan. Pemrosesan kartu tersedia bagi admin/kepala sekolah.</p> }
                 <div id="tap-result" class="reader-result @resultTone" role="status" aria-live="polite"><span class="reader-symbol"><UiIcon Name="card" /></span><div><span class="eyebrow">HASIL PEMBACAAN</span><h3>@resultTitle</h3><p>@resultDetail</p></div></div>
@@ -47,7 +49,7 @@
     private ElementReference readerInput;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if ((firstRender || restoreReaderFocus) && WorkspaceView.CanManage(Status))
+        if ((firstRender || restoreReaderFocus) && WorkspaceView.CanManage(Status) && (!Gate.HasSession || Gate.Receiving))
         {
             restoreReaderFocus = false;
             await readerInput.FocusAsync();
@@ -58,7 +60,7 @@
     private IEnumerable<AbsensiSiswaUntukNotifikasi> Filtered() => rows.Where(r => r.NamaSiswa.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) && (statusFilter.Length == 0 || r.Status.ToString() == statusFilter));
     private async Task ProcessCard()
     {
-        if (processing || !WorkspaceView.CanManage(Status) || string.IsNullOrWhiteSpace(uid)) return;
+        if (processing || !WorkspaceView.CanManage(Status) || (Gate.HasSession && !Gate.Receiving) || string.IsNullOrWhiteSpace(uid)) return;
         processing = true;
         try
         {
@@ -97,4 +99,5 @@
         finally { uid = ""; processing = false; restoreReaderFocus = true; }
     }
 }
+
 
