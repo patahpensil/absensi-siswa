@@ -163,6 +163,7 @@ public partial class App : Application
     // supaya selalu mengikuti data siswa/guru aktif terbaru.
     private Window BukaGerbang()
     {
+        new Absensi.Data.Gerbang.GateAccess().EnsureAuthorized(_connection!, _akunLogin);
         var cache = CacheTampilanGerbang.Muat(_connection!);
         var gerbangViewModel = new GerbangViewModel(_connection!, _penyediaWaktu, new PemutarBunyiSistem(), cache, _statusModeRegistrasi);
         return new GerbangWindow(gerbangViewModel, _connection!);
@@ -383,3 +384,4 @@ internal sealed class PencatatGalatTraceListener : System.Diagnostics.TraceListe
         Absensi.Data.Diagnostik.PencatatGalat.Catat(new Exception(message), sumber: "WPF.BindingError", level: "ERROR");
     }
 }
+

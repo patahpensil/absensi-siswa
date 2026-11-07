@@ -366,10 +366,73 @@ await langkah('Laporan PDF: hasil di browser dicatat apa adanya', async () => {
   await page.waitForSelector('#tap-uid');
 });
 
+await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reader bersama', async () => {
+  await setClock('2026-11-05T07:29:00');
+  await page.click('#menu-layar-gerbang');
+  await page.waitForSelector('#gate-controls');
+  const popupPromise = context.waitForEvent('page');
+  await page.click('#gate-open');
+  const tv = await popupPromise;
+  await tv.waitForFunction(() => document.querySelector('#gate-fullscreen')?.disabled === false);
+  tegas((await tv.textContent('#gate-school')).includes('SMP Negeri Contoh'), 'nama sekolah tidak tersaji di TV');
+  tegas(await tv.locator('#menu-siswa, #menu-guru, #akun-aktif').count() === 0, 'TV memiliki kontrol admin');
+  await tv.click('#gate-fullscreen');
+  await tv.waitForFunction(() => document.fullscreenElement !== null);
+  await tv.locator('#gate-reader').pressSequentially('0000111101');
+  await tv.press('#gate-reader', 'Enter');
+  await tv.waitForFunction(() => document.querySelector('#gate-cards')?.textContent?.includes('Siswa 7A-1'));
+  tegas((await tv.textContent('#gate-cards')).includes('Hadir'), 'status siswa salah di TV');
+  await tv.locator('#gate-reader').pressSequentially('0000222201');
+  await tv.press('#gate-reader', 'Enter');
+  await tv.waitForFunction(() => document.querySelector('#gate-cards')?.textContent?.includes('Ibu Sari'));
+  tegas((await tv.textContent('#gate-cards')).includes('GURU'), 'label guru hilang');
+  tegas(await tv.locator('#gate-cards .card').count() >= 2, 'tap siswa dan guru tidak tampil bersamaan');
+  tegas(await tv.locator('#gate-cards img.photo').count() >= 1, 'foto guru yang sudah diunggah tidak tampil');
+
+  await page.click('#menu-dashboard');
+  tegas(await page.locator('#ringkasan').count() === 1 && !tv.isClosed(), 'dashboard dan layar TV tidak dapat dibuka terpisah');
+  await page.click('#menu-layar-gerbang');
+  await page.click('#gate-stop');
+  await page.fill('#gate-confirm-password', 'salah');
+  await page.click('#gate-confirm-submit');
+  await page.waitForSelector('#gate-confirm-error');
+  tegas((await page.textContent('#gate-receiving-state')).includes('aktif'), 'sandi salah menghentikan penerimaan');
+  await page.fill('#gate-confirm-password', 'contoh123');
+  await page.click('#gate-confirm-submit');
+  await page.waitForFunction(() => document.querySelector('#gate-receiving-state')?.textContent?.includes('dihentikan'));
+  tegas(!tv.isClosed(), 'Hentikan tap ikut menutup TV');
+  await tv.waitForFunction(() => document.querySelector('#gate-reader')?.disabled === true);
+  await page.click('#gate-start');
+  await tv.waitForFunction(() => document.querySelector('#gate-reader')?.disabled === false);
+
+  await page.click('#gate-close');
+  await page.fill('#gate-confirm-password', 'contoh123');
+  const closed = tv.waitForEvent('close');
+  await page.click('#gate-confirm-submit');
+  await closed;
+  tegas((await page.textContent('#gate-receiving-state')).includes('aktif'), 'menutup TV ikut menghentikan tap');
+  // No display remains, but the controller can keep receiving from its input.
+  await page.fill('#gate-controller-uid', 'KARTU-TIDAK-TERDAFTAR');
+  await page.press('#gate-controller-uid', 'Enter');
+  await page.waitForFunction(() => document.querySelector('#gate-controller-uid')?.value === '');
+  await setClock('2026-11-04T13:10:00');
+});
+
+await langkah('URL TV langsung tidak membuka sesi dan pesan palsu tidak memberi data', async () => {
+  const direct = await context.newPage();
+  await direct.goto(`${baseUrl}gate.html`);
+  tegas(await direct.locator('#gate-fullscreen').isDisabled(), 'URL langsung dapat membuka fullscreen sesi');
+  tegas(await direct.locator('#gate-reader').isDisabled(), 'URL langsung dapat memproses RFID');
+  tegas(await direct.locator('#gate-cards .card').count() === 0, 'URL langsung membocorkan identitas');
+  await direct.evaluate(() => window.postMessage({ type: 'gate-snapshot', token: 'palsu', value: { cards: [{ name: 'Data palsu' }] } }, location.origin));
+  tegas(await direct.locator('#gate-cards .card').count() === 0, 'pesan tanpa pengendali diterima');
+  await direct.close();
+});
+
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
   for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
-    for (const menu of ['dashboard', 'siswa', 'guru', 'absensi', 'pengaturan']) {
+    for (const menu of ['dashboard', 'siswa', 'guru', 'absensi', 'layar-gerbang', 'pengaturan']) {
       await page.click(`#menu-${menu}`);
       await page.waitForTimeout(100);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
@@ -384,15 +447,31 @@ await langkah('Menu yang belum dibangun diberi tahu apa adanya', async () => {
   await page.waitForSelector('#belum-dibangun');
 });
 
-await langkah('Keluar kembali ke layar login', async () => {
+await langkah('Keluar akun menutup TV dan kembali ke layar login', async () => {
+  await page.click('#menu-layar-gerbang');
+  const popupPromise = context.waitForEvent('page');
+  await page.click('#gate-open');
+  const tv = await popupPromise;
+  await tv.waitForFunction(() => document.querySelector('#gate-fullscreen')?.disabled === false);
+  const closed = tv.waitForEvent('close');
   await page.click('#tombol-keluar');
+  await closed;
   await page.waitForSelector('#tombol-masuk');
 });
 
 await langkah('Admin melihat menu Audit', async () => {
   await masuk('admin', 'contoh123');
   await page.waitForSelector('#menu-audit');
+  tegas(await page.locator('#menu-layar-gerbang').count() === 1, 'admin tidak mendapat menu gerbang');
+  await page.click('#menu-layar-gerbang');
+  await page.waitForSelector('#gate-controls');
+  const popupPromise = context.waitForEvent('page');
+  await page.click('#gate-open');
+  const tv = await popupPromise;
+  await tv.waitForFunction(() => document.querySelector('#gate-fullscreen')?.disabled === false);
+  const closed = tv.waitForEvent('close');
   await page.click('#tombol-keluar');
+  await closed;
   await page.waitForSelector('#tombol-masuk');
 });
 
@@ -415,6 +494,10 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.waitForSelector('#tombol-masuk');
   await masuk('wali7a', 'contoh123');
   await page.waitForSelector('#ringkasan');
+  tegas(await page.locator('#menu-layar-gerbang, #dashboard-open-tv').count() === 0, 'wali mendapat pengendali gerbang');
+  await page.fill('#workspace-command', 'Layar gerbang');
+  await page.press('#workspace-command', 'Enter');
+  tegas(await page.locator('#gate-controls, #gate-open').count() === 0, 'wali dapat membuka gerbang melalui perintah');
   await page.click('#menu-siswa');
   await page.waitForSelector('#tabel-siswa');
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
@@ -463,4 +546,5 @@ await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);
 process.exit(failed === 0 ? 0 : 1);
+
 

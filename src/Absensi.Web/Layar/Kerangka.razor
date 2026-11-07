@@ -15,7 +15,7 @@
     <nav class="navigation" aria-label="Menu utama">
         @foreach (var item in MenuItems())
         {
-            <button class="@(item == activePage ? "active" : "")" id="menu-@item.ToLowerInvariant()" aria-current="@(item == activePage ? "page" : null)" @onclick="() => Navigate(item)">@item</button>
+            <button class="@(item == activePage ? "active" : "")" id="menu-@item.ToLowerInvariant().Replace(" ", "-")" aria-current="@(item == activePage ? "page" : null)" @onclick="() => Navigate(item)">@item</button>
         }
     </nav>
     <div class="schoolbar">
@@ -42,9 +42,11 @@
             case "Kelas": <DaftarKelas /> break;
             case "Koreksi": <KoreksiWeb /> break;
             case "Laporan": <LaporanWeb /> break;
+            case "Layar gerbang": break;
             case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
             default: <BelumDibangun Nama="@activePage" /> break;
         }
+        <GateHost PageActive='@(activePage == "Layar gerbang")' />
     </main>
     <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>07.30 batas hadir <b>·</b> 08.00 daftar wali <b>·</b> 08.10 rekap orang tua</span><span class="mono">WEB UJI / 01</span></footer>
 </div>
@@ -61,8 +63,9 @@
 
     private IEnumerable<string> MenuItems()
     {
-        var items = new[] { "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
-        return Status.Akun!.Peran == PeranAkun.Admin ? items : items.Where(m => m != "Audit");
+        var items = new[] { "Dashboard", "Absensi", "Layar gerbang", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
+        return items.Where(m => (m != "Audit" || Status.Akun!.Peran == PeranAkun.Admin)
+            && (m != "Layar gerbang" || WorkspaceView.CanManage(Status)));
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -84,7 +87,7 @@
         var query = command.Trim();
         if (query.Length == 0) return;
         var page = MenuItems().FirstOrDefault(m => m.Equals(query, StringComparison.OrdinalIgnoreCase));
-        if (query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase)) page = "Absensi";
+        if (query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase)) page = WorkspaceView.CanManage(Status) ? "Layar gerbang" : null;
         if (page is not null) Navigate(page);
         else if (query.Equals("BANTUAN", StringComparison.OrdinalIgnoreCase)) commandMessage = "Ketik nama menu, GERBANG, atau nama/NISN siswa. Ctrl+K membuka perintah, F2 Absensi, F3 Siswa.";
         else { Navigate("Siswa"); studentSearch = query; }
@@ -97,3 +100,4 @@
         reference?.Dispose();
     }
 }
+

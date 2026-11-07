@@ -1,0 +1,203 @@
+@using Absensi.Data.Gerbang
+@using Absensi.Web.Layanan
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject StatusAplikasi Status
+@inject IJSRuntime JS
+
+@if (PageActive)
+{
+    <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / TV GERBANG</p><h1>Layar gerbang</h1><p>Pengendali tampilan TV dan penerimaan kartu RFID.</p></div></div>
+    @if (!WorkspaceView.CanManage(Status))
+    {
+        <p id="gate-access-denied" class="message danger" role="alert">Hanya kepala sekolah dan admin/TU yang boleh mengakses pengendali gerbang.</p>
+    }
+    else
+    {
+        <section id="gate-controls" class="panel">
+            <header class="panel-header"><h2><UiIcon Name="card" /> Pengendali gerbang</h2><span class="panel-code">TV / RFID</span></header>
+            <div class="reader-body">
+                <div class="gate-control-status">
+                    <span id="gate-receiving-state" class="badge @(gate.Receiving ? "positive" : "neutral")">@(gate.Receiving ? "Penerimaan tap aktif" : "Penerimaan tap dihentikan")</span>
+                    <span id="gate-display-state" class="badge @(gate.DisplayOpen ? "info" : "neutral")">@(gate.DisplayOpen ? fullscreen ? "TV fullscreen" : "TV terbuka · belum fullscreen" : "TV tertutup")</span>
+                </div>
+                <p>Hubungkan TV melalui HDMI, pilih Extend di Windows. Buka jendela TV, pindahkan ke TV tujuan, lalu tekan Fullscreen di jendela tersebut.</p>
+                <div class="dialog-actions gate-actions">
+                    <button id="gate-open" class="primary" type="button" @onclick="OpenDisplayAsync">@(gate.DisplayOpen ? "Tampilkan jendela TV" : "Buka layar TV")</button>
+                    <button id="gate-start" type="button" disabled="@gate.Receiving" @onclick="StartAsync">Mulai penerimaan tap</button>
+                    <button id="gate-stop" type="button" disabled="@(!gate.Receiving)" @onclick='() => AskConfirmation("stop")'>Hentikan penerimaan tap</button>
+                    <button id="gate-close" type="button" disabled="@(!gate.DisplayOpen)" @onclick='() => AskConfirmation("close")'>Tutup tampilan TV</button>
+                </div>
+                <p class="field-help">Tutup tampilan TV tidak menghentikan penerimaan tap. Keluar akun atau menutup halaman pengendali akan mengakhiri sesi gerbang.</p>
+                <form @onsubmit="ReadControllerCardAsync" @onsubmit:preventDefault>
+                    <label for="gate-controller-uid">Pembacaan kartu dari PC pengendali</label>
+                    <div class="input-action"><input id="gate-controller-uid" @bind="controllerUid" @bind:event="oninput" maxlength="64" autocomplete="off" disabled="@(!gate.Receiving)" placeholder="Tap kartu saat kolom ini atau jendela TV aktif" /><button type="submit" disabled="@(!gate.Receiving || string.IsNullOrWhiteSpace(controllerUid))">Proses tap</button></div>
+                </form>
+                <p class="field-help">Reader USB mengikuti fokus keyboard. Saat mengisi formulir atau registrasi kartu, input tidak diambil oleh gerbang. Kembalikan fokus ke TV atau kolom pembacaan setelah selesai.</p>
+                @if (message is not null) { <p id="gate-control-message" class="notice" role="status">@message</p> }
+                @if (gate.Error is not null) { <p id="gate-control-error" class="message danger" role="alert">@gate.Error</p> }
+                @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
+            </div>
+        </section>
+    }
+}
+@if (confirmation is not null)
+{
+    <div class="modal-backdrop" @onkeydown="ConfirmationKey">
+        <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="gate-confirm-title">
+            <header class="panel-header"><h2 id="gate-confirm-title">@(confirmation == "stop" ? "Hentikan penerimaan tap?" : "Tutup tampilan TV?")</h2></header>
+            <div class="dialog-body">
+                <p>@(confirmation == "stop" ? "Kartu yang ditap setelah dihentikan tidak akan dicatat oleh gerbang. Tampilan TV tetap terbuka." : "Tampilan pada TV akan ditutup. Penerimaan tap tetap aktif pada PC pengendali.")</p>
+                <p>Konfirmasikan dengan sandi akun @Status.Akun?.Username.</p>
+                <form @onsubmit="ConfirmAsync" @onsubmit:preventDefault>
+                    <label for="gate-confirm-password">Sandi akun</label><input id="gate-confirm-password" type="password" @bind="password" @bind:event="oninput" autocomplete="current-password" />
+                    @if (confirmationError is not null) { <p id="gate-confirm-error" class="message danger" role="alert">@confirmationError</p> }
+                    <div class="dialog-actions"><button id="gate-confirm-cancel" type="button" @onclick="CancelConfirmation">Batal</button><button id="gate-confirm-submit" class="primary" type="submit" disabled="@(string.IsNullOrEmpty(password))">Konfirmasi</button></div>
+                </form>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public bool PageActive { get; set; }
+    private GateController gate = default!;
+    private IJSObjectReference? bridge;
+    private DotNetObjectReference<GateHost>? reference;
+    private readonly CancellationTokenSource cancellation = new();
+    private Task? clockTask;
+    private string? confirmation, confirmationError, message;
+    private string password = "", controllerUid = "";
+    private bool fullscreen, disposed, processing;
+
+    protected override void OnInitialized() => gate = new GateController(Status);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        bridge = await JS.InvokeAsync<IJSObjectReference>("import", "./js/gate-controller.js");
+        reference = DotNetObjectReference.Create(this);
+        await bridge.InvokeVoidAsync("attach", reference);
+        clockTask = TickAsync();
+    }
+
+    private async Task TickAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellation.Token))
+                await InvokeAsync(PublishAsync);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task OpenDisplayAsync()
+    {
+        try
+        {
+            gate.Authorize();
+            if (bridge is null || !await bridge.InvokeAsync<bool>("isOpen"))
+            {
+                gate.Error = "Jendela TV diblokir browser. Izinkan pop-up untuk situs ini lalu tekan Buka layar TV kembali.";
+                return;
+            }
+            gate.OpenDisplay();
+            gate.SetReceiving(true);
+            gate.Error = null;
+            message = "Jendela TV dibuka. Pindahkan ke TV, lalu tekan Fullscreen di jendela TV.";
+            await Status.SimpanAsync();
+            await PublishAsync();
+        }
+        catch (InvalidOperationException ex) { gate.Error = ex.Message; }
+    }
+
+    private async Task StartAsync()
+    {
+        try { gate.SetReceiving(true); await Status.SimpanAsync(); await PublishAsync(); }
+        catch (InvalidOperationException ex) { gate.Error = ex.Message; }
+    }
+
+    private void AskConfirmation(string action)
+    {
+        try { gate.Authorize(); confirmation = action; confirmationError = null; password = ""; }
+        catch (InvalidOperationException ex) { gate.Error = ex.Message; }
+    }
+    private void CancelConfirmation() { confirmation = null; confirmationError = null; password = ""; }
+    private void ConfirmationKey(KeyboardEventArgs e) { if (e.Key == "Escape") CancelConfirmation(); }
+
+    private async Task ConfirmAsync()
+    {
+        try
+        {
+            if (!gate.ConfirmPassword(password)) { confirmationError = "Sandi tidak cocok. Tindakan belum dijalankan."; password = ""; return; }
+            if (confirmation == "stop") { gate.SetReceiving(false); message = "Penerimaan tap dihentikan. TV tetap terbuka."; }
+            else if (confirmation == "close")
+            {
+                gate.CloseDisplay();
+                if (bridge is not null) await bridge.InvokeVoidAsync("closeDisplay");
+                message = "TV ditutup. Penerimaan tap pada PC tetap aktif bila sebelumnya aktif.";
+            }
+            CancelConfirmation();
+            await Status.SimpanAsync();
+            await PublishAsync();
+        }
+        catch (InvalidOperationException ex) { confirmationError = ex.Message; password = ""; }
+    }
+
+    private async Task ReadControllerCardAsync()
+    {
+        var value = controllerUid;
+        controllerUid = "";
+        await ReadCard(value);
+    }
+
+    [JSInvokable]
+    public async Task ReadCard(string uid)
+    {
+        if (processing || disposed) return;
+        processing = true;
+        try
+        {
+            if (await gate.ProcessAsync(uid)) { gate.Error = null; message = "Hasil tap diperbarui pada TV dan catatan absensi."; }
+            await PublishAsync();
+        }
+        catch (InvalidOperationException ex) { gate.Error = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { gate.Error = "Tap belum dapat dipastikan. Periksa catatan absensi sebelum mencoba kembali."; }
+        finally { processing = false; await InvokeAsync(StateHasChanged); }
+    }
+
+    private async Task PublishAsync()
+    {
+        if (disposed || bridge is null) return;
+        try
+        {
+            if (gate.Receiving || gate.DisplayOpen)
+            {
+                gate.Authorize();
+                if (gate.DisplayOpen && !await bridge.InvokeAsync<bool>("isOpen")) { gate.CloseDisplay(); await Status.SimpanAsync(); }
+                fullscreen = await bridge.InvokeAsync<bool>("isFullscreen");
+                await bridge.InvokeVoidAsync("publish", gate.Snapshot());
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (InvalidOperationException ex)
+        {
+            gate.LoseSession();
+            gate.Error = ex.Message;
+            await bridge.InvokeVoidAsync("closeDisplay");
+        }
+        catch (JSDisconnectedException) { gate.LoseSession(); }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        cancellation.Cancel();
+        if (clockTask is not null) await clockTask;
+        gate.LoseSession();
+        if (bridge is not null) { await bridge.InvokeVoidAsync("detach"); await bridge.DisposeAsync(); }
+        reference?.Dispose();
+        cancellation.Dispose();
+    }
+}

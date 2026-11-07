@@ -171,4 +171,33 @@ public sealed class MainWindowViewModelTests
 
         Assert.IsType<Absensi.App.Audit.AuditViewModel>(viewModel.KontenAktif);
     }
+    [Fact]
+    public void BukaGerbang_WaliKelas_CannotExecuteAndDirectExecuteRejected()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var model = BuatViewModel(database, WaliKelas, "SMP Contoh", null);
+        var opened = false;
+        model.BukaGerbangDiminta += (_, _) => opened = true;
+        Assert.False(model.BukaGerbangCommand.CanExecute(null));
+        Assert.Throws<InvalidOperationException>(() => model.BukaGerbangCommand.Execute(null));
+        Assert.False(opened);
+    }
+
+    [Theory]
+    [MemberData(nameof(GateControllers))]
+    public void BukaGerbang_AdminOrHeadmaster_CanExecute(AkunTersimpan account)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var model = BuatViewModel(database, account, "SMP Contoh", null);
+        var opened = false;
+        model.BukaGerbangDiminta += (_, _) => opened = true;
+        Assert.True(model.BukaGerbangCommand.CanExecute(null));
+        model.BukaGerbangCommand.Execute(null);
+        Assert.True(opened);
+    }
+
+    public static TheoryData<AkunTersimpan> GateControllers => new() { Admin, Kepsek };
 }
+

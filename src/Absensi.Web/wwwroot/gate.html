@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Gerbang — Absensi SMP</title>
+    <link rel="stylesheet" href="css/gate.css" />
+    <script src="js/gate-display.js" defer></script>
+</head>
+<body>
+    <main id="gate-screen" aria-label="Layar gerbang sekolah">
+        <header><div><span class="eyebrow">ABSENSI / GERBANG</span><h1 id="gate-school">Layar gerbang</h1><p id="gate-year"></p></div><div class="clock"><strong id="gate-clock">—</strong><span>WITA</span></div></header>
+        <section class="summary" aria-label="Ringkasan harian"><div><span>Hadir</span><strong id="gate-present">0</strong></div><div><span>Terlambat</span><strong id="gate-late">0</strong></div><div><span>Belum tap</span><strong id="gate-not-tapped">0</strong></div><div><span>Guru masuk/hadir</span><strong id="gate-teachers">0</strong></div></section>
+        <p id="gate-status" role="status">Buka layar ini melalui menu Layar gerbang dengan akun kepala sekolah atau admin/TU.</p>
+        <div id="gate-setup"><p>Pindahkan jendela ini ke TV tujuan, lalu aktifkan fullscreen.</p><button id="gate-fullscreen" type="button" disabled>Fullscreen</button></div>
+        <section id="gate-cards" class="cards" aria-live="polite" aria-label="Hasil tap"></section>
+        <div id="gate-empty" class="empty">Menunggu sesi gerbang yang sah.</div>
+        <section class="recent"><h2>Pembacaan terakhir</h2><div id="gate-recent"></div></section>
+        <input id="gate-reader" aria-label="Pembaca RFID gerbang" maxlength="64" autocomplete="off" disabled />
+        <footer><span id="gate-reading-state">Reader belum aktif</span><span>Data sintetis · lingkungan uji</span></footer>
+    </main>
+</body>
+</html>

@@ -3,12 +3,12 @@
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<div class="page-heading"><div><p class="eyebrow">OVERVIEW / KEHADIRAN</p><h1>Pusat kendali kehadiran</h1><p>Pantau kedatangan, siswa yang perlu ditindaklanjuti, dan kesiapan data.</p></div><button class="primary" id="dashboard-open-gate" @onclick='() => OnNavigate.InvokeAsync("Absensi")'><UiIcon Name="card" /> Buka absensi <kbd>F2</kbd></button></div>
+<div class="page-heading"><div><p class="eyebrow">OVERVIEW / KEHADIRAN</p><h1>Pusat kendali kehadiran</h1><p>Pantau kedatangan, siswa yang perlu ditindaklanjuti, dan kesiapan data.</p></div><div class="gate-dashboard-actions">@if (WorkspaceView.CanManage(Status)) { <button class="secondary" id="dashboard-open-tv" @onclick='() => OnNavigate.InvokeAsync("Layar gerbang")'>Layar gerbang TV</button> }<button class="primary" id="dashboard-open-gate" @onclick='() => OnNavigate.InvokeAsync("Absensi")'><UiIcon Name="card" /> Buka absensi <kbd>F2</kbd></button></div></div>
 <AttendanceSummary Rows="rows" Students="students.Count(s => s.Aktif)" DateLabel='@Status.Jam.Sekarang.ToString("dd / MM / yyyy")' />
 <div class="terminal-grid">
     <div class="main-column">
         <section class="panel">
-            <header class="panel-header"><h2><UiIcon Name="grid" /> Pantauan gerbang</h2><span class="panel-code">01 / SISWA</span></header>
+            <header class="panel-header"><h2><UiIcon Name="grid" /> Pantauan kedatangan</h2><span class="panel-code">01 / SISWA</span></header>
             <div class="gate-banner"><div><strong>Aktivitas kedatangan hari ini</strong><small>Hasil dari catatan absensi yang tersimpan</small></div><span class="badge neutral">@rows.Count(r => r.JamMasuk is not null) sudah tap</span></div>
             @if (latest.Count == 0)
             {
@@ -57,3 +57,4 @@
     }
     private IEnumerable<AbsensiSiswaUntukNotifikasi> WatchRows() => rows.Where(r => showExcused ? r.Status is StatusAbsensiSiswa.Izin or StatusAbsensiSiswa.Sakit : r.Status == StatusAbsensiSiswa.Alpa);
 }
+

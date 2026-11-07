@@ -56,7 +56,7 @@ Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem 
 |---|---|---|
 | Kepala Sekolah | 1 | Penuh |
 | Admin / TU | 2 | Penuh (setara kepala sekolah) |
-| Wali Kelas | 1 per kelas | Koreksi status kehadiran siswa di kelasnya saja |
+| Wali Kelas | 1 per kelas | Koreksi status kehadiran siswa di kelasnya saja; tidak mengendalikan layar gerbang |
 
 **Kewenangan penuh mencakup:** master siswa, master kelas, registrasi dan penggantian kartu, kalender pendidikan, naik kelas massal, kunci bulan, koreksi status, pembuatan akun, laporan, pengaturan.
 
@@ -508,9 +508,28 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 - Warna tegas: Hadir, Terlambat, Ditolak
 - Ringkasan harian: Hadir / Terlambat / Belum tap / Guru
 
+### 14.1.1 Pengendali Gerbang dan TV
+
+**Keputusan pemilik, 7 November 2026:** layar gerbang berbeda dari dashboard dan halaman daftar absensi. Fitur **Layar gerbang** membuka tampilan TV fullscreen; kontrolnya hanya dapat diakses oleh **Kepala Sekolah dan Admin/TU**. Pemeriksaan berlaku pada aksi/layanan, bukan hanya visibilitas menu. Wali kelas tidak boleh membuka, menutup atau menghentikan gerbang melalui menu, perintah maupun pemanggilan langsung. Petugas di gerbang dapat melihat TV yang sudah diaktifkan tanpa memperoleh akun admin. Akun vendor tidak otomatis mendapat hak operasional sekolah.
+
+| Aksi pengendali | Kepala Sekolah | Admin/TU | Wali Kelas / petugas tanpa akun |
+|---|---|---|---|
+| Membuka tampilan TV | Ya | Ya | Tidak |
+| Memulai penerimaan tap | Ya | Ya | Tidak |
+| Menutup tampilan TV | Ya, konfirmasi autentikasi | Ya, konfirmasi autentikasi | Tidak |
+| Menghentikan penerimaan tap | Ya, konfirmasi autentikasi | Ya, konfirmasi autentikasi | Tidak |
+
+**Operasional dua layar:** PC sekolah terhubung ke TV melalui HDMI dengan mode **Extend**. Pengelola membuka Layar gerbang, memilih TV tujuan dengan memindahkan jendela ke layar tersebut, kemudian mengaktifkan fullscreen. Dashboard tetap tersedia pada monitor PC. Tampilan TV tidak memuat menu master data, kredensial atau kontrol administratif. Kartu siswa/guru, foto, label jenis, identitas, jam dan hasil tap mengikuti §14.1/§16.8. Beberapa hasil dapat tampil bersamaan. Dashboard hanya ringkasan dan tindak lanjut, bukan pengganti TV gerbang.
+
+**Dua tindakan terpisah:** Menutup tampilan TV tidak menghentikan penerimaan tap pada pengendali. Menghentikan penerimaan tap tidak menutup TV; TV menampilkan status berhenti dan tap baru tidak dicatat oleh sesi gerbang. Konfirmasi berhasil, akun pelaku, waktu dan aksi dicatat dalam audit. Keluar dari fullscreen melalui tombol browser/OS tidak membuka hak admin. Menutup tab pengendali, keluar akun atau kehilangan kewenangan mengakhiri sesi dan akses TV. Gangguan koneksi pengendali menutup akses pembacaan/data pada TV sampai sesi sah dipulihkan.
+
+**Batas pengujian browser sementara:** tombol Buka layar TV membuka jendela terpisah. Browser dapat meminta izin pop-up dan memerlukan klik Fullscreen pada jendela TV. Bila ditolak, aplikasi menyatakan belum fullscreen; tidak mengklaim pemilihan monitor otomatis. TV menerima snapshot tampilan dari satu pengendali, tanpa login atau salinan database mandiri. URL TV langsung tidak membuka data/sesi. Tampilan dan input terikat ke jendela pengendali yang sah dan dihentikan saat sesi berakhir. Konfirmasi pada fase lokal memakai sandi akun sendiri; produksi mengikuti reautentikasi/MFA dan otorisasi backend pada §22.
+
+**Input RFID:** reader USB keyboard-emulation mengikuti fokus keyboard. Input formulir dan mode registrasi tidak boleh diambil sebagai absensi gerbang. Operator mengembalikan fokus ke TV/kolom pembacaan ketika selesai mengisi formulir. Pengoperasian empat reader bersamaan dan jaminan penangkapan latar belakang saat mengetik pada PC tetap harus diuji dengan perangkat nyata; browser sementara tidak dianggap membuktikan kemampuan itu. Tidak menambahkan label asal reader yang tidak tersedia dari perangkat.
+
 ### 14.2 Layar Admin
 
-Menu: Dashboard, Absensi, Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi, Audit, Pengaturan.
+Menu: Dashboard, Absensi, **Layar gerbang** (kepala sekolah/admin saja), Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi, Audit, Pengaturan.
 
 Header memuat **nama sekolah, logo, dan tahun ajaran aktif**. Menampilkan tahun ajaran di header berfungsi sebagai pengaman — admin langsung sadar bila masih memakai tahun ajaran lama setelah Juli.
 
@@ -530,7 +549,7 @@ Bukan layar gerbang, melainkan pengendalinya:
 |---|---|
 | Status perangkat | Jumlah reader terhubung (mis. "4 dari 4") |
 | Mode aktif | Absensi atau Registrasi — ditampilkan jelas agar mode registrasi yang lupa dimatikan langsung terlihat |
-| Tombol | Buka layar gerbang · Registrasi |
+| Tombol | Buka pengendali Layar gerbang (kepala sekolah/admin) · Registrasi |
 | Pencarian | Cari nama / NISN, saring per kelas |
 | Daftar harian | Seluruh siswa hari itu beserta status, jam masuk, jam pulang |
 
@@ -1744,3 +1763,4 @@ Referensi standar menggunakan rilis tetap `v5.0.0`; keterangan produk penyedia d
 ---
 
 *Rancangan ini dicatat di repositori atas instruksi pemilik. Implementasi online, kelayakan biaya, pengujian kapasitas/pemulihan dan kelulusan ASVS Level 3 belum dibuktikan. Commit/push dokumen tidak mengubah kode aplikasi atau mengotorisasi deployment.*
+

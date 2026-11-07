@@ -70,7 +70,13 @@ public sealed class MainWindowViewModel : ObservableObject
         MenuItems = new ObservableCollection<string>(DaftarMenuUntukPeran(akun.Peran));
 
         _menuAktif = MenuItems[0];
-        BukaGerbangCommand = new RelayCommand(() => BukaGerbangDiminta?.Invoke(this, EventArgs.Empty));
+        BukaGerbangCommand = new RelayCommand(
+            () =>
+            {
+                Absensi.Data.Akun.AuthorizationGuard.EnsureFullAuthority(_akun, "membuka layar gerbang");
+                BukaGerbangDiminta?.Invoke(this, EventArgs.Empty);
+            },
+            () => _akun.Aktif && _akun.Peran is PeranAkun.Admin or PeranAkun.KepalaSekolah);
         BukaRegistrasiKartuCommand = new RelayCommand(() => BukaRegistrasiKartuDiminta?.Invoke(this, EventArgs.Empty));
         KeluarCommand = new RelayCommand(() => KeluarDiminta?.Invoke(this, EventArgs.Empty));
         PerbaruiKontenAktif();
@@ -253,3 +259,4 @@ public sealed class MainWindowViewModel : ObservableObject
         return viewModel;
     }
 }
+

@@ -1997,3 +1997,17 @@ img.detail-avatar {
     background:#ddd
   }
 }
+
+
+
+/* Gate controller stays separate from the TV display document. */
+.gate-control-status,
+.gate-dashboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.gate-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
