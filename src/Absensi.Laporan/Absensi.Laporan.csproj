@@ -21,7 +21,7 @@
       choice if the business grows past that line (dikonfirmasi pemilik
       proyek 2026-09-18, RENCANA-TUGAS.md Tugas 12).
     -->
-    <PackageReference Include="QuestPDF" Version="2026.9.0" />
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
   </ItemGroup>
 
 </Project>
