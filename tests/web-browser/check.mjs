@@ -662,6 +662,8 @@ await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, p
       await page.click('#close-person-detail', { timeout: 5000 }).catch(() => {});
       await page.waitForSelector('#person-detail', { state: 'detached', timeout: 5000 }).catch(() => {});
     }
+    // Later steps expect the school day used before this step.
+    await setClock('2026-11-05T07:29:00').catch(() => {});
   }
 });
 
