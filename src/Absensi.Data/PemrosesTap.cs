@@ -42,7 +42,7 @@ public sealed class PemrosesTap
         var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid, transaction);
         var tapTerakhir = _repositoriTapLog.CariWaktuTapTerakhir(connection, uid);
         var jedaTapMinimal = TimeSpan.FromSeconds(_repositoriPengaturan.BacaInt(connection, "jeda_tap_detik", 15));
-        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal));
+        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal), transaction);
 
         // Bug jadwal kosong (docs/MASTER-BUG-UIUX-REGISTER.md, analisis
         // penolakan Gerbang): sebelumnya jam jadwal yang NULL diam-diam
@@ -76,7 +76,7 @@ public sealed class PemrosesTap
         }
         else
         {
-            var konteks = BuatKonteks(connection, tanggal, waktu, modeRegistrasiAktif, jenisHari, kartu, tapTerakhir, jedaTapMinimal, jadwal);
+            var konteks = BuatKonteks(connection, transaction, tanggal, waktu, modeRegistrasiAktif, jenisHari, kartu, tapTerakhir, jedaTapMinimal, jadwal);
             keputusan = _penentuStatusKehadiran.Tentukan(konteks);
         }
 
@@ -133,6 +133,7 @@ public sealed class PemrosesTap
 
     private KonteksTap BuatKonteks(
         SqliteConnection connection,
+        SqliteTransaction transaction,
         DateOnly tanggal,
         DateTime waktu,
         bool modeRegistrasiAktif,
@@ -155,7 +156,7 @@ public sealed class PemrosesTap
             // tanpa pernah membaca field KonteksTapSiswa ini. Default di
             // sini sekadar memenuhi tipe TimeOnly non-nullable-nya, bukan
             // nilai yang pernah dipakai untuk memutuskan apa pun.
-            var absensiHariIni = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, kartu.PemilikId);
+            var absensiHariIni = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, kartu.PemilikId, transaction);
             var konteksSiswa = new KonteksTapSiswa(
                 SiswaAktif: _repositoriSiswa.IsAktif(connection, kartu.PemilikId),
                 TapTerakhirKartuIni: tapTerakhir,
@@ -174,7 +175,7 @@ public sealed class PemrosesTap
             // "?? default" di bawah: catatan yang sama seperti cabang Siswa
             // di atas berlaku persis — sudah dijaga JadwalBelumLengkapUntuk
             // di Proses() sebelum sampai ke sini untuk hari sekolah.
-            var absensiHariIni = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, kartu.PemilikId);
+            var absensiHariIni = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, kartu.PemilikId, transaction);
             var statusDiMuka = absensiHariIni is not null && PemetaanEnum.AdalahStatusDitetapkanDiMuka(absensiHariIni.Status)
                 ? absensiHariIni.Status
                 : (StatusAbsensiGuru?)null;
