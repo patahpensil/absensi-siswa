@@ -1,7 +1,7 @@
 # PRD — Layanan Absensi Siswa dan Guru RFID
 
 **Versi dokumen:** 1.0 — RANCANGAN ONLINE, keputusan terbuka masih dicatat
-**Tanggal revisi:** 4 November 2026 (WITA)
+**Tanggal revisi:** 12 November 2026 (WITA)
 **Pemilik produk:** penyedia layanan aplikasi absensi untuk sekolah-sekolah pelanggan
 **Sekolah rujukan aturan bisnis:** UPT SMP Negeri 1 Pancarijang
 **Sumber:** `patahpensil/absensi-smp1`, `docs/PRD.md`, cabang `master`
@@ -30,7 +30,7 @@ Layanan absensi siswa dan guru menggunakan kartu RFID untuk banyak sekolah pelan
 | Database utama | PostgreSQL privat, database dan identitas akses per sekolah |
 | Lokasi data | Database, replika, foto, laporan, audit/log sensitif, backup dan pengelolaan kunci yang dikelola layanan di Indonesia |
 | Keamanan | Target verifikasi OWASP ASVS v5.0.0 Level 3; desktop/infrastruktur juga diverifikasi sesuai lingkupnya |
-| Notifikasi | Telegram merupakan baseline yang tercatat; kanal online belum final, WhatsApp dipertimbangkan. P-16 ditangguhkan; pemilihan kanal dan aliran data mengikuti D-03 |
+| Notifikasi | P-19: layanan mendukung dua kanal, Telegram dan WhatsApp. P-16 tetap ditangguhkan; rincian penyedia WhatsApp, isi pesan dan aliran data mengikuti D-03 |
 | Model usaha | Pemilik merupakan penyedia layanan untuk sekolah pelanggan; kebijakan komersial dibahas terpisah |
 | Evaluasi biaya | Dana awal, pengeluaran rutin dan cadangan yang harus disiapkan pemilik sebagai penyedia layanan (§23) |
 | Koneksi terputus | P-08: tap direkam sementara dalam antrean desktop terenkripsi, Menunggu sinkronisasi; server memeriksa dan mengesahkan setelah koneksi pulih; rincian D-01 masih harus diselesaikan |
@@ -299,9 +299,9 @@ Hak akses wali kelas diperiksa terpisah di backend sesuai kewenangan sah (§3/§
 
 ---
 
-## 9. Notifikasi Telegram
+## 9. Notifikasi Telegram dan WhatsApp
 
-**Status pembahasan kanal — P-16 ditangguhkan oleh pemilik:** ada kemungkinan menggunakan WhatsApp. Kanal notifikasi online belum ditetapkan final (D-03). Rincian Telegram di bawah merupakan baseline yang masih tercatat; usulan tambahan verifikasi penautan oleh admin/TU belum disetujui dan belum dimasukkan sebagai ketentuan wajib. Tidak ada keputusan mengganti Telegram atau menambahkan implementasi WhatsApp. Aturan bisnis waktu/status notifikasi yang telah disetujui tetap dicatat dan tidak dibatalkan oleh penangguhan ini.
+**Keputusan kanal — P-19, disetujui pemilik 12 November 2026:** layanan mendukung dua kanal notifikasi, **Telegram dan WhatsApp**. Rincian Telegram di bawah tetap berlaku untuk kanal Telegram; rincian kanal WhatsApp (penyedia/API, penautan penerima, isi pesan, biaya per pesan dan aliran data pihak ketiga) masih mengikuti D-03. P-16 tetap ditangguhkan: usulan tambahan verifikasi penautan oleh admin/TU belum disetujui dan belum dimasukkan sebagai ketentuan wajib. Aturan bisnis waktu/status notifikasi yang telah disetujui tetap dicatat dan tidak dibatalkan oleh penangguhan ini.
 
 Modul notifikasi termasuk **paket inti**, bukan add-on.
 
@@ -1144,7 +1144,7 @@ Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail i
 
 Masuk lingkup rancangan online: website publik, portal pemilik layanan, portal sekolah yang dapat diakses browser termasuk HP, desktop RFID, backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
 
-Lingkup pembaruan ini adalah commit/push dokumen PRD dan catatan utang yang diperintahkan pemilik. Implementasi kode online, pengadaan hosting/layanan berbayar, migrasi data nyata dan deployment berada di luar otorisasi pembaruan dokumen ini. WhatsApp masih dipertimbangkan sebagai kanal notifikasi, belum dipilih atau diotorisasi untuk implementasi (D-03, P-16 ditangguhkan). Fitur cetak kartu dan absensi per mata pelajaran tidak ditambahkan. Keputusan harga/biaya lama yang belum diverifikasi tidak dipakai sebagai perhitungan layanan online.
+Lingkup pembaruan ini adalah commit/push dokumen PRD dan catatan utang yang diperintahkan pemilik. Implementasi kode online, pengadaan hosting/layanan berbayar, migrasi data nyata dan deployment berada di luar otorisasi pembaruan dokumen ini. Telegram dan WhatsApp ditetapkan sebagai dua kanal notifikasi yang didukung (P-19); implementasi WhatsApp menunggu rincian D-03 dan tetap di luar otorisasi pembaruan dokumen ini (P-16 ditangguhkan). Fitur cetak kartu dan absensi per mata pelajaran tidak ditambahkan. Keputusan harga/biaya lama yang belum diverifikasi tidak dipakai sebagai perhitungan layanan online.
 
 Pembaruan desktop otomatis dapat dinilai pada desain rilis; belum diputuskan. Jangan menafsirkan pemisahan frontend/backend atau target L3 sebagai kewajiban langsung memakai microservices, Kubernetes, satu server fisik per sekolah, atau teknologi frontend tertentu.
 
@@ -1253,7 +1253,7 @@ ASVS mewajibkan hasil pengamanan lintas tenant; pola database/runtime terpisah m
 
 Pemilihan provider belum dilakukan. Label "region Indonesia" saja bukan bukti lokasi semua backup, dukungan, telemetry, subprosesor, dan jalur replikasi. Sebelum produksi diperlukan daftar aliran data beserta bukti konfigurasi dan komitmen penyedia. Persyaratan ini menetapkan lokasi pemrosesan/penyimpanan yang dikelola layanan; tidak menjamin semua paket internet secara fisik selalu melewati jaringan domestik.
 
-Notifikasi Telegram adalah aliran ke pihak ketiga. Mengirim nama/status siswa melalui Telegram tidak memenuhi klaim bahwa semua salinan data siswa hanya berada di Indonesia. Telegram tetap tercatat sebagai baseline, tetapi kanal notifikasi online belum final: pemilik mempertimbangkan WhatsApp dan menangguhkan pembahasan P-16 tentang verifikasi penautan Telegram. Pemilihan kanal, payload minimal dengan detail lewat portal atau pengecualian transfer harus diputuskan terlebih dahulu (§25, D-03). Tidak ada penggantian kanal, persetujuan alur verifikasi baru atau implementasi WhatsApp yang diaktifkan otomatis oleh catatan ini.
+Notifikasi Telegram adalah aliran ke pihak ketiga. Mengirim nama/status siswa melalui Telegram tidak memenuhi klaim bahwa semua salinan data siswa hanya berada di Indonesia. Hal yang sama berlaku untuk WhatsApp. Pemilik menetapkan kedua kanal didukung (P-19), sedangkan pembahasan P-16 tentang verifikasi penautan Telegram tetap ditangguhkan. Penyedia WhatsApp, payload minimal dengan detail lewat portal atau pengecualian transfer harus diputuskan terlebih dahulu (§25, D-03). Tidak ada persetujuan alur verifikasi baru atau implementasi WhatsApp yang diaktifkan otomatis oleh catatan ini.
 
 ### 21.7 Alur tap ketika online
 
@@ -1614,7 +1614,7 @@ Ketentuan arsitektur dan C# yang telah disepakati tidak dibuka ulang oleh tabel 
 |---|---|---|
 | D-01 | P-08 memilih antrean tap lokal terenkripsi; P-09 menetapkan waktu tap terverifikasi sebagai dasar Hadir/Terlambat dan Perlu pemeriksaan bila waktu tidak dapat dipercaya. Metode bukti waktu, ambang penyimpangan, batas offline, data minimum, kunci, retensi, alur pemeriksaan dan rekonsiliasi masih harus ditetapkan | Pilihan antrean dan prinsip waktu tap tidak dibuka ulang; gerbang produksi menunggu rincian dan bukti pengujian yang relevan |
 | D-02 | P-10 menetapkan penahanan notifikasi Alpa/Bolos yang belum pasti akibat gangguan sinkronisasi, peringatan admin dan evaluasi setelah sinkronisasi/pemeriksaan selesai. Deteksi kelengkapan, cakupan terdampak, batas tunggu/eskalasi, finalisasi, replay job setelah downtime, toleransi jadwal dan ralat data terlambat masih harus dirinci | Prinsip penahanan tidak dibuka ulang; notifikasi/finalisasi produksi menunggu rincian dan bukti pengujian yang relevan |
-| D-03 | Pemilihan kanal notifikasi online belum final; Telegram merupakan baseline dan WhatsApp dipertimbangkan. P-16 tentang verifikasi penautan Telegram ditangguhkan. Isi pesan, batas data keluar, identitas penerima serta aliran pihak ketiga masih harus diputuskan | Tidak mengimplementasikan WhatsApp atau usulan P-16 tanpa keputusan baru; tidak mengklaim semua salinan data siswa hanya di Indonesia sambil mengirim detail lewat pihak ketiga |
+| D-03 | P-19 menetapkan dua kanal: Telegram dan WhatsApp. P-16 tentang verifikasi penautan Telegram ditangguhkan. Penyedia/API WhatsApp, cara penerima memilih dan menautkan kanal, isi pesan, batas data keluar, biaya per pesan serta aliran pihak ketiga masih harus diputuskan | Pilihan dua kanal tidak dibuka ulang; tidak mengimplementasikan WhatsApp atau usulan P-16 sebelum rincian diputuskan; tidak mengklaim semua salinan data siswa hanya di Indonesia sambil mengirim detail lewat pihak ketiga |
 | D-04 | Model komersial/tarif/kontrak, masa aktif, akses saat menunggak/berakhir, ekspor dan bantuan | Tidak menetapkan harga atau menjalankan suspend/penghapusan otomatis |
 | D-05 | Retensi per kelas data, audit/log, cache lokal, laporan sementara, backup dan pascakontrak; dasar dan prosedur pemusnahan | Tidak mengaktifkan penghapusan; konflik retensi "selamanya" belum ditutup |
 | D-06 | Provider Indonesia, pembagian VM/cluster/instance, HSM, perlindungan memori, biaya dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
@@ -1743,6 +1743,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **Keputusan P-17 — disetujui pemilik:** hak akses wali kelas lama dari penugasan yang berakhir dicabut. Pengganti menggunakan akun sendiri dengan akses sesuai kelas/tahun ajaran penugasannya; riwayat koreksi tetap mencatat pelaku asli dan pergantian penugasan diaudit. §3.3, §5.2, §22.4 dan U-27 diselaraskan. Izin lain dievaluasi terpisah; tidak mengalihkan akun, menimpa pelaku audit atau membuka bulan terkunci. P-16 tetap ditangguhkan. Tidak ada commit/push/deploy.
 
 **Keputusan P-18, 4 November 2026 — disetujui pemilik setelah penjelasan:** kalender akademik menjadi acuan absensi. Tanggal khusus hanya digunakan bagi siswa yang masuk atau keluar di tengah periode, agar hari sebelum mulai/setelah berakhir bersekolah tidak dihitung Alpa atau masuk perhitungan kehadiran/persentase. Siswa reguler mengikuti periode kalender tanpa input tanggal khusus satu per satu. Riwayat lama tetap tersimpan. §5.1, §5.3, §11, §16.7 dan U-28 diselaraskan; kunci bulan, kewenangan dan aturan Terlambat/Bolos sebagai hadir tetap berlaku. P-16 tetap ditangguhkan. Tidak ada commit/push/deploy.
+
+**Keputusan P-19, 12 November 2026 — disetujui pemilik:** kanal notifikasi mendukung dua alat, Telegram dan WhatsApp. §1, §9, §20, §21.6 dan D-03 diselaraskan. Rincian penyedia/API WhatsApp, penautan dan pilihan kanal penerima, isi pesan, biaya serta aliran data pihak ketiga tetap terbuka pada D-03; P-16 tetap ditangguhkan. Tidak ada implementasi atau deploy WhatsApp.
 
 ### 25.6 Referensi primer
 
