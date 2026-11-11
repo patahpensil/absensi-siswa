@@ -15,4 +15,5 @@ public sealed record OutboxBaris(
     int Percobaan,
     DateTime DibuatPada,
     DateTime? TerkirimPada,
-    string? Galat);
+    string? Galat,
+    NotificationChannel Channel = NotificationChannel.Telegram);

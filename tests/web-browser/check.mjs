@@ -599,6 +599,50 @@ await langkah('Admin mengubah master siswa dan guru tanpa mengganti identitas at
   tegas(teacher.includes('Guru Matematika') && teacher.includes('0000222201'), 'jabatan atau kartu guru salah');
 });
 
+await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, pesan hanya diantre', async () => {
+  const openStudent = async () => {
+    await page.click('#menu-siswa');
+    await page.click('#student-detail-1');
+    await page.waitForSelector('#person-detail');
+  };
+  const closeStudent = async () => {
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('#person-detail', { state: 'detached' });
+  };
+  await openStudent();
+  tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal awal bukan Telegram');
+  await page.selectOption('#person-channel-select', 'WhatsApp');
+  await page.click('#person-channel-save');
+  await page.waitForSelector('#person-channel-message[role=alert]');
+  tegas((await page.textContent('#person-channel-message')).includes('Nomor HP orang tua'), 'WhatsApp tanpa nomor HP tidak ditolak');
+  tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal berubah walau ditolak');
+  await closeStudent();
+
+  await page.click('#menu-siswa');
+  await editMaster('#edit-student-1', 'Siswa hasil ubah', '#master-edit-phone', '080000000001');
+  await openStudent();
+  await page.selectOption('#person-channel-select', 'WhatsApp');
+  await page.click('#person-channel-save');
+  await page.waitForSelector('#person-channel-message[role=status]');
+  tegas((await page.textContent('#person-detail-channel')).includes('WhatsApp · 6280000000001'), 'nomor WhatsApp tidak dinormalisasi');
+  await closeStudent();
+
+  await setClock('2026-11-07T08:20:00');
+  await tapCard('0000111101');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat'));
+  await page.click('#menu-notifikasi');
+  await page.waitForSelector('#notification-outbox');
+  await page.selectOption('#notification-channel', 'WhatsApp');
+  const row = await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).first().textContent();
+  tegas(row.includes('WhatsApp') && row.includes('TERLAMBAT') && row.includes('antre'), `pesan WhatsApp tidak diantre: ${row}`);
+  await page.selectOption('#notification-channel', 'Telegram');
+  tegas(await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).count() === 0, 'pesan siswa WhatsApp ikut masuk antrean Telegram');
+
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'ubah_kanal_notifikasi');
+  tegas((await page.textContent('#audit-table')).includes('whatsapp'), 'perubahan kanal tidak tercatat di audit');
+});
+
 await langkah('Impor siswa menampilkan pratinjau dan mendukung berkas dengan atau tanpa RFID', async () => {
   await page.click('#menu-siswa');
   await page.click('#student-import-excel');

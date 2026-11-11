@@ -15,6 +15,7 @@ public sealed class MigrationRunner
         new Migration004AddNotTappedListTime(),
         new Migration005RenameNotTappedListTime(),
         new Migration006SchoolOperations(),
+        new Migration007ParentNotificationChannel(),
     };
 
     public void Run(SqliteConnection connection)

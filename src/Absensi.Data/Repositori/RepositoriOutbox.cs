@@ -1,3 +1,4 @@
+using Absensi.Data.Notifikasi;
 using Absensi.Domain.Notifikasi;
 using Microsoft.Data.Sqlite;
 
@@ -38,13 +39,14 @@ public sealed class RepositoriOutbox
         JenisNotifikasi jenis,
         string chatId,
         string isi,
-        DateTime waktu)
+        DateTime waktu,
+        NotificationChannel channel = NotificationChannel.Telegram)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
-            INSERT OR IGNORE INTO outbox (tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, dibuat_pada)
-            VALUES ($tanggal, $subjekTipe, $subjekId, $jenis, $chatId, $isi, 'antre', $waktu);
+            INSERT OR IGNORE INTO outbox (tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, dibuat_pada, channel)
+            VALUES ($tanggal, $subjekTipe, $subjekId, $jenis, $chatId, $isi, 'antre', $waktu, $channel);
             """;
         command.Parameters.AddWithValue("$tanggal", tanggal.ToString("yyyy-MM-dd"));
         command.Parameters.AddWithValue("$subjekTipe", PemetaanEnum.TeksDariSubjekOutbox(subjekTipe));
@@ -53,15 +55,25 @@ public sealed class RepositoriOutbox
         command.Parameters.AddWithValue("$chatId", chatId);
         command.Parameters.AddWithValue("$isi", isi);
         command.Parameters.AddWithValue("$waktu", waktu.ToString("o"));
+        // chat_id holds the channel address: Telegram chat id or, for
+        // WhatsApp (PRD P-20), the normalised parent phone number.
+        command.Parameters.AddWithValue("$channel", NotificationChannelText.From(channel));
         return command.ExecuteNonQuery() > 0;
     }
 
-    // Dipakai Absensi.Telegram.PengirimOutbox.
+    // Each sender only takes its own channel: the Telegram sender must never
+    // try to deliver a WhatsApp row (its address is a phone number, not a
+    // chat id). WhatsApp rows stay queued until a WhatsApp sender exists
+    // (PRD P-20, provider still open under D-03).
+    public IReadOnlyList<OutboxBaris> ListQueuedForChannel(SqliteConnection connection, NotificationChannel channel) =>
+        DaftarAntre(connection).Where(row => row.Channel == channel).ToList();
+
+    // All queued rows, every channel (Notifikasi screens).
     public IReadOnlyList<OutboxBaris> DaftarAntre(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT id, tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, percobaan, dibuat_pada, terkirim_pada, galat
+            SELECT id, tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, percobaan, dibuat_pada, terkirim_pada, galat, channel
             FROM outbox WHERE status = 'antre' ORDER BY dibuat_pada;
             """;
 
@@ -129,7 +141,7 @@ public sealed class RepositoriOutbox
     {
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT id, tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, percobaan, dibuat_pada, terkirim_pada, galat
+            SELECT id, tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, percobaan, dibuat_pada, terkirim_pada, galat, channel
             FROM outbox WHERE status <> 'antre' ORDER BY dibuat_pada DESC LIMIT $maksimal;
             """;
         command.Parameters.AddWithValue("$maksimal", maksimal);
@@ -156,5 +168,6 @@ public sealed class RepositoriOutbox
         reader.GetInt32(8),
         DateTime.Parse(reader.GetString(9)),
         reader.IsDBNull(10) ? null : DateTime.Parse(reader.GetString(10)),
-        reader.IsDBNull(11) ? null : reader.GetString(11));
+        reader.IsDBNull(11) ? null : reader.GetString(11),
+        NotificationChannelText.Parse(reader.GetString(12)));
 }

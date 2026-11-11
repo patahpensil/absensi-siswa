@@ -122,4 +122,31 @@ public sealed class PengirimOutboxTests
 
         Assert.Equal(1, terkirim);
     }
+
+    // PRD P-20: WhatsApp rows hold a phone number, not a chat id; the
+    // Telegram sender must leave them queued for a WhatsApp sender.
+    [Fact]
+    public async Task KirimAntreanAsync_WhatsAppRow_NotSentByTelegramAndStaysQueued()
+    {
+        using var database = new MigratedDatabase();
+        database.TulisPengaturan("token_bot", "TOKEN-UJI");
+        database.TambahOutboxAntre("chat-1", jenis: "hadir");
+        using (var insert = database.Connection.CreateCommand())
+        {
+            insert.CommandText = """
+                INSERT INTO outbox (tanggal, subjek_tipe, subjek_id, jenis, chat_id, isi, status, dibuat_pada, channel)
+                VALUES ('2026-09-17', 'siswa', 2, 'hadir', '6281234567890', 'isi pesan uji', 'antre', '2026-09-17', 'whatsapp');
+                """;
+            insert.ExecuteNonQuery();
+        }
+
+        var klien = new KlienBotTelegramPalsu();
+        var terkirim = await new PengirimOutbox(klien, TimeSpan.Zero).KirimAntreanAsync(database.Connection, new PenyediaWaktuTetap(Waktu));
+
+        Assert.Equal(1, terkirim);
+        Assert.DoesNotContain(klien.PesanTerkirim, pesan => pesan.ChatId == "6281234567890");
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status FROM outbox WHERE channel = 'whatsapp';";
+        Assert.Equal("antre", command.ExecuteScalar() as string);
+    }
 }

@@ -1,4 +1,5 @@
 using Absensi.Data.Laporan;
+using Absensi.Data.Notifikasi;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Kehadiran;
 using Absensi.Domain.Laporan;
@@ -28,7 +29,9 @@ public sealed record PersonDetail(
     RekapKehadiran? Recap,
     string? RecapNote,
     IReadOnlyList<PersonHistoryRow> History,
-    string? PhotoName = null);
+    string? PhotoName = null,
+    // Students only: parent notification channel (PRD P-20).
+    ParentChannelSettings? ParentChannel = null);
 
 // Read-only panel data for PRD §14.6 (student detail). Visibility follows the
 // same scoping as the lists; the monthly recap comes from LayananLaporan so
@@ -59,7 +62,8 @@ public static class PersonDetailView
         return new PersonDetail(PersonKind.Student, student.Id, student.Nama, student.Nisn, student.KelasNama, student.JenisKelamin, student.Aktif,
             todayRow?.Status.ToString() ?? "Belum ada catatan", todayRow is null ? "neutral" : WorkspaceView.Tone(todayRow.Status),
             student.KartuUid, new RepositoriSiswa().CariUntukAudit(connection, null, studentId)?.Data.NamaOrtu, student.TertautTelegram,
-            recap, note, history, new RepositoriSiswa().CariFotoPath(connection, studentId));
+            recap, note, history, new RepositoriSiswa().CariFotoPath(connection, studentId),
+            new ParentRecipientResolver().Read(connection, studentId));
     }
 
     public static PersonDetail? Teacher(StatusAplikasi state, int teacherId, DateOnly month)

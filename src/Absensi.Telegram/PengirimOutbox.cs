@@ -1,5 +1,6 @@
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Domain.Notifikasi;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.Telegram;
@@ -39,7 +40,7 @@ public sealed class PengirimOutbox
         }
 
         var jumlahTerkirim = 0;
-        var antrean = _repositoriOutbox.DaftarAntre(connection);
+        var antrean = _repositoriOutbox.ListQueuedForChannel(connection, NotificationChannel.Telegram);
 
         foreach (var baris in antrean)
         {

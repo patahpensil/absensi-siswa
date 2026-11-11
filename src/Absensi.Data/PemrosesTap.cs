@@ -1,6 +1,7 @@
 using System.Globalization;
 using Absensi.Data.Repositori;
 using Absensi.Data.Koreksi;
+using Absensi.Data.Notifikasi;
 using Absensi.Domain.Kehadiran;
 using Absensi.Domain.Notifikasi;
 using Microsoft.Data.Sqlite;
@@ -23,7 +24,7 @@ public sealed class PemrosesTap
     private readonly RepositoriGuru _repositoriGuru = new();
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
     private readonly RepositoriTapLog _repositoriTapLog = new();
-    private readonly RepositoriPairing _repositoriPairing = new();
+    private readonly ParentRecipientResolver _parentRecipient = new();
     private readonly RepositoriOutbox _repositoriOutbox = new();
     private readonly PenentuStatusKehadiran _penentuStatusKehadiran = new();
 
@@ -86,7 +87,7 @@ public sealed class PemrosesTap
         // Absensi.Data.Notifikasi.LayananNotifikasi.RunParentRecap —
         // dikonfirmasi pemilik proyek 2026-09-18. Pesan hanya diANTRE, tak
         // pernah dikirim di sini (PRD §9.4).
-        var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);
+        var notifikasiTerlambatRealtime = SiapkanNotifikasiTerlambatRealtime(connection, transaction, tanggal, waktu, tahunAjaranId, kartu, keputusan, jadwal);
 
         if (kartu is not null)
         {
@@ -97,7 +98,7 @@ public sealed class PemrosesTap
         {
             _repositoriOutbox.Antrekan(
                 connection, transaction, tanggal, JenisSubjekOutbox.Siswa, kartu!.PemilikId,
-                JenisNotifikasi.Terlambat, notifikasi.ChatId, notifikasi.Isi, waktu);
+                JenisNotifikasi.Terlambat, notifikasi.Penerima.Address, notifikasi.Isi, waktu, notifikasi.Penerima.Channel);
         }
 
         _repositoriTapLog.Catat(
@@ -212,8 +213,9 @@ public sealed class PemrosesTap
         }
     }
 
-    private (string ChatId, string Isi)? SiapkanNotifikasiTerlambatRealtime(
+    private (NotificationRecipient Penerima, string Isi)? SiapkanNotifikasiTerlambatRealtime(
         SqliteConnection connection,
+        SqliteTransaction transaction,
         DateOnly tanggal,
         DateTime waktu,
         int tahunAjaranId,
@@ -230,15 +232,15 @@ public sealed class PemrosesTap
             return null;
         }
 
-        var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, kartu.PemilikId);
-        if (chatId is null)
+        // PRD P-20: parent's chosen channel (Telegram or WhatsApp).
+        if (_parentRecipient.Find(connection, kartu.PemilikId, transaction) is not { } penerima)
         {
             return null;
         }
 
         var (namaSiswa, _) = _repositoriSiswa.CariNamaDanKelas(connection, kartu.PemilikId, tahunAjaranId);
         var isi = $"Ananda {namaSiswa} tercatat TERLAMBAT hari ini, {tanggal.ToString("d MMMM yyyy", BudayaIndonesia)} pukul {TimeOnly.FromDateTime(waktu).ToString("HH:mm")}.";
-        return (chatId, isi);
+        return (penerima, isi);
     }
 
     // Memetakan keputusan ke salah satu nilai CHECK(hasil) tap_log

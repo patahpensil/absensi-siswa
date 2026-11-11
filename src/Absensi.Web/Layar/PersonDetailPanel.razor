@@ -1,6 +1,8 @@
 @using Microsoft.JSInterop
 @using Absensi.Web.Layanan
 @using Microsoft.AspNetCore.Components.Forms
+@using Absensi.Data.Notifikasi
+@using Absensi.Domain.Notifikasi
 @inject StatusAplikasi Status
 @inject IJSRuntime JS
 
@@ -39,8 +41,32 @@
                 {
                     <div><dt>Orang tua</dt><dd>@(string.IsNullOrWhiteSpace(detail.ParentName) ? "Belum diisi" : detail.ParentName)</dd></div>
                 }
-                <div><dt>Telegram</dt><dd>@(detail.TelegramLinked ? "Tertaut" : "Belum tertaut")</dd></div>
+                @if (detail.ParentChannel is { } channel)
+                {
+                    <div><dt>Kanal notifikasi</dt><dd id="person-detail-channel">@ChannelText(channel, WorkspaceView.CanManage(Status))</dd></div>
+                }
+                else
+                {
+                    <div><dt>Telegram</dt><dd>@(detail.TelegramLinked ? "Tertaut" : "Belum tertaut")</dd></div>
+                }
             </dl>
+
+            @if (detail.ParentChannel is not null && WorkspaceView.CanManage(Status))
+            {
+                <section aria-labelledby="channel-title" class="channel-settings">
+                    <h4 id="channel-title" class="eyebrow">KANAL NOTIFIKASI ORANG TUA</h4>
+                    <div class="channel-form">
+                        <label for="person-channel-select">Pilihan orang tua</label>
+                        <select id="person-channel-select" @bind="channelChoice" disabled="@savingChannel">
+                            <option value="@NotificationChannel.Telegram">Telegram</option>
+                            <option value="@NotificationChannel.WhatsApp">WhatsApp</option>
+                        </select>
+                        <button type="button" id="person-channel-save" disabled="@(savingChannel || channelChoice == detail.ParentChannel.Channel)" @onclick="SaveChannel">@(savingChannel ? "Menyimpan…" : "Simpan kanal")</button>
+                    </div>
+                    <p class="field-help">Satu kanal per siswa. WhatsApp memakai nomor HP orang tua pada data siswa secara langsung. Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
+                    @if (channelMessage is not null) { <p id="person-channel-message" class="message @(channelOk ? "positive" : "danger")" role="@(channelOk ? "status" : "alert")">@channelMessage</p> }
+                </section>
+            }
 
             <div class="detail-month">
                 <button id="person-detail-prev" class="text-button" @onclick="() => Shift(-1)">‹ Bulan sebelumnya</button>
@@ -158,6 +184,37 @@
         }
         finally { uploading = false; }
     }
+    private NotificationChannel channelChoice;
+    private bool savingChannel, channelOk;
+    private string? channelMessage;
+
+    // The parent number is shown only to accounts that manage master data (PRD §3).
+    private static string ChannelText(ParentChannelSettings c, bool showNumber) => c.Channel == NotificationChannel.WhatsApp
+        ? (c.WhatsAppNumber is { } number ? (showNumber ? $"WhatsApp · {number}" : "WhatsApp") : "WhatsApp · nomor HP belum valid, pesan tidak dibuat")
+        : (c.TelegramLinked ? "Telegram · tertaut" : "Telegram · belum tertaut, pesan tidak dibuat");
+
+    // PRD P-20: recorded by Kepala Sekolah/Admin through the audited service;
+    // success is shown only after the stored value is read back.
+    private async Task SaveChannel()
+    {
+        if (detail is null || savingChannel) return;
+        savingChannel = true;
+        channelMessage = null;
+        try
+        {
+            new ParentChannelService().SetChannel(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, detail.Id, channelChoice);
+            var stored = new ParentRecipientResolver().Read(Status.Koneksi!, detail.Id);
+            if (stored?.Channel != channelChoice) throw new InvalidOperationException("Perubahan belum dapat dipastikan. Muat ulang data lalu periksa kembali.");
+            await Status.SimpanAsync();
+            channelOk = true;
+            channelMessage = $"Kanal notifikasi {detail.Name} disimpan: {(channelChoice == NotificationChannel.WhatsApp ? "WhatsApp" : "Telegram")}.";
+            Load();
+        }
+        catch (InvalidOperationException ex) { channelOk = false; channelMessage = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { channelOk = false; channelMessage = "Kanal belum dapat disimpan. Coba kembali."; }
+        finally { savingChannel = false; }
+    }
+
     private bool AnyCorrectable => detail?.History.Any(r => r.CanCorrect) == true;
     private DateOnly month;
     private ElementReference drawer;
@@ -167,7 +224,11 @@
     private (PersonKind, int)? loaded;
     protected override void OnParametersSet() { if (loaded != (Kind, Id)) { loaded = (Kind, Id); month = CurrentMonth; Load(); } }
     private static string Subtitle(PersonDetail d) => string.Join(" · ", new[] { d.Identity, d.ClassName, d.Gender }.Where(x => !string.IsNullOrWhiteSpace(x)));
-    private void Load() => detail = Kind == PersonKind.Student ? PersonDetailView.Student(Status, Id, month) : PersonDetailView.Teacher(Status, Id, month);
+    private void Load()
+    {
+        detail = Kind == PersonKind.Student ? PersonDetailView.Student(Status, Id, month) : PersonDetailView.Teacher(Status, Id, month);
+        if (detail?.ParentChannel is { } channel) channelChoice = channel.Channel;
+    }
     private void Shift(int months) { var next = month.AddMonths(months); if (next <= CurrentMonth) { month = next; correcting = null; Load(); } }
     private Task Close() => OnClose.InvokeAsync();
     private Task HandleKey(KeyboardEventArgs e)

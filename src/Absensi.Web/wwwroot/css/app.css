@@ -1822,6 +1822,24 @@ tbody tr:hover {
   word-break:break-all
 }
 
+.channel-settings {
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  background:var(--paper)
+}
+
+.channel-form {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+.channel-form select {
+  min-width:140px
+}
+
 .detail-month {
   display:flex;
   align-items:center;

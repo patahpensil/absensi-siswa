@@ -9,7 +9,7 @@
     <section class="panel" id="school-notifications">
         <header class="panel-header"><h2>Pratinjau jadwal</h2><span class="badge info">Simulasi</span></header>
         <div class="settings-body">
-            <p>Waktu uji @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Pengiriman ke orang tua dan guru menunggu keputusan kanal produksi.</p>
+            <p>Waktu uji @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Kanal orang tua mengikuti pilihan per siswa: Telegram atau WhatsApp (PRD P-20). Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
             @if (schedule is null)
             {
                 <p class="notice">Jadwal notifikasi tidak berlaku untuk tanggal ini.</p>
@@ -35,12 +35,15 @@
                 <option value="">Semua</option><option value="antre">Antre</option><option value="terkirim">Terkirim</option>
                 <option value="gagal">Gagal</option><option value="dibatalkan">Dibatalkan</option>
             </select></label>
+            <label>Kanal<select id="notification-channel" @bind="channelFilter">
+                <option value="">Semua</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option>
+            </select></label>
         </div>
         <div class="table-wrap">
-            <table id="notification-outbox"><thead><tr><th>Waktu dibuat</th><th>Jenis</th><th>Pesan</th><th>Status</th></tr></thead><tbody>
+            <table id="notification-outbox"><thead><tr><th>Waktu dibuat</th><th>Kanal</th><th>Jenis</th><th>Pesan</th><th>Status</th></tr></thead><tbody>
                 @foreach (var item in QueueRows())
                 {
-                    <tr><td class="mono">@item.DibuatPada.ToString("HH:mm:ss")</td><td>@TypeLabel(item.Jenis)</td><td>@item.Isi</td><td>@item.Status</td></tr>
+                    <tr><td class="mono">@item.DibuatPada.ToString("HH:mm:ss")</td><td><span class="badge @(item.Channel == Absensi.Domain.Notifikasi.NotificationChannel.WhatsApp ? "positive" : "info")">@item.Channel</span></td><td>@TypeLabel(item.Jenis)</td><td>@item.Isi</td><td>@item.Status</td></tr>
                 }
             </tbody></table>
         </div>
@@ -54,6 +57,7 @@
     private int notTappedClasses, parentRecap, realtime, absent;
     private DateOnly queueDate;
     private string filter = "";
+    private string channelFilter = "";
     private IReadOnlyList<OutboxBaris> outbox = [];
 
     protected override void OnInitialized()
@@ -83,7 +87,8 @@
         due is null ? "Belum dijadwalkan" : now < due ? "Menunggu jadwal" : detail;
 
     private IEnumerable<OutboxBaris> QueueRows() => outbox.Where(item =>
-        item.Tanggal == queueDate && (filter.Length == 0 || item.Status == filter));
+        item.Tanggal == queueDate && (filter.Length == 0 || item.Status == filter) &&
+        (channelFilter.Length == 0 || item.Channel.ToString() == channelFilter));
 
     private static string TypeLabel(Absensi.Domain.Notifikasi.JenisNotifikasi kind) => kind.ToString() switch
     {

@@ -18,6 +18,7 @@ public sealed class LayananNotifikasi
 
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
     private readonly RepositoriPairing _repositoriPairing = new();
+    private readonly ParentRecipientResolver _parentRecipient = new();
     private readonly RepositoriKelas _repositoriKelas = new();
     private readonly RepositoriOutbox _repositoriOutbox = new();
     private readonly PenentuStatusKehadiran _penentuStatusKehadiran = new();
@@ -134,8 +135,8 @@ public sealed class LayananNotifikasi
     // dua pesan berlainan tanpa penjelasan.
     public void AntrekanNotifikasiKoreksi(SqliteConnection connection, DateOnly tanggal, int siswaId, string namaSiswa, StatusAbsensiSiswa statusBaru, TimeOnly? jamMasuk, DateTime waktu)
     {
-        var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, siswaId);
-        if (chatId is null)
+        // PRD P-20: the parent's single chosen channel (Telegram or WhatsApp).
+        if (_parentRecipient.Find(connection, siswaId) is not { } penerima)
         {
             return;
         }
@@ -143,7 +144,7 @@ public sealed class LayananNotifikasi
         if (_repositoriOutbox.SudahPernahAdaUntukSubjek(connection, tanggal, JenisSubjekOutbox.Siswa, siswaId))
         {
             var isiRalat = $"Koreksi: Ananda {namaSiswa} tercatat {TeksStatusSiswa(statusBaru)} hari ini, {FormatTanggal(tanggal)}.";
-            _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, JenisNotifikasi.Ralat, chatId, isiRalat, waktu);
+            _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, JenisNotifikasi.Ralat, penerima.Address, isiRalat, waktu, penerima.Channel);
             return;
         }
 
@@ -152,13 +153,12 @@ public sealed class LayananNotifikasi
             return;
         }
 
-        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, pesan.Jenis, chatId, pesan.Isi, waktu);
+        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswaId, pesan.Jenis, penerima.Address, pesan.Isi, waktu, penerima.Channel);
     }
 
     private void AntrekanNotifikasiOrangTua(SqliteConnection connection, DateOnly tanggal, AbsensiSiswaUntukNotifikasi siswa, DateTime waktu)
     {
-        var chatId = _repositoriPairing.CariChatIdAktif(connection, JenisPemilikKartu.Siswa, siswa.SiswaId);
-        if (chatId is null)
+        if (_parentRecipient.Find(connection, siswa.SiswaId) is not { } penerima)
         {
             return;
         }
@@ -168,7 +168,7 @@ public sealed class LayananNotifikasi
             return;
         }
 
-        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswa.SiswaId, pesan.Jenis, chatId, pesan.Isi, waktu);
+        _repositoriOutbox.Antrekan(connection, null, tanggal, JenisSubjekOutbox.Siswa, siswa.SiswaId, pesan.Jenis, penerima.Address, pesan.Isi, waktu, penerima.Channel);
     }
 
     // PRD §9.1: notifikasi hanya terkirim bila status sudah berubah dari
