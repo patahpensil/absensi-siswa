@@ -659,7 +659,7 @@ await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, p
     throw new Error(`[${stage}] ${String(e.message).split('\n')[0]} | pilihan=${select} tombolNonaktif=${saveDisabled} peranPesan=${messageRole} | panel: ${drawer.replace(/\s+/g, ' ').slice(0, 600)}`);
   } finally {
     if (await page.locator('#person-detail').count()) {
-      await page.keyboard.press('Escape');
+      await page.click('#close-person-detail', { timeout: 5000 }).catch(() => {});
       await page.waitForSelector('#person-detail', { state: 'detached', timeout: 5000 }).catch(() => {});
     }
   }

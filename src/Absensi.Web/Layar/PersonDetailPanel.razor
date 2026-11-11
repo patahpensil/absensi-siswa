@@ -209,6 +209,9 @@
             channelOk = true;
             channelMessage = $"Kanal notifikasi {detail.Name} disimpan: {(channelChoice == NotificationChannel.WhatsApp ? "WhatsApp" : "Telegram")}.";
             Load();
+            // The save button becomes disabled once the choice is stored, which
+            // drops keyboard focus out of the panel; return it so Escape still closes it.
+            focusDrawer = true;
         }
         catch (InvalidOperationException ex) { channelOk = false; channelMessage = ex.Message; }
         catch (Microsoft.Data.Sqlite.SqliteException) { channelOk = false; channelMessage = "Kanal belum dapat disimpan. Coba kembali."; }
