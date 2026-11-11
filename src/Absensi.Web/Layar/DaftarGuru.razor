@@ -18,6 +18,7 @@ else
         <header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header>
         <div class="panel-toolbar">
             <div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div>
+            <button type="button" id="teacher-import-excel" @onclick="() => importOpen = true">Impor Excel</button>
             <span class="muted">@teachers.Count(g => g.Aktif) aktif · @teachers.Count(g => g.Aktif && !g.PunyaKartu) belum punya kartu</span>
         </div>
         <div class="table-wrap">
@@ -37,13 +38,13 @@ else
                             <td class="mono muted">@teacher.Nip</td><td>@teacher.Jabatan</td>
                             <td class="mono">@(teacher.KartuUid ?? "Belum terdaftar")</td>
                             <td><span class="badge @(teacher.Aktif ? "positive" : "neutral")">@(teacher.Aktif ? "Aktif" : teacher.AlasanNonaktif ?? "Tidak aktif")</span></td>
-                            <td>
+                            <td><div class="master-row-actions">
+                                <button type="button" class="text-button" id="edit-teacher-@teacher.Id" @onclick="() => editId = teacher.Id">Ubah</button>
                                 @if (teacher.Aktif && !teacher.PunyaKartu)
                                 {
                                     <button type="button" class="text-button" id="register-teacher-card-@teacher.Id" @onclick="() => OpenRegistration(teacher)">Daftarkan kartu</button>
                                 }
-                                else { <span class="muted">—</span> }
-                            </td>
+                            </div></td>
                         </tr>
                     }
                 </tbody>
@@ -85,7 +86,21 @@ else
     </div>
 }
 
+@if (editId is { } selectedId && WorkspaceView.CanManage(Status))
+{
+    <MasterPersonEditor Kind="PersonKind.Teacher" Id="selectedId" OnClose="CloseEditor" OnSaved="Reload" />
+}
+@if (importOpen && WorkspaceView.CanManage(Status))
+{
+    <MasterImportDialog Kind="PersonKind.Teacher" OnClose="CloseImport" OnSaved="Reload" />
+}
+
 @code {
+    private int? editId;
+    private bool importOpen;
+    private void CloseEditor() => editId = null;
+    private void CloseImport() => importOpen = false;
+
     private int? detailId;
     private string query = "";
     private IReadOnlyList<GuruDaftar> teachers = Array.Empty<GuruDaftar>();

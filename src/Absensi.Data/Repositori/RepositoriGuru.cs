@@ -84,9 +84,10 @@ public sealed class RepositoriGuru
         return daftar;
     }
 
-    public int? CariIdBerdasarkanNip(SqliteConnection connection, string nip)
+    public int? CariIdBerdasarkanNip(SqliteConnection connection, string nip, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT id FROM guru WHERE nip = $nip;";
         command.Parameters.AddWithValue("$nip", nip);
 
@@ -185,7 +186,7 @@ public sealed class RepositoriGuru
     }
 
     // Keadaan guru sebelum diubah, untuk nilai lama di jejak audit (PRD §12).
-    public GuruUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction transaction, int id)
+    public GuruUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction? transaction, int id)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;

@@ -2011,3 +2011,45 @@ img.detail-avatar {
     justify-content: flex-start;
     flex-wrap: wrap;
 }
+
+.master-row-actions {
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap
+}
+
+.master-dialog { max-width:650px }
+.master-import-dialog { max-width:930px }
+
+.master-fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  border:0;
+  padding:0;
+  margin:0;
+  min-width:0
+}
+
+.master-fields input,
+.master-fields select { width:100% }
+.master-field-wide { grid-column:1/-1 }
+
+.master-import-inputs {
+  display:flex;
+  gap:14px;
+  align-items:end;
+  flex-wrap:wrap;
+  margin:16px 0 8px
+}
+
+.master-import-preview { max-height:40vh; overflow:auto }
+
+.master-import-preview thead {
+  position:sticky;
+  top:0
+}
+
+@media (max-width:580px) {
+  .master-fields { grid-template-columns:1fr }
+}

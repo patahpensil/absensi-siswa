@@ -78,9 +78,10 @@ public sealed class RepositoriKelas
 
     // PRD §16.3 langkah 4.6: kolom KELAS pada impor siswa divalidasi
     // terhadap Master Kelas tahun ajaran yang dipilih.
-    public int? CariIdBerdasarkanNama(SqliteConnection connection, int tahunAjaranId, string nama)
+    public int? CariIdBerdasarkanNama(SqliteConnection connection, int tahunAjaranId, string nama, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT id FROM kelas WHERE tahun_ajaran_id = $tahunAjaranId AND nama = $nama;";
         command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
         command.Parameters.AddWithValue("$nama", nama);

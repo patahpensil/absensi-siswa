@@ -1,5 +1,6 @@
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
+using Absensi.Domain.Kehadiran;
 using ClosedXML.Excel;
 using Microsoft.Data.Sqlite;
 
@@ -22,17 +23,18 @@ public sealed class ImporGuruExcel
     internal static readonly IReadOnlyList<string> KolomBaku = Array.AsReadOnly(new[] { "NAMA", "NIP", "PANGKAT", "JABATAN" });
 
     private readonly RepositoriGuru _repositoriGuru = new();
+    private readonly KartuImporExcel _kartu = new(JenisPemilikKartu.Guru);
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     public HasilAnalisisImporGuru Analisis(SqliteConnection connection, string pathBerkas)
     {
-        using var workbook = new XLWorkbook(pathBerkas);
-        // Master Bug & UI/UX Register A-8: .First() bawaan Linq melempar
-        // InvalidOperationException generik -- tipe yang sama juga bisa
-        // muncul dari kegagalan internal tak terkait (mis. state koneksi
-        // SQLite), sehingga tidak aman ditangkap berdasarkan tipe semata di
-        // pemanggil. FormatException di sini konsisten dengan validasi
-        // header di bawah -- keduanya sama-sama "berkas ini tidak valid".
+        using var stream = File.OpenRead(pathBerkas);
+        return Analisis(connection, stream);
+    }
+
+    public HasilAnalisisImporGuru Analisis(SqliteConnection connection, Stream stream)
+    {
+        using var workbook = new XLWorkbook(stream);
         var worksheet = workbook.Worksheets.FirstOrDefault()
             ?? throw new FormatException("Berkas Excel ini tidak punya lembar kerja (sheet) sama sekali.");
 
@@ -46,19 +48,18 @@ public sealed class ImporGuruExcel
             }
         }
 
-        var barisTerakhir = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+        var kolomKartu = KartuImporExcel.CariKolom(worksheet, KolomBaku.Count);
+        var uidDalamBerkas = new HashSet<string>(StringComparer.Ordinal);
         var hasil = new List<BarisImporGuru>();
         var nipDalamBerkas = new HashSet<string>();
 
-        for (var nomorBaris = 2; nomorBaris <= barisTerakhir; nomorBaris++)
+        foreach (var row in worksheet.RowsUsed().Where(row => row.RowNumber() > 1).OrderBy(row => row.RowNumber()))
         {
-            if (worksheet.Row(nomorBaris).IsEmpty())
-            {
-                continue;
-            }
+            var nomorBaris = row.RowNumber();
 
             var nama = Teks(worksheet, nomorBaris, 1);
-            var nip = Teks(worksheet, nomorBaris, 2);
+            var selNip = worksheet.Cell(nomorBaris, 2);
+            var nip = selNip.GetString().Trim();
             var pangkat = Teks(worksheet, nomorBaris, 3);
             var jabatan = Teks(worksheet, nomorBaris, 4);
 
@@ -68,6 +69,10 @@ public sealed class ImporGuruExcel
             if (string.IsNullOrWhiteSpace(nip))
             {
                 kesalahan.Add("NIP wajib diisi");
+            }
+            else if (selNip.DataType == XLDataType.Number && Math.Abs(selNip.GetDouble()) >= 1e15)
+            {
+                kesalahan.Add("NIP numerik melebihi presisi Excel. Masukkan kembali NIP asli sebagai teks");
             }
             else if (!nipDalamBerkas.Add(nip))
             {
@@ -80,6 +85,9 @@ public sealed class ImporGuruExcel
                 kesalahan.Add("Nama wajib diisi");
             }
 
+            var id = _repositoriGuru.CariIdBerdasarkanNip(connection, nip);
+            var uid = _kartu.Baca(connection, worksheet, nomorBaris, kolomKartu, id, uidDalamBerkas, kesalahan);
+
             hasil.Add(new BarisImporGuru(
                 nomorBaris,
                 nip,
@@ -87,8 +95,8 @@ public sealed class ImporGuruExcel
                 string.IsNullOrWhiteSpace(pangkat) ? null : pangkat,
                 string.IsNullOrWhiteSpace(jabatan) ? null : jabatan,
                 kesalahan,
-                SudahAdaDiDatabase: kesalahan.Count == 0 &&
-                    _repositoriGuru.CariIdBerdasarkanNip(connection, nip) is not null));
+                SudahAdaDiDatabase: kesalahan.Count == 0 && id is not null,
+                NoKartu: uid));
         }
 
         return new HasilAnalisisImporGuru(hasil);
@@ -107,14 +115,13 @@ public sealed class ImporGuruExcel
             throw new InvalidOperationException("Tidak bisa mengimpor selagi masih ada baris bermasalah.");
         }
 
-        var rencana = barisTervalidasi
-            .Select(baris => (Baris: baris, IdGuruAda: _repositoriGuru.CariIdBerdasarkanNip(connection, baris.Nip!)))
-            .ToList();
-
         var ditambah = 0;
         var diperbarui = 0;
 
-        _jalurPerubahanData.Jalankan(
+        var kartuDitautkan = 0;
+        var kartuTetap = 0;
+
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -122,32 +129,35 @@ public sealed class ImporGuruExcel
             entitas: "guru",
             perubahan: transaction =>
             {
-                foreach (var (baris, idGuruAda) in rencana)
+                foreach (var baris in barisTervalidasi)
                 {
+                    var idGuruAda = _repositoriGuru.CariIdBerdasarkanNip(connection, baris.Nip!, transaction);
+                    int idGuru;
                     var data = new DataGuru(baris.Nip!, baris.Nama!, baris.Pangkat, baris.Jabatan);
 
                     if (idGuruAda is { } id)
                     {
                         _repositoriGuru.Perbarui(connection, transaction, id, data);
+                        idGuru = id;
                         diperbarui++;
                     }
                     else
                     {
-                        _repositoriGuru.Tambah(connection, transaction, data);
+                        idGuru = _repositoriGuru.Tambah(connection, transaction, data);
                         ditambah++;
                     }
+
+                    _kartu.Tautkan(connection, transaction, baris.NoKartu, idGuru, waktu, baris.NomorBaris, ref kartuDitautkan, ref kartuTetap);
                 }
 
-                return null;
-            },
-            nilaiBaru: $"{ditambah} ditambah, {diperbarui} diperbarui");
+                return new CatatanPerubahan(null, null,
+                    $"{ditambah} ditambah, {diperbarui} diperbarui, {kartuDitautkan} kartu ditautkan, {kartuTetap} kartu tetap");
+            });
 
-        return new HasilImporGuru(ditambah, diperbarui);
+        return new HasilImporGuru(ditambah, diperbarui) { KartuDitautkan = kartuDitautkan, KartuTetap = kartuTetap };
     }
 
-    // A-12: template siap-isi, header persis KolomBaku -- satu sumber
-    // kebenaran yang sama dipakai Analisis di atas untuk validasi.
-    public byte[] BuatTemplate() => PembuatTemplateExcel.Bangun("Guru", KolomBaku);
+    public byte[] BuatTemplate() => PembuatTemplateExcel.Bangun("Guru", [.. KolomBaku, KartuImporExcel.NamaKolom]);
 
     private static string Teks(IXLWorksheet worksheet, int baris, int kolom) =>
         worksheet.Cell(baris, kolom).GetString().Trim();

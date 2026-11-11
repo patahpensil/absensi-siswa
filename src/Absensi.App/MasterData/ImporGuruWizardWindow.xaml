@@ -114,6 +114,7 @@
                 <DataGridTextColumn Header="Baris" Binding="{Binding NomorBaris}" Width="60" />
                 <DataGridTextColumn Header="NIP" Binding="{Binding Nip}" Width="100" />
                 <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*" />
+                <DataGridTextColumn Header="RFID" Binding="{Binding NoKartu}" Width="105" />
                 <DataGridTextColumn Header="Kesalahan" Binding="{Binding TeksKesalahan}" Width="260" />
             </DataGrid.Columns>
         </DataGrid>
@@ -129,9 +130,11 @@
                        VerticalAlignment="Center"
                        Visibility="{Binding HasilImpor, Converter={StaticResource NullKeVisibilitas}}">
                 <TextBlock.Text>
-                    <MultiBinding StringFormat="{}Selesai: {0} ditambah · {1} diperbarui">
+                    <MultiBinding StringFormat="{}Selesai: {0} ditambah · {1} diperbarui · {2} kartu ditautkan · {3} kartu tetap">
                         <Binding Path="HasilImpor.Ditambah" />
                         <Binding Path="HasilImpor.Diperbarui" />
+                        <Binding Path="HasilImpor.KartuDitautkan" />
+                        <Binding Path="HasilImpor.KartuTetap" />
                     </MultiBinding>
                 </TextBlock.Text>
             </TextBlock>

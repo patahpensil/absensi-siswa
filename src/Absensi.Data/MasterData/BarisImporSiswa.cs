@@ -16,7 +16,8 @@ public sealed record BarisImporSiswa(
     string? NamaOrangTua,
     string? NoHpOrangTua,
     IReadOnlyList<string> Kesalahan,
-    bool SudahAdaDiDatabase = false)
+    bool SudahAdaDiDatabase = false,
+    string? NoKartu = null)
 {
     public bool Sah => Kesalahan.Count == 0;
 

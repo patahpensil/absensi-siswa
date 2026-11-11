@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
+using Absensi.Domain.Kehadiran;
 using ClosedXML.Excel;
 using Microsoft.Data.Sqlite;
 
@@ -30,25 +32,25 @@ public sealed class ImporSiswaExcel
         "TANGGAL_LAHIR", "ALAMAT", "KELAS", "NAMA_ORANG_TUA", "NO_HP_ORANG_TUA",
     });
 
-    private static readonly Regex PolaTanggal = new(@"^\d{4}-\d{2}-\d{2}$", RegexOptions.Compiled);
     private static readonly Regex PolaNoHp = new(@"^\+?[0-9]{9,15}$", RegexOptions.Compiled);
 
     private readonly RepositoriSiswa _repositoriSiswa = new();
     private readonly RepositoriKelas _repositoriKelas = new();
     private readonly RepositoriSiswaKelas _repositoriSiswaKelas = new();
+    private readonly KartuImporExcel _kartu = new(JenisPemilikKartu.Siswa);
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     // PRD §16.3 langkah 3-5: baca berkas, validasi tiap baris, kembalikan
     // nomor baris + alasan untuk yang bermasalah.
     public HasilAnalisisImporSiswa Analisis(SqliteConnection connection, int tahunAjaranId, string pathBerkas)
     {
-        using var workbook = new XLWorkbook(pathBerkas);
-        // Master Bug & UI/UX Register A-8: .First() bawaan Linq melempar
-        // InvalidOperationException generik -- tipe yang sama juga bisa
-        // muncul dari kegagalan internal tak terkait (mis. state koneksi
-        // SQLite), sehingga tidak aman ditangkap berdasarkan tipe semata di
-        // pemanggil. FormatException di sini konsisten dengan validasi
-        // header di bawah -- keduanya sama-sama "berkas ini tidak valid".
+        using var stream = File.OpenRead(pathBerkas);
+        return Analisis(connection, tahunAjaranId, stream);
+    }
+
+    public HasilAnalisisImporSiswa Analisis(SqliteConnection connection, int tahunAjaranId, Stream stream)
+    {
+        using var workbook = new XLWorkbook(stream);
         var worksheet = workbook.Worksheets.FirstOrDefault()
             ?? throw new FormatException("Berkas Excel ini tidak punya lembar kerja (sheet) sama sekali.");
 
@@ -62,22 +64,23 @@ public sealed class ImporSiswaExcel
             }
         }
 
-        var barisTerakhir = worksheet.LastRowUsed()?.RowNumber() ?? 1;
+        var kolomKartu = KartuImporExcel.CariKolom(worksheet, KolomBaku.Count);
+        var uidDalamBerkas = new HashSet<string>(StringComparer.Ordinal);
         var hasil = new List<BarisImporSiswa>();
         var nisnDalamBerkas = new HashSet<string>();
 
-        for (var nomorBaris = 2; nomorBaris <= barisTerakhir; nomorBaris++)
+        foreach (var row in worksheet.RowsUsed().Where(row => row.RowNumber() > 1).OrderBy(row => row.RowNumber()))
         {
-            if (worksheet.Row(nomorBaris).IsEmpty())
-            {
-                continue;
-            }
+            var nomorBaris = row.RowNumber();
 
             var nisn = Teks(worksheet, nomorBaris, 1);
             var namaLengkap = Teks(worksheet, nomorBaris, 2);
             var jenisKelamin = Teks(worksheet, nomorBaris, 3);
             var tempatLahir = Teks(worksheet, nomorBaris, 4);
-            var tanggalLahir = Teks(worksheet, nomorBaris, 5);
+            var selTanggalLahir = worksheet.Cell(nomorBaris, 5);
+            var tanggalLahir = selTanggalLahir.DataType == XLDataType.DateTime
+                ? selTanggalLahir.GetDateTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                : selTanggalLahir.GetString().Trim();
             var alamat = Teks(worksheet, nomorBaris, 6);
             var kelas = Teks(worksheet, nomorBaris, 7);
             var namaOrangTua = Teks(worksheet, nomorBaris, 8);
@@ -112,7 +115,7 @@ public sealed class ImporSiswaExcel
             }
 
             // 4.5 TANGGAL_LAHIR format YYYY-MM-DD bila diisi
-            if (!string.IsNullOrWhiteSpace(tanggalLahir) && !PolaTanggal.IsMatch(tanggalLahir))
+            if (!string.IsNullOrWhiteSpace(tanggalLahir) && !DateOnly.TryParseExact(tanggalLahir, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
             {
                 kesalahan.Add("Tanggal lahir harus berformat YYYY-MM-DD");
             }
@@ -133,6 +136,9 @@ public sealed class ImporSiswaExcel
                 kesalahan.Add("Nomor HP orang tua tidak valid");
             }
 
+            var id = _repositoriSiswa.CariIdBerdasarkanNisn(connection, nisn);
+            var uid = _kartu.Baca(connection, worksheet, nomorBaris, kolomKartu, id, uidDalamBerkas, kesalahan);
+
             hasil.Add(new BarisImporSiswa(
                 nomorBaris,
                 nisn,
@@ -145,8 +151,8 @@ public sealed class ImporSiswaExcel
                 string.IsNullOrWhiteSpace(namaOrangTua) ? null : namaOrangTua,
                 string.IsNullOrWhiteSpace(noHpOrangTua) ? null : noHpOrangTua,
                 kesalahan,
-                SudahAdaDiDatabase: kesalahan.Count == 0 &&
-                    _repositoriSiswa.CariIdBerdasarkanNisn(connection, nisn) is not null));
+                SudahAdaDiDatabase: kesalahan.Count == 0 && id is not null,
+                NoKartu: uid));
         }
 
         return new HasilAnalisisImporSiswa(hasil);
@@ -170,17 +176,13 @@ public sealed class ImporSiswaExcel
             throw new InvalidOperationException("Tidak bisa mengimpor selagi masih ada baris bermasalah.");
         }
 
-        var rencana = barisTervalidasi
-            .Select(baris => (
-                Baris: baris,
-                IdSiswaAda: _repositoriSiswa.CariIdBerdasarkanNisn(connection, baris.Nisn!),
-                IdKelas: _repositoriKelas.CariIdBerdasarkanNama(connection, tahunAjaranId, baris.Kelas!)!.Value))
-            .ToList();
-
         var ditambah = 0;
         var diperbarui = 0;
 
-        _jalurPerubahanData.Jalankan(
+        var kartuDitautkan = 0;
+        var kartuTetap = 0;
+
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -188,8 +190,11 @@ public sealed class ImporSiswaExcel
             entitas: "siswa",
             perubahan: transaction =>
             {
-                foreach (var (baris, idSiswaAda, idKelas) in rencana)
+                foreach (var baris in barisTervalidasi)
                 {
+                    var idSiswaAda = _repositoriSiswa.CariIdBerdasarkanNisn(connection, baris.Nisn!, transaction);
+                    var idKelas = _repositoriKelas.CariIdBerdasarkanNama(connection, tahunAjaranId, baris.Kelas!, transaction)
+                        ?? throw new InvalidOperationException($"Baris {baris.NomorBaris}: kelas tidak lagi tersedia.");
                     var data = new DataSiswa(
                         baris.Nisn!,
                         baris.NamaLengkap!,
@@ -214,18 +219,17 @@ public sealed class ImporSiswaExcel
                     }
 
                     _repositoriSiswaKelas.Tetapkan(connection, transaction, idSiswa, idKelas, tahunAjaranId);
+                    _kartu.Tautkan(connection, transaction, baris.NoKartu, idSiswa, waktu, baris.NomorBaris, ref kartuDitautkan, ref kartuTetap);
                 }
 
-                return null;
-            },
-            nilaiBaru: $"{ditambah} ditambah, {diperbarui} diperbarui");
+                return new CatatanPerubahan(null, null,
+                    $"{ditambah} ditambah, {diperbarui} diperbarui, {kartuDitautkan} kartu ditautkan, {kartuTetap} kartu tetap");
+            });
 
-        return new HasilImporSiswa(ditambah, diperbarui);
+        return new HasilImporSiswa(ditambah, diperbarui) { KartuDitautkan = kartuDitautkan, KartuTetap = kartuTetap };
     }
 
-    // A-12: template siap-isi, header persis KolomBaku -- satu sumber
-    // kebenaran yang sama dipakai Analisis di atas untuk validasi.
-    public byte[] BuatTemplate() => PembuatTemplateExcel.Bangun("Siswa", KolomBaku);
+    public byte[] BuatTemplate() => PembuatTemplateExcel.Bangun("Siswa", [.. KolomBaku, KartuImporExcel.NamaKolom]);
 
     private static string Teks(IXLWorksheet worksheet, int baris, int kolom) =>
         worksheet.Cell(baris, kolom).GetString().Trim();

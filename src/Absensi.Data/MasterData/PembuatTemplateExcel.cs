@@ -22,8 +22,16 @@ internal static class PembuatTemplateExcel
 
         for (var kolom = 0; kolom < kolomBaku.Count; kolom++)
         {
+            var judul = kolomBaku[kolom];
+            var column = worksheet.Column(kolom + 1);
+            column.Width = Math.Max(14, judul.Length + 5);
+            if (judul is "NISN" or "NIP" or "NO_KARTU" or "NO_HP_ORANG_TUA" or "TANGGAL_LAHIR")
+            {
+                column.Style.NumberFormat.Format = "@";
+            }
+
             var cell = worksheet.Cell(1, kolom + 1);
-            cell.SetValue(kolomBaku[kolom]);
+            cell.SetValue(judul);
             cell.Style.Font.Bold = true;
             cell.Style.Fill.BackgroundColor = WarnaHeader;
         }
@@ -33,7 +41,6 @@ internal static class PembuatTemplateExcel
         // dikerjakan).
         worksheet.Range(1, 1, 1, kolomBaku.Count).SetAutoFilter();
         worksheet.SheetView.FreezeRows(1);
-        worksheet.Columns(1, kolomBaku.Count).AdjustToContents();
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);

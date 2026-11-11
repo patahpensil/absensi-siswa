@@ -1,0 +1,208 @@
+@using System.Globalization
+@using System.Text.RegularExpressions
+@using Absensi.Data.MasterData
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@using Microsoft.Data.Sqlite
+@inject StatusAplikasi Status
+
+<div class="modal-backdrop" @onkeydown="HandleKey">
+    <section class="dialog panel master-dialog" role="dialog" aria-modal="true" aria-labelledby="master-edit-title">
+        <header class="panel-header">
+            <h2 id="master-edit-title">Ubah data @PersonLabel</h2>
+            <button type="button" class="icon-button" aria-label="Tutup ubah data" disabled="@saving" @onclick="Close">×</button>
+        </header>
+        <div class="dialog-body">
+            @if (identifier is not null)
+            {
+                <form @onsubmit:preventDefault>
+                    <fieldset class="master-fields" disabled="@(saving || saved)">
+                        <div>
+                            <label for="master-edit-identifier">@(IsStudent ? "NISN" : "NIP")</label>
+                            <input id="master-edit-identifier" value="@identifier" readonly />
+                        </div>
+                        <div>
+                            <label for="master-edit-name">Nama lengkap</label>
+                            <input id="master-edit-name" @ref="nameInput" @bind="name" />
+                        </div>
+                        @if (IsStudent)
+                        {
+                            <div>
+                                <label for="master-edit-gender">Jenis kelamin</label>
+                                <select id="master-edit-gender" @bind="gender">
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="master-edit-class">Kelas</label>
+                                <select id="master-edit-class" @bind="classId">
+                                    <option value="">Pilih kelas</option>
+                                    @foreach (var item in classes)
+                                    {
+                                        <option value="@item.Id">@item.Nama</option>
+                                    }
+                                </select>
+                                <p class="field-help">Tahun ajaran @Status.TahunAjaran</p>
+                            </div>
+                            <div>
+                                <label for="master-edit-birth-place">Tempat lahir</label>
+                                <input id="master-edit-birth-place" @bind="birthPlace" />
+                            </div>
+                            <div>
+                                <label for="master-edit-birth-date">Tanggal lahir</label>
+                                <input id="master-edit-birth-date" type="date" @bind="birthDate" />
+                            </div>
+                            <div class="master-field-wide">
+                                <label for="master-edit-address">Alamat</label>
+                                <input id="master-edit-address" @bind="address" />
+                            </div>
+                            <div>
+                                <label for="master-edit-parent">Nama orang tua</label>
+                                <input id="master-edit-parent" @bind="parentName" />
+                            </div>
+                            <div>
+                                <label for="master-edit-phone">Nomor HP orang tua</label>
+                                <input id="master-edit-phone" type="tel" @bind="phone" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div>
+                                <label for="master-edit-rank">Pangkat</label>
+                                <input id="master-edit-rank" @bind="rank" />
+                            </div>
+                            <div>
+                                <label for="master-edit-position">Jabatan</label>
+                                <input id="master-edit-position" @bind="position" />
+                            </div>
+                        }
+                    </fieldset>
+                </form>
+            }
+            @if (error is not null) { <p class="message danger" role="alert">@error</p> }
+            @if (saved)
+            {
+                @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
+                else { <p id="master-edit-success" class="message positive" role="status">Data @PersonLabel tersimpan.</p> }
+            }
+            <div class="dialog-actions">
+                <button type="button" disabled="@saving" @onclick="Close">@(saved ? "Tutup" : "Batal")</button>
+                @if (!saved && identifier is not null)
+                {
+                    <button type="button" id="master-edit-save" class="primary" disabled="@saving" @onclick="Save">@(saving ? "Menyimpan…" : "Simpan perubahan")</button>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PersonKind Kind { get; set; }
+    [Parameter, EditorRequired] public int Id { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private bool IsStudent => Kind == PersonKind.Student;
+    private string PersonLabel => IsStudent ? "siswa" : "guru";
+    private IReadOnlyList<KelasDaftar> classes = [];
+    private string? identifier, birthPlace, address, parentName, phone, rank, position, error;
+    private string name = "";
+    private string gender = "";
+    private int? classId;
+    private DateTime? birthDate;
+    private int? schoolYearId;
+    private bool saving, saved;
+    private ElementReference nameInput;
+
+    protected override void OnInitialized()
+    {
+        if (!WorkspaceView.CanManage(Status) || Status.Koneksi is not { } connection)
+        {
+            error = "Akun ini tidak berwenang mengubah data.";
+            return;
+        }
+
+        if (IsStudent && new RepositoriSiswa().CariUntukAudit(connection, null, Id)?.Data is { } student)
+        {
+            identifier = student.Nisn;
+            name = student.Nama;
+            gender = student.JenisKelamin;
+            birthPlace = student.TempatLahir;
+            birthDate = DateTime.TryParseExact(student.TanggalLahir, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var date) ? date : null;
+            address = student.Alamat;
+            parentName = student.NamaOrtu;
+            phone = student.NoHpOrtu;
+            schoolYearId = Status.TahunAjaranId;
+            classes = WorkspaceView.Classes(Status);
+            if (schoolYearId is { } year)
+            {
+                var currentClass = new RepositoriSiswaKelas().CariNamaKelas(connection, null, Id, year);
+                classId = classes.FirstOrDefault(item => item.Nama == currentClass)?.Id;
+            }
+        }
+        else if (!IsStudent && new RepositoriGuru().CariUntukAudit(connection, null, Id) is { } teacher)
+        {
+            identifier = teacher.Nip;
+            name = teacher.Nama;
+            rank = teacher.Pangkat;
+            position = teacher.Jabatan;
+        }
+
+        if (identifier is null) error = $"Data {PersonLabel} tidak ditemukan.";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && identifier is not null) await nameInput.FocusAsync();
+    }
+
+    private Task Close() => saving ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKey(KeyboardEventArgs e) => e.Key == "Escape" ? Close() : Task.CompletedTask;
+
+    private async Task Save()
+    {
+        if (saving || saved || identifier is null || !WorkspaceView.CanManage(Status) ||
+            Status.Koneksi is not { } connection || Status.Akun is not { } account) return;
+
+        error = Validate();
+        if (error is not null) return;
+
+        saving = true;
+        try
+        {
+            if (IsStudent)
+            {
+                var data = new DataSiswa(identifier, name.Trim(), gender, Clean(birthPlace),
+                    birthDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), Clean(address), Clean(parentName), Clean(phone));
+                new LayananSiswa().Perbarui(connection, account, Status.Jam.Sekarang, Id, data, (schoolYearId!.Value, classId!.Value));
+            }
+            else
+            {
+                var data = new DataGuru(identifier, name.Trim(), Clean(rank), Clean(position));
+                new LayananGuru().Perbarui(connection, account, Status.Jam.Sekarang, Id, data);
+            }
+
+            saved = true;
+            await Status.SimpanAsync();
+            await OnSaved.InvokeAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (SqliteException) { error = "Data belum dapat diperbarui. Muat ulang daftar lalu coba kembali."; }
+        finally { saving = false; }
+    }
+
+    private string? Validate()
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "Nama lengkap wajib diisi.";
+        if (!IsStudent) return null;
+        if (gender is not ("L" or "P")) return "Pilih jenis kelamin.";
+        if (schoolYearId is null || schoolYearId != Status.TahunAjaranId) return "Tahun ajaran aktif berubah. Buka kembali formulir.";
+        if (!classes.Any(item => item.Id == classId)) return "Pilih kelas.";
+        if (Clean(phone) is { } number && !Regex.IsMatch(number, @"^\+?[0-9]{9,15}$")) return "Nomor HP orang tua tidak valid.";
+        return null;
+    }
+
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}

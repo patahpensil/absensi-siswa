@@ -96,9 +96,10 @@ public sealed class RepositoriSiswa
         return (reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1));
     }
 
-    public int? CariIdBerdasarkanNisn(SqliteConnection connection, string nisn)
+    public int? CariIdBerdasarkanNisn(SqliteConnection connection, string nisn, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT id FROM siswa WHERE nisn = $nisn;";
         command.Parameters.AddWithValue("$nisn", nisn);
 

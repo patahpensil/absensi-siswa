@@ -1,6 +1,8 @@
 // Menguji web uji di Chromium nyata: pemeriksaan teknis (?diagnostik) lalu
 // alur pakai sebenarnya (login, menu per peran, daftar data, data bertahan
 // setelah dimuat ulang). Hasil ditulis sebagai anotasi GitHub.
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const baseUrl = (process.argv[2] ?? 'http://127.0.0.1:8080/').replace(/\/?$/, '/');
@@ -509,6 +511,7 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
   tegas((await page.textContent('#tabel-siswa')).includes('0000111101'), 'kartu tidak bertahan setelah reload');
   tegas(await page.locator('[id^="register-card-"]').count() === 0, 'wali mendapat tindakan registrasi kartu');
+  tegas(await page.locator('#student-import-excel, [id^="edit-student-"]').count() === 0, 'wali mendapat tindakan ubah atau impor master');
   tegas(await page.locator('#student-detail-3 img.mini-avatar').count() === 1, 'foto siswa tidak bertahan setelah reload');
   await page.click('#student-detail-3');
   await page.waitForSelector('#person-detail-photo');
@@ -546,6 +549,113 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');
   tegas(catatan.includes('dipulihkan'), `catatan: ${catatan.slice(0, 120)}`);
+});
+
+const studentHeaders = ['NISN', 'NAMA_LENGKAP', 'JENIS_KELAMIN', 'TEMPAT_LAHIR', 'TANGGAL_LAHIR',
+  'ALAMAT', 'KELAS', 'NAMA_ORANG_TUA', 'NO_HP_ORANG_TUA'];
+const teacherHeaders = ['NAMA', 'NIP', 'PANGKAT', 'JABATAN', 'NO_KARTU'];
+const importStudentRow = (id, name, card = null) =>
+  [id, name, 'L', null, '2013-06-01', null, '7A', null, null, card];
+const uploadWorkbook = async (rows, name = 'data-uji.xlsx') => {
+  const fixture = fileURLToPath(new URL('./master-data-fixture.py', import.meta.url));
+  const buffer = execFileSync('python3', [fixture], { input: JSON.stringify(rows) });
+  await page.setInputFiles('#master-import-file', {
+    name,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer
+  });
+  await page.waitForSelector('#master-import-preview', { timeout: 30_000 });
+};
+const editMaster = async (selector, name, field, value) => {
+  await page.click(selector);
+  tegas(await page.locator('#master-edit-identifier').getAttribute('readonly') !== null, 'identitas master dapat diubah');
+  await page.fill('#master-edit-name', name);
+  await page.fill(field, value);
+  await page.click('#master-edit-save');
+  await page.waitForSelector('#master-edit-success');
+  await page.getByRole('button', { name: 'Tutup ubah data' }).click();
+};
+const closeImport = () => page.getByRole('button', { name: 'Tutup impor Excel' }).click();
+
+await langkah('Admin mengubah master siswa dan guru tanpa mengganti identitas atau kartu', async () => {
+  await page.click('#tombol-keluar');
+  await page.waitForSelector('#tombol-masuk');
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await setClock('2026-11-05T07:29:00');
+  await page.click('#menu-siswa');
+  await editMaster('#edit-student-1', 'Siswa hasil ubah', '#master-edit-birth-place', 'Makassar');
+  const student = await page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa hasil ubah' }).textContent();
+  tegas(student.includes('9000000001') && student.includes('0000111101'), 'NISN atau kartu siswa berubah');
+  await page.click('#menu-guru');
+  await editMaster('#edit-teacher-1', 'Guru hasil ubah', '#master-edit-position', 'Guru Matematika');
+  const teacher = await page.locator('#tabel-guru tbody tr').filter({ hasText: 'Guru hasil ubah' }).textContent();
+  tegas(teacher.includes('Guru Matematika') && teacher.includes('0000222201'), 'jabatan atau kartu guru salah');
+});
+
+await langkah('Impor siswa menampilkan pratinjau dan mendukung berkas dengan atau tanpa RFID', async () => {
+  await page.click('#menu-siswa');
+  await page.click('#student-import-excel');
+  const downloadReady = page.waitForEvent('download');
+  await page.click('#master-import-template');
+  const download = await downloadReady;
+  tegas(download.suggestedFilename() === 'template-siswa.xlsx', 'nama template Excel salah');
+
+  await uploadWorkbook([studentHeaders, importStudentRow('0012345678', 'Siswa Excel Tanpa Kartu')]);
+  tegas(await baris('#tabel-siswa') === 24, 'pratinjau sudah menambah siswa');
+  await page.click('#master-import-confirm');
+  await page.waitForSelector('#master-import-success');
+  await closeImport();
+  const noCard = await page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa Excel Tanpa Kartu' }).textContent();
+  tegas(noCard.includes('0012345678') && noCard.includes('Belum terdaftar'), 'NISN nol depan atau status tanpa kartu salah');
+
+  await page.click('#student-import-excel');
+  await uploadWorkbook([[...studentHeaders, 'NO_KARTU'], importStudentRow('0012345679', 'Siswa Excel RFID', '0000999101')]);
+  tegas((await page.textContent('#master-import-preview')).includes('0000999101'), 'RFID tidak tampak di pratinjau');
+  await page.click('#master-import-confirm');
+  await page.waitForSelector('#master-import-success');
+  tegas((await page.textContent('#master-import-success')).includes('1 kartu ditautkan'), 'hasil tautan tidak tampil');
+  await closeImport();
+
+  await page.click('#menu-absensi');
+  await tapCard('0000999101');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Hadir · Siswa Excel RFID'));
+  const attendance = await page.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa Excel RFID' }).textContent();
+  tegas(attendance.includes('07:29:00'), 'kartu siswa baru tidak mencatat jam masuk');
+});
+
+await langkah('Impor guru menolak kartu milik siswa dan menyimpan satu batch valid setelah konfirmasi', async () => {
+  await page.click('#menu-guru');
+  await page.click('#teacher-import-excel');
+  await uploadWorkbook([
+    teacherHeaders,
+    ['Guru Excel RFID', '000123456789012345', 'Pembina', 'Guru Kelas', '0000999102'],
+    ['Guru Konflik', '000123456789012346', null, null, '0000999101']
+  ]);
+  tegas(await page.locator('#master-import-confirm').isDisabled(), 'impor masih bisa dikonfirmasi saat RFID konflik');
+  tegas((await page.textContent('#master-import-preview')).includes('siswa atau guru lain'), 'alasan konflik RFID tidak tampil');
+  tegas(await baris('#tabel-guru') === 4, 'baris valid ikut tersimpan sebelum konfirmasi');
+
+  await uploadWorkbook([teacherHeaders, ['Guru Excel RFID', '000123456789012345', 'Pembina', 'Guru Kelas', '0000999102']], 'guru-valid.xlsx');
+  await page.click('#master-import-confirm');
+  await page.waitForSelector('#master-import-success');
+  await closeImport();
+  tegas(await baris('#tabel-guru') === 5, 'jumlah guru setelah impor salah');
+});
+
+await langkah('Perubahan master dan kartu hasil impor bertahan setelah halaman dimuat ulang', async () => {
+  await page.reload();
+  await page.waitForSelector('#tombol-masuk', { timeout: 120_000 });
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await page.click('#menu-siswa');
+  tegas((await page.textContent('#tabel-siswa')).includes('Siswa hasil ubah'), 'edit siswa hilang');
+  const student = await page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa Excel RFID' }).textContent();
+  tegas(student.includes('0012345679') && student.includes('0000999101'), 'impor siswa tidak bertahan');
+  await page.click('#menu-guru');
+  tegas((await page.textContent('#tabel-guru')).includes('Guru hasil ubah'), 'edit guru hilang');
+  const teacher = await page.locator('#tabel-guru tbody tr').filter({ hasText: 'Guru Excel RFID' }).textContent();
+  tegas(teacher.includes('000123456789012345') && teacher.includes('0000999102'), 'impor guru tidak bertahan');
 });
 
 await browser.close();

@@ -47,7 +47,7 @@ public sealed class RepositoriSiswaKelas
 
     // Nama kelas siswa pada tahun ajaran itu (null bila belum punya kelas) —
     // nilai lama/baru "kelas" di jejak audit perubahan siswa.
-    public string? CariNamaKelas(SqliteConnection connection, SqliteTransaction transaction, int siswaId, int tahunAjaranId)
+    public string? CariNamaKelas(SqliteConnection connection, SqliteTransaction? transaction, int siswaId, int tahunAjaranId)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;

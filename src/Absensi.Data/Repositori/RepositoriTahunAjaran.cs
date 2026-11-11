@@ -4,6 +4,20 @@ namespace Absensi.Data.Repositori;
 
 public sealed class RepositoriTahunAjaran
 {
+    public IReadOnlyList<(int Id, string Nama, bool Aktif)> DaftarUntukImpor(SqliteConnection connection)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, nama, aktif FROM tahun_ajaran ORDER BY aktif DESC, tgl_mulai DESC, id DESC;";
+        using var reader = command.ExecuteReader();
+        var hasil = new List<(int Id, string Nama, bool Aktif)>();
+        while (reader.Read())
+        {
+            hasil.Add((reader.GetInt32(0), reader.GetString(1), reader.GetBoolean(2)));
+        }
+
+        return hasil;
+    }
+
     public int? CariIdAktif(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();

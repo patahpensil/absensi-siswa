@@ -6,11 +6,11 @@
 <div class="page-heading"><div><p class="eyebrow">MASTER DATA / SISWA</p><h1>Data siswa</h1><p>Identitas, kelas, dan kartu RFID dalam satu daftar.</p></div><span class="page-total"><strong class="mono">@students.Count</strong> siswa</span></div>
 <section class="panel">
     <header class="panel-header"><h2><UiIcon Name="people" /> Daftar siswa</h2><span class="panel-code">MASTER / 01</span></header>
-    <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="student-search" aria-label="Cari nama atau NISN siswa" placeholder="Cari nama atau NISN…" @bind="query" @bind:event="oninput" /></div><select id="student-class" aria-label="Filter kelas siswa" @bind="className"><option value="">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Nama">@c.Nama</option> }</select><span class="muted">@Filtered().Count() hasil · @students.Count(s => s.Aktif && !s.PunyaKartu) belum punya kartu</span></div>
+    <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="student-search" aria-label="Cari nama atau NISN siswa" placeholder="Cari nama atau NISN…" @bind="query" @bind:event="oninput" /></div><select id="student-class" aria-label="Filter kelas siswa" @bind="className"><option value="">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Nama">@c.Nama</option> }</select>@if (WorkspaceView.CanManage(Status)) { <button type="button" id="student-import-excel" @onclick="() => importOpen = true">Impor Excel</button> }<span class="muted">@Filtered().Count() hasil · @students.Count(s => s.Aktif && !s.PunyaKartu) belum punya kartu</span></div>
     <div class="table-wrap"><table id="tabel-siswa"><thead><tr><th>Siswa</th><th>NISN</th><th>L/P</th><th>Kelas</th><th>Kartu RFID</th><th>Status</th>@if (WorkspaceView.CanManage(Status)) { <th>Tindakan</th> }</tr></thead><tbody>
         @foreach (var student in Filtered())
         {
-            <tr><td class="name-cell"><button type="button" class="name-link" id="student-detail-@student.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = student.Id">@if (student.PunyaFoto && Status.PhotoUrl($"{student.Nisn}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> } else { <span class="mini-avatar">@WorkspaceView.Initials(student.Nama)</span> }@student.Nama</button> @if (!student.Aktif) { <small class="muted">(@student.AlasanNonaktif)</small> }</td><td class="mono muted">@student.Nisn</td><td>@student.JenisKelamin</td><td>@student.KelasNama</td><td class="mono">@(student.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(student.Aktif ? "positive" : "neutral")">@(student.Aktif ? "Aktif" : "Tidak aktif")</span></td>@if (WorkspaceView.CanManage(Status)) { <td>@if (student.Aktif && !student.PunyaKartu) { <button class="text-button" id="register-card-@student.Id" @onclick="() => OpenRegistration(student)">Daftarkan kartu</button> } else { <span class="muted">—</span> }</td> }</tr>
+            <tr><td class="name-cell"><button type="button" class="name-link" id="student-detail-@student.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = student.Id">@if (student.PunyaFoto && Status.PhotoUrl($"{student.Nisn}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> } else { <span class="mini-avatar">@WorkspaceView.Initials(student.Nama)</span> }@student.Nama</button> @if (!student.Aktif) { <small class="muted">(@student.AlasanNonaktif)</small> }</td><td class="mono muted">@student.Nisn</td><td>@student.JenisKelamin</td><td>@student.KelasNama</td><td class="mono">@(student.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(student.Aktif ? "positive" : "neutral")">@(student.Aktif ? "Aktif" : "Tidak aktif")</span></td>@if (WorkspaceView.CanManage(Status)) { <td><div class="master-row-actions"><button type="button" class="text-button" id="edit-student-@student.Id" @onclick="() => editId = student.Id">Ubah</button>@if (student.Aktif && !student.PunyaKartu) { <button class="text-button" id="register-card-@student.Id" @onclick="() => OpenRegistration(student)">Daftarkan kartu</button> }</div></td> }</tr>
         }
     </tbody></table></div>
     @if (!Filtered().Any()) { <div class="empty-state">Tidak ada siswa yang cocok. Ubah pencarian atau filter kelas.</div> }
@@ -39,7 +39,21 @@
     </div>
 }
 
+@if (editId is { } selectedId && WorkspaceView.CanManage(Status))
+{
+    <MasterPersonEditor Kind="PersonKind.Student" Id="selectedId" OnClose="CloseEditor" OnSaved="Reload" />
+}
+@if (importOpen && WorkspaceView.CanManage(Status))
+{
+    <MasterImportDialog Kind="PersonKind.Student" OnClose="CloseImport" OnSaved="Reload" />
+}
+
 @code {
+    private int? editId;
+    private bool importOpen;
+    private void CloseEditor() => editId = null;
+    private void CloseImport() => importOpen = false;
+
     [Parameter] public string Search { get; set; } = "";
     private string previousSearch = "";
     private string query = "";

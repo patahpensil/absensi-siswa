@@ -1,0 +1,272 @@
+@using System.IO.Compression
+@using Absensi.Data.MasterData
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Data.Sqlite
+@using Microsoft.JSInterop
+@implements IDisposable
+@inject StatusAplikasi Status
+@inject IJSRuntime JS
+
+<div class="modal-backdrop" @onkeydown="HandleKey">
+    <section class="dialog panel master-import-dialog" role="dialog" aria-modal="true" aria-labelledby="master-import-title">
+        <header class="panel-header">
+            <h2 id="master-import-title">Impor Excel @PersonLabel</h2>
+            <button type="button" class="icon-button" aria-label="Tutup impor Excel" disabled="@busy" @onclick="Close">×</button>
+        </header>
+        <div class="dialog-body">
+            <p>Gunakan template Excel dan simpan nomor identitas dan RFID sebagai teks. Kolom <code>NO_KARTU</code> boleh kosong.</p>
+            <div class="master-import-inputs">
+                <button type="button" id="master-import-template" @onclick="DownloadTemplate" disabled="@busy">Unduh template</button>
+                @if (IsStudent)
+                {
+                    <div>
+                        <label for="master-import-year">Tahun ajaran</label>
+                        <select id="master-import-year" value="@yearId" @onchange="SelectYear" disabled="@(busy || completed)">
+                            <option value="">Pilih tahun ajaran</option>
+                            @foreach (var item in years)
+                            {
+                                <option value="@item.Id">@item.Nama@(item.Aktif ? " (aktif)" : "")</option>
+                            }
+                        </select>
+                    </div>
+                }
+                <div>
+                    <label for="master-import-file">Berkas Excel (.xlsx, maksimal 5 MB)</label>
+                    <InputFile id="master-import-file" OnChange="AnalyzeFile" accept=".xlsx" disabled="@(busy || completed || (IsStudent && yearId is null))" />
+                </div>
+            </div>
+            @if (fileName is not null)
+            {
+                <p class="field-help">Berkas dipilih: @fileName</p>
+            }
+            @if (templateError is not null) { <p class="message danger" role="alert">@templateError</p> }
+            @if (error is not null) { <p class="message danger" role="alert">@error</p> }
+            @if (preview is not null)
+            {
+                <p id="master-import-summary" role="status">
+                    <strong>@preview.Count(row => row.Sah && !row.SudahAda)</strong> baru ·
+                    <strong>@preview.Count(row => row.Sah && row.SudahAda)</strong> diperbarui ·
+                    <strong>@preview.Count(row => !row.Sah)</strong> bermasalah
+                </p>
+                <div class="table-wrap master-import-preview">
+                    <table id="master-import-preview">
+                        <thead><tr><th>Baris</th><th>@(IsStudent ? "NISN" : "NIP")</th><th>Nama</th><th>@(IsStudent ? "Kelas" : "Jabatan")</th><th>RFID</th><th>Hasil validasi</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in preview)
+                            {
+                                <tr>
+                                    <td>@row.Nomor</td><td class="mono">@row.Identitas</td><td>@row.Nama</td>
+                                    <td>@row.Keterangan</td><td class="mono">@(row.Uid ?? "—")</td>
+                                    <td>@(row.Sah ? (row.SudahAda ? "Diperbarui" : "Baru") : row.Kesalahan)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (!completed && preview.Any(row => !row.Sah))
+                {
+                    <p class="message danger" role="alert">Perbaiki semua baris bermasalah di Excel, lalu pilih kembali berkasnya. Seluruh impor diblokir.</p>
+                }
+                else if (CanImport)
+                {
+                    <p class="field-help">Periksa pasangan nama dan kartu, lalu konfirmasi. Baris tanpa nomor kartu tidak mengubah tautan RFID.</p>
+                }
+            }
+            @if (completed)
+            {
+                @if (Status.StorageFailed)
+                {
+                    <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p>
+                }
+                else
+                {
+                    <p id="master-import-success" class="message positive" role="status">@result</p>
+                }
+            }
+            <div class="dialog-actions">
+                <button type="button" @onclick="Close" disabled="@busy">@(completed ? "Tutup" : "Batal")</button>
+                @if (!completed)
+                {
+                    <button type="button" id="master-import-confirm" class="primary" @onclick="Import" disabled="@(!CanImport)">@(busy ? "Memproses…" : "Konfirmasi impor")</button>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PersonKind Kind { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private const int MaxFileSize = 5 * 1024 * 1024;
+    private const int MaxExpandedSize = 24 * 1024 * 1024;
+    private const string ExcelMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private readonly ImporSiswaExcel students = new();
+    private readonly ImporGuruExcel teachers = new();
+    private readonly CancellationTokenSource lifetime = new();
+    private IReadOnlyList<(int Id, string Nama, bool Aktif)> years = [];
+    private int? yearId;
+    private IReadOnlyList<PreviewRow>? preview;
+    private HasilAnalisisImporSiswa? studentAnalysis;
+    private HasilAnalisisImporGuru? teacherAnalysis;
+    private string? error, result, fileName, templateError;
+    private bool busy, completed;
+    private bool IsStudent => Kind == PersonKind.Student;
+    private string PersonLabel => IsStudent ? "siswa" : "guru";
+    private bool CanImport => !busy && !completed && error is null && preview is { Count: > 0 } && preview.All(row => row.Sah);
+
+    protected override void OnInitialized()
+    {
+        if (IsStudent && WorkspaceView.CanManage(Status) && Status.Koneksi is { } connection)
+        {
+            years = new RepositoriTahunAjaran().DaftarUntukImpor(connection);
+            yearId = Status.TahunAjaranId;
+        }
+    }
+
+    private Task Close() => busy ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKey(KeyboardEventArgs e) => e.Key == "Escape" ? Close() : Task.CompletedTask;
+
+    private void SelectYear(ChangeEventArgs e)
+    {
+        if (busy || completed) return;
+        yearId = int.TryParse(e.Value?.ToString(), out var id) && years.Any(year => year.Id == id) ? id : null;
+        ClearPreview();
+    }
+
+    private void ClearPreview()
+    {
+        preview = null;
+        studentAnalysis = null;
+        teacherAnalysis = null;
+        fileName = null;
+        error = null;
+    }
+
+    private async Task DownloadTemplate()
+    {
+        if (busy || !WorkspaceView.CanManage(Status)) return;
+        templateError = null;
+        try
+        {
+            var bytes = IsStudent ? students.BuatTemplate() : teachers.BuatTemplate();
+            await JS.InvokeVoidAsync("absensiDownload.save", $"template-{PersonLabel}.xlsx", ExcelMimeType, bytes);
+        }
+        catch (Exception)
+        {
+            templateError = "Template Excel belum dapat diunduh. Coba buka kembali formulir impor.";
+        }
+    }
+
+    private async Task AnalyzeFile(InputFileChangeEventArgs e)
+    {
+        if (busy || completed || !WorkspaceView.CanManage(Status) ||
+            Status.Koneksi is not { } connection || Status.Akun is not { } account) return;
+
+        ClearPreview();
+        var file = e.File;
+        fileName = file.Name;
+        if (!file.Name.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) || file.Size is <= 0 or > MaxFileSize)
+        {
+            error = "Pilih berkas .xlsx yang berisi data dengan ukuran maksimal 5 MB.";
+            return;
+        }
+
+        busy = true;
+        var token = lifetime.Token;
+        try
+        {
+            using var stream = new MemoryStream((int)file.Size);
+            await using var source = file.OpenReadStream(MaxFileSize, token);
+            await source.CopyToAsync(stream, token);
+            if (token.IsCancellationRequested || !ReferenceEquals(account, Status.Akun) || !ReferenceEquals(connection, Status.Koneksi)) return;
+
+            stream.Position = 0;
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                if (archive.Entries.Count > 200 || archive.Entries.Sum(entry => (decimal)entry.Length) > MaxExpandedSize)
+                    throw new FormatException("Isi berkas terlalu besar. Pisahkan data menjadi beberapa berkas Excel.");
+            }
+
+            stream.Position = 0;
+            if (IsStudent && yearId is { } year)
+            {
+                studentAnalysis = students.Analisis(connection, year, stream);
+                preview = studentAnalysis.Baris.Select(row => new PreviewRow(row.NomorBaris, row.Nisn, row.NamaLengkap,
+                    row.Kelas, row.NoKartu, row.SudahAdaDiDatabase, row.Sah, row.TeksKesalahan)).ToList();
+            }
+            else if (!IsStudent)
+            {
+                teacherAnalysis = teachers.Analisis(connection, stream);
+                preview = teacherAnalysis.Baris.Select(row => new PreviewRow(row.NomorBaris, row.Nip, row.Nama,
+                    row.Jabatan, row.NoKartu, row.SudahAdaDiDatabase, row.Sah, row.TeksKesalahan)).ToList();
+            }
+
+            if (preview is { Count: > 5_000 })
+            {
+                ClearPreview();
+                error = "Satu impor dapat memuat maksimal 5.000 baris. Pisahkan berkas dan coba kembali.";
+            }
+            else if (preview is { Count: 0 })
+            {
+                error = "Tidak ada baris data yang dapat diimpor.";
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (FormatException ex) { error = ex.Message; }
+        catch (Exception) { error = "Berkas Excel tidak dapat dibaca. Simpan ulang sebagai .xlsx menggunakan template lalu coba lagi."; }
+        finally { busy = false; }
+    }
+
+    private async Task Import()
+    {
+        if (!CanImport || !WorkspaceView.CanManage(Status) ||
+            Status.Koneksi is not { } connection || Status.Akun is not { } account) return;
+
+        busy = true;
+        try
+        {
+            if (studentAnalysis is not null && yearId is { } year)
+            {
+                var outcome = students.Impor(connection, account, Status.Jam.Sekarang, year, studentAnalysis.Baris);
+                result = ResultText(outcome.Ditambah, outcome.Diperbarui, outcome.KartuDitautkan, outcome.KartuTetap);
+            }
+            else if (teacherAnalysis is not null)
+            {
+                var outcome = teachers.Impor(connection, account, Status.Jam.Sekarang, teacherAnalysis.Baris);
+                result = ResultText(outcome.Ditambah, outcome.Diperbarui, outcome.KartuDitautkan, outcome.KartuTetap);
+            }
+            else return;
+
+            completed = true;
+            try
+            {
+                await Status.OpenCurrentDayAsync();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or SqliteException)
+            {
+                await Status.SimpanAsync();
+                error = "Data master sudah diproses. Hari absensi belum dapat disegarkan. Buka Pengaturan lalu terapkan kembali waktu uji.";
+            }
+            await OnSaved.InvokeAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (SqliteException) { error = "Impor dibatalkan. Periksa berkas dan coba lagi."; }
+        finally { busy = false; }
+    }
+
+    private static string ResultText(int added, int updated, int linked, int kept) =>
+        $"Impor selesai. {added} ditambah · {updated} diperbarui · {linked} kartu ditautkan · {kept} kartu tetap.";
+
+    public void Dispose()
+    {
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+
+    private sealed record PreviewRow(int Nomor, string? Identitas, string? Nama, string? Keterangan,
+        string? Uid, bool SudahAda, bool Sah, string Kesalahan);
+}
