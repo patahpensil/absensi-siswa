@@ -618,7 +618,7 @@ await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, p
     stage = 'tolak WhatsApp tanpa nomor';
     await page.selectOption('#person-channel-select', 'WhatsApp');
     await page.click('#person-channel-save');
-    await page.waitForSelector('#person-channel-message[role=alert]');
+    await page.waitForSelector('#person-channel-message.danger');
     tegas((await page.textContent('#person-channel-message')).includes('Nomor HP orang tua'), 'WhatsApp tanpa nomor HP tidak ditolak');
     tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal berubah walau ditolak');
     await closeStudent();
@@ -630,7 +630,7 @@ await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, p
     await openStudent();
     await page.selectOption('#person-channel-select', 'WhatsApp');
     await page.click('#person-channel-save');
-    await page.waitForSelector('#person-channel-message[role=status]');
+    await page.waitForSelector('#person-channel-message.positive');
     tegas((await page.textContent('#person-detail-channel')).includes('WhatsApp · 6280000000001'), 'nomor WhatsApp tidak dinormalisasi');
     await closeStudent();
 
@@ -654,8 +654,9 @@ await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, p
   } catch (e) {
     const drawer = await page.locator('#person-detail').innerText({ timeout: 1000 }).catch(() => '(panel detail tidak terbuka)');
     const select = await page.locator('#person-channel-select').inputValue({ timeout: 1000 }).catch(() => '(tidak ada)');
+    const messageRole = await page.locator('#person-channel-message').getAttribute('role', { timeout: 1000 }).catch(() => '(tidak ada)');
     const saveDisabled = await page.locator('#person-channel-save').isDisabled({ timeout: 1000 }).catch(() => '(tidak ada)');
-    throw new Error(`[${stage}] ${String(e.message).split('\n')[0]} | pilihan=${select} tombolNonaktif=${saveDisabled} | panel: ${drawer.replace(/\s+/g, ' ').slice(0, 600)}`);
+    throw new Error(`[${stage}] ${String(e.message).split('\n')[0]} | pilihan=${select} tombolNonaktif=${saveDisabled} peranPesan=${messageRole} | panel: ${drawer.replace(/\s+/g, ' ').slice(0, 600)}`);
   } finally {
     if (await page.locator('#person-detail').count()) {
       await page.keyboard.press('Escape');
