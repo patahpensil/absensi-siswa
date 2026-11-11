@@ -600,47 +600,68 @@ await langkah('Admin mengubah master siswa dan guru tanpa mengganti identitas at
 });
 
 await langkah('Kanal notifikasi orang tua: WhatsApp memakai nomor HP langsung, pesan hanya diantre', async () => {
-  const openStudent = async () => {
+  let stage = 'mulai';
+  try {
+    const openStudent = async () => {
+      await page.click('#menu-siswa');
+      await page.click('#student-detail-1');
+      await page.waitForSelector('#person-detail');
+    };
+    const closeStudent = async () => {
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('#person-detail', { state: 'detached' });
+    };
+    stage = 'buka detail siswa';
+    await openStudent();
+    stage = 'kanal awal';
+    tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal awal bukan Telegram');
+    stage = 'tolak WhatsApp tanpa nomor';
+    await page.selectOption('#person-channel-select', 'WhatsApp');
+    await page.click('#person-channel-save');
+    await page.waitForSelector('#person-channel-message[role=alert]');
+    tegas((await page.textContent('#person-channel-message')).includes('Nomor HP orang tua'), 'WhatsApp tanpa nomor HP tidak ditolak');
+    tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal berubah walau ditolak');
+    await closeStudent();
+
+    stage = 'isi nomor HP';
     await page.click('#menu-siswa');
-    await page.click('#student-detail-1');
-    await page.waitForSelector('#person-detail');
-  };
-  const closeStudent = async () => {
-    await page.keyboard.press('Escape');
-    await page.waitForSelector('#person-detail', { state: 'detached' });
-  };
-  await openStudent();
-  tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal awal bukan Telegram');
-  await page.selectOption('#person-channel-select', 'WhatsApp');
-  await page.click('#person-channel-save');
-  await page.waitForSelector('#person-channel-message[role=alert]');
-  tegas((await page.textContent('#person-channel-message')).includes('Nomor HP orang tua'), 'WhatsApp tanpa nomor HP tidak ditolak');
-  tegas((await page.textContent('#person-detail-channel')).includes('Telegram'), 'kanal berubah walau ditolak');
-  await closeStudent();
+    await editMaster('#edit-student-1', 'Siswa hasil ubah', '#master-edit-phone', '080000000001');
+    stage = 'simpan WhatsApp';
+    await openStudent();
+    await page.selectOption('#person-channel-select', 'WhatsApp');
+    await page.click('#person-channel-save');
+    await page.waitForSelector('#person-channel-message[role=status]');
+    tegas((await page.textContent('#person-detail-channel')).includes('WhatsApp · 6280000000001'), 'nomor WhatsApp tidak dinormalisasi');
+    await closeStudent();
 
-  await page.click('#menu-siswa');
-  await editMaster('#edit-student-1', 'Siswa hasil ubah', '#master-edit-phone', '080000000001');
-  await openStudent();
-  await page.selectOption('#person-channel-select', 'WhatsApp');
-  await page.click('#person-channel-save');
-  await page.waitForSelector('#person-channel-message[role=status]');
-  tegas((await page.textContent('#person-detail-channel')).includes('WhatsApp · 6280000000001'), 'nomor WhatsApp tidak dinormalisasi');
-  await closeStudent();
+    stage = 'tap terlambat';
+    await setClock('2026-11-07T08:20:00');
+    await tapCard('0000111101');
+    await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat'));
+    stage = 'antrean notifikasi';
+    await page.click('#menu-notifikasi');
+    await page.waitForSelector('#notification-outbox');
+    await page.selectOption('#notification-channel', 'WhatsApp');
+    const row = await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).first().textContent();
+    tegas(row.includes('WhatsApp') && row.includes('TERLAMBAT') && row.includes('antre'), `pesan WhatsApp tidak diantre: ${row}`);
+    await page.selectOption('#notification-channel', 'Telegram');
+    tegas(await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).count() === 0, 'pesan siswa WhatsApp ikut masuk antrean Telegram');
 
-  await setClock('2026-11-07T08:20:00');
-  await tapCard('0000111101');
-  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat'));
-  await page.click('#menu-notifikasi');
-  await page.waitForSelector('#notification-outbox');
-  await page.selectOption('#notification-channel', 'WhatsApp');
-  const row = await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).first().textContent();
-  tegas(row.includes('WhatsApp') && row.includes('TERLAMBAT') && row.includes('antre'), `pesan WhatsApp tidak diantre: ${row}`);
-  await page.selectOption('#notification-channel', 'Telegram');
-  tegas(await page.locator('#notification-outbox tbody tr').filter({ hasText: 'Siswa hasil ubah' }).count() === 0, 'pesan siswa WhatsApp ikut masuk antrean Telegram');
-
-  await page.click('#menu-audit');
-  await page.fill('#audit-search', 'ubah_kanal_notifikasi');
-  tegas((await page.textContent('#audit-table')).includes('whatsapp'), 'perubahan kanal tidak tercatat di audit');
+    stage = 'audit';
+    await page.click('#menu-audit');
+    await page.fill('#audit-search', 'ubah_kanal_notifikasi');
+    tegas((await page.textContent('#audit-table')).includes('whatsapp'), 'perubahan kanal tidak tercatat di audit');
+  } catch (e) {
+    const drawer = await page.locator('#person-detail').innerText({ timeout: 1000 }).catch(() => '(panel detail tidak terbuka)');
+    const select = await page.locator('#person-channel-select').inputValue({ timeout: 1000 }).catch(() => '(tidak ada)');
+    const saveDisabled = await page.locator('#person-channel-save').isDisabled({ timeout: 1000 }).catch(() => '(tidak ada)');
+    throw new Error(`[${stage}] ${String(e.message).split('\n')[0]} | pilihan=${select} tombolNonaktif=${saveDisabled} | panel: ${drawer.replace(/\s+/g, ' ').slice(0, 600)}`);
+  } finally {
+    if (await page.locator('#person-detail').count()) {
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('#person-detail', { state: 'detached', timeout: 5000 }).catch(() => {});
+    }
+  }
 });
 
 await langkah('Impor siswa menampilkan pratinjau dan mendukung berkas dengan atau tanpa RFID', async () => {
