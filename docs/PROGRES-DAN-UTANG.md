@@ -322,3 +322,15 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - **Belum diputuskan (D-03):** penyedia/API WhatsApp, cara orang tua/wali memilih dan menautkan kanal, isi pesan minimal, biaya per pesan, serta aliran data ke pihak ketiga di luar Indonesia. P-16 tetap ditangguhkan.
 - **Belum dikerjakan:** kode pengiriman WhatsApp, perubahan skema (`pairing`/`outbox` saat ini khusus Telegram `chat_id`) dan pengujiannya. Perubahan ini hanya dokumen; tidak ada perubahan kode atau deploy.
 - **Utang catatan:** commit `1805176`, `49ada45` dan `18c8120` (11–12 November) belum dicatat di berkas ini oleh pembuatnya.
+
+## 21. Kanal notifikasi orang tua Telegram/WhatsApp di web uji — 12 November 2026
+
+**Acuan:** PRD §9, P-19, P-20, D-03.
+
+- **Data:** migrasi 007 menambah `siswa.notification_channel` dan `outbox.channel` (`telegram`/`whatsapp`, bawaan `telegram` sehingga data lama tidak berubah perilaku). `ParentRecipientResolver` menjadi satu-satunya penentu tujuan pesan orang tua: rekap, Alpa di batas akhir, Terlambat real-time dan koreksi/ralat. WhatsApp memakai `no_hp_ortu` langsung, dinormalisasi ke `62…` oleh `ParentPhoneNumber` (Domain); nomor kosong/tidak valid berarti pesan tidak dibuat. Kolom `outbox.chat_id` menyimpan alamat kanal (chat id Telegram atau nomor WhatsApp).
+- **Kewenangan dan audit:** `ParentChannelService.SetChannel` hanya untuk Kepala Sekolah/Admin, menolak WhatsApp bila nomor belum valid, dan mencatat `notification_channel` lama→baru di audit (`ubah_kanal_notifikasi`).
+- **Pengirim:** `PengirimOutbox` (Telegram) hanya mengambil baris kanal Telegram (`ListQueuedForChannel`); baris WhatsApp tetap `antre` karena pengirim WhatsApp belum ada.
+- **Web uji:** panel detail siswa menampilkan kanal; Kepala Sekolah/Admin dapat memilih Telegram atau WhatsApp. Nomor HP hanya terlihat oleh akun pengelola. Halaman Notifikasi menampilkan kolom dan filter Kanal. Tidak ada pesan yang dikirim (P-20).
+- **Tes disiapkan:** Domain `ParentPhoneNumberTests`; Data `ParentNotificationChannelTests` (bawaan Telegram, rekap/koreksi/tap real-time ke WhatsApp, nomor tidak valid, penolakan wali kelas, audit, pemisahan antrean); Telegram `KirimAntreanAsync_WhatsAppRow_NotSentByTelegramAndStaysQueued`; Chromium langkah "Kanal notifikasi orang tua". Hasil CI dicatat setelah workflow selesai.
+
+**Belum dikerjakan / butuh keputusan Edgar (D-03):** penyedia/API WhatsApp dan pengirimnya; kanal untuk wali kelas dan guru (masih Telegram); kolom kanal pada impor Excel siswa (siswa hasil impor memakai Telegram); tampilan kanal di aplikasi desktop WPF; aliran data ke pihak ketiga luar negeri dan biaya per pesan.
