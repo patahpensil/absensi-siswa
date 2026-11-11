@@ -31,9 +31,10 @@ public sealed class RepositoriKelas
     // Dipakai LayananAkun.BolehMenyentuhKelas untuk menyelesaikan
     // kelas.wali_guru_id (docs/SKEMA-DATABASE.md §5) yang dibandingkan
     // terhadap akun.guru_id (PRD §3).
-    public int? CariWaliGuruId(SqliteConnection connection, int kelasId)
+    public int? CariWaliGuruId(SqliteConnection connection, int kelasId, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT wali_guru_id FROM kelas WHERE id = $kelasId;";
         command.Parameters.AddWithValue("$kelasId", kelasId);
 
@@ -139,6 +140,67 @@ public sealed class RepositoriKelas
         command.ExecuteNonQuery();
     }
 
+    internal void RecordHomeroomChange(SqliteConnection connection, SqliteTransaction transaction, int classId,
+        int? oldTeacherId, int? newTeacherId, DateTime at)
+    {
+        if (oldTeacherId == newTeacherId) return;
+
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.Parameters.AddWithValue("$class", classId);
+        command.Parameters.AddWithValue("$at", at.ToString("o"));
+        if (oldTeacherId is { } oldTeacher)
+        {
+            command.CommandText = """
+                SELECT started_at FROM homeroom_assignment WHERE class_id = $class AND ended_at IS NULL;
+                """;
+            if (command.ExecuteScalar() is string started && DateTime.Parse(started, System.Globalization.CultureInfo.InvariantCulture) > at)
+                throw new InvalidOperationException("Waktu pergantian mendahului penugasan wali yang aktif.");
+
+            command.CommandText = """
+                UPDATE homeroom_assignment SET ended_at = $at
+                WHERE class_id = $class AND ended_at IS NULL;
+                """;
+            if (command.ExecuteNonQuery() == 0)
+            {
+                // A class created outside the service has no known start date.
+                command.Parameters.AddWithValue("$old", oldTeacher);
+                command.CommandText = """
+                    INSERT INTO homeroom_assignment (class_id, teacher_id, ended_at) VALUES ($class, $old, $at);
+                    """;
+                command.ExecuteNonQuery();
+            }
+        }
+
+        if (newTeacherId is { } teacher)
+        {
+            command.Parameters.AddWithValue("$teacher", teacher);
+            command.CommandText = """
+                INSERT INTO homeroom_assignment (class_id, teacher_id, started_at) VALUES ($class, $teacher, $at);
+                """;
+            command.ExecuteNonQuery();
+        }
+    }
+
+    public IReadOnlyList<HomeroomAssignment> HomeroomHistory(SqliteConnection connection, int classId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT g.nama, h.started_at, h.ended_at FROM homeroom_assignment h
+            JOIN guru g ON g.id = h.teacher_id WHERE h.class_id = $class ORDER BY h.id DESC;
+            """;
+        command.Parameters.AddWithValue("$class", classId);
+        using var reader = command.ExecuteReader();
+        var history = new List<HomeroomAssignment>();
+        while (reader.Read())
+        {
+            DateTime? Time(int index) => reader.IsDBNull(index) ? null : DateTime.Parse(reader.GetString(index),
+                System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind);
+            history.Add(new HomeroomAssignment(reader.GetString(0), Time(1), Time(2)));
+        }
+        return history;
+    }
+
     // Keadaan kelas sebelum diubah, untuk nilai lama di jejak audit (PRD §12).
     public KelasUntukAudit? CariUntukAudit(SqliteConnection connection, SqliteTransaction transaction, int id)
     {
@@ -153,3 +215,5 @@ public sealed class RepositoriKelas
             : null;
     }
 }
+
+public sealed record HomeroomAssignment(string Teacher, DateTime? StartedAt, DateTime? EndedAt);

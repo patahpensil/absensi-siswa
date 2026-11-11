@@ -111,6 +111,14 @@ public sealed partial class StatusAplikasi
         await SimpanAsync();
     }
 
+    public async Task RefreshAttendanceDayAsync()
+    {
+        var years = new RepositoriTahunAjaran();
+        TahunAjaranId = years.CariIdAktif(Koneksi!);
+        TahunAjaran = years.CariNamaAktif(Koneksi!) ?? "";
+        await OpenCurrentDayAsync();
+    }
+
     public async Task ResetAsync()
     {
         Akun = null;

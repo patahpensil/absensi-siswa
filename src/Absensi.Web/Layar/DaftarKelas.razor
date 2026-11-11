@@ -1,10 +1,94 @@
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA / KELAS</p><h1>Kelas dan wali</h1><p>Penugasan kelas pada tahun ajaran @Status.TahunAjaran.</p></div><span class="page-total"><strong class="mono">@classes.Count</strong> kelas</span></div>
-<section class="panel"><header class="panel-header"><h2><UiIcon Name="school" /> Daftar kelas</h2><span class="panel-code">MASTER / 03</span></header><div class="table-wrap"><table id="tabel-kelas"><thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali kelas</th><th>Siswa aktif</th></tr></thead><tbody>@foreach (var classroom in classes) { <tr><td><strong class="class-label">@classroom.Nama</strong></td><td>Tingkat @classroom.Tingkat</td><td>@(classroom.WaliGuruNama ?? "Belum ditetapkan")</td><td class="mono">@students.Count(s => s.Aktif && s.KelasNama == classroom.Nama)</td></tr> }</tbody></table></div>@if (classes.Count == 0) { <div class="empty-state">Belum ada kelas dalam lingkup akun ini.</div> }</section>
+
+<div class="page-heading">
+    <div><p class="eyebrow">MASTER DATA / KELAS</p><h1>Kelas dan wali</h1><p>Penugasan kelas per periode akademik.</p></div>
+    <span class="page-total"><strong class="mono">@classes.Count</strong> kelas</span>
+</div>
+<section class="panel">
+    <header class="panel-header"><h2><UiIcon Name="school" /> Daftar kelas</h2><span class="panel-code">MASTER / 03</span></header>
+    @if (WorkspaceView.CanManage(Status))
+    {
+        <div class="panel-toolbar">
+            <label>Periode<select id="classes-period" @bind="yearId" @bind:after="Reload">
+                @foreach (var year in years) { <option value="@year.Id">@year.Name · @year.Semester@(year.Active ? " (aktif)" : "")</option> }
+            </select></label>
+            <button type="button" class="primary" id="class-add" disabled="@(yearId == 0)" @onclick="() => OpenEditor(null)">Tambah kelas</button>
+            <button type="button" id="academic-open" @onclick="() => showAcademic = true">Tahun ajaran</button>
+        </div>
+    }
+    <div class="table-wrap"><table id="tabel-kelas">
+        <thead><tr><th>Kelas</th><th>Tingkat</th><th>Wali kelas</th><th>Siswa aktif</th>@if (WorkspaceView.CanManage(Status)) { <th>Tindakan</th> }</tr></thead>
+        <tbody>
+            @foreach (var room in classes)
+            {
+                <tr>
+                    <td><strong class="class-label">@room.Nama</strong></td><td>Tingkat @room.Tingkat</td>
+                    <td>@(room.WaliGuruNama ?? "Belum ditetapkan")</td><td class="mono">@students.Count(s => s.Aktif && s.KelasNama == room.Nama)</td>
+                    @if (WorkspaceView.CanManage(Status))
+                    {
+                        <td><button type="button" class="text-button" id="class-edit-@room.Id" @onclick="() => OpenEditor(room)">Ubah</button></td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table></div>
+    @if (classes.Count == 0) { <div class="empty-state">Belum ada kelas dalam lingkup akun ini.</div> }
+</section>
+@if (WorkspaceView.CanManage(Status) && showEditor)
+{
+    <ClassEditor Classroom="selected" YearId="yearId" OnClose="CloseEditor" OnSaved="Reload" />
+}
+@if (WorkspaceView.CanManage(Status) && showAcademic)
+{
+    <AcademicPeriodDialog OnClose="CloseAcademic" OnSaved="ReloadAfterPeriodChange" />
+}
+
 @code {
-    private IReadOnlyList<KelasDaftar> classes = Array.Empty<KelasDaftar>();
-    private IReadOnlyList<SiswaDaftar> students = Array.Empty<SiswaDaftar>();
-    protected override void OnInitialized() { classes = WorkspaceView.Classes(Status); students = WorkspaceView.Students(Status); }
+    [Parameter] public EventCallback OnPeriodChanged { get; set; }
+    private int yearId;
+    private int? lastActiveYear;
+    private bool showEditor, showAcademic;
+    private KelasDaftar? selected;
+    private IReadOnlyList<AcademicPeriod> years = [];
+    private IReadOnlyList<KelasDaftar> classes = [];
+    private IReadOnlyList<SiswaDaftar> students = [];
+
+    protected override void OnInitialized()
+    {
+        lastActiveYear = Status.TahunAjaranId;
+        yearId = lastActiveYear ?? 0;
+        Reload();
+    }
+
+    private void Reload()
+    {
+        if (WorkspaceView.CanManage(Status))
+        {
+            var connection = Status.Koneksi!;
+            years = new RepositoriTahunAjaran().ListPeriods(connection);
+            classes = new RepositoriKelas().DaftarUntukTahunAjaran(connection, yearId);
+            students = new RepositoriSiswa().DaftarUntukTahunAjaran(connection, yearId);
+        }
+        else
+        {
+            classes = WorkspaceView.Classes(Status);
+            students = WorkspaceView.Students(Status);
+        }
+    }
+
+    private void OpenEditor(KelasDaftar? room) { selected = room; showEditor = true; }
+    private void CloseEditor() => showEditor = false;
+    private void CloseAcademic() => showAcademic = false;
+    private async Task ReloadAfterPeriodChange()
+    {
+        if (lastActiveYear != Status.TahunAjaranId)
+        {
+            lastActiveYear = Status.TahunAjaranId;
+            yearId = lastActiveYear ?? 0;
+            await OnPeriodChanged.InvokeAsync();
+        }
+        Reload();
+    }
 }

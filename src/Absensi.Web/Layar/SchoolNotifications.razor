@@ -1,0 +1,95 @@
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / NOTIFIKASI</p><h1>Notifikasi sekolah</h1><p>Pratinjau jadwal dan riwayat antrean pada database uji.</p></div></div>
+@if (WorkspaceView.CanManage(Status))
+{
+    <section class="panel" id="school-notifications">
+        <header class="panel-header"><h2>Pratinjau jadwal</h2><span class="badge info">Simulasi</span></header>
+        <div class="settings-body">
+            <p>Waktu uji @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Pengiriman ke orang tua dan guru menunggu keputusan kanal produksi.</p>
+            @if (schedule is null)
+            {
+                <p class="notice">Jadwal notifikasi tidak berlaku untuk tanggal ini.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table id="notification-preview"><thead><tr><th>Jadwal</th><th>Waktu</th><th>Hasil simulasi</th></tr></thead><tbody>
+                        <tr><td>Daftar belum tap untuk wali kelas</td><td class="mono">@WorkspaceView.Time(schedule.NotTappedListTime)</td><td id="notification-wali">@Result(schedule.NotTappedListTime, $"{notTappedClasses} kelas dengan siswa belum tap")</td></tr>
+                        <tr><td>Rekap Hadir dan Terlambat untuk orang tua</td><td class="mono">@WorkspaceView.Time(schedule.JamRekap)</td><td id="notification-parent-recap">@Result(schedule.JamRekap, $"{parentRecap} siswa tap sebelum rekap")</td></tr>
+                        <tr><td>Terlambat sejak jam rekap</td><td class="mono">Sejak @WorkspaceView.Time(schedule.JamRekap)</td><td>@Result(schedule.JamRekap, $"{realtime} siswa pada jalur real-time")</td></tr>
+                        <tr><td>Tidak hadir tanpa keterangan</td><td class="mono">@WorkspaceView.Time(schedule.BatasTapMasuk)</td><td id="notification-absence">@Result(schedule.BatasTapMasuk, $"{absent} siswa masih Alpa")</td></tr>
+                    </tbody></table>
+                </div>
+            }
+        </div>
+    </section>
+    <section class="panel">
+        <header class="panel-header"><h2>Antrean dan riwayat lokal</h2></header>
+        <div class="panel-toolbar report-toolbar">
+            <label>Tanggal<input id="notification-date" type="date" @bind="queueDate" /></label>
+            <label>Status<select id="notification-state" @bind="filter">
+                <option value="">Semua</option><option value="antre">Antre</option><option value="terkirim">Terkirim</option>
+                <option value="gagal">Gagal</option><option value="dibatalkan">Dibatalkan</option>
+            </select></label>
+        </div>
+        <div class="table-wrap">
+            <table id="notification-outbox"><thead><tr><th>Waktu dibuat</th><th>Jenis</th><th>Pesan</th><th>Status</th></tr></thead><tbody>
+                @foreach (var item in QueueRows())
+                {
+                    <tr><td class="mono">@item.DibuatPada.ToString("HH:mm:ss")</td><td>@TypeLabel(item.Jenis)</td><td>@item.Isi</td><td>@item.Status</td></tr>
+                }
+            </tbody></table>
+        </div>
+        @if (!QueueRows().Any()) { <div class="empty-state">Tidak ada pesan lokal pada filter ini.</div> }
+    </section>
+}
+
+@code {
+    private JadwalHariKonfigurasi? schedule;
+    private TimeOnly now;
+    private int notTappedClasses, parentRecap, realtime, absent;
+    private DateOnly queueDate;
+    private string filter = "";
+    private IReadOnlyList<OutboxBaris> outbox = [];
+
+    protected override void OnInitialized()
+    {
+        if (!WorkspaceView.CanManage(Status) || Status.Koneksi is not { } connection) return;
+        var today = queueDate = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        now = TimeOnly.FromDateTime(Status.Jam.Sekarang);
+        var repo = new RepositoriOutbox();
+        outbox = repo.DaftarAntre(connection).Concat(repo.DaftarRiwayat(connection)).OrderByDescending(row => row.DibuatPada).ToList();
+        if (Status.TahunAjaranId is not { } period || new RepositoriTahunAjaran().FindForDate(connection, today) != period ||
+            new RepositoriKalender().TentukanJenisHari(connection, today, period) == JenisHariKalender.Libur) return;
+
+        schedule = new RepositoriJadwalHari().CariUntukHari(connection, period, HariKalender.DariTanggal(today));
+        if (schedule is null) return;
+        var rows = WorkspaceView.Attendance(Status);
+        notTappedClasses = rows.Where(row => row.Status == StatusAbsensiSiswa.Alpa ||
+                (row.JamMasuk is { } tap && tap >= schedule.NotTappedListTime && row.Status is StatusAbsensiSiswa.Hadir or StatusAbsensiSiswa.Terlambat or StatusAbsensiSiswa.Bolos))
+            .Select(row => row.KelasId).Distinct().Count();
+        parentRecap = rows.Count(row => row.JamMasuk is { } tap && tap < schedule.JamRekap &&
+            row.Status is StatusAbsensiSiswa.Hadir or StatusAbsensiSiswa.Terlambat);
+        realtime = rows.Count(row => row.JamMasuk is { } tap && tap >= schedule.JamRekap && tap <= schedule.BatasTapMasuk &&
+            row.Status == StatusAbsensiSiswa.Terlambat);
+        absent = rows.Count(row => row.Status == StatusAbsensiSiswa.Alpa);
+    }
+
+    private string Result(TimeOnly? due, string detail) =>
+        due is null ? "Belum dijadwalkan" : now < due ? "Menunggu jadwal" : detail;
+
+    private IEnumerable<OutboxBaris> QueueRows() => outbox.Where(item =>
+        item.Tanggal == queueDate && (filter.Length == 0 || item.Status == filter));
+
+    private static string TypeLabel(Absensi.Domain.Notifikasi.JenisNotifikasi kind) => kind.ToString() switch
+    {
+        "RekapWaliBelumTap" => "Daftar belum tap",
+        "BolosWali" => "Bolos untuk wali",
+        "GuruTanpaKabar" => "Guru tanpa kabar",
+        _ => kind.ToString()
+    };
+}

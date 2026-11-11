@@ -18,6 +18,49 @@ public sealed class RepositoriTahunAjaran
         return hasil;
     }
 
+    public IReadOnlyList<AcademicPeriod> ListPeriods(SqliteConnection connection, SqliteTransaction? transaction = null)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT id, nama, semester, tgl_mulai, tgl_selesai, aktif FROM tahun_ajaran ORDER BY tgl_mulai DESC, id DESC;
+            """;
+        using var reader = command.ExecuteReader();
+        var periods = new List<AcademicPeriod>();
+        while (reader.Read())
+        {
+            periods.Add(new AcademicPeriod(reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
+                DateOnly.ParseExact(reader.GetString(3), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                DateOnly.ParseExact(reader.GetString(4), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                reader.GetBoolean(5)));
+        }
+
+        return periods;
+    }
+
+    public int? FindForDate(SqliteConnection connection, DateOnly date, SqliteTransaction? transaction = null)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT id FROM tahun_ajaran WHERE $date BETWEEN tgl_mulai AND tgl_selesai
+            ORDER BY aktif DESC, tgl_mulai DESC, id DESC LIMIT 1;
+            """;
+        command.Parameters.AddWithValue("$date", date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        return command.ExecuteScalar() is long id ? checked((int)id) : null;
+    }
+
+    internal void Activate(SqliteConnection connection, SqliteTransaction transaction, int id)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            UPDATE tahun_ajaran SET aktif = CASE WHEN id = $id THEN 1 ELSE 0 END WHERE aktif = 1 OR id = $id;
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        command.ExecuteNonQuery();
+    }
+
     public int? CariIdAktif(SqliteConnection connection)
     {
         using var command = connection.CreateCommand();
@@ -59,18 +102,19 @@ public sealed class RepositoriTahunAjaran
     // §16.14) di versi ini, jadi ini satu-satunya jalur baris tahun_ajaran
     // pertama dibuat — ditandai aktif langsung karena wizard hanya berjalan
     // saat belum ada tahun ajaran apa pun.
-    public int Tambah(SqliteConnection connection, SqliteTransaction transaction, string nama, string semester, DateOnly tglMulai, DateOnly tglSelesai)
+    public int Tambah(SqliteConnection connection, SqliteTransaction transaction, string nama, string semester, DateOnly tglMulai, DateOnly tglSelesai, bool aktif = true)
     {
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
             INSERT INTO tahun_ajaran (nama, semester, tgl_mulai, tgl_selesai, aktif)
-            VALUES ($nama, $semester, $tglMulai, $tglSelesai, 1);
+            VALUES ($nama, $semester, $tglMulai, $tglSelesai, $aktif);
             """;
         command.Parameters.AddWithValue("$nama", nama);
         command.Parameters.AddWithValue("$semester", semester);
         command.Parameters.AddWithValue("$tglMulai", tglMulai.ToString("yyyy-MM-dd"));
         command.Parameters.AddWithValue("$tglSelesai", tglSelesai.ToString("yyyy-MM-dd"));
+        command.Parameters.AddWithValue("$aktif", aktif ? 1 : 0);
         command.ExecuteNonQuery();
 
         using var commandId = connection.CreateCommand();
@@ -79,3 +123,5 @@ public sealed class RepositoriTahunAjaran
         return Convert.ToInt32(commandId.ExecuteScalar());
     }
 }
+
+public sealed record AcademicPeriod(int Id, string Name, string Semester, DateOnly Start, DateOnly End, bool Active);

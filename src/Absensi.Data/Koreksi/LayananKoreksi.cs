@@ -53,11 +53,8 @@ public sealed class LayananKoreksi
             throw new InvalidOperationException("Anda tidak berwenang mengoreksi absensi kelas ini.");
         }
 
-        var sebelum = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, siswaId)
-            ?? throw new InvalidOperationException("Data absensi siswa pada tanggal ini tidak ditemukan.");
-        var statusLama = sebelum.Status;
-
-        _jalurPerubahanData.Jalankan(
+        AbsensiSiswaHariIni? before = null;
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -65,20 +62,29 @@ public sealed class LayananKoreksi
             entitas: "absensi_siswa",
             perubahan: transaction =>
             {
+                if (_repositoriKuncimBulan.SudahDikunci(connection, tanggal.Year, tanggal.Month, transaction))
+                    throw new InvalidOperationException($"Bulan {tanggal:MM/yyyy} sudah terkunci — koreksi ditolak.");
+
+                var recordedClass = _repositoriAbsensi.FindRecordedClass(connection, transaction, tanggal, siswaId);
+                if (recordedClass is null)
+                    throw new InvalidOperationException("Data absensi siswa pada tanggal ini tidak ditemukan.");
+                if (recordedClass != kelasId || !_layananAkun.BolehMenyentuhKelas(connection, akun, recordedClass.Value, transaction))
+                    throw new InvalidOperationException("Anda tidak berwenang mengoreksi absensi kelas ini.");
+
+                before = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, siswaId, transaction)!;
                 _repositoriAbsensi.KoreksiStatusSiswa(connection, transaction, tanggal, siswaId, statusBaru, keterangan);
-                return siswaId;
+                LocalAttendanceClosure.InvalidateDay(connection, transaction, tanggal);
+                return new CatatanPerubahan(siswaId, PemetaanEnum.TeksDariStatusSiswa(before.Status), PemetaanEnum.TeksDariStatusSiswa(statusBaru));
             },
-            nilaiLama: PemetaanEnum.TeksDariStatusSiswa(statusLama),
-            nilaiBaru: PemetaanEnum.TeksDariStatusSiswa(statusBaru),
             atasPermintaan: atasPermintaan);
 
         // PRD §16.10 langkah 7.2-7.3: tidak ada notifikasi bila statusnya
         // tidak benar-benar berubah.
-        if (statusLama == statusBaru)
+        if (before!.Status == statusBaru)
         {
             return;
         }
 
-        _layananNotifikasi.AntrekanNotifikasiKoreksi(connection, tanggal, siswaId, namaSiswa, statusBaru, sebelum.JamMasuk, waktu);
+        _layananNotifikasi.AntrekanNotifikasiKoreksi(connection, tanggal, siswaId, namaSiswa, statusBaru, before.JamMasuk, waktu);
     }
 }

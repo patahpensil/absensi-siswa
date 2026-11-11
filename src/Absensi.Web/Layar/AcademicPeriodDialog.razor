@@ -1,0 +1,238 @@
+@using Absensi.Data.MasterData
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@using Microsoft.Data.Sqlite
+@inject StatusAplikasi Status
+
+<div class="modal-backdrop" @onkeydown="HandleKey">
+    <section class="dialog panel master-dialog" role="dialog" aria-modal="true" aria-labelledby="year-dialog-title">
+        <header class="panel-header">
+            <h2 id="year-dialog-title">Tahun ajaran dan kenaikan kelas</h2>
+            <button type="button" class="icon-button" aria-label="Tutup tahun ajaran" disabled="@busy" @onclick="Close">×</button>
+        </header>
+        <div class="dialog-body">
+            <fieldset class="master-fields" disabled="@busy">
+                <div class="master-field-wide">
+                    <label for="academic-action">Tindakan</label>
+                    <select id="academic-action" @bind="action" @bind:after="ResetSelection">
+                        <option value="@YearAction.Prepare">Siapkan periode baru</option>
+                        <option value="@YearAction.Promote">Naik kelas massal</option>
+                        <option value="@YearAction.Graduate">Tetapkan lulus</option>
+                        <option value="@YearAction.Activate">Aktifkan periode</option>
+                    </select>
+                </div>
+                @if (action == YearAction.Prepare)
+                {
+                    <div><label for="academic-name">Tahun ajaran</label><input id="academic-name" @bind="name" placeholder="2027/2028" /></div>
+                    <div><label for="academic-semester">Semester</label><select id="academic-semester" @bind="semester"><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></div>
+                    <div><label for="academic-start">Mulai</label><input id="academic-start" type="date" @bind="start" /></div>
+                    <div><label for="academic-end">Berakhir</label><input id="academic-end" type="date" @bind="end" /></div>
+                    <p class="field-help master-field-wide">Jadwal mingguan disalin dari periode aktif. Setelah periode disiapkan, pilih periode itu di menu Kelas untuk membuat kelas tujuan.</p>
+                }
+                else
+                {
+                    @if (action is YearAction.Promote or YearAction.Graduate)
+                    {
+                        <div>
+                            <label for="academic-source-year">Periode asal</label>
+                            <select id="academic-source-year" @bind="sourceYear" @bind:after="SourceYearChanged">
+                                <option value="0">Pilih periode</option>
+                                @foreach (var year in years) { <option value="@year.Id">@Label(year)</option> }
+                            </select>
+                        </div>
+                        <div>
+                            <label for="academic-source-class">Kelas asal</label>
+                            <select id="academic-source-class" @bind="sourceClass" @bind:after="LoadStudents">
+                                <option value="0">Pilih kelas</option>
+                                @foreach (var item in sourceClasses) { <option value="@item.Id">@item.Nama</option> }
+                            </select>
+                        </div>
+                    }
+                    @if (action is YearAction.Promote or YearAction.Activate)
+                    {
+                        <div>
+                            <label for="academic-target-year">Periode tujuan</label>
+                            <select id="academic-target-year" @bind="targetYear" @bind:after="TargetYearChanged">
+                                <option value="0">Pilih periode</option>
+                                @foreach (var year in years.Where(IsAvailableTarget)) { <option value="@year.Id">@Label(year)</option> }
+                            </select>
+                        </div>
+                    }
+                    @if (action == YearAction.Promote)
+                    {
+                        <div>
+                            <label for="academic-target-class">Kelas tujuan</label>
+                            <select id="academic-target-class" @bind="targetClass">
+                                <option value="0">Pilih kelas</option>
+                                @foreach (var item in targetClasses) { <option value="@item.Id">@item.Nama</option> }
+                            </select>
+                        </div>
+                    }
+                    @if (action is YearAction.Promote or YearAction.Graduate)
+                    {
+                        <div class="master-field-wide">
+                            <h3>Siswa terpilih (@selected.Count)</h3>
+                            @if (students.Count == 0) { <p class="muted">Pilih kelas asal dengan siswa aktif.</p> }
+                            else
+                            {
+                                <div class="period-students">
+                                    @foreach (var student in students)
+                                    {
+                                        <label><input type="checkbox" id="academic-student-@student.Id" checked="@selected.Contains(student.Id)"
+                                                      @onchange="args => SelectStudent(student.Id, args)" /> @student.Nama <span class="mono muted">@student.Nisn</span></label>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (action is YearAction.Graduate or YearAction.Activate)
+                    {
+                        <label class="master-field-wide"><input type="checkbox" id="academic-confirm" @bind="confirmed" />
+                            @(action == YearAction.Graduate ? "Saya setuju menonaktifkan siswa terpilih dan kartu aktifnya." : "Saya setuju menjadikan periode tujuan sebagai periode aktif.")
+                        </label>
+                    }
+                }
+            </fieldset>
+            @if (message is not null) { <p id="academic-result" class="message @(success ? "positive" : "danger")" role="@(success ? "status" : "alert")">@message</p> }
+            <div class="dialog-actions">
+                <button type="button" disabled="@busy" @onclick="Close">Tutup</button>
+                <button type="button" class="primary" id="academic-submit" disabled="@(busy || !CanSubmit)" @onclick="Save">Simpan</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private enum YearAction { Prepare, Promote, Graduate, Activate }
+    private readonly AcademicPeriodService service = new();
+    private readonly RepositoriTahunAjaran repo = new();
+    private readonly HashSet<int> selected = [];
+    private IReadOnlyList<AcademicPeriod> years = [];
+    private IReadOnlyList<KelasDaftar> sourceClasses = [], targetClasses = [];
+    private IReadOnlyList<SiswaDaftar> students = [];
+    private YearAction action;
+    private string name = "", semester = "genap";
+    private DateOnly start, end;
+    private int sourceYear, targetYear, sourceClass, targetClass;
+    private string? message;
+    private bool confirmed, busy, success;
+
+    private bool CanSubmit => action switch
+    {
+        YearAction.Prepare => !string.IsNullOrWhiteSpace(name),
+        YearAction.Promote => sourceClass > 0 && targetClass > 0 && selected.Count > 0,
+        YearAction.Graduate => sourceClass > 0 && selected.Count > 0 && confirmed,
+        YearAction.Activate => targetYear > 0 && confirmed,
+        _ => false,
+    };
+
+    protected override void OnInitialized()
+    {
+        if (!WorkspaceView.CanManage(Status)) return;
+        Reload();
+        start = (years.FirstOrDefault()?.End ?? DateOnly.FromDateTime(Status.Jam.Sekarang)).AddDays(1);
+        end = start.AddMonths(5);
+    }
+
+    private void Reload() => years = repo.ListPeriods(Status.Koneksi!);
+    private Task Close() => busy ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKey(KeyboardEventArgs args) => args.Key == "Escape" ? Close() : Task.CompletedTask;
+    private static string Label(AcademicPeriod year) => $"{year.Name} · {year.Semester}{(year.Active ? " (aktif)" : "")}";
+
+    private void ResetSelection()
+    {
+        sourceYear = targetYear = sourceClass = targetClass = 0;
+        sourceClasses = targetClasses = [];
+        students = [];
+        selected.Clear();
+        confirmed = false;
+        message = null;
+    }
+
+    private bool IsAvailableTarget(AcademicPeriod year)
+    {
+        if (action == YearAction.Activate) return !year.Active;
+        return years.FirstOrDefault(item => item.Id == sourceYear) is { } source && year.Start > source.End;
+    }
+
+    private void SourceYearChanged()
+    {
+        sourceClass = targetYear = targetClass = 0;
+        sourceClasses = sourceYear == 0 ? [] : new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, sourceYear)
+            .Where(room => action != YearAction.Graduate || room.Tingkat == 9).ToList();
+        targetClasses = [];
+        LoadStudents();
+    }
+
+    private void TargetYearChanged()
+    {
+        targetClass = 0;
+        targetClasses = targetYear == 0 ? [] : new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, targetYear);
+        confirmed = false;
+    }
+
+    private void LoadStudents()
+    {
+        var room = sourceClasses.FirstOrDefault(item => item.Id == sourceClass);
+        students = room is null ? [] : new RepositoriSiswa().DaftarUntukTahunAjaran(Status.Koneksi!, sourceYear)
+            .Where(student => student.Aktif && student.KelasNama == room.Nama).ToList();
+        selected.Clear();
+        selected.UnionWith(students.Select(student => student.Id));
+        confirmed = false;
+    }
+
+    private void SelectStudent(int id, ChangeEventArgs args)
+    {
+        if (args.Value is true) selected.Add(id);
+        else selected.Remove(id);
+        confirmed = false;
+    }
+
+    private async Task Save()
+    {
+        if (busy || !CanSubmit || !WorkspaceView.CanManage(Status) || Status.Koneksi is not { } connection || Status.Akun is not { } account) return;
+        busy = true;
+        success = false;
+        message = null;
+        try
+        {
+            var time = Status.Jam.Sekarang;
+            var count = selected.Count;
+            string result;
+            switch (action)
+            {
+                case YearAction.Prepare:
+                    service.Prepare(connection, account, time, name, semester, start, end);
+                    result = "Periode disiapkan. Pilih periode baru di menu Kelas.";
+                    break;
+                case YearAction.Promote:
+                    service.Promote(connection, account, time, sourceClass, targetClass, selected);
+                    result = $"{count} siswa ditempatkan pada periode tujuan.";
+                    break;
+                case YearAction.Graduate:
+                    service.Graduate(connection, account, time, sourceClass, selected);
+                    result = $"{count} siswa ditetapkan lulus.";
+                    LoadStudents();
+                    break;
+                default:
+                    service.Activate(connection, account, time, targetYear);
+                    result = "Periode aktif diperbarui.";
+                    break;
+            }
+            if (action == YearAction.Activate) await Status.RefreshAttendanceDayAsync();
+            else await Status.SimpanAsync();
+            Reload();
+            await OnSaved.InvokeAsync();
+            success = !Status.StorageFailed;
+            message = success ? result : Status.CatatanPenyimpanan;
+            confirmed = false;
+        }
+        catch (InvalidOperationException ex) { message = ex.Message; }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 2067) { message = "Periode atau penempatan sudah ada."; }
+        catch (SqliteException) { message = "Perubahan tahun ajaran belum dapat disimpan."; }
+        finally { busy = false; }
+    }
+}

@@ -18,6 +18,7 @@ else
         <header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header>
         <div class="panel-toolbar">
             <div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div>
+            <button type="button" class="primary" id="teacher-add" @onclick="() => addOpen = true">Tambah guru</button>
             <button type="button" id="teacher-import-excel" @onclick="() => importOpen = true">Impor Excel</button>
             <span class="muted">@teachers.Count(g => g.Aktif) aktif · @teachers.Count(g => g.Aktif && !g.PunyaKartu) belum punya kartu</span>
         </div>
@@ -44,6 +45,10 @@ else
                                 {
                                     <button type="button" class="text-button" id="register-teacher-card-@teacher.Id" @onclick="() => OpenRegistration(teacher)">Daftarkan kartu</button>
                                 }
+                                else if (teacher.Aktif)
+                                {
+                                    <button type="button" class="text-button" id="replace-teacher-card-@teacher.Id" @onclick="() => OpenRegistration(teacher)">Ganti kartu</button>
+                                }
                             </div></td>
                         </tr>
                     }
@@ -63,18 +68,22 @@ else
     <div class="modal-backdrop" @onkeydown="HandleDialogKey">
         <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="teacher-registration-title">
             <header class="panel-header">
-                <h2 id="teacher-registration-title">Registrasi kartu guru</h2>
+                <h2 id="teacher-registration-title">@(selectedTeacher.PunyaKartu ? "Ganti kartu guru" : "Registrasi kartu guru")</h2>
                 <button type="button" class="icon-button" aria-label="Tutup registrasi guru" disabled="@saving" @onclick="CloseRegistration">×</button>
             </header>
             <div class="dialog-body">
                 <p class="eyebrow">GURU TERPILIH</p><h3>@selectedTeacher.Nama</h3><p class="mono muted">NIP @selectedTeacher.Nip</p>
                 <p>Tap kartu pada reader, periksa nomor dan identitas guru, lalu simpan. Pembacaan di formulir ini tidak dicatat sebagai absensi.</p>
                 <form @onsubmit:preventDefault>
+                    @if (selectedTeacher.PunyaKartu)
+                    {
+                        <CardReplacementFields OldUid="@(selectedTeacher.KartuUid ?? string.Empty)" @bind-Reason="replacementReason" Disabled="@(saving || registrationComplete)" />
+                    }
                     <label for="teacher-registration-uid">Nomor RFID</label>
                     <input id="teacher-registration-uid" @ref="cardInput" maxlength="64" @bind="pendingUid" @bind:event="oninput" autocomplete="off" disabled="@(registrationComplete || saving)" aria-describedby="teacher-registration-help" />
                     <p id="teacher-registration-help" class="field-help">Nol di depan dipertahankan. Kartu baru ditautkan setelah Simpan kartu ditekan.</p>
                     @if (registrationError is not null) { <p id="teacher-registration-error" class="message danger" role="alert">@registrationError</p> }
-                    @if (registrationComplete) { <p id="teacher-registration-success" class="message positive" role="status">Kartu @pendingUid ditautkan dan sudah diverifikasi untuk @selectedTeacher.Nama.</p> }
+                    @if (registrationComplete && !Status.StorageFailed) { <p id="teacher-registration-success" class="message positive" role="status">Kartu @pendingUid ditautkan dan sudah diverifikasi untuk @selectedTeacher.Nama.</p> }
                     @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
                     <div class="dialog-actions">
                         <button type="button" @onclick="CloseRegistration" disabled="@saving">Tutup</button>
@@ -86,9 +95,9 @@ else
     </div>
 }
 
-@if (editId is { } selectedId && WorkspaceView.CanManage(Status))
+@if ((addOpen || editId is not null) && WorkspaceView.CanManage(Status))
 {
-    <MasterPersonEditor Kind="PersonKind.Teacher" Id="selectedId" OnClose="CloseEditor" OnSaved="Reload" />
+    <MasterPersonEditor Kind="PersonKind.Teacher" Id="editId" OnClose="CloseEditor" OnSaved="Reload" />
 }
 @if (importOpen && WorkspaceView.CanManage(Status))
 {
@@ -98,7 +107,8 @@ else
 @code {
     private int? editId;
     private bool importOpen;
-    private void CloseEditor() => editId = null;
+    private bool addOpen;
+    private void CloseEditor() { editId = null; addOpen = false; }
     private void CloseImport() => importOpen = false;
 
     private int? detailId;
@@ -106,6 +116,7 @@ else
     private IReadOnlyList<GuruDaftar> teachers = Array.Empty<GuruDaftar>();
     private GuruDaftar? selectedTeacher;
     private string pendingUid = "";
+    private string replacementReason = "hilang";
     private string? registrationError;
     private bool registrationComplete, saving, focusCard;
     private ElementReference cardInput;
@@ -128,8 +139,9 @@ else
 
     private void OpenRegistration(GuruDaftar teacher)
     {
-        if (!WorkspaceView.CanManage(Status) || !teacher.Aktif || teacher.PunyaKartu) return;
+        if (!WorkspaceView.CanManage(Status) || !teacher.Aktif) return;
         selectedTeacher = teacher;
+        replacementReason = "hilang";
         pendingUid = "";
         registrationError = null;
         registrationComplete = false;
@@ -165,7 +177,11 @@ else
         try
         {
             pendingUid = pendingUid.Trim();
-            cards.RegisterTeacherCard(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, pendingUid, selectedTeacher.Id);
+            if (selectedTeacher.PunyaKartu)
+                cards.GantiKartuHilang(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, JenisPemilikKartu.Guru,
+                    selectedTeacher.Id, pendingUid, replacementReason, selectedTeacher.KartuUid);
+            else
+                cards.RegisterTeacherCard(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, pendingUid, selectedTeacher.Id);
             var storedUid = new RepositoriKartu().CariUidAktifUntukPemilik(Status.Koneksi!, JenisPemilikKartu.Guru, selectedTeacher.Id);
             if (storedUid != pendingUid) throw new InvalidOperationException("Pasangan guru dan kartu belum dapat diverifikasi. Muat ulang daftar guru.");
             registrationComplete = true;

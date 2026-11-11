@@ -1,6 +1,5 @@
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
-using Absensi.Domain.Akun;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.Data.Koreksi;
@@ -18,29 +17,33 @@ public sealed class LayananKuncimBulan
     public bool SudahDikunci(SqliteConnection connection, int tahun, int bulan) =>
         _repositoriKuncimBulan.SudahDikunci(connection, tahun, bulan);
 
-    public void KunciBulan(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int tahun, int bulan)
+    public void KunciBulan(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int tahun, int bulan) =>
+        Lock(connection, akun, waktu, new DateOnly(tahun, bulan, 1), verifyLocalAttendance: false);
+
+    public void LockVerifiedLocalMonth(SqliteConnection connection, AkunTersimpan account, DateTime time, DateOnly month) =>
+        Lock(connection, account, time, new DateOnly(month.Year, month.Month, 1), verifyLocalAttendance: true);
+
+    private void Lock(SqliteConnection connection, AkunTersimpan account, DateTime time, DateOnly month, bool verifyLocalAttendance)
     {
-        if (akun.Peran == PeranAkun.WaliKelas)
+        AuthorizationGuard.EnsureFullAuthority(account, "mengunci bulan");
+        _jalurPerubahanData.Jalankan(connection, account, time, "kunci_bulan", "kunci_bulan", transaction =>
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengunci bulan (PRD §10).");
-        }
+            if (_repositoriKuncimBulan.SudahDikunci(connection, month.Year, month.Month, transaction))
+                throw new InvalidOperationException($"Bulan {month:MM/yyyy} sudah terkunci.");
 
-        if (_repositoriKuncimBulan.SudahDikunci(connection, tahun, bulan))
-        {
-            throw new InvalidOperationException($"Bulan {bulan:00}/{tahun} sudah terkunci.");
-        }
-
-        _jalurPerubahanData.Jalankan(
-            connection,
-            akun,
-            waktu,
-            aksi: "kunci_bulan",
-            entitas: "kunci_bulan",
-            perubahan: transaction =>
+            if (verifyLocalAttendance)
             {
-                _repositoriKuncimBulan.Kunci(connection, transaction, tahun, bulan, akun.Id, waktu);
-                return null;
-            },
-            nilaiBaru: $"{tahun}-{bulan:00}");
+                var today = DateOnly.FromDateTime(time);
+                if (month.Year == today.Year && month.Month == today.Month || month > today)
+                    throw new InvalidOperationException("Bulan absensi belum berakhir.");
+
+                var pending = new LocalAttendanceClosure().PendingDays(connection, month, transaction);
+                if (pending.Count > 0)
+                    throw new InvalidOperationException($"Bulan belum bisa dikunci. {pending.Count} hari sekolah belum ditutup.");
+            }
+
+            _repositoriKuncimBulan.Kunci(connection, transaction, month.Year, month.Month, account.Id, time);
+            return null;
+        }, nilaiBaru: $"{month:yyyy-MM}");
     }
 }

@@ -89,6 +89,8 @@
                 AlasanTap.LewatBatasTapMasuk => "Batas tap masuk sudah lewat. Hubungi wali kelas atau admin untuk koreksi.",
                 AlasanTap.StatusSudahDitetapkanDiMuka => "Hubungi wali kelas atau admin untuk koreksi. Status dan jam resmi tidak diubah.",
                 AlasanTap.JadwalBelumDiatur => "Jadwal sekolah belum lengkap. Periksa pengaturan.",
+                AlasanTap.BulanTerkunci => "Bulan absensi sudah dikunci.",
+                AlasanTap.HariDitutup => "Hari absensi sudah ditutup.",
                 _ => $"UID {value} · {Status.Jam.Sekarang:HH:mm:ss} WITA · hasil tersimpan pada database uji.",
             };
             await Status.SimpanAsync();

@@ -449,9 +449,11 @@ await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => 
   await page.setViewportSize({ width: 1440, height: 900 });
 });
 
-await langkah('Menu yang belum dibangun diberi tahu apa adanya', async () => {
+await langkah('Kalender dan pratinjau Notifikasi bisa dibuka', async () => {
   await page.click('#menu-kalender');
-  await page.waitForSelector('#belum-dibangun');
+  await page.waitForSelector('#school-calendar');
+  await page.click('#menu-notifikasi');
+  await page.waitForSelector('#school-notifications');
 });
 
 await langkah('Keluar akun menutup TV dan kembali ke layar login', async () => {
@@ -511,7 +513,11 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');
   tegas((await page.textContent('#tabel-siswa')).includes('0000111101'), 'kartu tidak bertahan setelah reload');
   tegas(await page.locator('[id^="register-card-"]').count() === 0, 'wali mendapat tindakan registrasi kartu');
-  tegas(await page.locator('#student-import-excel, [id^="edit-student-"]').count() === 0, 'wali mendapat tindakan ubah atau impor master');
+  tegas(await page.locator('#student-add, #student-import-excel, [id^="edit-student-"], [id^="replace-student-card-"], #menu-notifikasi, #menu-audit').count() === 0, 'wali mendapat tindakan pengelolaan sekolah');
+  await page.click('#menu-kalender');
+  await page.waitForSelector('#school-calendar');
+  tegas(await page.locator('#calendar-save, #calendar-finalize, #calendar-lock').count() === 0, 'wali dapat mengubah kalender');
+  await page.click('#menu-siswa');
   tegas(await page.locator('#student-detail-3 img.mini-avatar').count() === 1, 'foto siswa tidak bertahan setelah reload');
   await page.click('#student-detail-3');
   await page.waitForSelector('#person-detail-photo');
@@ -656,6 +662,160 @@ await langkah('Perubahan master dan kartu hasil impor bertahan setelah halaman d
   tegas((await page.textContent('#tabel-guru')).includes('Guru hasil ubah'), 'edit guru hilang');
   const teacher = await page.locator('#tabel-guru tbody tr').filter({ hasText: 'Guru Excel RFID' }).textContent();
   tegas(teacher.includes('000123456789012345') && teacher.includes('0000999102'), 'impor guru tidak bertahan');
+});
+
+await langkah('Admin menambah siswa/guru dan mengganti kartu dengan konfirmasi serta penolakan UID duplikat', async () => {
+  await page.click('#menu-siswa');
+  await page.click('#student-add');
+  await page.fill('#master-edit-identifier', '0012345680');
+  await page.fill('#master-edit-name', 'Siswa tambah manual');
+  await page.selectOption('#master-edit-class', '1');
+  await page.click('#master-edit-save');
+  await page.waitForSelector('#master-edit-success');
+  await page.getByRole('button', { name: 'Tutup tambah data' }).click();
+  tegas((await page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa tambah manual' }).textContent()).includes('0012345680'), 'NISN tidak tersimpan utuh');
+
+  await page.click('#replace-student-card-1');
+  await page.fill('#registration-uid', '0000222201');
+  await page.click('#save-registration');
+  await page.getByRole('dialog').getByRole('alert').waitFor();
+  tegas((await page.getByRole('dialog').getByRole('alert').textContent()).includes('sudah terdaftar'), 'RFID duplikat tidak dijelaskan');
+  await page.fill('#registration-uid', '0000999201');
+  await page.selectOption('#replacement-reason', 'rusak');
+  await page.click('#save-registration');
+  await page.waitForSelector('#registration-success');
+  await page.getByRole('button', { name: 'Tutup registrasi', exact: true }).click();
+
+  await page.click('#menu-guru');
+  await page.click('#teacher-add');
+  await page.fill('#master-edit-identifier', '000000123456789001');
+  await page.fill('#master-edit-name', 'Guru tambah manual');
+  await page.click('#master-edit-save');
+  await page.waitForSelector('#master-edit-success');
+  await page.getByRole('button', { name: 'Tutup tambah data' }).click();
+  tegas((await page.textContent('#tabel-guru')).includes('000000123456789001'), 'NIP tidak tersimpan utuh');
+  await page.click('#replace-teacher-card-1');
+  await page.fill('#teacher-registration-uid', '0000999202');
+  await page.click('#save-teacher-registration');
+  await page.waitForSelector('#teacher-registration-success');
+  await page.getByRole('button', { name: 'Tutup registrasi guru' }).click();
+  tegas((await page.textContent('#tabel-guru')).includes('0000999202'), 'kartu pengganti guru tidak tampil');
+});
+
+await langkah('Admin membuat kelas, mengganti wali dan melihat riwayat penugasan', async () => {
+  await setClock('2026-12-01T07:29:00');
+  await page.click('#menu-kelas');
+  await page.click('#class-add');
+  await page.fill('#class-edit-name', '9Z');
+  await page.selectOption('#class-edit-level', '9');
+  await page.click('#class-edit-save');
+  await page.waitForSelector('#class-edit-success');
+  await page.getByRole('button', { name: 'Tutup formulir kelas' }).click();
+  tegas((await page.textContent('#tabel-kelas')).includes('9Z'), 'kelas baru tidak tampil');
+  await page.click('#class-edit-1');
+  await page.selectOption('#class-edit-teacher', '4');
+  await page.click('#class-edit-save');
+  await page.waitForSelector('#class-edit-success');
+  await page.getByRole('button', { name: 'Tutup formulir kelas' }).click();
+  await page.click('#class-edit-1');
+  tegas(await page.locator('#class-homeroom-history tbody tr').count() === 2, 'wali lama tidak disimpan');
+  tegas((await page.textContent('#class-homeroom-history')).includes('Pak Andi'), 'wali pengganti belum aktif');
+  await page.getByRole('button', { name: 'Tutup formulir kelas' }).click();
+  await page.click('#tombol-keluar');
+  await page.waitForSelector('#tombol-masuk');
+  await masuk('wali7a', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await page.click('#menu-siswa');
+  await page.waitForSelector('#tabel-siswa');
+  tegas(await baris('#tabel-siswa') === 0, 'wali lama masih melihat siswa kelas 7A');
+  await page.click('#tombol-keluar');
+  await page.waitForSelector('#tombol-masuk');
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+});
+
+await langkah('Kalender wajib alasan, hari ditutup, dan bulan belum lengkap diblokir', async () => {
+  await page.click('#menu-kalender');
+  await page.fill('#calendar-from', '2026-12-01');
+  await page.fill('#calendar-to', '2026-12-01');
+  await page.click('#calendar-save');
+  await page.waitForSelector('#calendar-result[role=alert]');
+  await page.fill('#calendar-reason', 'Libur pengujian');
+  await page.click('#calendar-save');
+  await page.waitForSelector('#calendar-result[role=status]');
+  tegas((await page.textContent('#school-calendar')).includes('Libur pengujian'), 'libur yang disimpan tidak tampil');
+  await page.click('#menu-notifikasi');
+  tegas((await page.textContent('#school-notifications')).includes('Jadwal notifikasi tidak berlaku'), 'notifikasi masih dijadwalkan pada hari libur');
+
+  await page.click('#menu-kalender');
+  await page.getByRole('button', { name: 'Bulan sebelumnya' }).click();
+  tegas((await page.textContent('#calendar-lock-readiness')).includes('belum ditutup'), 'bulan yang belum lengkap tidak diblokir');
+  tegas(await page.locator('#calendar-lock').count() === 0, 'bulan belum lengkap dapat dikunci');
+  await page.fill('#calendar-from', '2026-11-04');
+  await page.fill('#calendar-to', '2026-11-04');
+  await page.click('#calendar-finalize');
+  await page.waitForSelector('#calendar-result[role=status]');
+  tegas((await page.textContent('#calendar-result')).includes('04/11/2026'), 'hasil tutup hari tidak tampil');
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'tandai_libur');
+  tegas((await page.textContent('#audit-table')).includes('Libur pengujian'), 'perubahan kalender tidak terlihat di audit');
+});
+
+await langkah('Naik kelas massal mempertahankan kartu dan laporan periode sebelumnya', async () => {
+  await page.click('#menu-kelas');
+  await page.click('#academic-open');
+  await page.fill('#academic-name', '2026/2027');
+  await page.fill('#academic-start', '2027-01-04');
+  await page.fill('#academic-end', '2027-06-30');
+  await page.click('#academic-submit');
+  await page.waitForSelector('#academic-result[role=status]');
+  await page.getByRole('button', { name: 'Tutup tahun ajaran' }).click();
+
+  await page.selectOption('#classes-period', '2');
+  await page.click('#class-add');
+  await page.fill('#class-edit-name', '8Z');
+  await page.selectOption('#class-edit-level', '8');
+  await page.click('#class-edit-save');
+  await page.waitForSelector('#class-edit-success');
+  await page.getByRole('button', { name: 'Tutup formulir kelas' }).click();
+
+  await page.click('#academic-open');
+  await page.selectOption('#academic-action', 'Promote');
+  await page.selectOption('#academic-source-year', '1');
+  await page.selectOption('#academic-source-class', { label: '7A' });
+  const checks = page.locator('.period-students input');
+  for (let i = 0; i < await checks.count(); i++) {
+    const box = checks.nth(i);
+    if (await box.getAttribute('id') !== 'academic-student-1') await box.uncheck();
+  }
+  await page.selectOption('#academic-target-year', '2');
+  await page.selectOption('#academic-target-class', { label: '8Z' });
+  await page.click('#academic-submit');
+  await page.waitForSelector('#academic-result[role=status]');
+  tegas((await page.textContent('#academic-result')).includes('1 siswa'), 'seleksi siswa tidak dipertahankan');
+  await page.getByRole('button', { name: 'Tutup tahun ajaran' }).click();
+
+  await setClock('2027-01-04T07:29:00');
+  await page.click('#menu-kelas');
+  await page.click('#academic-open');
+  await page.selectOption('#academic-action', 'Activate');
+  await page.selectOption('#academic-target-year', '2');
+  await page.check('#academic-confirm');
+  await page.click('#academic-submit');
+  await page.waitForSelector('#academic-result[role=status]');
+  await page.getByRole('button', { name: 'Tutup tahun ajaran' }).click();
+  await page.click('#menu-siswa');
+  const row = await page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa hasil ubah' }).textContent();
+  tegas(row.includes('8Z') && row.includes('0000999201'), 'kelas baru atau kartu lama hilang');
+
+  await page.click('#menu-laporan');
+  await page.selectOption('#report-period', '1');
+  await page.selectOption('#report-class', '1');
+  await page.fill('#report-date', '2026-11-04');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table');
+  const history = await page.locator('#report-table tbody tr').filter({ hasText: 'Siswa hasil ubah' }).textContent();
+  tegas(history.includes('7A') && history.includes('07:30:00'), 'riwayat laporan kelas asal berubah');
 });
 
 await browser.close();

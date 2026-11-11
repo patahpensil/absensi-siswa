@@ -17,9 +17,12 @@
     protected override void OnInitialized() => scenario = Status.Jam.Sekarang;
     private async Task ApplyScenario()
     {
-        var range = new RepositoriTahunAjaran().CariRentang(Status.Koneksi!, Status.TahunAjaranId ?? 0);
         var date = DateOnly.FromDateTime(scenario);
-        if (range is null || date < range.Value.TglMulai || date > range.Value.TglSelesai) { message = "Pilih tanggal dalam rentang tahun ajaran aktif."; return; }
+        if (new RepositoriTahunAjaran().FindForDate(Status.Koneksi!, date) is null)
+        {
+            message = "Pilih tanggal dalam rentang periode akademik yang tercatat.";
+            return;
+        }
         Status.Jam.SetScenario(scenario);
         await ClockChanged();
     }

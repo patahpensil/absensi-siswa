@@ -57,9 +57,20 @@ public sealed class RepositoriAbsensi
         }
     }
 
-    public AbsensiSiswaHariIni? CariHariIniSiswa(SqliteConnection connection, DateOnly tanggal, int siswaId)
+    internal int? FindRecordedClass(SqliteConnection connection, SqliteTransaction transaction, DateOnly date, int studentId)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT kelas_id FROM absensi_siswa WHERE tanggal = $date AND siswa_id = $student;";
+        command.Parameters.AddWithValue("$date", TanggalTeks(date));
+        command.Parameters.AddWithValue("$student", studentId);
+        return command.ExecuteScalar() is long id ? checked((int)id) : null;
+    }
+
+    public AbsensiSiswaHariIni? CariHariIniSiswa(SqliteConnection connection, DateOnly tanggal, int siswaId, SqliteTransaction? transaction = null)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             SELECT status, jam_masuk, jam_pulang FROM absensi_siswa
             WHERE tanggal = $tanggal AND siswa_id = $siswaId;
@@ -79,9 +90,10 @@ public sealed class RepositoriAbsensi
             BacaJam(reader, 2));
     }
 
-    public AbsensiGuruHariIni? CariHariIniGuru(SqliteConnection connection, DateOnly tanggal, int guruId)
+    public AbsensiGuruHariIni? CariHariIniGuru(SqliteConnection connection, DateOnly tanggal, int guruId, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             SELECT status, jam_masuk, jam_pulang FROM absensi_guru
             WHERE tanggal = $tanggal AND guru_id = $guruId;

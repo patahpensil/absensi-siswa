@@ -79,6 +79,8 @@ public static class PemetaanTampilanTap
         // di layar dari "Belum tap masuk" (alasan lain, siswa/guru memang
         // tap di luar urutan) — di sini keduanya kini tampil berbeda.
         AlasanTap.JadwalBelumDiatur => "Jadwal belum diatur",
+        AlasanTap.BulanTerkunci => "Bulan absensi sudah dikunci.",
+        AlasanTap.HariDitutup => "Hari absensi sudah ditutup.",
         _ => "Ditolak",
     };
 }

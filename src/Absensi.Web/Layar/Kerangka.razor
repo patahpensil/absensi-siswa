@@ -39,8 +39,11 @@
             case "Absensi": <AttendanceDesk /> break;
             case "Siswa": <DaftarSiswa Search="@studentSearch" /> break;
             case "Guru": <DaftarGuru /> break;
-            case "Kelas": <DaftarKelas /> break;
+            case "Kelas": <DaftarKelas OnPeriodChanged="RefreshAttendance" /> break;
             case "Koreksi": <KoreksiWeb /> break;
+            case "Kalender": <SchoolCalendar /> break;
+            case "Notifikasi": <SchoolNotifications /> break;
+            case "Audit": <SchoolAudit /> break;
             case "Laporan": <LaporanWeb /> break;
             case "Layar gerbang": break;
             case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
@@ -67,7 +70,7 @@
     {
         var items = new[] { "Dashboard", "Absensi", "Layar gerbang", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
         return items.Where(m => (m != "Audit" || Status.Akun!.Peran == PeranAkun.Admin)
-            && (m != "Layar gerbang" || WorkspaceView.CanManage(Status)));
+            && (m is not ("Layar gerbang" or "Notifikasi") || WorkspaceView.CanManage(Status)));
     }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

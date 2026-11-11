@@ -8,9 +8,10 @@ public sealed class RepositoriKuncimBulan
     // perubahan (PRD §10: "Koreksi terbuka selama bulan bersangkutan
     // belum dikunci") dan Absensi.App/layar Kunci Bulan untuk menampilkan
     // status sekarang.
-    public bool SudahDikunci(SqliteConnection connection, int tahun, int bulan)
+    public bool SudahDikunci(SqliteConnection connection, int tahun, int bulan, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT COUNT(*) FROM kunci_bulan WHERE tahun = $tahun AND bulan = $bulan;";
         command.Parameters.AddWithValue("$tahun", tahun);
         command.Parameters.AddWithValue("$bulan", bulan);
@@ -25,9 +26,10 @@ public sealed class RepositoriKuncimBulan
     // dikunci_oleh diselesaikan ke nama tampil: nama guru bila akun itu
     // menunjuk ke baris guru (jarang untuk Kepsek/Admin), kalau tidak
     // username akun itu sendiri.
-    public KuncimBulanInfo? CariPertamaDalamRentang(SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir)
+    public KuncimBulanInfo? CariPertamaDalamRentang(SqliteConnection connection, DateOnly tanggalAwal, DateOnly tanggalAkhir, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             SELECT k.tahun, k.bulan, COALESCE(g.nama, a.username), k.dikunci_pada
             FROM kunci_bulan k

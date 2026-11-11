@@ -5,9 +5,10 @@ namespace Absensi.Data.Repositori;
 public sealed class RepositoriJadwalHari
 {
     // hari: 1=Senin .. 7=Minggu (docs/SKEMA-DATABASE.md §4).
-    public JadwalHariKonfigurasi? CariUntukHari(SqliteConnection connection, int tahunAjaranId, int hari)
+    public JadwalHariKonfigurasi? CariUntukHari(SqliteConnection connection, int tahunAjaranId, int hari, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             SELECT hari_sekolah, jam_masuk, jam_rekap, batas_tap_masuk, mulai_pulang, not_tapped_list_time
             FROM jadwal_hari

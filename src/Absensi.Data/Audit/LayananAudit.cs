@@ -26,6 +26,21 @@ public sealed class LayananAudit
     // LayananBackup.SiapkanRestore menolak Wali Kelas. Kepala Sekolah
     // SENGAJA belum diberi akses (keputusan eksplisit, bukan kelalaian) --
     // menunggu aturan akses per peran diputuskan dan diuji terpisah.
+    public IReadOnlyList<BarisAuditGabungan> ReadActive(SqliteConnection connection, AkunTersimpan account,
+        DateTime from, DateTime to)
+    {
+        EnsureAdmin(account);
+        var entries = new Dictionary<string, BarisAuditGabungan>();
+        BacaDariSumber(connection, "Aktif", from, to, entries);
+        return entries.Values.OrderByDescending(entry => entry.Waktu).ToList();
+    }
+
+    private static void EnsureAdmin(AkunTersimpan account)
+    {
+        if (account.Peran != PeranAkun.Admin)
+            throw new InvalidOperationException("Hanya Admin yang dapat membuka layar Audit.");
+    }
+
     public HasilAudit Baca(
         SqliteConnection sumber,
         AkunTersimpan akun,
@@ -33,10 +48,7 @@ public sealed class LayananAudit
         DateTime dariTanggal,
         DateTime sampaiTanggal)
     {
-        if (akun.Peran != PeranAkun.Admin)
-        {
-            throw new InvalidOperationException("Hanya Admin yang dapat membuka layar Audit.");
-        }
+        EnsureAdmin(akun);
 
         var baris = new Dictionary<string, BarisAuditGabungan>();
         BacaDariSumber(sumber, "Aktif", dariTanggal, sampaiTanggal, baris);

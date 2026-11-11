@@ -98,6 +98,8 @@ public sealed class GateController(StatusAplikasi state)
             AlasanTap.LewatBatasTapMasuk => "Batas tap masuk sudah lewat. Hubungi petugas untuk koreksi.",
             AlasanTap.StatusSudahDitetapkanDiMuka => "Status resmi tidak diubah. Hubungi petugas untuk koreksi.",
             AlasanTap.JadwalBelumDiatur => "Jadwal sekolah belum lengkap.",
+            AlasanTap.BulanTerkunci => "Bulan absensi sudah dikunci.",
+            AlasanTap.HariDitutup => "Hari absensi sudah ditutup.",
             _ => "",
         };
         var tone = rejected ? "danger" : decision.StatusSiswaBaru == StatusAbsensiSiswa.Terlambat ? "warning" : "positive";

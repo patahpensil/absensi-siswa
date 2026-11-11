@@ -8,7 +8,7 @@ namespace Absensi.Web.Layanan;
 
 public enum ReportKind { Daily, Weekly, Monthly, PerPerson, Semester }
 
-public sealed record ReportRequest(ReportKind Kind, JenisSubjekLaporan Subject, int? ClassId, DateOnly Date, DateOnly EndDate, int? PersonId);
+public sealed record ReportRequest(ReportKind Kind, JenisSubjekLaporan Subject, int? ClassId, DateOnly Date, DateOnly EndDate, int? PersonId, int? PeriodId = null);
 
 public sealed record ReportFile(string Name, string Mime, byte[] Bytes);
 
@@ -30,17 +30,17 @@ public static class ReportView
     }
 
     public static LaporanBulanan Monthly(StatusAplikasi state, ReportRequest r) =>
-        Reports.Bulanan(state.Koneksi!, state.Akun!, state.TahunAjaranId ?? 0, r.Date.Year, r.Date.Month, r.ClassId, r.Subject);
+        Reports.Bulanan(state.Koneksi!, state.Akun!, r.PeriodId ?? state.TahunAjaranId ?? 0, r.Date.Year, r.Date.Month, r.ClassId, r.Subject);
 
     public static KartuOrang Person(StatusAplikasi state, ReportRequest r) =>
-        WithPhoto(state, Reports.PerOrang(state.Koneksi!, state.Akun!, r.PersonId ?? 0, r.Subject, state.TahunAjaranId ?? 0, r.Date, r.EndDate));
+        WithPhoto(state, Reports.PerOrang(state.Koneksi!, state.Akun!, r.PersonId ?? 0, r.Subject, r.PeriodId ?? state.TahunAjaranId ?? 0, r.Date, r.EndDate));
 
     public static IReadOnlyList<KartuOrang> People(StatusAplikasi state, ReportRequest r) =>
-        Reports.PerKelasAtauSemua(state.Koneksi!, state.Akun!, r.Subject, r.ClassId, state.TahunAjaranId ?? 0, r.Date, r.EndDate)
+        Reports.PerKelasAtauSemua(state.Koneksi!, state.Akun!, r.Subject, r.ClassId, r.PeriodId ?? state.TahunAjaranId ?? 0, r.Date, r.EndDate)
             .Select(k => WithPhoto(state, k)).ToList();
 
     public static IReadOnlyList<BarisSemester> Semester(StatusAplikasi state, ReportRequest r) =>
-        Reports.Semester(state.Koneksi!, state.Akun!, state.TahunAjaranId ?? 0, r.ClassId, r.Subject);
+        Reports.Semester(state.Koneksi!, state.Akun!, r.PeriodId ?? state.TahunAjaranId ?? 0, r.ClassId, r.Subject);
 
     public static ReportFile Export(StatusAplikasi state, ReportRequest r, bool excel)
     {
@@ -96,15 +96,15 @@ public static class ReportView
         ReportKind.Weekly => $"{WeekStart(r.Date).ToString("d MMMM", Indonesian)} - {WeekStart(r.Date).AddDays(5).ToString("d MMMM yyyy", Indonesian)}",
         ReportKind.Monthly => r.Date.ToString("MMMM yyyy", Indonesian),
         ReportKind.PerPerson => $"{r.Date.ToString("d MMMM yyyy", Indonesian)} - {r.EndDate.ToString("d MMMM yyyy", Indonesian)}",
-        _ => SemesterText(state),
+        _ => SemesterText(state, r),
     };
 
-    private static string SemesterText(StatusAplikasi state)
+    private static string SemesterText(StatusAplikasi state, ReportRequest request)
     {
-        var range = new RepositoriTahunAjaran().CariRentang(state.Koneksi!, state.TahunAjaranId ?? 0);
-        return range is { } x
-            ? $"{state.TahunAjaran} ({x.TglMulai.ToString("d MMMM yyyy", Indonesian)} - {x.TglSelesai.ToString("d MMMM yyyy", Indonesian)})"
-            : state.TahunAjaran;
+        var periodId = request.PeriodId ?? state.TahunAjaranId;
+        var period = new RepositoriTahunAjaran().ListPeriods(state.Koneksi!).FirstOrDefault(item => item.Id == periodId);
+        return period is null ? state.TahunAjaran :
+            $"{period.Name} · {period.Semester} ({period.Start.ToString("d MMMM yyyy", Indonesian)} - {period.End.ToString("d MMMM yyyy", Indonesian)})";
     }
 
     private static KepalaLaporan Header(StatusAplikasi state, ReportRequest r)

@@ -1,0 +1,197 @@
+@using System.Globalization
+@using Absensi.Data.Koreksi
+@using Absensi.Data.Repositori
+@using Absensi.Data.Waktu
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@using Microsoft.Data.Sqlite
+@inject StatusAplikasi Status
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / KALENDER</p><h1>Kalender sekolah</h1><p>Hari efektif, libur, dan penutupan absensi.</p></div></div>
+<section class="panel" id="school-calendar">
+    <header class="panel-header">
+        <h2>@month.ToString("MMMM yyyy", Indonesian)</h2>
+        <div class="master-row-actions">
+            <button type="button" aria-label="Bulan sebelumnya" disabled="@busy" @onclick="() => Move(-1)">‹</button>
+            <button type="button" aria-label="Bulan berikutnya" disabled="@busy" @onclick="() => Move(1)">›</button>
+        </div>
+    </header>
+    <div class="calendar-grid">
+        @foreach (var label in DayLabels) { <span class="muted calendar-label">@label</span> }
+        @for (var i = 0; i < ((int)month.DayOfWeek + 6) % 7; i++) { <span aria-hidden="true"></span> }
+        @foreach (var day in days)
+        {
+            <button type="button" class="calendar-day @(day.Kind == JenisHariKalender.Libur ? "holiday" : "")"
+                    aria-pressed="@(from == day.Date)" disabled="@busy" @onclick="() => SelectDate(day.Date)">
+                <strong class="mono">@day.Date.Day</strong><small>@day.Label</small>
+            </button>
+        }
+    </div>
+    @if (WorkspaceView.CanManage(Status))
+    {
+        <div class="settings-body">
+            <fieldset class="master-fields" disabled="@busy">
+                <div><label for="calendar-from">Dari tanggal</label><input id="calendar-from" type="date" @bind="from" /></div>
+                <div><label for="calendar-to">Sampai tanggal</label><input id="calendar-to" type="date" @bind="to" /></div>
+                <div><label for="calendar-kind">Jenis hari</label><select id="calendar-kind" @bind="kind">
+                    <option value="@JenisHariKalender.Libur">Libur</option><option value="@JenisHariKalender.Sekolah">Hari sekolah</option>
+                </select></div>
+                <div><label for="calendar-reason">Keterangan</label><input id="calendar-reason" maxlength="240" @bind="reason" /></div>
+            </fieldset>
+            <div class="report-actions">
+                <button type="button" id="calendar-save" class="primary" disabled="@busy" @onclick="SaveCalendar">Simpan kalender</button>
+                <button type="button" id="calendar-finalize" disabled="@busy" @onclick="FinalizeDay">Tutup hari terpilih</button>
+            </div>
+        </div>
+    }
+</section>
+@if (WorkspaceView.CanManage(Status))
+{
+    <section class="panel">
+        <header class="panel-header"><h2>Penguncian bulan</h2></header>
+        <div class="settings-body">
+            @if (locked is not null) { <p id="calendar-locked" class="message positive" role="status">Bulan terkunci oleh @locked.DikunciOleh pada @locked.DikunciPada.ToString("dd/MM/yyyy HH:mm") WITA.</p> }
+            else
+            {
+                <p id="calendar-lock-readiness">@(readiness ?? "Semua hari sekolah di bulan ini sudah ditutup pada database uji.")</p>
+                <p class="field-help">Pemeriksaan ini mencakup catatan pada browser uji. Sinkronisasi perangkat sekolah belum digunakan.</p>
+                @if (readiness is null)
+                {
+                    <label><input id="calendar-lock-consent" type="checkbox" @bind="confirmLock" disabled="@busy" /> Saya sudah memeriksa laporan bulan ini.</label>
+                    <button type="button" id="calendar-lock" class="primary" disabled="@(!confirmLock || busy)" @onclick="LockMonth">Kunci bulan</button>
+                }
+            }
+        </div>
+    </section>
+}
+@if (message is not null)
+{
+    <p id="calendar-result" class="message @(success ? "positive" : "danger")" role="@(success ? "status" : "alert")">@message</p>
+}
+
+@code {
+    private static readonly CultureInfo Indonesian = new("id-ID");
+    private static readonly string[] DayLabels = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+    private readonly RepositoriKalender calendar = new();
+    private readonly LocalAttendanceClosure closure = new();
+    private DateOnly month, from, to;
+    private JenisHariKalender kind = JenisHariKalender.Libur;
+    private string reason = "";
+    private string? message, readiness;
+    private bool success, busy, confirmLock;
+    private KuncimBulanInfo? locked;
+    private IReadOnlyList<CalendarDay> days = [];
+
+    protected override void OnInitialized()
+    {
+        from = to = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        month = new DateOnly(from.Year, from.Month, 1);
+        Reload();
+    }
+
+    private void Move(int offset)
+    {
+        if ((offset < 0 && month.Year <= 1900) || (offset > 0 && month.Year >= 2200)) return;
+        month = month.AddMonths(offset);
+        from = to = month;
+        reason = "";
+        message = null;
+        Reload();
+    }
+
+    private void SelectDate(DateOnly date)
+    {
+        from = to = date;
+        reason = "";
+        message = null;
+    }
+
+    private void Reload()
+    {
+        var connection = Status.Koneksi!;
+        var years = new RepositoriTahunAjaran().ListPeriods(connection);
+        var last = month.AddMonths(1).AddDays(-1);
+        var overrides = calendar.DaftarUntukBulan(connection, month.Year, month.Month).ToDictionary(item => item.Tanggal);
+        days = Enumerable.Range(0, last.Day).Select(offset =>
+        {
+            var date = month.AddDays(offset);
+            var period = years.FirstOrDefault(item => date >= item.Start && date <= item.End);
+            overrides.TryGetValue(date, out var entry);
+            JenisHariKalender? day = entry?.Jenis ?? (period is null ? null : calendar.TentukanJenisHari(connection, date, period.Id));
+            return new CalendarDay(date, day, entry?.Keterangan);
+        }).ToList();
+        confirmLock = false;
+        locked = new RepositoriKuncimBulan().CariPertamaDalamRentang(connection, month, last);
+        readiness = null;
+        if (locked is not null || !WorkspaceView.CanManage(Status)) return;
+        if (last >= DateOnly.FromDateTime(Status.Jam.Sekarang))
+        {
+            readiness = "Bulan absensi belum berakhir.";
+            return;
+        }
+
+        try
+        {
+            var pending = closure.PendingDays(connection, month);
+            if (pending.Count > 0) readiness = $"Belum dapat dikunci. Hari sekolah belum ditutup: {string.Join(", ", pending.Select(date => date.Day))}.";
+        }
+        catch (InvalidOperationException ex) { readiness = ex.Message; }
+    }
+
+    private Task SaveCalendar()
+    {
+        if (to < from || to.DayNumber - from.DayNumber >= 366 || from.Year is < 1900 or > 2200 || to.Year > 2200)
+        {
+            message = "Isi rentang tanggal yang sah, maksimal 366 hari.";
+            success = false;
+            return Task.CompletedTask;
+        }
+        return Mutate(() => new LayananKalender().TandaiRentang(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang,
+            from, to, kind, string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()), "Kalender tersimpan.", refreshDay: true);
+    }
+
+    private Task FinalizeDay()
+    {
+        if (from != to)
+        {
+            message = "Pilih satu tanggal untuk menutup hari absensi.";
+            success = false;
+            return Task.CompletedTask;
+        }
+        return Mutate(() => closure.FinalizeDay(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, from),
+            $"Hari {from:dd/MM/yyyy} ditutup.");
+    }
+
+    private Task LockMonth() => !confirmLock ? Task.CompletedTask :
+        Mutate(() => new LayananKuncimBulan().LockVerifiedLocalMonth(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, month), "Bulan dikunci.");
+
+    private async Task Mutate(Action action, string result, bool refreshDay = false)
+    {
+        if (busy || !WorkspaceView.CanManage(Status)) return;
+        busy = true;
+        message = null;
+        success = false;
+        try
+        {
+            action();
+            if (refreshDay) await Status.OpenCurrentDayAsync();
+            else await Status.SimpanAsync();
+            Reload();
+            success = !Status.StorageFailed;
+            message = success ? result : Status.CatatanPenyimpanan;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException) { message = ex.Message; }
+        catch (SqliteException) { message = "Perubahan kalender atau absensi belum dapat disimpan."; }
+        finally { busy = false; }
+    }
+
+    private sealed record CalendarDay(DateOnly Date, JenisHariKalender? Kind, string? Reason)
+    {
+        public string Label => Kind switch
+        {
+            JenisHariKalender.Libur => Reason is null ? "Libur" : $"Libur · {Reason}",
+            JenisHariKalender.Sekolah => "Sekolah",
+            _ => "Di luar periode",
+        };
+    }
+}

@@ -17,4 +17,6 @@ public enum AlasanTap
     // NULL diam-diam dijadikan 00:00, membuat setiap tap pertama hari itu
     // salah ditolak sebagai BelumPunyaCatatanMasuk). Lihat PemrosesTap.cs.
     JadwalBelumDiatur,
+    BulanTerkunci,
+    HariDitutup,
 }

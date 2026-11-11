@@ -165,14 +165,14 @@ public sealed class LayananAkun
 
     // PRD §3: dipakai pemanggil (mis. layar koreksi di
     // Tugas 11) sebelum mengizinkan perubahan pada kelas tertentu.
-    public bool BolehMenyentuhKelas(SqliteConnection connection, AkunTersimpan akun, int kelasId)
+    public bool BolehMenyentuhKelas(SqliteConnection connection, AkunTersimpan akun, int kelasId, SqliteTransaction? transaction = null)
     {
         if (akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin)
         {
             return true;
         }
 
-        var waliGuruId = _repositoriKelas.CariWaliGuruId(connection, kelasId);
+        var waliGuruId = _repositoriKelas.CariWaliGuruId(connection, kelasId, transaction);
         return waliGuruId is { } id && _penentuAksesKelas.BolehMenyentuh(akun.Peran, akun.GuruId, id);
     }
 }

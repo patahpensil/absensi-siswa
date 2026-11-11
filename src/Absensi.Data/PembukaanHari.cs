@@ -1,4 +1,5 @@
 using Absensi.Data.Repositori;
+using Absensi.Data.Koreksi;
 using Absensi.Domain.Kehadiran;
 using Microsoft.Data.Sqlite;
 
@@ -20,8 +21,11 @@ public sealed class PembukaanHari
         var tahunAjaranId = _repositoriTahunAjaran.CariIdAktif(connection)
             ?? throw new InvalidOperationException("Tidak ada tahun ajaran aktif; pembukaan hari tidak bisa dijalankan.");
 
-        var jenisHari = _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId);
-        if (jenisHari == JenisHariKalender.Libur)
+        using var transaction = connection.BeginTransaction(deferred: false);
+        var jenisHari = _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId, transaction);
+        if (_repositoriTahunAjaran.FindForDate(connection, tanggal, transaction) != tahunAjaranId ||
+            new RepositoriKuncimBulan().SudahDikunci(connection, tanggal.Year, tanggal.Month, transaction) ||
+            jenisHari == JenisHariKalender.Libur || new LocalAttendanceClosure().IsClosed(connection, tanggal, transaction))
         {
             return;
         }
@@ -29,9 +33,16 @@ public sealed class PembukaanHari
         var anggotaAktif = _repositoriKelas.DaftarSiswaAktifPerKelas(connection, tahunAjaranId);
         var guruIdAktif = _repositoriGuru.DaftarIdAktif(connection);
 
-        using var transaction = connection.BeginTransaction();
         _repositoriAbsensi.BukaHariSiswa(connection, transaction, tanggal, anggotaAktif);
         _repositoriAbsensi.BukaHariGuru(connection, transaction, tanggal, guruIdAktif);
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT OR IGNORE INTO opened_school_day(date, academic_period_id) VALUES ($date, $period);
+            """;
+        command.Parameters.AddWithValue("$date", tanggal.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$period", tahunAjaranId);
+        command.ExecuteNonQuery();
         transaction.Commit();
     }
 }

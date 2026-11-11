@@ -43,10 +43,7 @@ public sealed class LayananStatusGuru
             throw new InvalidOperationException($"Bulan {tanggal:MM/yyyy} sudah terkunci.");
         }
 
-        var sebelum = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, guruId);
-        var statusLamaTeks = sebelum is null ? "(belum ada baris)" : PemetaanEnum.TeksDariStatusGuru(sebelum.Status);
-
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -54,10 +51,14 @@ public sealed class LayananStatusGuru
             entitas: "absensi_guru",
             perubahan: transaction =>
             {
+                if (_repositoriKuncimBulan.SudahDikunci(connection, tanggal.Year, tanggal.Month, transaction))
+                    throw new InvalidOperationException($"Bulan {tanggal:MM/yyyy} sudah terkunci.");
+
+                var before = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, guruId, transaction);
                 _repositoriAbsensi.TetapkanStatusGuru(connection, transaction, tanggal, guruId, status, keterangan);
-                return guruId;
-            },
-            nilaiLama: statusLamaTeks,
-            nilaiBaru: PemetaanEnum.TeksDariStatusGuru(status));
+                LocalAttendanceClosure.InvalidateDay(connection, transaction, tanggal);
+                return new CatatanPerubahan(guruId, before is null ? "(belum ada baris)" : PemetaanEnum.TeksDariStatusGuru(before.Status),
+                    PemetaanEnum.TeksDariStatusGuru(status));
+            });
     }
 }

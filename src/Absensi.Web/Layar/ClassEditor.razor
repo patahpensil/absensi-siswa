@@ -1,0 +1,107 @@
+@using Absensi.Data.MasterData
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@using Microsoft.Data.Sqlite
+@inject StatusAplikasi Status
+
+<div class="modal-backdrop" @onkeydown="HandleKey">
+    <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="class-edit-title">
+        <header class="panel-header">
+            <h2 id="class-edit-title">@(Classroom is null ? "Tambah kelas" : "Ubah kelas")</h2>
+            <button type="button" class="icon-button" aria-label="Tutup formulir kelas" disabled="@saving" @onclick="Close">×</button>
+        </header>
+        <div class="dialog-body">
+            <fieldset class="master-fields" disabled="@(saving || saved)">
+                <div><label for="class-edit-name">Nama kelas</label><input id="class-edit-name" @bind="name" /></div>
+                <div>
+                    <label for="class-edit-level">Tingkat</label>
+                    <select id="class-edit-level" @bind="level">
+                        @foreach (var item in Enumerable.Range(1, 9)) { <option value="@item">@item</option> }
+                    </select>
+                </div>
+                <div class="master-field-wide">
+                    <label for="class-edit-teacher">Wali kelas</label>
+                    <select id="class-edit-teacher" @bind="teacherId">
+                        <option value="">Belum ditetapkan</option>
+                        @foreach (var teacher in teachers)
+                        {
+                            <option value="@teacher.Id">@teacher.Nama@(teacher.Aktif ? "" : " (tidak aktif)")</option>
+                        }
+                    </select>
+                    @if (Classroom is not null && teacherId != Classroom.WaliGuruId)
+                    {
+                        <p class="field-help">Penugasan berubah saat disimpan. Akses wali lama berakhir saat itu juga.</p>
+                    }
+                </div>
+            </fieldset>
+            @if (history.Count > 0)
+            {
+                <h3>Riwayat wali kelas</h3>
+                <div class="table-wrap">
+                    <table id="class-homeroom-history"><thead><tr><th>Guru</th><th>Mulai</th><th>Berakhir</th></tr></thead><tbody>
+                        @foreach (var entry in history)
+                        {
+                            <tr><td>@entry.Teacher</td><td>@(entry.StartedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Tidak tercatat")</td><td>@(entry.EndedAt?.ToString("dd/MM/yyyy HH:mm") ?? "Aktif")</td></tr>
+                        }
+                    </tbody></table>
+                </div>
+            }
+            @if (error is not null) { <p class="message danger" role="alert">@error</p> }
+            @if (saved && !Status.StorageFailed) { <p id="class-edit-success" class="message positive" role="status">Kelas tersimpan.</p> }
+            <div class="dialog-actions">
+                <button type="button" disabled="@saving" @onclick="Close">@(saved ? "Tutup" : "Batal")</button>
+                @if (!saved) { <button type="button" class="primary" id="class-edit-save" disabled="@saving" @onclick="Save">Simpan kelas</button> }
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter] public KelasDaftar? Classroom { get; set; }
+    [Parameter, EditorRequired] public int YearId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private string name = "";
+    private string? error;
+    private int level = 7;
+    private int? teacherId;
+    private bool saving, saved;
+    private IReadOnlyList<GuruDaftar> teachers = [];
+    private IReadOnlyList<HomeroomAssignment> history = [];
+
+    protected override void OnInitialized()
+    {
+        if (!WorkspaceView.CanManage(Status) || Status.Koneksi is not { } connection) return;
+
+        name = Classroom?.Nama ?? "";
+        level = Classroom?.Tingkat ?? 7;
+        teacherId = Classroom?.WaliGuruId;
+        teachers = new RepositoriGuru().DaftarLengkap(connection).Where(teacher => teacher.Aktif || teacher.Id == teacherId).ToList();
+        if (Classroom is { } room) history = new RepositoriKelas().HomeroomHistory(connection, room.Id);
+    }
+
+    private Task Close() => saving ? Task.CompletedTask : OnClose.InvokeAsync();
+    private Task HandleKey(KeyboardEventArgs args) => args.Key == "Escape" ? Close() : Task.CompletedTask;
+
+    private async Task Save()
+    {
+        if (saving || saved || !WorkspaceView.CanManage(Status) ||
+            Status.Koneksi is not { } connection || Status.Akun is not { } account) return;
+        saving = true;
+        error = null;
+        try
+        {
+            var service = new LayananKelas();
+            if (Classroom is { } room) service.Perbarui(connection, account, Status.Jam.Sekarang, room.Id, name, level, teacherId);
+            else service.Tambah(connection, account, Status.Jam.Sekarang, YearId, name, level, teacherId);
+            saved = true;
+            await Status.SimpanAsync();
+            await OnSaved.InvokeAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 2067) { error = "Nama kelas sudah dipakai pada tahun ajaran ini."; }
+        catch (SqliteException) { error = "Kelas belum dapat disimpan."; }
+        finally { saving = false; }
+    }
+}

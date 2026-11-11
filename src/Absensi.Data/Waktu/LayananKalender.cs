@@ -1,4 +1,5 @@
 using Absensi.Data.Akun;
+using Absensi.Data.Koreksi;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 using Absensi.Domain.Kehadiran;
@@ -50,18 +51,9 @@ public sealed class LayananKalender
             throw new ArgumentException("Keterangan wajib diisi saat menandai tanggal sebagai libur (PRD §6).", nameof(keterangan));
         }
 
-        // PRD §10/§16.13: "bulan itu beku, tidak dapat diubah siapa pun" —
-        // ditegakkan di lapisan layanan (dikonfirmasi pemilik proyek
-        // 2026-09-18), bukan hanya UI. Seluruh bulan yang disentuh rentang
-        // ini diperiksa, bukan cuma bulan tanggalAwal.
-        if (_repositoriKuncimBulan.CariPertamaDalamRentang(connection, tanggalAwal, tanggalAkhir) is { } terkunci)
-        {
-            throw new InvalidOperationException(terkunci.PesanGalat);
-        }
-
         var jumlahHari = tanggalAkhir.DayNumber - tanggalAwal.DayNumber + 1;
 
-        _jalurPerubahanData.Jalankan(
+        _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
             waktu,
@@ -69,10 +61,19 @@ public sealed class LayananKalender
             entitas: "kalender",
             perubahan: transaction =>
             {
+                if (_repositoriKuncimBulan.CariPertamaDalamRentang(connection, tanggalAwal, tanggalAkhir, transaction) is { } locked)
+                    throw new InvalidOperationException(locked.PesanGalat);
+
+                var years = new RepositoriTahunAjaran();
+                var before = new List<string>(jumlahHari);
                 for (var i = 0; i < jumlahHari; i++)
                 {
                     var tanggal = tanggalAwal.AddDays(i);
+                    var period = years.FindForDate(connection, tanggal, transaction);
+                    var oldKind = period is { } id ? _repositoriKalender.TentukanJenisHari(connection, tanggal, id, transaction).ToString() : "Tanpa periode";
+                    before.Add($"{tanggal:yyyy-MM-dd} {oldKind}");
                     _repositoriKalender.Tandai(connection, transaction, tanggal, jenis, keterangan, akun.Id, waktu);
+                    LocalAttendanceClosure.InvalidateDay(connection, transaction, tanggal);
 
                     if (jenis == JenisHariKalender.Libur)
                     {
@@ -80,9 +81,8 @@ public sealed class LayananKalender
                     }
                 }
 
-                return null;
-            },
-            nilaiLama: $"{tanggalAwal:yyyy-MM-dd}..{tanggalAkhir:yyyy-MM-dd}",
-            nilaiBaru: keterangan);
+                return new CatatanPerubahan(null, string.Join(", ", before),
+                    $"{tanggalAwal:yyyy-MM-dd}..{tanggalAkhir:yyyy-MM-dd} · {jenis} · {keterangan}");
+            });
     }
 }

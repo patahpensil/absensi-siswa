@@ -1,5 +1,6 @@
 using System.Globalization;
 using Absensi.Data.Repositori;
+using Absensi.Data.Koreksi;
 using Absensi.Domain.Kehadiran;
 using Absensi.Domain.Notifikasi;
 using Microsoft.Data.Sqlite;
@@ -35,7 +36,9 @@ public sealed class PemrosesTap
         var tahunAjaranId = _repositoriTahunAjaran.CariIdAktif(connection)
             ?? throw new InvalidOperationException("Tidak ada tahun ajaran aktif; tap tidak bisa diproses.");
 
-        var jenisHari = _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId);
+        var jenisHari = _repositoriTahunAjaran.FindForDate(connection, tanggal, transaction) == tahunAjaranId
+            ? _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId, transaction)
+            : JenisHariKalender.Libur;
         var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid, transaction);
         var tapTerakhir = _repositoriTapLog.CariWaktuTapTerakhir(connection, uid);
         var jedaTapMinimal = TimeSpan.FromSeconds(_repositoriPengaturan.BacaInt(connection, "jeda_tap_detik", 15));
@@ -56,7 +59,15 @@ public sealed class PemrosesTap
         // libur — keduanya sudah benar menentukan hasil TANPA pernah
         // membaca jam jadwal sama sekali.
         KeputusanTap keputusan;
-        if (!modeRegistrasiAktif
+        if (!modeRegistrasiAktif && new RepositoriKuncimBulan().SudahDikunci(connection, tanggal.Year, tanggal.Month, transaction))
+        {
+            keputusan = KeputusanTap.Ditolak(AlasanTap.BulanTerkunci);
+        }
+        else if (!modeRegistrasiAktif && new LocalAttendanceClosure().IsClosed(connection, tanggal, transaction))
+        {
+            keputusan = KeputusanTap.Ditolak(AlasanTap.HariDitutup);
+        }
+        else if (!modeRegistrasiAktif
             && jenisHari == JenisHariKalender.Sekolah
             && kartu is not null
             && JadwalBelumLengkapUntuk(kartu.PemilikTipe, jadwal))
@@ -254,7 +265,7 @@ public sealed class PemrosesTap
                 // migrasi skema baru, di luar cakupan perbaikan ini — lihat
                 // AlasanTap.JadwalBelumDiatur). Alasan lengkapnya tetap apa
                 // adanya di tap_log.catatan lewat keputusan.Alasan?.ToString().
-                AlasanTap.JadwalBelumDiatur => "ditolak_lewat_batas",
+                AlasanTap.JadwalBelumDiatur or AlasanTap.BulanTerkunci or AlasanTap.HariDitutup => "ditolak_lewat_batas",
                 _ => throw new ArgumentOutOfRangeException(nameof(keputusan), keputusan.Alasan, null),
             },
             JenisTindakanTap.IsiJamMasuk => pemilikTipe == JenisPemilikKartu.Guru

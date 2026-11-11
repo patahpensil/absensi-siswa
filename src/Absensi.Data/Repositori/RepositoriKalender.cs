@@ -12,9 +12,10 @@ public sealed class RepositoriKalender
     // jenis hari diturunkan dari jadwal_hari.hari_sekolah — inilah yang
     // membuat "Minggu libur" (PRD §7) berlaku tanpa mencatat setiap
     // hari Minggu di kalender.
-    public JenisHariKalender TentukanJenisHari(SqliteConnection connection, DateOnly tanggal, int tahunAjaranId)
+    public JenisHariKalender TentukanJenisHari(SqliteConnection connection, DateOnly tanggal, int tahunAjaranId, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT jenis FROM kalender WHERE tanggal = $tanggal;";
         command.Parameters.AddWithValue("$tanggal", tanggal.ToString("yyyy-MM-dd"));
 
@@ -25,7 +26,7 @@ public sealed class RepositoriKalender
         }
 
         var hari = HariKalender.DariTanggal(tanggal);
-        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, hari);
+        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, hari, transaction);
 
         return jadwal is { HariSekolah: true } ? JenisHariKalender.Sekolah : JenisHariKalender.Libur;
     }

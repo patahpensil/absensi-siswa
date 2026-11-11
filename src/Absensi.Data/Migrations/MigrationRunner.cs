@@ -14,6 +14,7 @@ public sealed class MigrationRunner
         new Migration003TambahAuditUid(),
         new Migration004AddNotTappedListTime(),
         new Migration005RenameNotTappedListTime(),
+        new Migration006SchoolOperations(),
     };
 
     public void Run(SqliteConnection connection)

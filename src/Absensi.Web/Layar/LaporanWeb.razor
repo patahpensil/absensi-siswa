@@ -15,13 +15,16 @@ else
     <section class="panel">
         <header class="panel-header"><h2><UiIcon Name="grid" /> Pengaturan laporan</h2><span class="panel-code">LAPORAN / 01</span></header>
         <div class="panel-toolbar report-toolbar">
+            <label>Periode<select id="report-period" @bind="periodId" @bind:after="PeriodChanged">
+                @foreach (var item in periods) { <option value="@item.Id">@item.Name · @item.Semester</option> }
+            </select></label>
             <label>Jenis<select id="report-kind" @bind="kind" @bind:after="Changed">
                 <option value="@ReportKind.Daily">Harian</option><option value="@ReportKind.Weekly">Mingguan</option><option value="@ReportKind.Monthly">Bulanan</option><option value="@ReportKind.PerPerson">Per orang</option><option value="@ReportKind.Semester">Semester</option>
             </select></label>
             <label>Subjek<select id="report-subject" @bind="subject" @bind:after="Changed"><option value="@JenisSubjekLaporan.Siswa">Siswa</option><option value="@JenisSubjekLaporan.Guru">Guru</option></select></label>
             @if (subject == JenisSubjekLaporan.Siswa)
             {
-                <label>Kelas<select id="report-class" @bind="classId" @bind:after="Changed"><option value="0">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Id">@c.Nama</option> }</select></label>
+                <label>Kelas<select id="report-class" @bind="classId" @bind:after="Changed"><option value="0">Semua kelas</option>@foreach (var c in Classes()) { <option value="@c.Id">@c.Nama</option> }</select></label>
             }
             @if (kind != ReportKind.Semester)
             {
@@ -91,7 +94,8 @@ else
     private static readonly System.Globalization.CultureInfo Indonesian = new("id-ID");
     private ReportKind kind = ReportKind.Daily;
     private JenisSubjekLaporan subject = JenisSubjekLaporan.Siswa;
-    private int classId, personId;
+    private int classId, personId, periodId;
+    private IReadOnlyList<AcademicPeriod> periods = [];
     private DateOnly date, endDate;
     private bool shown, busy, messageOk;
     private string? message;
@@ -101,12 +105,15 @@ else
     private KartuOrang? card;
 
     private ReportRequest Request => new(kind, subject, subject == JenisSubjekLaporan.Siswa && classId != 0 ? classId : null, date, endDate,
-        kind == ReportKind.PerPerson && personId != 0 ? personId : null);
+        kind == ReportKind.PerPerson && personId != 0 ? personId : null, periodId);
 
     protected override void OnInitialized()
     {
         endDate = DateOnly.FromDateTime(Status.Jam.Sekarang);
         date = endDate;
+        if (!WorkspaceView.CanManage(Status)) return;
+        periods = new RepositoriTahunAjaran().ListPeriods(Status.Koneksi!);
+        periodId = Status.TahunAjaranId ?? 0;
     }
 
     private void Changed()
@@ -117,9 +124,30 @@ else
         if (personId != 0 && People().All(p => p.Id != personId)) personId = 0;
     }
 
-    private IEnumerable<(int Id, string Name)> People() => subject == JenisSubjekLaporan.Siswa
-        ? WorkspaceView.Students(Status).Where(s => s.Aktif && (classId == 0 || WorkspaceView.Classes(Status).FirstOrDefault(c => c.Id == classId)?.Nama == s.KelasNama)).Select(s => (s.Id, s.Nama))
-        : new RepositoriGuru().DaftarLengkap(Status.Koneksi!).Where(g => g.Aktif).Select(g => (g.Id, g.Nama));
+    private void PeriodChanged()
+    {
+        classId = personId = 0;
+        if (periods.FirstOrDefault(item => item.Id == periodId) is { } period && (date < period.Start || date > period.End))
+        {
+            date = period.Start;
+            endDate = period.End;
+        }
+        Changed();
+    }
+
+    private IReadOnlyList<KelasDaftar> Classes() =>
+        new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, periodId);
+
+    private IEnumerable<(int Id, string Name)> People()
+    {
+        if (subject == JenisSubjekLaporan.Guru)
+            return new RepositoriGuru().DaftarLengkap(Status.Koneksi!).Select(teacher => (teacher.Id, teacher.Nama));
+
+        var selectedClass = Classes().FirstOrDefault(room => room.Id == classId)?.Nama;
+        return new RepositoriSiswa().DaftarUntukTahunAjaran(Status.Koneksi!, periodId)
+            .Where(student => student.KelasNama is not null && (classId == 0 || student.KelasNama == selectedClass))
+            .Select(student => (student.Id, student.Nama));
+    }
 
     private void Show()
     {

@@ -1,0 +1,68 @@
+@using Absensi.Data.Audit
+@using Absensi.Domain.Akun
+@using Absensi.Web.Layanan
+@using Microsoft.Data.Sqlite
+@inject StatusAplikasi Status
+
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / AUDIT</p><h1>Jejak audit</h1><p>Pelaku dan perubahan yang tercatat di web uji.</p></div></div>
+@if (Status.Akun?.Peran == PeranAkun.Admin)
+{
+    <section class="panel" id="school-audit">
+        <header class="panel-header"><h2>Riwayat perubahan</h2></header>
+        <div class="panel-toolbar report-toolbar">
+            <label>Dari<input id="audit-from" type="date" @bind="from" /></label>
+            <label>Sampai<input id="audit-to" type="date" @bind="to" /></label>
+            <label>Cari aksi atau pelaku<input id="audit-search" @bind="query" @bind:event="oninput" /></label>
+            <button type="button" id="audit-refresh" @onclick="Load">Tampilkan</button>
+        </div>
+        @if (error is not null) { <p class="message danger" role="alert">@error</p> }
+        <div class="table-wrap">
+            <table id="audit-table">
+                <thead><tr><th>Waktu WITA</th><th>Pelaku</th><th>Aksi</th><th>Data</th><th>Sebelum</th><th>Sesudah</th><th>Atas permintaan</th></tr></thead>
+                <tbody>
+                    @foreach (var entry in Filtered())
+                    {
+                        <tr><td class="mono">@entry.Waktu.ToString("dd/MM/yyyy HH:mm:ss")</td><td>@entry.NamaPelaku</td><td>@entry.Aksi</td>
+                            <td>@entry.Entitas @(entry.EntitasId is { } id ? $"#{id}" : "")</td><td>@(entry.NilaiLama ?? "—")</td>
+                            <td>@(entry.NilaiBaru ?? "—")</td><td>@(entry.AtasPermintaan ?? "—")</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Filtered().Any()) { <div class="empty-state">Tidak ada catatan pada filter ini.</div> }
+    </section>
+}
+
+@code {
+    private DateOnly from, to;
+    private string query = "";
+    private string? error;
+    private IReadOnlyList<BarisAuditGabungan> rows = [];
+
+    protected override void OnInitialized()
+    {
+        to = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        from = to.AddDays(-89);
+        Load();
+    }
+
+    private void Load()
+    {
+        if (Status.Akun?.Peran != PeranAkun.Admin) return;
+        rows = [];
+        error = null;
+        if (to < from)
+        {
+            error = "Tanggal akhir harus sama atau setelah tanggal awal.";
+            return;
+        }
+
+        try { rows = new LayananAudit().ReadActive(Status.Koneksi!, Status.Akun, from.ToDateTime(TimeOnly.MinValue), to.ToDateTime(TimeOnly.MaxValue)); }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (SqliteException) { error = "Jejak audit belum dapat dibaca."; }
+    }
+
+    private IEnumerable<BarisAuditGabungan> Filtered() => rows.Where(row =>
+        row.Aksi.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) ||
+        row.NamaPelaku.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase));
+}

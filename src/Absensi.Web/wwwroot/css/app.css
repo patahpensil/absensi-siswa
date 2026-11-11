@@ -2053,3 +2053,33 @@ img.detail-avatar {
 @media (max-width:580px) {
   .master-fields { grid-template-columns:1fr }
 }
+
+.calendar-grid {
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:6px;
+  padding:16px;
+}
+
+.calendar-label { text-align:center; font-size:11px }
+.calendar-day { display:grid; align-content:start; gap:5px; min-width:0; min-height:65px; text-align:left }
+.calendar-day small { overflow-wrap:anywhere; font-weight:400 }
+.calendar-day.holiday { background:#edf1f6 }
+.calendar-day[aria-pressed="true"] { border-color:var(--blue); outline:1px solid var(--blue) }
+
+.period-students {
+  display:grid;
+  gap:7px;
+  max-height:180px;
+  overflow:auto;
+  padding:5px 0
+}
+
+.period-students label { margin:0 }
+.master-fields input[type=checkbox] { width:auto }
+
+@media (max-width:580px) {
+  .calendar-grid { gap:3px; padding:8px }
+  .calendar-day { padding:5px 2px; min-height:48px; text-align:center }
+  .calendar-day small { font-size:8px }
+}

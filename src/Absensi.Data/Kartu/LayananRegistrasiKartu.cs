@@ -171,9 +171,16 @@ public sealed class LayananRegistrasiKartu
         DateTime waktu,
         JenisPemilikKartu pemilikTipe,
         int pemilikId,
-        string uidBaru)
+        string uidBaru,
+        string alasan = "hilang",
+        string? uidLamaDiharapkan = null)
     {
         AuthorizationGuard.EnsureFullAuthority(akun, "mengganti kartu");
+        uidBaru = uidBaru.Trim();
+        if (uidBaru.Length is 0 or > 64 || uidBaru.Any(char.IsControl))
+            throw new InvalidOperationException("Nomor kartu baru tidak valid.");
+        if (alasan is not ("hilang" or "rusak"))
+            throw new InvalidOperationException("Pilih alasan penggantian kartu.");
 
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
@@ -190,11 +197,18 @@ public sealed class LayananRegistrasiKartu
                 // (format "uid->nama", sama dengan daftar_kartu) karena
                 // entitas_id hanya memuat id pemilik tanpa jenisnya.
                 var uidLama = _repositoriKartu.CariUidAktifUntukPemilik(connection, pemilikTipe, pemilikId, transaction);
+                if (uidLamaDiharapkan is not null && uidLamaDiharapkan != uidLama)
+                    throw new InvalidOperationException("Kartu aktif sudah berubah. Buka kembali formulir penggantian.");
+                if (uidLama == uidBaru)
+                    throw new InvalidOperationException("Baca kartu pengganti dengan nomor yang berbeda.");
+                if (uidLamaDiharapkan is not null && _repositoriKartu.CariAktifBerdasarkanUid(connection, uidBaru, transaction) is not null)
+                    throw new InvalidOperationException("Kartu pengganti sudah terdaftar untuk siswa atau guru lain.");
+
                 var nama = pemilikTipe == JenisPemilikKartu.Siswa
                     ? _repositoriSiswa.CariNamaUntukAudit(connection, pemilikId, transaction)
                     : _repositoriGuru.CariNamaUntukAudit(connection, pemilikId, transaction);
 
-                _repositoriKartu.Nonaktifkan(connection, transaction, pemilikTipe, pemilikId, waktu, alasan: "hilang");
+                _repositoriKartu.Nonaktifkan(connection, transaction, pemilikTipe, pemilikId, waktu, alasan);
                 _repositoriKartu.Daftarkan(connection, transaction, uidBaru, pemilikTipe, pemilikId, waktu);
 
                 string Teks(string uid) => string.IsNullOrWhiteSpace(nama) ? uid : $"{uid}->{nama}";
