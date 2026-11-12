@@ -9,7 +9,7 @@
     <a class="skip-link" href="#isi">Lewati navigasi</a>
     <header class="topbar">
         <div class="brand"><span class="brand-mark"><UiIcon Name="school" /></span><strong>Absensi siswa</strong></div>
-        <span class="environment-tag"><span class="dot"></span> Lingkungan uji</span>
+        <span class="environment-tag"><span class="dot"></span> @Status.Mode.EnvironmentLabel</span>
         <div class="account"><span id="akun-aktif">@RoleLabel · @Status.Akun!.Username</span><span class="avatar">@WorkspaceView.Initials(Status.Akun.Username)</span><button id="tombol-keluar" class="text-button" @onclick="Logout">Keluar</button></div>
     </header>
     <nav class="navigation" aria-label="Menu utama">
@@ -51,7 +51,7 @@
         }
         <GateHost PageActive='@(activePage == "Layar gerbang")' OnTapRecorded="RefreshAttendance" />
     </main>
-    <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>Lingkungan uji · gunakan data sintetis saja</span></footer>
+    <footer class="statusbar">@if (Status.Mode.IsReal) { <span><span class="dot"></span> Data tersimpan di browser ini</span><span>Unduh cadangan rutin di Pengaturan</span> } else { <span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>Lingkungan uji · gunakan data sintetis saja</span> }</footer>
 </div>
 
 @code {

@@ -477,3 +477,11 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - `arsip/proyek-python-lama`: python-multipart 0.0.20 → 0.0.31 dan pytest 8.3.4 → 9.0.3 agar peringatan hilang. Proyek ini arsip dan tidak dijalankan, jadi perubahan versi tidak diuji. Kerentanan paket NuGet aplikasi utama belum bisa diperiksa agen; pemilik dapat membuka tab Security → Dependabot di GitHub.
 
 **Keputusan pemilik (12 November 2026, ±18.00 WITA):** ukuran nama TV tetap seperti sekarang (nama pendek 64 px, nama panjang mengecil). Dicatat di PRD §25.5 dan PANDUAN-UI-UX §8.1. Tidak ada lagi keputusan yang menunggu dari audit PR #20.
+
+## 27. Mode nyata web dan cadangan web — 12 November 2026
+
+**Keputusan pemilik:** uji coba data asli lewat web mode nyata di repo `Absensi-Uji-Real` (PRD §25.5). Kode dikembangkan di repo ini; repo baru hanya salinan dengan `"Mode": "nyata"`.
+
+**Selesai (bukti: langkah Chromium "Mode nyata …"):** `ModeAplikasi` dari `appsettings.json`; mode nyata memulai wizard pada database kosong, tanpa akun contoh, tanpa jam skenario, label "Uji coba data asli", reset hanya ke wizard dan hanya untuk Admin/Kepala Sekolah. TV gerbang membaca mode yang sama.
+
+**Belum/utang:** notifikasi orang tua tetap tidak dikirim dari web.

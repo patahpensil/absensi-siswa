@@ -70,7 +70,13 @@ jobs:
         working-directory: tests/web-browser
         run: |
           python3 -m http.server 8080 --directory ../../publish/wwwroot &
-          node check.mjs http://127.0.0.1:8080/
+          # Salinan yang sama dengan "Mode": "nyata" untuk langkah mode nyata.
+          rm -rf /tmp/web-nyata && cp -r ../../publish/wwwroot /tmp/web-nyata
+          printf '{\n  "Mode": "nyata"\n}\n' > /tmp/web-nyata/appsettings.json
+          rm -f /tmp/web-nyata/appsettings.json.br /tmp/web-nyata/appsettings.json.gz
+          python3 -m http.server 8081 --directory /tmp/web-nyata &
+          sleep 2
+          node check.mjs http://127.0.0.1:8080/ http://127.0.0.1:8081/
 
       - name: Pastikan proyek Pages ada
         env:

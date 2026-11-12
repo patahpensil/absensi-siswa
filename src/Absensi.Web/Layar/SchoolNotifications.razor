@@ -3,13 +3,13 @@
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<div class="page-heading"><div><h1>Notifikasi sekolah</h1><p>Pratinjau jadwal dan riwayat antrean pada database uji.</p></div></div>
+<div class="page-heading"><div><h1>Notifikasi sekolah</h1><p>Pratinjau jadwal dan riwayat antrean. Pesan tidak dikirim dari web.</p></div></div>
 @if (WorkspaceView.CanManage(Status))
 {
     <section class="panel" id="school-notifications">
         <header class="panel-header"><h2>Pratinjau jadwal</h2><span class="badge info">Simulasi</span></header>
         <div class="settings-body">
-            <p>Waktu uji @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Kanal orang tua mengikuti pilihan per siswa: Telegram atau WhatsApp. Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
+            <p>Waktu @(Status.Jam.IsScenario ? "uji" : "sekolah") @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Kanal orang tua mengikuti pilihan per siswa: Telegram atau WhatsApp. Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
             @if (schedule is null)
             {
                 <p class="notice">Jadwal notifikasi tidak berlaku untuk tanggal ini.</p>

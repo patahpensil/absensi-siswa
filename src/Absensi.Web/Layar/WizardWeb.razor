@@ -21,7 +21,7 @@
             @switch (step)
             {
                 case 0:
-                    <p>Masukkan kunci lisensi sekolah. Di web uji gunakan kunci contoh.</p>
+                    <p>Masukkan kunci lisensi sekolah.@(Status.Mode.IsReal ? " Server lisensi belum tersedia; kunci yang diisi dicatat apa adanya." : " Di web uji gunakan kunci contoh.")</p>
                     <label for="wizard-license">Kunci lisensi</label>
                     <input id="wizard-license" @bind="license" autocomplete="off" />
                     break;

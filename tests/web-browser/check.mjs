@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const baseUrl = (process.argv[2] ?? 'http://127.0.0.1:8080/').replace(/\/?$/, '/');
+// Alamat kedua (opsional): salinan publish yang sama dengan appsettings "Mode": "nyata".
+const realUrl = process.argv[3]?.replace(/\/?$/, '/');
 const browser = await chromium.launch();
 const context = await browser.newContext();
 const page = await context.newPage();
@@ -1196,6 +1198,51 @@ await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset da
     await stale.close();
   }
 });
+
+if (realUrl) {
+  await langkah('Mode nyata: mulai dari wizard, tanpa akun contoh dan jam skenario, label uji coba data asli', async () => {
+    const realContext = await browser.newContext();
+    const real = await realContext.newPage();
+    real.on('pageerror', (e) => consoleErrors.push(String(e)));
+    try {
+      await real.goto(realUrl);
+      await real.waitForSelector('#install-wizard', { timeout: 60_000 });
+      await real.fill('#wizard-license', 'LISENSI-NYATA (contoh)');
+      await real.click('#wizard-next');
+      await real.fill('#wizard-school', 'SMP Mode Nyata (contoh)');
+      await real.click('#wizard-next');
+      await real.waitForSelector('#wizard-period-name');
+      await real.click('#wizard-next');
+      await real.waitForSelector('#wizard-schedule');
+      await real.click('#wizard-next');
+      await real.fill('#wizard-username', 'kepala.nyata');
+      await real.fill('#wizard-password', 'sandinyata123');
+      await real.fill('#wizard-password-confirm', 'sandinyata123');
+      await real.click('#wizard-finish');
+      await real.waitForSelector('#wizard-done');
+      await real.click('#wizard-to-login');
+      await real.waitForSelector('#tombol-masuk');
+      tegas(await real.locator('.test-accounts').count() === 0, 'akun contoh tampil di mode nyata');
+      tegas((await real.textContent('.login-card .environment-tag')).includes('Uji coba data asli'), 'label mode nyata tidak tampil di login');
+      await real.fill('#username', 'kepala.nyata');
+      await real.fill('#sandi', 'sandinyata123');
+      await real.click('#tombol-masuk');
+      await real.waitForSelector('#ringkasan');
+      tegas((await real.textContent('.topbar .environment-tag')).includes('Uji coba data asli'), 'label mode nyata tidak tampil');
+      await real.click('#menu-pengaturan');
+      await real.waitForSelector('#backup-download');
+      tegas(await real.locator('#scenario-time').count() === 0, 'jam skenario tampil di mode nyata');
+      await real.click('#reset-data');
+      tegas(await real.locator('#confirm-reset-data').count() === 0, 'pilihan data contoh tampil di mode nyata');
+      await real.waitForSelector('#confirm-reset-wizard');
+      await real.reload();
+      await real.waitForSelector('#tombol-masuk');
+      tegas((await real.textContent('#nama-sekolah')).trim() === 'SMP Mode Nyata (contoh)', 'data mode nyata hilang setelah muat ulang');
+    } finally {
+      await realContext.close();
+    }
+  });
+}
 
 await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);

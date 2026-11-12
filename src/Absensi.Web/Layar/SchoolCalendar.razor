@@ -53,7 +53,7 @@
             @if (locked is not null) { <p id="calendar-locked" class="message positive" role="status">Bulan terkunci oleh @locked.DikunciOleh pada @locked.DikunciPada.ToString("dd/MM/yyyy HH:mm") WITA.</p> }
             else
             {
-                <p id="calendar-lock-readiness">@(readiness ?? "Semua hari sekolah di bulan ini sudah ditutup pada database uji.")</p>
+                <p id="calendar-lock-readiness">@(readiness ?? "Semua hari sekolah di bulan ini sudah ditutup.")</p>
                 <p class="field-help">Pemeriksaan ini mencakup catatan pada browser uji. Sinkronisasi perangkat sekolah belum digunakan.</p>
                 @if (readiness is null)
                 {

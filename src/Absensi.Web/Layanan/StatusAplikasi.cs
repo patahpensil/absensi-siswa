@@ -21,11 +21,14 @@ public sealed partial class StatusAplikasi
     private readonly IJSRuntime _js;
     private readonly LayananAkun _layananAkun = new();
 
-    public StatusAplikasi(IJSRuntime js, JamBrowser jam)
+    public StatusAplikasi(IJSRuntime js, JamBrowser jam, ModeAplikasi mode)
     {
         _js = js;
         Jam = jam;
+        Mode = mode;
     }
+
+    public ModeAplikasi Mode { get; }
 
     public JamBrowser Jam { get; }
 
@@ -65,7 +68,7 @@ public sealed partial class StatusAplikasi
             }
             else
             {
-                CatatanPenyimpanan = "Data contoh baru dibuat.";
+                CatatanPenyimpanan = Mode.IsReal ? "Database baru; selesaikan wizard instalasi." : "Data contoh baru dibuat.";
             }
 
             Buka();
@@ -73,7 +76,8 @@ public sealed partial class StatusAplikasi
             {
                 // PANDUAN-UI-UX §9 Wizard instalasi: bila pengguna memilih
                 // mulai dari wizard, data contoh tidak dibuat.
-                if (wizardPending)
+                // Mode nyata tidak pernah membuat data contoh.
+                if (wizardPending || Mode.IsReal)
                 {
                     NeedsInstallation = true;
                     NamaSekolah = "";

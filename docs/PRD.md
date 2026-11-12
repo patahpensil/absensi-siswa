@@ -1765,6 +1765,13 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **Keputusan 12 November 2026 (malam) — disetujui pemilik:** nama panjang di TV gerbang boleh mengecil (PANDUAN-UI-UX §8.1); nama pendek tetap 64 px. Dasarnya pengukuran Chrome 1920×1080 dengan empat kartu: pada 64 px nama 37 huruf menjadi 5 baris dan status/jam keluar layar.
 
+**Keputusan 12 November 2026 (malam) — uji coba data asli, disetujui pemilik:** uji coba dengan data sekolah sungguhan memakai **versi web mode nyata** di repo terpisah `patahpensil/Absensi-Uji-Real` (salinan bersih tanpa riwayat, Cloudflare Pages proyek tersendiri). Situs `absensi-uji` tetap khusus data sintetis (D-12). Ketentuan mode nyata:
+- Mode diatur `wwwroot/appsettings.json` (`"Mode": "nyata"`). Kode tetap satu, dikembangkan di `absensi-smp1`.
+- Database kosong selalu memulai wizard instalasi; tidak ada data contoh, akun contoh, atau jam skenario.
+- Data hanya tersimpan di browser perangkat itu (IndexedDB), tidak dikirim ke server. Risiko yang diterima pemilik: data hilang bila riwayat browser dihapus, tidak ada pengiriman notifikasi, dan berkas cadangan berisi data pribadi tanpa enkripsi.
+- **Cadangan web:** Admin/Kepala Sekolah dapat mengunduh satu berkas `.zip` (database + foto) dan memulihkannya. Database divalidasi dengan validasi restore desktop (§18.2) sebelum menggantikan data. Pemulihan mengganti seluruh data di browser dan mengeluarkan pengguna. Pemulihan web belum mencatat baris audit restore (utang).
+- Rencana awal pemilik menyusun ulang PRD sebelum repo baru diubah: kode disalin dulu, PRD disusun ulang menyusul berdasarkan aplikasi yang ada.
+
 ### 25.6 Referensi primer
 
 Referensi standar menggunakan rilis tetap `v5.0.0`; keterangan produk penyedia dapat berubah dan harus diverifikasi kembali pada implementasi. Rangkuman di PRD tidak menggantikan seluruh teks persyaratan.

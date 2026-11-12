@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
+builder.Services.AddSingleton(ModeAplikasi.FromSetting(builder.Configuration["Mode"]));
 builder.Services.AddSingleton<JamBrowser>();
 builder.Services.AddSingleton<StatusAplikasi>();
 builder.Services.AddSingleton<GateController>();

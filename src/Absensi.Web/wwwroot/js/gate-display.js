@@ -13,6 +13,10 @@
         if (value !== undefined) el.textContent = value;
         return el;
     };
+    // Mode web dari appsettings.json (uji/nyata), sama dengan aplikasi utama.
+    fetch('appsettings.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(settings => {
+        if (String(settings?.Mode ?? '').trim().toLowerCase() === 'nyata') text('gate-environment', 'Uji coba data asli');
+    }).catch(() => {});
     const notify = data => { if (opener && token) opener.postMessage({ ...data, token }, origin); };
     const reset = message => {
         snapshot = undefined;

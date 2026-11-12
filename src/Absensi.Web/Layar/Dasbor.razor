@@ -39,7 +39,7 @@
     <aside class="side-column">
         <SchedulePanel />
         <section class="panel"><header class="panel-header"><h2>Kesiapan data</h2></header><div class="readiness-list"><div><span>Belum memiliki kartu</span><strong class="mono">@students.Count(s => s.Aktif && !s.PunyaKartu)</strong></div><div><span>Belum memiliki foto</span><strong class="mono">@students.Count(s => s.Aktif && !s.PunyaFoto)</strong></div><div><span>Orang tua belum tertaut</span><strong class="mono">@students.Count(s => s.Aktif && !s.TertautTelegram)</strong></div><div><span>Kelas dalam lingkup akun</span><strong class="mono">@WorkspaceView.Classes(Status).Count</strong></div></div><div class="panel-footer"><button class="text-button" @onclick='() => OnNavigate.InvokeAsync("Siswa")'>Periksa data siswa <UiIcon Name="arrow" /></button></div></section>
-        <section class="info-panel"><h3>Lingkungan uji</h3><p>Data tersimpan di browser ini. Pesan ke orang tua tidak dikirim; antreannya dapat dilihat di menu Notifikasi.</p></section>
+        <section class="info-panel"><h3>@Status.Mode.EnvironmentLabel</h3><p>Data tersimpan di browser ini@(Status.Mode.IsReal ? "; unduh cadangan rutin di Pengaturan" : ""). Pesan ke orang tua tidak dikirim; antreannya dapat dilihat di menu Notifikasi.</p></section>
     </aside>
 </div>
 
