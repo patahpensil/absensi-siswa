@@ -11,7 +11,7 @@ Urutan ini disusun agar setiap tugas dapat diuji sebelum tugas berikutnya dimula
 
 **Perintah:**
 
-> Baca `docs/PRD.md`, `docs/SKEMA-DATABASE.md`, dan `docs/PANDUAN-UI-UX.md`. Buat struktur solusi .NET 8 sesuai bagian 3 CLAUDE.md: lima proyek di `/src` dan satu proyek pengujian di `/tests`. Atur `Absensi.Domain` tanpa referensi ke proyek mana pun. Tambahkan `.gitignore`, `README.md` singkat, dan pastikan `dotnet build` serta `dotnet test` berjalan tanpa galat. Jangan menulis logika apa pun.
+> Baca `docs/PRD.md`, `docs/SKEMA-DATABASE.md`, dan `docs/PANDUAN-UI-UX.md`. Buat struktur solusi .NET (kini .NET 10, menunggu persetujuan pemilik di PRD §25.5) sesuai bagian 3 CLAUDE.md: lima proyek di `/src` dan satu proyek pengujian di `/tests`. Atur `Absensi.Domain` tanpa referensi ke proyek mana pun. Tambahkan `.gitignore`, `README.md` singkat, dan pastikan `dotnet build` serta `dotnet test` berjalan tanpa galat. Jangan menulis logika apa pun.
 
 **Selesai bila:** solusi terbangun, pengujian kosong berjalan, `Absensi.Domain` tidak punya referensi keluar.
 
