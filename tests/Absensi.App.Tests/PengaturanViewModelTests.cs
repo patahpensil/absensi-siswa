@@ -327,4 +327,50 @@ public sealed class PengaturanViewModelTests
 
         Assert.False(viewModel.RestoreCommand.CanExecute(null));
     }
+
+    // PRD §7 P-15: bila jadwal sudah ada, Simpan membuat versi yang berlaku
+    // mulai tanggal pilihan (bawaan besok) dan tidak menimpa jadwal lama.
+    [Fact]
+    public void SimpanJadwalCommand_JadwalSudahAda_BerlakuMulaiBesokTanpaMenimpaJadwalLama()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var week = Enumerable.Range(1, 7).Select(day => day == 7
+            ? new JadwalHariBaris(7, false, null, null, null, null)
+            : new JadwalHariBaris(day, true, new TimeOnly(7, 30), new TimeOnly(8, 10), new TimeOnly(12, 0), new TimeOnly(13, 10), new TimeOnly(8, 0))).ToList();
+        new Absensi.Data.Waktu.LayananJadwalHari().Perbarui(database.Connection, Admin, Waktu, 1, week);
+        var viewModel = BuatViewModel(database);
+
+        Assert.Equal(new DateTime(2026, 9, 19), viewModel.TanggalBerlaku);
+        Assert.Equal("07:30", viewModel.JadwalHarian[0].JamMasuk);
+        viewModel.JadwalHarian[0].JamMasuk = "07:00";
+        viewModel.SimpanJadwalCommand.Execute(null);
+
+        Assert.Null(viewModel.PesanGalat);
+        Assert.StartsWith("Jadwal harian tersimpan, berlaku mulai 19/09/2026", viewModel.PesanStatus);
+        var repository = new RepositoriJadwalHari();
+        Assert.Equal(new TimeOnly(7, 30), repository.CariUntukHari(database.Connection, 1, 1)!.JamMasuk);
+        Assert.Equal(new TimeOnly(7, 30), repository.CariUntukHari(database.Connection, 1, 1, tanggal: new DateOnly(2026, 9, 14))!.JamMasuk);
+        Assert.Equal(new TimeOnly(7, 0), repository.CariUntukHari(database.Connection, 1, 1, tanggal: new DateOnly(2026, 9, 21))!.JamMasuk);
+    }
+
+    [Fact]
+    public void SimpanJadwalCommand_TanggalBerlakuHariIni_DitolakTanpaPerubahan()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedKelasUntukRegistrasiKartu();
+        var week = Enumerable.Range(1, 7).Select(day => day == 7
+            ? new JadwalHariBaris(7, false, null, null, null, null)
+            : new JadwalHariBaris(day, true, new TimeOnly(7, 30), new TimeOnly(8, 10), new TimeOnly(12, 0), new TimeOnly(13, 10), new TimeOnly(8, 0))).ToList();
+        new Absensi.Data.Waktu.LayananJadwalHari().Perbarui(database.Connection, Admin, Waktu, 1, week);
+        var viewModel = BuatViewModel(database);
+
+        viewModel.TanggalBerlaku = Waktu.Date;
+        viewModel.JadwalHarian[0].JamMasuk = "07:00";
+        viewModel.SimpanJadwalCommand.Execute(null);
+
+        Assert.NotNull(viewModel.PesanGalat);
+        Assert.Null(viewModel.PesanStatus);
+        Assert.Empty(new RepositoriJadwalHari().ListChanges(database.Connection, 1));
+    }
 }

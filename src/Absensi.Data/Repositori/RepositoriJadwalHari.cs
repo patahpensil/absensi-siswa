@@ -128,6 +128,15 @@ public sealed class RepositoriJadwalHari
 
     // All versions of one period loaded once, for code that walks many dates
     // (calendar/report ranges) and must not query per date.
+    // True bila periode sudah punya jadwal dasar tersimpan (jadwal_hari).
+    public bool HasStoredSchedule(SqliteConnection connection, int tahunAjaranId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS (SELECT 1 FROM jadwal_hari WHERE tahun_ajaran_id = $period);";
+        command.Parameters.AddWithValue("$period", tahunAjaranId);
+        return Convert.ToInt64(command.ExecuteScalar()) == 1;
+    }
+
     public ScheduleTimeline LoadTimeline(SqliteConnection connection, int tahunAjaranId, SqliteTransaction? transaction = null)
     {
         return new ScheduleTimeline(ReadStoredBase(connection, tahunAjaranId, transaction), ListChanges(connection, tahunAjaranId, transaction));

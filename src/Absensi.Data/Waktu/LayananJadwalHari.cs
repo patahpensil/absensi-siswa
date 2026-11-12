@@ -101,6 +101,27 @@ public sealed class LayananJadwalHari
 
     private static string Time(TimeOnly? time) => time?.ToString("HH:mm") ?? "-";
 
+    // Satu pintu simpan untuk layar Pengaturan (desktop). Periode yang belum
+    // punya jadwal sama sekali mendapat jadwal dasar (pengisian awal, belum
+    // ada hasil tap yang bergantung padanya). Bila jadwal sudah ada, perubahan
+    // hanya berlaku mulai tanggal yang dipilih (P-15) dan tidak menimpa
+    // jadwal untuk tanggal yang sudah lewat. Mengembalikan true bila disimpan
+    // sebagai versi berlaku mulai.
+    public bool Save(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int tahunAjaranId, DateOnly effectiveFrom, IReadOnlyList<JadwalHariBaris> days)
+    {
+        if (!_repositoriJadwalHari.HasStoredSchedule(connection, tahunAjaranId))
+        {
+            Perbarui(connection, akun, waktu, tahunAjaranId, days);
+            return false;
+        }
+
+        ScheduleFrom(connection, akun, waktu, tahunAjaranId, effectiveFrom, days);
+        return true;
+    }
+
+    // Menulis jadwal dasar (jadwal_hari) dan berdampak ke seluruh periode.
+    // Hanya untuk pengisian awal; perubahan jadwal yang sudah ada memakai
+    // ScheduleFrom (P-15) — lihat Save.
     public void Perbarui(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int tahunAjaranId, IReadOnlyList<JadwalHariBaris> hari)
     {
         // PRD §3: pengaturan termasuk "kewenangan penuh" (Kepala

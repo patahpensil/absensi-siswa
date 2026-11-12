@@ -39,6 +39,7 @@ public sealed class PengaturanViewModel : ObservableObject
     private string? _pesanStatusBot;
     private string? _pesanGalatBot;
     private string? _pesanGalatBackup;
+    private DateTime _tanggalBerlaku;
 
     public PengaturanViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, int tahunAjaranId, LayananBackup layananBackup)
     {
@@ -47,6 +48,7 @@ public sealed class PengaturanViewModel : ObservableObject
         _penyediaWaktu = penyediaWaktu;
         _tahunAjaranId = tahunAjaranId;
         _layananBackup = layananBackup;
+        _tanggalBerlaku = penyediaWaktu.Sekarang.Date.AddDays(1);
 
         SimpanJadwalCommand = new RelayCommand(SimpanJadwal, () => BolehMengubah);
         SimpanBotCommand = new RelayCommand(SimpanBot, () => BolehMengubah);
@@ -111,6 +113,21 @@ public sealed class PengaturanViewModel : ObservableObject
     }
 
     public ObservableCollection<JadwalHariBarisViewModel> JadwalHarian { get; } = new();
+
+    // PRD §7 P-15: perubahan jadwal berlaku mulai tanggal ini (bawaan besok).
+    // Mengganti tanggal memuat ulang jadwal yang berlaku pada tanggal itu.
+    public DateTime TanggalBerlaku
+    {
+        get => _tanggalBerlaku;
+        set
+        {
+            if (SetField(ref _tanggalBerlaku, value.Date))
+            {
+                PesanStatus = null;
+                MuatJadwal();
+            }
+        }
+    }
 
     // PRD §16.6 langkah 2: "Admin memasukkan token bot dan username bot di
     // menu Pengaturan" — username bot dipakai LayananPairing.BuatUrlQr,
@@ -200,7 +217,7 @@ public sealed class PengaturanViewModel : ObservableObject
     private void MuatJadwal()
     {
         JadwalHarian.Clear();
-        foreach (var baris in _repositoriJadwalHari.DaftarUntukTahunAjaran(_connection, _tahunAjaranId))
+        foreach (var baris in _repositoriJadwalHari.DaftarUntukTahunAjaran(_connection, _tahunAjaranId, DateOnly.FromDateTime(_tanggalBerlaku)))
         {
             JadwalHarian.Add(new JadwalHariBarisViewModel(
                 baris.Hari,
@@ -237,15 +254,19 @@ public sealed class PengaturanViewModel : ObservableObject
 
         PesanGalat = null;
         PesanStatus = null;
+        var berlakuMulai = DateOnly.FromDateTime(_tanggalBerlaku);
+        var versi = false;
         if (!PenangananGalat.Coba(
-                () => _layananJadwalHari.Perbarui(_connection, _akun, _penyediaWaktu.Sekarang, _tahunAjaranId, hasil),
+                () => versi = _layananJadwalHari.Save(_connection, _akun, _penyediaWaktu.Sekarang, _tahunAjaranId, berlakuMulai, hasil),
                 pesan => PesanGalat = pesan,
                 "PengaturanViewModel.SimpanJadwal"))
         {
             return;
         }
 
-        PesanStatus = "Jadwal harian tersimpan.";
+        PesanStatus = versi
+            ? $"Jadwal harian tersimpan, berlaku mulai {berlakuMulai:dd/MM/yyyy}. Tanggal sebelumnya tetap memakai jadwal lama."
+            : "Jadwal harian tersimpan.";
     }
 
     // UAT 2026-09-23: sebelumnya kosong diterima sebagai valid untuk baris
