@@ -107,6 +107,18 @@ public sealed class ScheduleAndSchoolSettingsTests
     }
 
     [Fact]
+    public void NewAcademicPeriod_CopiesScheduleInForceAtItsStart()
+    {
+        using var database = Prepare();
+        new LayananJadwalHari().ScheduleFrom(database.Connection, Admin, Today, 1, NextMonday, Week(mondayArrival: new TimeOnly(7, 0)));
+
+        var nextId = new Absensi.Data.MasterData.AcademicPeriodService().Prepare(
+            database.Connection, Admin, Today, "2026/2027", "genap", new DateOnly(2027, 1, 4), new DateOnly(2027, 6, 30));
+
+        Assert.Equal(new TimeOnly(7, 0), new RepositoriJadwalHari().CariUntukHari(database.Connection, nextId, 1)!.JamMasuk);
+    }
+
+    [Fact]
     public void SchoolIdentity_Update_StoredAndAudited()
     {
         using var database = Prepare();

@@ -23,7 +23,9 @@ public sealed class AcademicPeriodService
             throw new InvalidOperationException("Isi nama, semester, serta rentang tanggal yang sah.");
 
         var activeId = _years.CariIdAktif(connection) ?? throw new InvalidOperationException("Tahun ajaran aktif belum tersedia.");
-        var template = _schedule.DaftarUntukTahunAjaran(connection, activeId);
+        // P-15: salin jadwal yang berlaku pada tanggal mulai periode baru, termasuk
+        // perubahan terjadwal di periode aktif, bukan hanya jadwal dasarnya.
+        var template = _schedule.DaftarUntukTahunAjaran(connection, activeId, start);
         var id = 0;
         _changes.Jalankan(connection, account, time, "siapkan_tahun_ajaran", "tahun_ajaran", transaction =>
         {
