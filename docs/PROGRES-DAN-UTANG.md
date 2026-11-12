@@ -365,3 +365,23 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - **Periode akademik baru menyalin jadwal dasar saja**, bukan versi jadwal terjadwal di periode aktif.
 - **Kehadiran guru di muka:** belum ada tes yang membuktikan status Dinas luar tetap benar ketika hari itu tiba dan guru tidak tap.
 - Backup dan token bot tidak berlaku di web uji (browser lokal); tetap fitur desktop.
+
+## 23. Peta prioritas sisa pekerjaan dan P0 — 12 November 2026
+
+**Keputusan pemilik (12 November 2026):** pekerjaan versi online — backend ASP.NET Core/PostgreSQL, isolasi sekolah, MFA, antrean tap offline dan waktu terverifikasi (P-08…P-12), pengirim WhatsApp, VALIDASI-01 — **ditangguhkan**. D-01…D-12 tetap tercatat, tidak dibahas sampai pemilik membukanya kembali.
+
+**Urutan kerja yang dipakai:**
+- **P0 — data salah / menyimpang dari keputusan PRD:** jadwal desktop retroaktif (P-15), periode baru tidak menyalin versi jadwal, alasan dan tanggal koreksi belum masuk audit (§16.10 langkah 7), keterangan status guru belum wajib di layanan (§16.17 langkah 4), `HashSandi` dengan hash rusak.
+- **P1 — web uji sesuai PANDUAN-UI-UX §9:** PDF di browser, saringan audit per akun/tanggal dan 90 hari, unggah logo, penautan Telegram dan status bot (simulasi), kolom kanal pada impor Excel, status lisensi di login, wizard instalasi, pemeriksaan visual pemilik.
+- **P2 — menunggu keputusan pemilik:** P-18, T3, laporan untuk wali kelas (PRD §11.1 vs §3), P-14, PR Dependabot versi mayor.
+- **P3 — desktop, UAT fisik, kebersihan:** penanganan galat ViewModel, backup lokal tak terenkripsi, rotasi cadangan pra-restore, audit kultur parse tanggal, WASM0001, register A-xx, DOC-01.
+
+**P0 yang dikerjakan:**
+- **Jadwal desktop (P-15):** `LayananJadwalHari.Save` menjadi satu pintu simpan layar Pengaturan desktop. Periode yang belum punya jadwal sama sekali mendapat jadwal dasar (pengisian awal); bila jadwal sudah ada, perubahan disimpan lewat `ScheduleFrom` dengan tanggal "Berlaku mulai" (bawaan besok, DatePicker baru). Jadwal tanggal lampau tidak lagi ditimpa. `Perbarui` tetap ada untuk pengisian awal dan dipakai tes lama.
+- **Periode akademik baru:** menyalin jadwal yang berlaku pada tanggal mulai periode baru, termasuk versi terjadwal.
+- **Audit koreksi:** `koreksi_status_siswa` kini mencatat `tanggal=…; status=…` lama dan `…; alasan=…` baru; `tetapkan_status_guru` mencatat tanggal dan keterangan. Keterangan status guru wajib diisi di layanan.
+- **`HashSandi.Verifikasi`:** iterasi bukan angka/≤0/terlalu besar, base64 rusak atau kosong → `false`, bukan exception yang menghentikan login.
+- **Status guru di muka saat harinya tiba:** sudah dibuktikan tes lama `TetapkanStatus_DiMuka_TidakTertimpaSaatPembukaanHariBerjalan`; finalisasi akhir hari hanya menyentuh baris `masuk` (`DaftarGuruMasukTanpaPulang`), jadi Izin/Dinas luar/Cuti tidak diubah. Utang ini ditutup tanpa kode baru.
+- **Tes disiapkan:** App `SimpanJadwalCommand_JadwalSudahAda_BerlakuMulaiBesokTanpaMenimpaJadwalLama`, `SimpanJadwalCommand_TanggalBerlakuHariIni_DitolakTanpaPerubahan`; Data `NewAcademicPeriod_CopiesScheduleInForceAtItsStart`, `TetapkanStatus_KeteranganKosong_DitolakTanpaPerubahan`, `TetapkanStatus_DiMuka_AuditMemuatTanggalDanKeterangan`, `Verifikasi_HashRusak_MengembalikanFalseTanpaException`; tes audit koreksi diperbarui ke format baru.
+
+**Belum terbukti:** tampilan DatePicker "Berlaku mulai" di WPF belum dilihat di Windows (hanya build dan tes App di CI).

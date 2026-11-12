@@ -28,4 +28,18 @@ public sealed class HashSandiTests
 
         Assert.NotEqual(hashPertama, hashKedua);
     }
+
+    [Theory]
+    [InlineData("pbkdf2-sha256$abc$AAAA$AAAA")]
+    [InlineData("pbkdf2-sha256$0$AAAA$AAAA")]
+    [InlineData("pbkdf2-sha256$-5$AAAA$AAAA")]
+    [InlineData("pbkdf2-sha256$999999999$AAAA$AAAA")]
+    [InlineData("pbkdf2-sha256$100000$bukan-base64!$AAAA")]
+    [InlineData("pbkdf2-sha256$100000$AAAA$bukan-base64!")]
+    [InlineData("pbkdf2-sha256$100000$$")]
+    [InlineData("")]
+    public void Verifikasi_HashRusak_MengembalikanFalseTanpaException(string hashRusak)
+    {
+        Assert.False(HashSandi.Verifikasi("Rahasia123!", hashRusak));
+    }
 }
