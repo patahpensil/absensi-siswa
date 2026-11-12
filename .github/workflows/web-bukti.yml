@@ -8,6 +8,8 @@ on:
       - 'src/Absensi.Web/**'
       - 'src/Absensi.Data/**'
       - 'src/Absensi.Domain/**'
+      - 'src/Absensi.Laporan/**'
+      - 'global.json'
       - 'tests/web-browser/**'
       - '.github/workflows/web-bukti.yml'
   workflow_dispatch:
@@ -33,18 +35,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Pasang .NET 8 SDK
+      - name: Pasang .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
-      # Runner memakai SDK terbaru yang terpasang (log menunjukkan 10.0.x), yang
-      # meminta workload wasm-tools-net8 untuk target net8.0; "workload restore"
-      # tidak mendeteksinya, jadi dipasang eksplisit.
-      - name: Pasang workload wasm-tools-net8
-        run: |
-          dotnet --version
-          dotnet workload install wasm-tools-net8
+      - name: Pasang workload wasm-tools
+        run: dotnet workload install wasm-tools
 
       - name: Publish web uji
         run: dotnet publish src/Absensi.Web/Absensi.Web.csproj -c Release -p:WasmBuildNative=true -o publish

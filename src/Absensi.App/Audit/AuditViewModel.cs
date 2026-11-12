@@ -18,17 +18,18 @@ public sealed class AuditViewModel : ObservableObject
     private readonly SqliteConnection _connection;
     private readonly AkunTersimpan _akun;
     private readonly string _folderArsipAudit;
-    private readonly LayananAudit _layananAudit = new();
+    private readonly LayananAudit _layananAudit;
 
     private DateTime _dariTanggal;
     private DateTime _sampaiTanggal;
     private string? _pesanGalat;
 
-    public AuditViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, string folderArsipAudit)
+    public AuditViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, string folderArsipAudit, Func<byte[]>? archiveKey = null)
     {
         _connection = connection;
         _akun = akun;
         _folderArsipAudit = folderArsipAudit;
+        _layananAudit = new LayananAudit(archiveKey);
 
         _sampaiTanggal = penyediaWaktu.Sekarang.Date;
         _dariTanggal = _sampaiTanggal.AddDays(-90); // PRD §12: 90 hari terakhir sebagai bawaan

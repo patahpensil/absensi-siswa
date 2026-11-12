@@ -21,7 +21,7 @@ public sealed class LayananAuditTests : IDisposable
 
     private readonly string _folderBackup = Path.Combine(Path.GetTempPath(), $"absensi-audit-{Guid.NewGuid():N}");
     private readonly string _folderArsip;
-    private readonly LayananAudit _layananAudit = new();
+    private readonly LayananAudit _layananAudit = new(() => new byte[32]);
 
     public LayananAuditTests()
     {
@@ -64,7 +64,7 @@ public sealed class LayananAuditTests : IDisposable
     {
         Directory.CreateDirectory(_folderBackup);
         var penyimpanCloud = new PenyimpanCloudBackupLokal(Path.Combine(_folderBackup, "cloud"));
-        var layananBackup = new LayananBackup(_folderBackup, penyimpanCloud);
+        var layananBackup = new LayananBackup(_folderBackup, penyimpanCloud, () => new byte[32]);
 
         // T0: database baseline (akun admin1 id=1), jadi backup lama B1
         // yang akan dipakai sebagai TARGET restore berkali-kali di bawah.
@@ -162,9 +162,9 @@ public sealed class LayananAuditTests : IDisposable
     {
         using var database = new MigratedDatabase();
         database.SeedMasterDataUntukUji();
-        var layananArsip = new LayananArsipAudit(_folderArsip);
-        var pathArsip = layananArsip.Buat(database.Connection, new DateTime(2026, 9, 20, 8, 0, 0));
-        SqliteConnection.ClearAllPools();
+        using var transaction = database.Connection.BeginTransaction();
+        var pathArsip = new LayananArsipAudit(_folderArsip).Write(database.Connection, transaction, new DateTime(2026, 9, 20, 8, 0, 0), new byte[32]);
+        transaction.Commit();
 
         // Rusak paksa: potong berkas jadi separuh (lihat pola sama di
         // LayananArsipAuditTests -- merusak struktur halaman SQLite secara andal).

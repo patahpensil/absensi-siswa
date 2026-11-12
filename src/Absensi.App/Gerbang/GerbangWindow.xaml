@@ -136,6 +136,9 @@
                         HorizontalAlignment="Left"
                         Margin="0,0,0,24" />
 
+        <TextBlock x:Name="ReaderStatus" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
+                   Foreground="{StaticResource PutihBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
         <!-- Sampai empat kartu tap aktif (PANDUAN-UI-UX.md §8.2) -->
         <ItemsControl Grid.Row="2" ItemsSource="{Binding KartuAktif}">
             <ItemsControl.ItemsPanel>

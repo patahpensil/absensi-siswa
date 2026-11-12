@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-dan-tes:
     name: Build dan seluruh tes (Windows)
-    # WPF (net8.0-windows) hanya dapat dibangun dan diuji penuh di Windows.
+    # WPF (net10.0-windows) hanya dapat dibangun dan diuji penuh di Windows.
     runs-on: windows-latest
     timeout-minutes: 30
     env:
@@ -29,10 +29,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Pasang .NET 8 SDK
+      - name: Pasang .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore
         run: dotnet restore Absensi.sln
@@ -62,3 +62,28 @@ jobs:
           name: hasil-tes
           path: TestResults
           retention-days: 7
+
+      - name: Buat paket uji Windows x64
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        run: |
+          $short = $env:GITHUB_SHA.Substring(0, 12)
+          $folder = Join-Path $env:RUNNER_TEMP 'absensi-win-x64'
+          $output = Join-Path $env:RUNNER_TEMP 'paket-uji'
+          New-Item -ItemType Directory -Path $output | Out-Null
+          dotnet publish src/Absensi.App/Absensi.App.csproj -c Release -r win-x64 --self-contained -o $folder
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "Commit=$env:GITHUB_SHA", 'Target=win-x64', "Workflow=$env:GITHUB_RUN_ID" | Set-Content (Join-Path $folder 'BUILD.txt')
+          $zip = Join-Path $output "AbsensiSekolah-uji-$short-win-x64.zip"
+          Compress-Archive -Path "$folder/*" -DestinationPath $zip
+          $hash = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant()
+          "$hash  $(Split-Path -Leaf $zip)" | Set-Content "$zip.sha256"
+
+      - name: Simpan paket uji Windows x64
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AbsensiSekolah-uji-win-x64-${{ github.sha }}
+          path: ${{ runner.temp }}/paket-uji/
+          if-no-files-found: error
+          retention-days: 30

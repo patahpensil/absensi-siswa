@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Absensi.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Absensi.Data\Absensi.Data.csproj" />
     <ProjectReference Include="..\Absensi.Telegram\Absensi.Telegram.csproj" />
     <ProjectReference Include="..\Absensi.Laporan\Absensi.Laporan.csproj" />
@@ -8,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
 
   <!-- PANDUAN-UI-UX §4.1: IBM Plex Sans dibundel ke dalam .exe (lisensi OFL,
@@ -19,7 +25,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Absensi.Data.Akun;
+using Absensi.Data.Migrations;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 using Microsoft.Data.Sqlite;
@@ -23,11 +24,13 @@ public sealed class LayananBackup
     // parameter konstruktor baru) supaya seluruh pemanggil yang sudah ada
     // (App.xaml.cs, test) tidak perlu diubah.
     private readonly LayananArsipAudit _layananArsipAudit;
+    private readonly Func<byte[]>? _archiveKey;
 
-    public LayananBackup(string folderBackup, IPenyimpanCloudBackup penyimpanCloud)
+    public LayananBackup(string folderBackup, IPenyimpanCloudBackup penyimpanCloud, Func<byte[]>? archiveKey = null)
     {
         _folderBackup = folderBackup;
         _penyimpanCloud = penyimpanCloud;
+        _archiveKey = archiveKey;
         _layananArsipAudit = new LayananArsipAudit(Path.Combine(folderBackup, "arsip-audit"));
     }
 
@@ -77,54 +80,85 @@ public sealed class LayananBackup
             throw new InvalidOperationException("Wali kelas tidak berwenang memulihkan backup.");
         }
 
-        // Master Bug & UI/UX Register A-39: arsip riwayat audit dibuat DAN
-        // diverifikasi DI SINI, sebelum apa pun yang destruktif. Kalau ini
-        // melempar, database sumber belum disentuh sama sekali -- pemanggil
-        // (PengaturanViewModel.Restore, dibungkus PenangananGalat.Coba)
-        // tidak pernah lanjut ke TerapkanRestore.
-        var pathArsip = _layananArsipAudit.BuatDanVerifikasi(sumber, waktu);
-
-        // Backup lokal terenkripsi dibuka dengan kunci lisensi aplikasi ini;
-        // gagal dibuka = restore batal sebelum apa pun ditimpa.
         var kunciLisensi = new Absensi.Data.Lisensi.RepositoriLisensi().BacaStatus(sumber)?.Kunci;
         var dataSumberRestore = EnkripsiBackup.BukaLokal(File.ReadAllBytes(berkasSumberRestore.PathBerkas), kunciLisensi);
+        WithValidatedBackup(dataSumberRestore, _folderBackup, _ => { });
+
+        var archiveKey = _archiveKey?.Invoke()
+            ?? throw new InvalidOperationException("Kunci arsip audit tidak tersedia. Pemulihan dibatalkan.");
         BuatSnapshotLokal(sumber, waktu, kunciLisensi);
-        var pathCadangan = Path.Combine(_folderBackup, $"{waktu.ToString(FormatWaktu)}.db");
-
-        _jalurPerubahanData.Jalankan(
-            sumber,
-            akun,
-            waktu,
-            aksi: "restore_backup",
-            entitas: "sekolah",
-            perubahan: _ => null,
-            nilaiLama: Path.GetFileName(pathCadangan),
-            nilaiBaru: berkasSumberRestore.NamaBerkas);
-
-        // Ditemukan lewat tes gagal (LayananAuditTests, A-39 Tahap 2): baris
-        // restore_backup di atas ditulis SETELAH arsip dibuat (sengaja,
-        // lihat komentar di atas), jadi tidak pernah ikut ter-snapshot --
-        // catatan "sebelum restore ini" sendiri hilang begitu `sumber`
-        // ditimpa. Disalin manual ke arsip yang sudah ada di sini.
-        _layananArsipAudit.TambahkanBarisTerakhir(pathArsip, sumber);
+        var namaCadangan = $"{waktu.ToString(FormatWaktu)}.db";
+        string? archivePath = null;
+        try
+        {
+            _jalurPerubahanData.Jalankan(sumber, akun, waktu, "restore_backup", "sekolah", _ => null,
+                nilaiLama: namaCadangan, nilaiBaru: berkasSumberRestore.NamaBerkas,
+                setelahAudit: transaction => archivePath = _layananArsipAudit.Write(sumber, transaction, waktu, archiveKey));
+        }
+        catch
+        {
+            if (archivePath is not null) LayananArsipAudit.TryDelete(archivePath);
+            throw;
+        }
 
         return dataSumberRestore;
     }
 
-    // Dipanggil setelah koneksi ke database lama ditutup (SQLite tidak bisa
-    // ditimpa selagi ada koneksi aktif memegangnya) — sengaja statis dan
-    // tidak menyentuh SqliteConnection apa pun. Pemanggil (App.xaml.cs)
-    // membuka koneksi baru ke berkas ini setelahnya.
+    public static void TerapkanRestore(byte[] dataSumberRestore, SqliteConnection target)
+    {
+        // SQLite mengunci tujuan dan mengganti isinya dalam satu transaksi.
+        // Bila penyalinan gagal, SQLite membatalkan transaksi tersebut.
+        WithValidatedBackup(dataSumberRestore, Path.GetDirectoryName(Path.GetFullPath(target.DataSource))!,
+            candidate => candidate.BackupDatabase(target));
+    }
+
     public static void TerapkanRestore(byte[] dataSumberRestore, string pathDatabaseTujuan)
     {
-        SqliteConnection.ClearAllPools();
-        File.WriteAllBytes(pathDatabaseTujuan, dataSumberRestore);
+        using var target = SqliteConnectionFactory.Open(pathDatabaseTujuan);
+        TerapkanRestore(dataSumberRestore, target);
+    }
 
-        // WAL/SHM peninggalan database lama tidak relevan lagi untuk
-        // berkas yang baru saja ditimpa — dibiarkan bisa membuat SQLite
-        // membaca campuran data lama dan baru saat database dibuka lagi.
-        File.Delete(pathDatabaseTujuan + "-wal");
-        File.Delete(pathDatabaseTujuan + "-shm");
+    private static void WithValidatedBackup(byte[] data, string directory, Action<SqliteConnection> apply)
+    {
+        var path = Path.Combine(directory, $"restore-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            if (!data.AsSpan().StartsWith("SQLite format 3\0"u8))
+                throw new InvalidOperationException("Berkas backup rusak atau bukan database absensi.");
+
+            File.WriteAllBytes(path, data);
+            var settings = new SqliteConnectionStringBuilder { DataSource = path, Mode = SqliteOpenMode.ReadWrite, Pooling = false };
+            using var candidate = new SqliteConnection(settings.ToString());
+            candidate.Open();
+
+            using var command = candidate.CreateCommand();
+            command.CommandText = "PRAGMA integrity_check;";
+            if (!Equals(command.ExecuteScalar(), "ok"))
+                throw new InvalidOperationException("Pemeriksaan integritas backup gagal.");
+
+            new MigrationRunner().UpgradeBackup(candidate);
+            command.CommandText = """
+                SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name IN
+                ('sekolah', 'pengaturan', 'akun', 'audit', 'tahun_ajaran', 'kelas', 'siswa', 'guru',
+                 'siswa_kelas', 'absensi_siswa', 'absensi_guru', 'opened_school_day', 'schedule_change');
+                """;
+            if (!Equals(command.ExecuteScalar(), 13L))
+                throw new InvalidOperationException("Tabel wajib pada backup tidak lengkap.");
+
+            command.CommandText = "PRAGMA foreign_key_check;";
+            if (command.ExecuteScalar() is not null)
+                throw new InvalidOperationException("Data pada backup memiliki rujukan yang tidak valid.");
+
+            apply(candidate);
+        }
+        catch (SqliteException ex)
+        {
+            throw new InvalidOperationException("Backup tidak dapat dipulihkan. Periksa berkas dan pastikan database dapat ditulis.", ex);
+        }
+        finally
+        {
+            LayananArsipAudit.TryDelete(path);
+        }
     }
 
     // Mengembalikan isi SQLite polos snapshot. Berkas lokal ditulis

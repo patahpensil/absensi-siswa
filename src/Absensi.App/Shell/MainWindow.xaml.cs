@@ -17,7 +17,14 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
-        viewModel.BukaGerbangDiminta += (_, _) => bukaGerbang().Show();
+        Window? gate = null;
+        viewModel.BukaGerbangDiminta += (_, _) =>
+        {
+            if (gate is not null) { gate.Activate(); return; }
+            gate = bukaGerbang();
+            gate.Closed += (_, _) => gate = null;
+            gate.Show();
+        };
 
         // Dialog modal (bukan fullscreen seperti gerbang) — pengguna
         // menyelesaikan atau membatalkan sesi registrasi sebelum kembali

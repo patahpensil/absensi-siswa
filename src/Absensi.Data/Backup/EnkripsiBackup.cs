@@ -42,6 +42,9 @@ public static class EnkripsiBackup
         var panjangNonce = AesGcm.NonceByteSizes.MaxSize;
         var panjangTag = AesGcm.TagByteSizes.MaxSize;
 
+        if (paket.Length <= panjangNonce + panjangTag)
+            throw new CryptographicException("Paket enkripsi tidak lengkap.");
+
         var nonce = paket[..panjangNonce];
         var tag = paket[panjangNonce..(panjangNonce + panjangTag)];
         var cipherText = paket[(panjangNonce + panjangTag)..];
@@ -62,7 +65,7 @@ public static class EnkripsiBackup
         [.. PenandaLokal, .. Enkripsi(data, kunciLisensi)];
 
     public static bool TerenkripsiLokal(byte[] isiBerkas) =>
-        isiBerkas.Length > PenandaLokal.Length && isiBerkas.AsSpan(0, PenandaLokal.Length).SequenceEqual(PenandaLokal);
+        isiBerkas.AsSpan().StartsWith(PenandaLokal);
 
     // Mengembalikan isi SQLite polos. Backup lama tanpa penanda dikembalikan
     // apa adanya.

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Absensi.Data.Backup;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 using Microsoft.Data.Sqlite;
@@ -20,6 +21,10 @@ namespace Absensi.Data.Audit;
 // riwayat keputusan proyek 2026-09-24/25.
 public sealed class LayananAudit
 {
+    private readonly Func<byte[]>? _archiveKey;
+
+    public LayananAudit(Func<byte[]>? archiveKey = null) => _archiveKey = archiveKey;
+
     // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
     // membaca riwayat audit, di rilis awal ini -- diperiksa DI SINI
     // (lapisan layanan), bukan cuma disembunyikan di UI. Pola sama seperti
@@ -115,33 +120,31 @@ public sealed class LayananAudit
     private static void BacaDariSumber(
         SqliteConnection koneksi, string asal, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
     {
+        foreach (var entry in ReadRows(koneksi, asal, dari, sampai))
+            tujuan.TryAdd(entry.AuditUid, entry);
+    }
+
+    internal static List<BarisAuditGabungan> ReadRows(SqliteConnection koneksi, string asal,
+        DateTime? dari = null, DateTime? sampai = null, SqliteTransaction? transaction = null)
+    {
         using var command = koneksi.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             SELECT a.audit_uid, a.waktu, a.aksi, a.entitas, a.entitas_id, a.nilai_lama, a.nilai_baru, a.atas_permintaan, k.username
             FROM audit a
             LEFT JOIN akun k ON k.id = a.akun_id
-            WHERE a.waktu >= $dari AND a.waktu <= $sampai
+            WHERE ($dari IS NULL OR a.waktu >= $dari) AND ($sampai IS NULL OR a.waktu <= $sampai)
             ORDER BY a.id;
             """;
-        command.Parameters.AddWithValue("$dari", dari.ToString("o"));
-        command.Parameters.AddWithValue("$sampai", sampai.ToString("o"));
+        command.Parameters.AddWithValue("$dari", (object?)dari?.ToString("o") ?? DBNull.Value);
+        command.Parameters.AddWithValue("$sampai", (object?)sampai?.ToString("o") ?? DBNull.Value);
 
         using var reader = command.ExecuteReader();
+        var rows = new List<BarisAuditGabungan>();
         while (reader.Read())
         {
-            var uid = reader.GetString(0);
-            if (tujuan.ContainsKey(uid))
-            {
-                // Dedup -- baris yang sama (audit_uid identik) muncul di
-                // lebih dari satu sumber (mis. baseline yang ada di live
-                // DAN di beberapa arsip) -- isinya dijamin identik (baris
-                // audit tidak pernah berubah, lihat trigger A-38), jadi
-                // yang pertama ditemukan cukup, tidak perlu dibandingkan.
-                continue;
-            }
-
-            tujuan[uid] = new BarisAuditGabungan(
-                uid,
+            rows.Add(new BarisAuditGabungan(
+                reader.GetString(0),
                 DateTime.Parse(reader.GetString(1), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
                 reader.GetString(2),
                 reader.GetString(3),
@@ -150,8 +153,10 @@ public sealed class LayananAudit
                 reader.IsDBNull(6) ? null : reader.GetString(6),
                 reader.IsDBNull(7) ? null : reader.GetString(7),
                 reader.IsDBNull(8) ? "(akun tidak ditemukan)" : reader.GetString(8),
-                asal);
+                asal));
         }
+
+        return rows;
     }
 
     // Koneksi BARU terpisah ke berkas arsip (bukan ATTACH ke koneksi
@@ -159,11 +164,18 @@ public sealed class LayananAudit
     // tidak mengubah keadaan koneksi utama sama sekali. ReadOnly murni
     // untuk jaga-jaga (LayananAudit tidak pernah menulis, tapi menegaskan
     // niat itu di tingkat koneksi juga).
-    private static void BacaDariArsip(
+    private void BacaDariArsip(
         string pathArsip, string namaBerkas, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
     {
-        SqliteConnection.ClearAllPools();
-        using var koneksi = new SqliteConnection($"Data Source={pathArsip};Mode=ReadOnly");
+        if (LayananArsipAudit.ReadProtected(pathArsip, _archiveKey) is { } entries)
+        {
+            foreach (var entry in entries.Where(entry => entry.Waktu >= dari && entry.Waktu <= sampai))
+                tujuan.TryAdd(entry.AuditUid, entry);
+            return;
+        }
+
+        var settings = new SqliteConnectionStringBuilder { DataSource = pathArsip, Mode = SqliteOpenMode.ReadOnly, Pooling = false };
+        using var koneksi = new SqliteConnection(settings.ToString());
         koneksi.Open();
 
         using (var cekIntegritas = koneksi.CreateCommand())

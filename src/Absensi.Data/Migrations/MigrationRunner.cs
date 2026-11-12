@@ -34,6 +34,15 @@ public sealed class MigrationRunner
         }
     }
 
+    internal void UpgradeBackup(SqliteConnection connection)
+    {
+        var version = ReadCurrentVersion(connection);
+        if (version < 1 || version > AllMigrations[^1].Number)
+            throw new InvalidOperationException("Versi database pada backup tidak didukung.");
+
+        Run(connection);
+    }
+
     private static void ApplyMigration(SqliteConnection connection, IMigration migration)
     {
         using var transaction = connection.BeginTransaction();

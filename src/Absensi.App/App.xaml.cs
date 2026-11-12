@@ -1,3 +1,4 @@
+using Absensi.App.Audit;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
@@ -96,7 +97,7 @@ public partial class App : Application
             }
         }
 
-        _layananBackup = new LayananBackup(LokasiData.FolderBackup, new PenyimpanCloudBackupLokal(LokasiData.FolderBackupCloudStub));
+        _layananBackup = new LayananBackup(LokasiData.FolderBackup, new PenyimpanCloudBackupLokal(LokasiData.FolderBackupCloudStub), LocalAuditArchiveKey.GetOrCreate);
         JalankanBackupPembukaanAplikasi();
 
         JalankanPembukaanHariBilaSudahDikonfigurasi();
@@ -308,17 +309,9 @@ public partial class App : Application
             return null;
         }
 
-        // PRD §18.3 jalur cloud: database yang sedang terbuka (kosong,
-        // baru dimigrasi) ditimpa isi backup cloud — koneksi lama harus
-        // ditutup dulu (SQLite tidak bisa ditimpa selagi ada koneksi
-        // memegangnya), lalu dibuka lagi dan dimigrasi ulang (berjaga-jaga
-        // backup itu berasal dari versi aplikasi yang lebih lama).
         if (window.DataDipulihkanDariCloud is { } dataRestore)
         {
-            _connection!.Dispose();
-            LayananBackup.TerapkanRestore(dataRestore, LokasiData.PathDatabase);
-            _connection = SqliteConnectionFactory.Open(LokasiData.PathDatabase);
-            new MigrationRunner().Run(_connection);
+            LayananBackup.TerapkanRestore(dataRestore, _connection!);
         }
 
         return new RepositoriSekolah().CariSatuSatunya(_connection!);
@@ -341,16 +334,19 @@ public partial class App : Application
         }
     }
 
-    // PRD §18.4: pengaman restore sudah dijalankan PengaturanViewModel
-    // (cadangan kondisi saat ini + jejak audit) sebelum event ini terpicu.
-    // Sisanya di sini: tutup koneksi lama supaya berkasnya bisa ditimpa,
-    // lalu tutup aplikasi — layar dan ViewModel yang sedang berjalan
-    // memegang data dari database LAMA, jadi melanjutkan tanpa membuka
-    // ulang aplikasi berisiko menampilkan/menimpa data yang salah.
     private void SelesaikanRestoreDanTutup(byte[] data)
     {
-        _connection?.Dispose();
-        LayananBackup.TerapkanRestore(data, LokasiData.PathDatabase);
+        try
+        {
+            LayananBackup.TerapkanRestore(data, _connection!);
+        }
+        catch (Exception error) when (error is InvalidOperationException or System.IO.IOException or UnauthorizedAccessException)
+        {
+            PencatatGalat.Catat(error, sumber: "Restore", level: "ERROR");
+            MessageBox.Show("Pemulihan gagal. Database aktif tetap dapat digunakan.",
+                "Pemulihan", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
 
         MessageBox.Show(
             "Restore selesai. Buka kembali aplikasi untuk melanjutkan.",

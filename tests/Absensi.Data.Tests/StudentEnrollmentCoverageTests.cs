@@ -77,6 +77,23 @@ public sealed class StudentEnrollmentCoverageTests
         Assert.Equal(new DateOnly(2026, 9, 16), new RepositoriSiswaKelas().ListEnrollmentDates(database.Connection, 1)[1].End);
     }
 
+    [Fact]
+    public void DailyAndWeeklyReports_ExcludeOldRowsOutsideEnrollmentDates()
+    {
+        using var database = Prepare();
+        var monday = new DateOnly(2026, 9, 14);
+        var tuesday = monday.AddDays(1);
+        var wednesday = monday.AddDays(2);
+        foreach (var day in new[] { monday, tuesday, wednesday })
+            new PembukaanHari().Jalankan(database.Connection, day);
+
+        database.Execute("UPDATE siswa_kelas SET start_date = '2026-09-15', end_date = '2026-09-15' WHERE siswa_id = 1;");
+        var service = new LayananLaporan();
+        Assert.Empty(service.Kejadian(database.Connection, Admin, monday, monday, 1, JenisSubjekLaporan.Siswa));
+        Assert.Empty(service.Kejadian(database.Connection, Admin, wednesday, wednesday, 1, JenisSubjekLaporan.Siswa));
+        Assert.Equal(tuesday, Assert.Single(service.Kejadian(database.Connection, Admin, monday, wednesday, 1, JenisSubjekLaporan.Siswa)).Tanggal);
+    }
+
     // Senin–Sabtu adalah hari sekolah pada data uji (SeedSekolahUntukTap).
     private static int SchoolDays(DateOnly from, DateOnly to)
     {

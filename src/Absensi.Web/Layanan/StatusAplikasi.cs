@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Absensi.Data;
 using Absensi.Data.Akun;
 using Absensi.Data.Migrations;
@@ -13,7 +14,9 @@ namespace Absensi.Web.Layanan;
 public sealed partial class StatusAplikasi
 {
     private const string BerkasDb = "/tmp/absensi-web.db";
-    private const string KunciPenyimpanan = "absensi.db";
+    private readonly SemaphoreSlim _storage = new(1);
+    private readonly Dictionary<string, byte[]> _pendingPhotos = new(StringComparer.Ordinal);
+    private uint _storageVersion;
 
     private readonly IJSRuntime _js;
     private readonly LayananAkun _layananAkun = new();
@@ -44,14 +47,18 @@ public sealed partial class StatusAplikasi
 
     public bool StorageFailed { get; private set; }
 
+    public bool StorageConflict { get; private set; }
+
     public async Task MulaiAsync()
     {
         try
         {
-            var tersimpan = await _js.InvokeAsync<byte[]?>("absensiStorage.load", KunciPenyimpanan);
-            if (tersimpan is { Length: > 0 })
+            var snapshot = await _js.InvokeAsync<byte[]>("absensiStorage.loadDatabase");
+            _storageVersion = BinaryPrimitives.ReadUInt32LittleEndian(snapshot);
+            var wizardPending = snapshot[4] == 1;
+            if (snapshot.Length > 5)
             {
-                File.WriteAllBytes(BerkasDb, tersimpan);
+                File.WriteAllBytes(BerkasDb, snapshot.AsSpan(5));
                 CatatanPenyimpanan = "Data dipulihkan dari penyimpanan browser.";
             }
             else
@@ -64,7 +71,7 @@ public sealed partial class StatusAplikasi
             {
                 // PANDUAN-UI-UX §9 Wizard instalasi: bila pengguna memilih
                 // mulai dari wizard, data contoh tidak dibuat.
-                if (await WizardPendingAsync())
+                if (wizardPending)
                 {
                     NeedsInstallation = true;
                     NamaSekolah = "";
@@ -93,26 +100,47 @@ public sealed partial class StatusAplikasi
 
     public void Keluar() => Akun = null;
 
-    public async Task SimpanAsync()
+    public Task SimpanAsync() => SaveSnapshotAsync();
+
+    private async Task SaveSnapshotAsync(string? photoName = null, byte[]? photo = null)
     {
-        var retrying = StorageFailed;
-        StorageFailed = false;
+        await _storage.WaitAsync();
         try
         {
-            using (var perintah = Koneksi!.CreateCommand())
+            if (StorageConflict) return;
+            if (photoName is not null && photo is not null) _pendingPhotos[photoName] = photo;
+            using (var command = Koneksi!.CreateCommand())
             {
-                perintah.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
-                perintah.ExecuteNonQuery();
+                command.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                command.ExecuteNonQuery();
             }
 
-            await _js.InvokeVoidAsync("absensiStorage.save", KunciPenyimpanan, File.ReadAllBytes(BerkasDb));
-            if (retrying) CatatanPenyimpanan = "Perubahan berhasil disimpan ulang ke penyimpanan browser.";
+            if (!await _js.InvokeAsync<bool>("absensiStorage.saveDatabase", _storageVersion, File.ReadAllBytes(BerkasDb), _pendingPhotos))
+            {
+                MarkStorageConflict();
+                return;
+            }
+
+            _storageVersion++;
+            _pendingPhotos.Clear();
+            if (StorageFailed) CatatanPenyimpanan = "Perubahan berhasil disimpan ulang ke penyimpanan browser.";
+            StorageFailed = false;
         }
         catch (Exception)
         {
             StorageFailed = true;
             CatatanPenyimpanan = "Perubahan ada pada sesi ini, tetapi belum tersimpan ke browser. Jangan tutup halaman; coba Simpan ulang di Pengaturan.";
         }
+        finally
+        {
+            _storage.Release();
+        }
+    }
+
+    private void MarkStorageConflict()
+    {
+        StorageFailed = StorageConflict = true;
+        CatatanPenyimpanan = "Data sudah berubah di tab lain. Perubahan dari tab ini tidak disimpan. Muat ulang halaman sebelum melanjutkan.";
     }
 
     public async Task OpenCurrentDayAsync()
@@ -132,51 +160,43 @@ public sealed partial class StatusAplikasi
     // True sampai wizard instalasi web diselesaikan (database masih kosong).
     public bool NeedsInstallation { get; private set; }
 
-    private const string KunciWizard = "wizard.pending";
-
-    private async Task<bool> WizardPendingAsync()
-    {
-        try { return await _js.InvokeAsync<byte[]?>("absensiStorage.load", KunciWizard) is { Length: > 0 }; }
-        catch (JSException) { return false; }
-    }
-
-    // Dipanggil setelah LayananWizard.Selesaikan berhasil.
     public async Task CompleteInstallationAsync()
     {
-        try { await _js.InvokeVoidAsync("absensiStorage.remove", KunciWizard); }
-        catch (JSException) { }
-        NeedsInstallation = false;
         MuatIdentitas();
         await SimpanAsync();
+        NeedsInstallation = StorageFailed;
     }
 
-    public async Task ResetAsync(bool sampleData = true)
+    public async Task<bool> ResetAsync(bool sampleData = true)
     {
-        if (!sampleData)
+        await _storage.WaitAsync();
+        try
         {
-            await _js.InvokeVoidAsync("absensiStorage.save", KunciWizard, new byte[] { 1 });
-        }
-        else
-        {
-            try { await _js.InvokeVoidAsync("absensiStorage.remove", KunciWizard); }
-            catch (JSException) { }
-        }
-
-        Akun = null;
-        Koneksi?.Dispose();
-        Koneksi = null;
-        SqliteConnection.ClearAllPools();
-        foreach (var berkas in new[] { BerkasDb, BerkasDb + "-wal", BerkasDb + "-shm" })
-        {
-            if (File.Exists(berkas))
+            if (StorageConflict) return false;
+            if (!await _js.InvokeAsync<bool>("absensiStorage.resetDatabase", _storageVersion, !sampleData))
             {
-                File.Delete(berkas);
+                MarkStorageConflict();
+                return false;
             }
+
+            Akun = null;
+            Koneksi?.Dispose();
+            Koneksi = null;
+            SqliteConnection.ClearAllPools();
+            foreach (var path in new[] { BerkasDb, BerkasDb + "-wal", BerkasDb + "-shm" })
+                File.Delete(path);
+
+            _pendingPhotos.Clear();
+            ClearLocalPhotos();
+            StorageFailed = false;
+        }
+        finally
+        {
+            _storage.Release();
         }
 
-        await _js.InvokeVoidAsync("absensiStorage.remove", KunciPenyimpanan);
-        await RemovePhotosAsync();
         await MulaiAsync();
+        return true;
     }
 
     private void Buka()

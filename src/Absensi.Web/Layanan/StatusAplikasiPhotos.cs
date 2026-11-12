@@ -29,6 +29,7 @@ public sealed partial class StatusAplikasi
     {
         // T6: check the role before anything is stored (PRD §3: master data is full-authority only).
         if (!WorkspaceView.CanManage(this)) return "Akun ini tidak berwenang mengubah foto.";
+        if (StorageConflict) return CatatanPenyimpanan;
         if (original.Length == 0) return "Berkas foto kosong.";
 
         byte[]? resized;
@@ -37,9 +38,6 @@ public sealed partial class StatusAplikasi
         if (resized is not { Length: > 0 }) return "Berkas tidak dikenali sebagai gambar. Gunakan JPG atau PNG.";
 
         var name = $"{identity}.png";
-        try { await _js.InvokeVoidAsync("absensiStorage.save", PhotoKeyPrefix + name, resized); }
-        catch (JSException) { return "Foto belum dapat disimpan ke penyimpanan browser. Coba kembali."; }
-
         try
         {
             if (kind == PersonKind.Student) new LayananSiswa().SimpanFoto(Koneksi!, Akun!, Jam.Sekarang, id, name);
@@ -49,7 +47,7 @@ public sealed partial class StatusAplikasi
         catch (Microsoft.Data.Sqlite.SqliteException) { return "Data foto belum dapat dicatat. Coba kembali."; }
 
         CachePhoto(name, resized);
-        await SimpanAsync();
+        await SaveSnapshotAsync(name, resized);
         return StorageFailed ? CatatanPenyimpanan : null;
     }
 
@@ -60,6 +58,7 @@ public sealed partial class StatusAplikasi
     public async Task<string?> UploadLogoAsync(byte[] original)
     {
         if (!WorkspaceView.CanManage(this)) return "Akun ini tidak berwenang mengubah logo.";
+        if (StorageConflict) return CatatanPenyimpanan;
         if (original.Length == 0) return "Berkas logo kosong.";
 
         byte[]? resized;
@@ -67,16 +66,13 @@ public sealed partial class StatusAplikasi
         catch (JSException) { resized = null; }
         if (resized is not { Length: > 0 }) return "Berkas tidak dikenali sebagai gambar. Gunakan JPG atau PNG.";
 
-        try { await _js.InvokeVoidAsync("absensiStorage.save", PhotoKeyPrefix + LogoFileName, resized); }
-        catch (JSException) { return "Logo belum dapat disimpan ke penyimpanan browser. Coba kembali."; }
-
         try { new Absensi.Data.Pengaturan.SchoolIdentityService().SetLogo(Koneksi!, Akun!, Jam.Sekarang, LogoFileName); }
         catch (InvalidOperationException ex) { return ex.Message; }
         catch (Microsoft.Data.Sqlite.SqliteException) { return "Data logo belum dapat dicatat. Coba kembali."; }
 
         CachePhoto(LogoFileName, resized);
         RefreshSchoolName();
-        await SimpanAsync();
+        await SaveSnapshotAsync(LogoFileName, resized);
         return StorageFailed ? CatatanPenyimpanan : null;
     }
 
@@ -94,17 +90,8 @@ public sealed partial class StatusAplikasi
         }
     }
 
-    private async Task RemovePhotosAsync()
+    private void ClearLocalPhotos()
     {
-        try
-        {
-            foreach (var key in await _js.InvokeAsync<string[]>("absensiStorage.keys", PhotoKeyPrefix))
-            {
-                await _js.InvokeVoidAsync("absensiStorage.remove", key);
-            }
-        }
-        catch (JSException) { }
-
         _photoUrls.Clear();
         if (Directory.Exists(PhotoFolder)) Directory.Delete(PhotoFolder, recursive: true);
     }

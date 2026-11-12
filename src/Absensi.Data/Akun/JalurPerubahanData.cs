@@ -48,11 +48,13 @@ public sealed class JalurPerubahanData
         Func<SqliteTransaction, int?> perubahan,
         string? nilaiLama = null,
         string? nilaiBaru = null,
-        string? atasPermintaan = null)
+        string? atasPermintaan = null,
+        Action<SqliteTransaction>? setelahAudit = null)
     {
         using var transaction = connection.BeginTransaction();
         var entitasId = perubahan(transaction);
         _repositoriAudit.Catat(connection, transaction, waktu, akun.Id, aksi, entitas, entitasId, nilaiLama, nilaiBaru, atasPermintaan);
+        setelahAudit?.Invoke(transaction);
         transaction.Commit();
     }
 }

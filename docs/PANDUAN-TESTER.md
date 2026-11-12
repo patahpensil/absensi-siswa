@@ -327,3 +327,12 @@ tombol X sungguhan, bukan sekadar memanggil `Window.Close()` dari kode):
 2. **Finalisasi hari terlewat (T3):** siswa tap masuk, jangan tap pulang, tutup aplikasi sebelum jam finalisasi Bolos; buka lagi keesokan harinya. **Harap:** status siswa kemarin menjadi Bolos tanpa pesan Telegram baru.
 3. **Siswa pindahan (P-18):** tambah siswa baru di tengah bulan → laporan bulanan siswa itu hanya menghitung hari sejak ditambahkan.
 4. **Backup terenkripsi:** buka folder `backup` → berkas `.db` terbaru tidak bisa dibuka dengan DB Browser (bukan SQLite polos).
+
+## Pemeriksaan rilis hasil audit
+
+- **Paket Windows.** Cocokkan `BUILD.txt` dengan SHA CI, verifikasi checksum ZIP, dan jalankan dari folder UAT yang terpisah dengan data sintetis.
+- **Restore desktop.** Gunakan cadangan lama yang valid, lalu cadangan yang rusak. Pastikan yang valid bisa dipulihkan dan yang rusak ditolak. Setelah penolakan, pastikan aplikasi dapat membaca database aktif. Ulangi dengan target tulis gagal di lingkungan UAT.
+- **Arsip audit.** Lakukan dua restore dan pastikan aksi kedua akun tetap terlihat dengan nama pelaku yang benar. Periksa bahwa arsip baru hanya dapat dibuka menggunakan kunci pemasangan dan arsip SQLite lama masih bisa dibaca.
+- **Reader keyboard.** Buka Gerbang di TV, alihkan fokus ke Dashboard, lalu periksa indikator jeda sebelum tap. Fokuskan Gerbang kembali dan cocokkan tap siswa/guru pada gerbang serta riwayat.
+- **Reader serial (jika perangkat mendukung).** Buka Gerbang di TV. Fokuskan kolom teks Dashboard sambil melakukan tap di empat reader yang dikonfigurasi. Cocokkan setiap kartu dengan riwayat, periksa tidak ada UID yang muncul di formulir, dan pastikan tap ganda tetap mengikuti jeda. Putuskan satu port, periksa pesan gangguan, sambungkan ulang, dan buka ulang Gerbang.
+- **Tampilan.** Buka Siswa, Guru, dan Pengaturan pada 1280 × 768. Di TV 1920 × 1080, gunakan empat kartu dengan nama panjang. Periksa nama, jam, status, fokus keyboard dan keterbacaan dari jarak operasional.

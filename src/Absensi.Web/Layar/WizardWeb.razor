@@ -84,7 +84,7 @@
             <div class="button-row wizard-actions">
                 @if (step is > 0 and < 5) { <button type="button" id="wizard-back" disabled="@busy" @onclick="() => { error = null; step--; }">Kembali</button> }
                 @if (step < 4) { <button type="button" id="wizard-next" class="primary" @onclick="Next">Lanjut</button> }
-                else if (step == 4) { <button type="button" id="wizard-finish" class="primary" disabled="@busy" @onclick="Finish">Selesaikan instalasi</button> }
+                else if (step == 4) { <button type="button" id="wizard-finish" class="primary" disabled="@(busy || Status.StorageConflict)" @onclick="Finish">Selesaikan instalasi</button> }
                 else { <button type="button" id="wizard-to-login" class="primary" @onclick="() => OnSelesai.InvokeAsync()">Ke halaman masuk</button> }
             </div>
         </div>
@@ -128,6 +128,8 @@
         if (error is null) step++;
     }
 
+    private bool installationWritten;
+
     private async Task Finish()
     {
         if (password != confirm)
@@ -140,11 +142,16 @@
         error = null;
         try
         {
-            new LayananWizard().Selesaikan(Status.Koneksi!, Status.Jam.Sekarang, new DataWizardInstalasi(
-                license.Trim(), school.Trim(), string.IsNullOrWhiteSpace(npsn) ? null : npsn.Trim(), string.IsNullOrWhiteSpace(address) ? null : address.Trim(),
-                LogoPath: null, periodName.Trim(), semester, start, end, days.Select(d => d.ToRow()).ToList(), username.Trim(), password));
-            step = 5;
+            if (!installationWritten)
+            {
+                new LayananWizard().Selesaikan(Status.Koneksi!, Status.Jam.Sekarang, new DataWizardInstalasi(
+                    license.Trim(), school.Trim(), string.IsNullOrWhiteSpace(npsn) ? null : npsn.Trim(), string.IsNullOrWhiteSpace(address) ? null : address.Trim(),
+                    LogoPath: null, periodName.Trim(), semester, start, end, days.Select(d => d.ToRow()).ToList(), username.Trim(), password));
+                installationWritten = true;
+            }
             await Status.CompleteInstallationAsync();
+            if (Status.StorageFailed) error = Status.CatatanPenyimpanan;
+            else step = 5;
         }
         catch (InvalidOperationException ex) { error = ex.Message; }
         finally { busy = false; }

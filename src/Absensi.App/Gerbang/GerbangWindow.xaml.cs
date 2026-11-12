@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text.Json;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -14,6 +16,10 @@ public partial class GerbangWindow : Window
     private bool _diizinkanTutup;
     private bool _fokusUlangDijadwalkan;
     private bool _dialogTutupSedangTerbuka;
+    private SerialGateReaders? _serialReaders;
+    private bool _serialRequested;
+    private bool _readerFault;
+    private bool _closing;
 
     public GerbangWindow(GerbangViewModel viewModel, SqliteConnection connection)
     {
@@ -23,11 +29,26 @@ public partial class GerbangWindow : Window
         DataContext = viewModel;
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _timer.Tick += (_, _) => _viewModel.EvaluasiKartuKedaluwarsa();
+        _timer.Tick += (_, _) =>
+        {
+            _viewModel.EvaluasiKartuKedaluwarsa();
+            if (_serialReaders is not null) CheckSerialReaders();
+        };
         _timer.Start();
 
-        Loaded += (_, _) => FokusKolomTap();
-        Activated += (_, _) => FokusKolomTap();
+        Loaded += (_, _) => StartReaders();
+        Activated += (_, _) => RefreshReaderStatus();
+        Deactivated += (_, _) =>
+        {
+            KolomTap.Clear();
+            RefreshReaderStatus();
+        };
+        Closed += (_, _) =>
+        {
+            _closing = true;
+            _timer.Stop();
+            _serialReaders?.Dispose();
+        };
 
         // Tingkat ukuran teks/jarak mengikuti tinggi area jendela
         // (TipografiGerbang): 1366x768 -> kompak, 1920x1080 -> panduan §8.1.
@@ -59,6 +80,7 @@ public partial class GerbangWindow : Window
         }
 
         _dialogTutupSedangTerbuka = true;
+        RefreshReaderStatus();
         try
         {
             var dialog = new KonfirmasiTutupWindow(new KonfirmasiTutupViewModel(_connection)) { Owner = this };
@@ -84,6 +106,7 @@ public partial class GerbangWindow : Window
         finally
         {
             _dialogTutupSedangTerbuka = false;
+            RefreshReaderStatus();
         }
     }
 
@@ -98,7 +121,7 @@ public partial class GerbangWindow : Window
         KolomTap.Clear();
         e.Handled = true;
 
-        if (uid.Length > 0)
+        if (uid.Length > 0 && !_serialRequested && IsActive && !_dialogTutupSedangTerbuka)
         {
             _viewModel.ProsesTap(uid);
         }
@@ -129,5 +152,58 @@ public partial class GerbangWindow : Window
         });
     }
 
-    private void FokusKolomTap() => KolomTap.Focus();
+    private void StartReaders()
+    {
+        var path = Path.Combine(LokasiData.FolderData, "rfid-serial.json");
+        _serialRequested = File.Exists(path);
+        try
+        {
+            _serialReaders = SerialGateReaders.Open(path,
+                uid => Dispatcher.BeginInvoke(() =>
+                {
+                    if (!_closing && !_diizinkanTutup && !_dialogTutupSedangTerbuka && !_readerFault)
+                        _viewModel.ProsesTap(uid);
+                }),
+                () => Dispatcher.BeginInvoke(() =>
+                {
+                    _readerFault = true;
+                    RefreshReaderStatus();
+                }));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or JsonException or ArgumentException)
+        {
+            _readerFault = true;
+            Absensi.Data.Diagnostik.PencatatGalat.Catat(ex, "Gerbang.Serial", "ERROR");
+        }
+        RefreshReaderStatus();
+    }
+
+    private void CheckSerialReaders()
+    {
+        try
+        {
+            _readerFault |= !_serialReaders!.AllConnected();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _readerFault = true;
+        }
+        RefreshReaderStatus();
+    }
+
+    private void RefreshReaderStatus()
+    {
+        ReaderStatus.Text = _readerFault ? "Reader serial bermasalah. Periksa sambungan, lalu buka ulang gerbang."
+            : _dialogTutupSedangTerbuka ? "Tap dijeda selama konfirmasi penutupan."
+            : _serialRequested ? "Reader serial siap menerima tap."
+            : IsActive ? "Reader keyboard siap menerima tap."
+            : "Tap dijeda. Aktifkan Layar Gerbang sebelum menempelkan kartu.";
+        FokusKolomTap();
+    }
+
+    private void FokusKolomTap()
+    {
+        if (!_serialRequested && IsActive && !_dialogTutupSedangTerbuka && !_diizinkanTutup)
+            KolomTap.Focus();
+    }
 }

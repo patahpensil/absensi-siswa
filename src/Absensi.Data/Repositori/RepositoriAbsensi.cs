@@ -420,8 +420,11 @@ public sealed class RepositoriAbsensi
             FROM absensi_siswa a
             JOIN siswa s ON s.id = a.siswa_id
             JOIN kelas k ON k.id = a.kelas_id
+            LEFT JOIN siswa_kelas sk ON sk.siswa_id = a.siswa_id AND sk.tahun_ajaran_id = k.tahun_ajaran_id
             WHERE a.tanggal BETWEEN $awal AND $akhir
               AND ($kelasId IS NULL OR a.kelas_id = $kelasId)
+              AND (sk.start_date IS NULL OR a.tanggal >= sk.start_date)
+              AND (sk.end_date IS NULL OR a.tanggal <= sk.end_date)
             ORDER BY a.tanggal, k.nama, s.nama;
             """;
         command.Parameters.AddWithValue("$awal", TanggalTeks(tanggalAwal));

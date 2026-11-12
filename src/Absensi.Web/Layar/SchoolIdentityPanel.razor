@@ -91,10 +91,8 @@
             await Status.SimpanAsync();
             Status.RefreshSchoolName();
             Load();
-            ok = true;
-            message = Status.StorageFailed
-                ? "Identitas tersimpan di sesi ini, tetapi belum tersimpan ke browser."
-                : $"Identitas sekolah tersimpan: {stored.Name}.";
+            ok = !Status.StorageFailed;
+            message = ok ? $"Identitas sekolah tersimpan: {stored.Name}." : Status.CatatanPenyimpanan;
             await OnSaved.InvokeAsync();
         }
         catch (InvalidOperationException ex)

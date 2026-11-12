@@ -1131,6 +1131,41 @@ await langkah('Wizard instalasi web: mulai kosong, isian salah ditolak, akun kep
   await page.waitForSelector('#ringkasan');
 });
 
+await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset data tab lain', async () => {
+  const stale = await context.newPage();
+  try {
+    await stale.goto(baseUrl);
+    await stale.waitForSelector('#tombol-masuk');
+    await stale.fill('#username', 'kepala.baru');
+    await stale.fill('#sandi', 'sandibaru123');
+    await stale.click('#tombol-masuk');
+    await stale.click('#menu-pengaturan');
+    await stale.waitForSelector('#school-identity');
+
+    await page.click('#menu-pengaturan');
+    await page.fill('#school-name', 'SMP Audit Antartab (contoh)');
+    await page.click('#school-identity-save');
+    await page.waitForSelector('#school-identity-message.positive');
+
+    await stale.fill('#school-address', 'Alamat sintetis dari tab lama');
+    await stale.click('#school-identity-save');
+    await stale.waitForSelector('#school-identity-message.danger');
+    tegas((await stale.textContent('#school-identity-message')).includes('tab lain'), 'konflik tidak dijelaskan');
+    tegas(!(await stale.locator('#retry-storage').isEnabled()), 'tab lama masih boleh menimpa penyimpanan');
+    await stale.click('#reset-data');
+    await stale.click('#confirm-reset-data');
+
+    await page.reload();
+    await page.waitForSelector('#tombol-masuk');
+    tegas((await page.textContent('#nama-sekolah')).trim() === 'SMP Audit Antartab (contoh)', 'penyimpanan dari tab baru hilang');
+    await masuk('kepala.baru', 'sandibaru123');
+    await page.click('#menu-pengaturan');
+    tegas((await page.inputValue('#school-address')) !== 'Alamat sintetis dari tab lama', 'perubahan tab lama ikut tersimpan');
+  } finally {
+    await stale.close();
+  }
+});
+
 await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);

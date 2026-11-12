@@ -12,7 +12,7 @@ Panduan ini untuk Tata Usaha (TU) sekolah. Tidak perlu latar belakang komputer �
 
 `[GAMBAR: folder AbsensiSekolah disalin ke Windows Explorer]`
 
-> **Catatan:** komputer sekolah **tidak perlu** menginstal apa pun terlebih dahulu (tidak perlu instal .NET, tidak perlu instal apa pun dari internet). Aplikasi ini sudah lengkap dengan sendirinya.
+> **Catatan:** komputer sekolah **tidak perlu** menginstal apa pun terlebih dahulu (tidak perlu instal .NET, tidak perlu instal apa pun dari internet). Paket uji Windows x64 sudah membawa runtime .NET 10. Cocokkan commit pada `BUILD.txt` dan SHA-256 paket dengan hasil CI sebelum pengujian.
 
 ---
 
@@ -166,3 +166,11 @@ Saat menghubungi, sebutkan:
 ---
 
 *Panduan ini dibuat untuk versi awal aplikasi. Simpan berkas ini untuk referensi TU berikutnya.*
+
+## Uji reader dan TV pada Windows
+
+Reader USB dalam mode keyboard menerima tap ketika **Layar Gerbang** aktif. Saat fokus berpindah, layar menampilkan status dijeda. Kembali ke Gerbang sebelum melanjutkan tap. Pada dua monitor, gunakan `Win+Shift+←/→` saat Gerbang aktif untuk memindahkannya ke TV.
+
+Untuk menerima tap ketika operator memakai Dashboard, gunakan reader yang menyediakan mode **USB serial/COM** dan nonaktifkan mode keyboard pada reader tersebut. Periksa dukungannya di manual perangkat. Di folder `data` yang berada di samping `Absensi.App.exe`, buat `rfid-serial.json`, misalnya `{"ports":["COM3","COM4"],"baudRate":9600}`. Gunakan port dan baud rate dari perangkat. Mode ini menerima 1–4 port berbeda, 8N1, UID alfanumerik 8–64 karakter, dan terminator CR/LF. Gunakan reader keyboard terpisah untuk formulir registrasi jika diperlukan. Periksa status siap saat Gerbang dibuka. Setelah gangguan sambungan, buka ulang Gerbang setelah port tersedia.
+
+Arsip audit baru memakai kunci Windows pada `data/audit-archive-key.dpapi`. Pertahankan file ini ketika memperbarui aplikasi di PC yang sama. Pemulihan arsip terenkripsi bergantung pada kunci dan instalasi Windows asal. Arsip lama tetap dibaca dan perlu disimpan dengan akses folder yang sesuai.

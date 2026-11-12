@@ -28,7 +28,7 @@ Acuan kerja satu-satunya: `docs/PRD.md` (termasuk standar penulisan kode §24). 
 
 ## Tumpukan Teknologi
 
-- .NET 8 (C#)
+- .NET 10 LTS (C#)
 - WPF untuk antarmuka
 - SQLite lewat Microsoft.Data.Sqlite
 - xUnit untuk pengujian

@@ -12,7 +12,7 @@ public sealed class LayananBackupTests : IDisposable
     private readonly string _folderBackup = Path.Combine(Path.GetTempPath(), $"absensi-backup-{Guid.NewGuid():N}");
     private readonly string _folderCloudStub = Path.Combine(Path.GetTempPath(), $"absensi-cloud-{Guid.NewGuid():N}");
 
-    private LayananBackup BuatLayanan() => new(_folderBackup, new PenyimpanCloudBackupLokal(_folderCloudStub));
+    private LayananBackup BuatLayanan() => new(_folderBackup, new PenyimpanCloudBackupLokal(_folderCloudStub), () => new byte[32]);
 
     // Keputusan pemilik 12 November 2026: backup lokal dienkripsi kunci lisensi.
     [Fact]
@@ -199,16 +199,49 @@ public sealed class LayananBackupTests : IDisposable
         var pathArsip = Path.Combine(_folderBackup, "arsip-audit", $"arsip-audit-{waktuRestore:yyyyMMdd-HHmmss}.db");
         Assert.True(File.Exists(pathArsip));
 
-        SqliteConnection.ClearAllPools();
-        using var arsip = new SqliteConnection($"Data Source={pathArsip};Mode=ReadOnly");
-        arsip.Open();
-        using var command = arsip.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'restore_backup';";
-        Assert.Equal(1, Convert.ToInt32(command.ExecuteScalar()));
+        var entry = Assert.Single(LayananArsipAudit.ReadProtected(pathArsip, () => new byte[32])!);
+        Assert.Equal("restore_backup", entry.Aksi);
+        Assert.Throws<InvalidOperationException>(() => LayananArsipAudit.ReadProtected(pathArsip, () => Enumerable.Repeat((byte)1, 32).ToArray()));
     }
 
     // PRD §24.3: pemeriksaan peran di lapisan layanan, bukan
     // hanya menyembunyikan tombol Pulihkan di UI.
+    [Fact]
+    public void TerapkanRestore_BackupRusak_MeninggalkanDatabaseAktif()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+        var damaged = "SQLite format 3\0"u8.ToArray();
+        Assert.Throws<InvalidOperationException>(() => LayananBackup.TerapkanRestore(damaged, database.Connection));
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT username FROM akun WHERE id = 1;";
+        Assert.NotNull(command.ExecuteScalar());
+    }
+
+    [Fact]
+    public void TerapkanRestore_TujuanHanyaBaca_MeninggalkanDatabaseAktif()
+    {
+        using var source = new MigratedDatabase();
+        source.SeedBaselineReferenceRows();
+        using var target = new MigratedDatabase();
+        target.SeedMasterDataUntukUji();
+        using var readOnly = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = target.Connection.DataSource, Mode = SqliteOpenMode.ReadOnly, Pooling = false
+        }.ToString());
+        readOnly.Open();
+        using var copy = new MigratedDatabase();
+        source.Connection.BackupDatabase(copy.Connection);
+        var copyPath = copy.Connection.DataSource;
+        copy.Connection.Close();
+        SqliteConnection.ClearAllPools();
+        var bytes = File.ReadAllBytes(copyPath);
+        Assert.Throws<InvalidOperationException>(() => LayananBackup.TerapkanRestore(bytes, readOnly));
+        using var command = target.Connection.CreateCommand();
+        command.CommandText = "SELECT username FROM akun WHERE id = 1;";
+        Assert.NotNull(command.ExecuteScalar());
+    }
+
     [Fact]
     public async Task SiapkanRestore_WaliKelas_Ditolak()
     {
