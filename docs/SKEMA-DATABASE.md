@@ -23,10 +23,10 @@ Lima keputusan PRD yang membentuk struktur di bawah:
 | Kelompok | Tabel |
 |---|---|
 | Sistem | `skema_versi`, `pengaturan`, `sekolah` |
-| Waktu | `tahun_ajaran`, `jadwal_hari`, `kalender`, `kunci_bulan` |
-| Orang | `guru`, `siswa`, `kelas`, `siswa_kelas` |
+| Waktu | `tahun_ajaran`, `jadwal_hari`, `schedule_change`, `kalender`, `kunci_bulan` |
+| Orang | `guru`, `siswa`, `kelas`, `siswa_kelas`, `homeroom_assignment` |
 | Kartu | `kartu`, `tap_log` |
-| Kehadiran | `absensi_siswa`, `absensi_guru` |
+| Kehadiran | `absensi_siswa`, `absensi_guru`, `opened_school_day` |
 | Telegram | `pairing`, `outbox` |
 | Keamanan | `akun`, `audit` |
 
@@ -418,6 +418,23 @@ Delapan aturan PRD yang dijamin oleh struktur di atas, sehingga tidak bisa dilan
 
 **Migrasi** memakai tabel `skema_versi`: setiap perubahan struktur diberi nomor urut, dan aplikasi menjalankan migrasi yang nomornya lebih besar dari versi tersimpan.
 
+
+**Finalisasi hari terlewat (T3, keputusan pemilik 12 November 2026):** pembukaan hari lebih dulu memberi aturan akhir hari (masuk tanpa pulang → `bolos` untuk siswa kecuali `sumber = 'koreksi'`, `masuk` → `tidak_lengkap` untuk guru) pada setiap tanggal lampau di `opened_school_day` yang `closed_at`-nya masih kosong, kecuali bulan terkunci dan tanggal yang kemudian menjadi libur. Tanpa notifikasi dan tanpa menutup hari.
+
+---
+
+## 12. Migrasi 006–009 (November 2026)
+
+Ditambahkan setelah PRD versi online; nama baru berbahasa Inggris (PRD §24.2).
+
+| Migrasi | Perubahan | Acuan |
+|---|---|---|
+| 006 | Tabel `homeroom_assignment` (riwayat wali kelas: `class_id`, `teacher_id`, `started_at`, `ended_at`; satu baris aktif per kelas) dan `opened_school_day` (`date`, `academic_period_id`, `closed_at`) sebagai bukti hari sudah dibuka/ditutup untuk kunci bulan | P-17, P-11 |
+| 007 | `siswa.notification_channel` dan `outbox.channel` (`telegram`/`whatsapp`, bawaan `telegram`) | P-19, P-20 |
+| 008 | Tabel `schedule_change` (`academic_period_id`, `effective_from`, `day`, `school_day`, lima kolom jam; unik per periode+tanggal+hari). Jadwal pada suatu tanggal = versi terakhir dengan `effective_from` ≤ tanggal itu, kalau tidak ada memakai `jadwal_hari` | P-15 |
+| 009 | `siswa_kelas.start_date` dan `siswa_kelas.end_date` (NULL = mengikuti kalender periode). `start_date` diisi otomatis bila siswa ditambahkan ke kelas setelah periode berjalan; `end_date` diisi saat mutasi (hari mutasi bila sempat tap masuk, kalau tidak sehari sebelumnya). Laporan tidak menghitung hari di luar rentang ini | P-18 |
+
+**Backup lokal:** berkas `backup/*.db` ditulis terenkripsi (AES-GCM, kunci diturunkan dari kunci lisensi) dengan penanda `ABSENSI-BACKUP-1` di awal berkas bila lisensi aktif; backup lama berupa SQLite polos tetap bisa dipulihkan. Arsip audit pra-restore (`backup/arsip-audit/`) belum dienkripsi.
 ---
 
 *Dokumen ini belum final dan mengikuti perubahan pada PRD.*

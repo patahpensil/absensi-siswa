@@ -131,7 +131,7 @@ Siswa yang keluar atau pindah **tidak dihapus**, cukup ditandai **tidak aktif** 
 
 **Keputusan P-18 — disetujui pemilik, 4 November 2026:** absensi mengikuti kalender akademik. Siswa yang bersekolah sejak awal periode mengikuti hari efektif kalender tanpa kewajiban mengisi tanggal khusus untuk setiap siswa. Untuk siswa pindah masuk atau keluar di tengah periode, catat tanggal mulai bersekolah atau hari terakhir bersekolah yang relevan. Sebelum tanggal mulai dan setelah hari terakhir tersebut, hari tidak dihitung Alpa atau masuk perhitungan kehadiran siswa. Riwayat periode sebelumnya tetap tersimpan.
 
-Contoh: siswa mulai tanggal 10, sehingga tanggal 1–9 dikecualikan; hari terakhir bersekolah tanggal 20, sehingga mulai tanggal 21 dikecualikan. Selama siswa tetap mengikuti periode, batas akhirnya mengikuti kalender; tidak perlu tanggal keluar khusus. Pencatatan/perubahan tanggal khusus harus sesuai kewenangan dan diaudit, dengan kunci bulan tetap berlaku.
+Contoh: siswa mulai tanggal 10, sehingga tanggal 1–9 dikecualikan; hari terakhir bersekolah tanggal 20, sehingga mulai tanggal 21 dikecualikan. Selama siswa tetap mengikuti periode, batas akhirnya mengikuti kalender; tidak perlu tanggal keluar khusus. Pencatatan/perubahan tanggal khusus harus sesuai kewenangan dan diaudit, dengan kunci bulan tetap berlaku. **Cara pengisian (disetujui pemilik, 12 November 2026):** otomatis dari data — tanggal mulai diisi saat siswa ditambahkan ke kelas setelah periode berjalan; hari terakhir diisi saat mutasi (hari mutasi bila siswa sempat tap masuk, kalau tidak sehari sebelumnya). Pengubahan manual oleh admin belum tersedia.
 
 ### 5.4 Impor Siswa dari Excel
 
@@ -1749,6 +1749,13 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **Keputusan P-19, 12 November 2026 — disetujui pemilik:** kanal notifikasi mendukung dua alat, Telegram dan WhatsApp. §1, §9, §20, §21.6 dan D-03 diselaraskan. Rincian penyedia/API WhatsApp, penautan dan pilihan kanal penerima, isi pesan, biaya serta aliran data pihak ketiga tetap terbuka pada D-03; P-16 tetap ditangguhkan. Tidak ada implementasi atau deploy WhatsApp.
 
 **Keputusan P-20, 12 November 2026 — disetujui pemilik:** notifikasi orang tua memakai satu kanal per siswa pilihan orang tua (Telegram atau WhatsApp); WhatsApp langsung memakai nomor HP orang tua pada data siswa tanpa konfirmasi; web uji hanya simulasi tanpa pengiriman. §9 dan D-03 diselaraskan. Penyedia WhatsApp, kanal wali kelas/guru, isi pesan, biaya dan aliran data pihak ketiga tetap terbuka. Tidak ada pengiriman WhatsApp sungguhan.
+
+**Keputusan 12 November 2026 — disetujui pemilik:**
+- Versi online (backend, PostgreSQL, isolasi sekolah, MFA, antrean offline P-08…P-12, pengirim WhatsApp, VALIDASI-01) **ditangguhkan**. Simulasi kanal Telegram/WhatsApp di web uji dikerjakan bersama versi online.
+- **T3:** saat aplikasi dibuka, hari sekolah lampau yang belum difinalisasi (PC mati) diberi aturan akhir hari (Bolos siswa, Tidak lengkap guru) tanpa notifikasi; hari tidak otomatis ditutup.
+- **P-18:** tanggal mulai/hari terakhir diisi otomatis dari data (lihat §5.3).
+- **Backup lokal** dienkripsi dengan kunci lisensi (pola §18.2). Kunci lisensi tersimpan di PC yang sama, sehingga perlindungan ini terutama untuk salinan yang dibawa keluar PC.
+- **Web uji:** wizard instalasi dapat dipilih dari Pengaturan → Mulai ulang pengujian; PDF di browser dibuat lewat Cetak → Simpan sebagai PDF karena pustaka PDF tidak mendukung WebAssembly.
 
 ### 25.6 Referensi primer
 
