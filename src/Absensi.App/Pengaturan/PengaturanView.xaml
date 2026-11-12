@@ -28,19 +28,11 @@
                         <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
                             <StackPanel>
                                 <TextBlock Text="Jadwal Harian" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah. Perubahan berlaku mulai tanggal yang dipilih (paling cepat besok); hasil tap tanggal sebelumnya tetap memakai jadwal lama."
+                                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah."
                                            Style="{StaticResource TeksUtamaStyle}"
                                            Foreground="{StaticResource AbuTulisBrush}"
                                            TextWrapping="Wrap"
                                            Margin="0,0,0,16" />
-
-                                <!-- PRD §7 P-15: perubahan jadwal berlaku mulai tanggal yang dipilih;
-                                     tanggal sebelumnya tetap memakai jadwal lama. -->
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                    <TextBlock Text="Berlaku mulai" Style="{StaticResource TeksUtamaStyle}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                                    <DatePicker SelectedDate="{Binding TanggalBerlaku}" Height="{StaticResource TinggiKontrol}" Width="160"
-                                                AutomationProperties.Name="Jadwal berlaku mulai" />
-                                </StackPanel>
 
                                 <!-- UAT 2026-09-23: TabelStyle menetapkan IsReadOnly=True di tingkat
                                      grid — nilai itu MENGALAHKAN IsReadOnly per-kolom, jadi grid ini
@@ -70,11 +62,20 @@
                                            Visibility="{Binding PesanStatus, Converter={StaticResource NullKeVisibilitas}}"
                                            Margin="0,8,0,0" />
 
-                                <Button Content="Simpan Jadwal Harian"
-                                        Style="{StaticResource TombolUtamaStyle}"
-                                        Command="{Binding SimpanJadwalCommand}"
-                                        HorizontalAlignment="Right"
-                                        Margin="0,16,0,0" />
+                                <!-- PRD §7 P-15: perubahan berlaku mulai tanggal yang dipilih (paling
+                                     cepat besok); tanggal sebelumnya tetap memakai jadwal lama. Satu
+                                     baris dengan tombol Simpan supaya tinggi kartu tidak bertambah. -->
+                                <DockPanel Margin="0,16,0,0" LastChildFill="False">
+                                    <Button DockPanel.Dock="Right"
+                                            Content="Simpan Jadwal Harian"
+                                            Style="{StaticResource TombolUtamaStyle}"
+                                            Command="{Binding SimpanJadwalCommand}" />
+                                    <TextBlock DockPanel.Dock="Left" Text="Berlaku mulai" Style="{StaticResource TeksUtamaStyle}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                    <DatePicker DockPanel.Dock="Left" SelectedDate="{Binding TanggalBerlaku}" Height="{StaticResource TinggiKontrol}" Width="160"
+                                                VerticalAlignment="Center"
+                                                AutomationProperties.Name="Jadwal berlaku mulai"
+                                                ToolTip="Perubahan berlaku mulai tanggal ini (paling cepat besok). Hasil tap tanggal sebelumnya tetap memakai jadwal lama." />
+                                </DockPanel>
                             </StackPanel>
                         </Border>
                     </StackPanel>
