@@ -144,9 +144,14 @@ public sealed partial class StatusAplikasi
         new MigrationRunner().Run(Koneksi);
     }
 
+    // Dipanggil setelah identitas sekolah diubah di Pengaturan supaya judul
+    // aplikasi dan kepala laporan memakai nama yang tersimpan.
+    public void RefreshSchoolName() =>
+        NamaSekolah = new RepositoriSekolah().CariSatuSatunya(Koneksi!)?.Nama ?? "";
+
     private void MuatIdentitas()
     {
-        NamaSekolah = new RepositoriSekolah().CariSatuSatunya(Koneksi!)?.Nama ?? "";
+        RefreshSchoolName();
         var repoTahun = new RepositoriTahunAjaran();
         TahunAjaranId = repoTahun.CariIdAktif(Koneksi!);
         TahunAjaran = repoTahun.CariNamaAktif(Koneksi!) ?? "";

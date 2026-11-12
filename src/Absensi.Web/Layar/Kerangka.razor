@@ -46,7 +46,7 @@
             case "Audit": <SchoolAudit /> break;
             case "Laporan": <LaporanWeb /> break;
             case "Layar gerbang": break;
-            case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" /> break;
+            case "Pengaturan": <PengaturanWeb OnReset="Logout" OnClockChanged="StateHasChanged" OnIdentityChanged="StateHasChanged" /> break;
             default: <BelumDibangun Nama="@activePage" /> break;
         }
         <GateHost PageActive='@(activePage == "Layar gerbang")' OnTapRecorded="RefreshAttendance" />
