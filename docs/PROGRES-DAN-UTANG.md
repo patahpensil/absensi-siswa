@@ -385,3 +385,17 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - **Tes disiapkan:** App `SimpanJadwalCommand_JadwalSudahAda_BerlakuMulaiBesokTanpaMenimpaJadwalLama`, `SimpanJadwalCommand_TanggalBerlakuHariIni_DitolakTanpaPerubahan`; Data `NewAcademicPeriod_CopiesScheduleInForceAtItsStart`, `TetapkanStatus_KeteranganKosong_DitolakTanpaPerubahan`, `TetapkanStatus_DiMuka_AuditMemuatTanggalDanKeterangan`, `Verifikasi_HashRusak_MengembalikanFalseTanpaException`; tes audit koreksi diperbarui ke format baru.
 
 **Belum terbukti:** tampilan DatePicker "Berlaku mulai" di WPF belum dilihat di Windows (hanya build dan tes App di CI).
+
+**Bukti P0, 12 November 2026, commit `3af77e2`:** [CI Windows](https://github.com/patahpensil/absensi-smp1/actions/runs/43144316837) lulus (build dan seluruh tes Domain/Data/Telegram/Laporan/App). Percobaan pertama (`e05c663`) gagal di `PengaturanScrollTests` karena baris "Berlaku mulai" menambah tinggi kartu Jadwal Harian sehingga celah antar kartu keluar dari tampilan; DatePicker dipindah sebaris dengan tombol Simpan (`3af77e2`).
+
+**P1 yang dikerjakan (commit `…2bf5829`):**
+- **Audit:** saringan per akun (`#audit-account`). Saringan tanggal dan 90 hari bawaan ternyata sudah ada sejak sebelumnya (catatan daftar sisa pekerjaan sebelumnya keliru menyebutnya belum ada).
+- **Logo sekolah:** `SchoolIdentityService.SetLogo` (nama berkas dibatasi `*.png` tanpa folder, Kepala Sekolah/Admin, audit `ubah_logo_sekolah`); unggah di Pengaturan → Identitas sekolah, dikecilkan seperti foto, tampil di judul aplikasi, layar masuk, dan kepala laporan.
+- **Layar masuk:** status lisensi dengan teks yang sama seperti desktop (`RepositoriLisensi.BacaStatus`).
+- **Bukti:** [CI](https://github.com/patahpensil/absensi-smp1/actions/runs/43144888493) lulus; [deploy Cloudflare](https://github.com/patahpensil/absensi-smp1/actions/runs/43144888533) lulus 40 langkah sebelum dan 40 sesudah deploy, versi `https://4f44741d.absensi-uji.pages.dev`.
+
+**P1 yang belum dikerjakan:**
+- **PDF di browser:** dugaan kuat pustaka QuestPDF memerlukan pustaka native yang tidak tersedia untuk WebAssembly; belum diselidiki tuntas. Jalur yang berfungsi: Cetak → Simpan sebagai PDF, dan Excel.
+- **Penautan Telegram dan status bot (simulasi):** layanan asli `PemrosesPembaruanPairing` hanya berjalan bila token bot tersimpan. Simulasi di web uji membutuhkan token/username bot palsu atau jalur khusus; cara simulasinya perlu disetujui pemilik.
+- **Wizard instalasi** di web uji belum dibuat.
+- **Kolom kanal pada impor Excel** dipindah ke P2: format kolom impor (PRD §5.4) belum memuat kanal dan termasuk rincian D-03.
