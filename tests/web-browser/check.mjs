@@ -967,7 +967,7 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang, akun dinonakt
   tegas(await page.locator('#account-role option').count() === 2, 'kepala sekolah tidak bisa memilih peran Admin');
 });
 
-await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul dan tercatat di audit', async () => {
+await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul aplikasi', async () => {
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#school-identity');
   await page.fill('#school-name', 'SMP Uji Ubah (contoh)');
@@ -980,9 +980,6 @@ await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul 
   await page.click('#school-identity-save');
   await page.waitForSelector('#school-identity-message.positive');
   tegas((await page.textContent('#judul-sekolah')).trim() === 'SMP Uji Ubah (contoh)', 'judul aplikasi tidak memakai nama baru');
-  await page.click('#menu-audit');
-  await page.fill('#audit-search', 'ubah_identitas_sekolah');
-  tegas((await page.textContent('#audit-table')).includes('SMP Uji Ubah'), 'perubahan identitas tidak tercatat di audit');
 });
 
 await langkah('Jadwal berlaku mulai besok (P-15): hari ini tetap jadwal lama, tap besok memakai jadwal baru', async () => {
@@ -1000,10 +997,6 @@ await langkah('Jadwal berlaku mulai besok (P-15): hari ini tetap jadwal lama, ta
   tegas((await page.textContent('#schedule-versions')).includes('05/01/2027'), 'versi jadwal tidak tercantum');
   await page.fill('#schedule-view-date', '2027-01-04');
   await page.waitForFunction(() => document.querySelector('#schedule-view-table tr[data-day="2"]')?.textContent?.includes('07:30'));
-
-  await page.click('#menu-audit');
-  await page.fill('#audit-search', 'jadwal_berlaku_mulai');
-  tegas((await page.textContent('#audit-table')).includes('berlaku_mulai'), 'perubahan jadwal tidak tercatat di audit');
 
   await setClock('2027-01-05T07:15:00');
   await tapCard('0000999201');
@@ -1026,9 +1019,6 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
   await page.waitForSelector('#teacher-status-message.positive');
   const stored = await row.textContent();
   tegas(stored.includes('Dinas luar') && stored.includes('Surat tugas 12'), `status guru tidak tersimpan: ${stored}`);
-  await page.click('#menu-audit');
-  await page.fill('#audit-search', 'tetapkan_status_guru');
-  tegas((await page.textContent('#audit-table')).includes('dinas_luar'), 'penetapan status guru tidak tercatat di audit');
 
   await page.click('#tombol-keluar');
   await masuk('admin', 'contoh123');
@@ -1038,6 +1028,14 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
   const adminRow = page.locator('#teacher-attendance-table tbody tr').filter({ hasText: 'Ibu Lina (contoh)' });
   await page.waitForFunction(() => document.querySelector('#teacher-attendance-table')?.textContent?.includes('Dinas luar'));
   tegas(await adminRow.locator('[id^=teacher-status-]').count() === 0, 'admin masih bisa menetapkan status guru');
+});
+
+await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, dan status guru', async () => {
+  await page.click('#menu-audit');
+  for (const [action, expected] of [['ubah_identitas_sekolah', 'SMP Uji Ubah'], ['jadwal_berlaku_mulai', 'berlaku_mulai=2027-01-05'], ['tetapkan_status_guru', 'dinas_luar']]) {
+    await page.fill('#audit-search', action);
+    await page.waitForFunction(([a, e]) => { const t = document.querySelector('#audit-table')?.textContent ?? ''; return t.includes(a) && t.includes(e); }, [action, expected]);
+  }
 });
 
 await browser.close();
