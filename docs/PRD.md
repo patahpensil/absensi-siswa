@@ -1761,11 +1761,10 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **Keputusan 12 November 2026 (sore) — arsip audit pra-restore, disetujui pemilik:** DPAPI Windows **tidak dipakai**. Kunci DPAPI terikat pada instalasi Windows, sehingga arsip tidak terbaca lagi setelah PC diganti atau Windows dipasang ulang. Hilangnya berkas kunci juga memblokir pemulihan. Arsip riwayat audit yang dibuat saat restore mengikuti pola backup lokal (§18.2): dienkripsi dengan kunci lisensi sekolah bila lisensi aktif, dan disimpan polos bila lisensi belum aktif. Pilihan pola kunci lisensi adalah rekomendasi agen; pemilik memutuskan "jangan pakai DPAPI". Arsip yang terlanjur dibuat dengan DPAPI ditampilkan di layar Audit sebagai arsip yang tidak bisa dibaca.
 
-**Keputusan 12 November 2026 (sore) — disetujui pemilik:** mode reader USB serial/COM menjadi mode opsional (§4). Warna tombol Bahaya resmi `#9B2C2C` (PANDUAN-UI-UX §3.1).
+**Keputusan 12 November 2026 (sore) — disetujui pemilik:** mode reader USB serial/COM menjadi mode opsional (§4). Warna tombol Bahaya resmi `#9B2C2C` (PANDUAN-UI-UX §3.1). Versi runtime proyek **.NET 10** (LTS) disetujui sesuai §21.11.
 
 **Menunggu keputusan pemilik (dicatat 12 November 2026):** perubahan berikut ditambahkan agen lain tanpa pembaruan PRD dan belum disetujui.
-- **.NET 10** sebagai versi runtime. Ini sesuai aturan §21.11 (versi yang masih didukung dipilih saat implementasi), tetapi belum dicatat sebagai pilihan versi proyek.
-- **Ukuran nama panjang di TV gerbang** diperkecil sampai 36 px, sedangkan PANDUAN-UI-UX §8.1 menetapkan 64 px.
+- **Ukuran nama panjang di TV gerbang.** PANDUAN-UI-UX §8.1 menetapkan 64 px. Web mengecilkan nama 29–52 huruf ke 48 px dan nama lebih panjang ke 36 px. Desktop sejak September 2026 mengecilkan sampai 34 px. Pemilik memilih 64 px, tetapi pengukuran di Chrome 1920×1080 dengan empat kartu menunjukkan nama 37 huruf menjadi 5 baris dan status/jam terdorong keluar layar. Menunggu konfirmasi pemilik.
 
 ### 25.6 Referensi primer
 

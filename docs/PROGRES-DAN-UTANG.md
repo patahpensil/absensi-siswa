@@ -470,3 +470,5 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 **Yang harus diputuskan atau dilakukan pemilik:** reader serial (masuk §4 atau dihapus), .NET 10, ukuran nama 36 px di TV, warna tombol Bahaya (§25 di atas). Tutup sendiri PR Dependabot lama #10, #21, #23, #28, #32 (sudah tidak relevan setelah .NET 10). Temuan 3 (cara kerja) tidak bisa diperbaiki mundur tanpa menulis ulang riwayat master; dicatat saja.
 
 **Keputusan pemilik (12 November 2026, ±17.00 WITA):** reader serial/COM menjadi mode opsional (PRD §4); warna tombol Bahaya `#9B2C2C` (PANDUAN-UI-UX §3.1), desktop diubah dari `#B3261E` agar sama dengan web; register A-16 selesai. .NET 10 dan ukuran nama 36 px masih menunggu.
+
+**Keputusan pemilik (12 November 2026, ±17.20 WITA):** .NET 10 disetujui (PRD §25.5). Nama di TV 64 px dipilih, tetapi belum diterapkan: pengukuran di Chrome (1920×1080, empat kartu) menunjukkan nama 37 huruf menjadi 5 baris, nama 82 huruf 9 baris, dan status/jam keluar layar. Tangkapan layar dikirim ke pemilik untuk dikonfirmasi.
