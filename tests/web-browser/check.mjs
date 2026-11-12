@@ -1033,6 +1033,8 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
   tegas(stored.includes('Dinas luar') && stored.includes('Surat tugas 12'), `status guru tidak tersimpan: ${stored}`);
 
   await page.click('#tombol-keluar');
+  await page.waitForSelector('#login-logo');
+  tegas((await page.textContent('#status-lisensi')).trim() === 'Lisensi: Aktif', 'status lisensi tidak tampil di layar masuk');
   await masuk('admin', 'contoh123');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-guru');
