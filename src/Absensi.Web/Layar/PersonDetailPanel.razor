@@ -116,7 +116,7 @@
                 @if (WorkspaceView.CanManage(Status))
                 {
                     <button type="button" id="person-report-excel" disabled="@exporting" @onclick="() => ExportReport(true)">Laporan Excel</button>
-                    <button type="button" id="person-report-pdf" disabled="@exporting" @onclick="() => ExportReport(false)">Laporan PDF</button>
+
                 }
             </div>
             @if (reportMessage is not null) { <p id="person-report-message" class="message @(reportOk ? "positive" : "danger")" role="status">@reportMessage</p> }

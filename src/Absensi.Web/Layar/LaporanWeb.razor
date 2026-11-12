@@ -5,7 +5,7 @@
 @inject StatusAplikasi Status
 @inject IJSRuntime JS
 
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / LAPORAN</p><h1>Laporan</h1><p>Pilih jenis laporan, tampilkan pratinjau, lalu unduh Excel atau PDF.</p></div><span class="badge info">Excel · PDF</span></div>
+<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / LAPORAN</p><h1>Laporan</h1><p>Pilih jenis laporan, tampilkan pratinjau, lalu unduh Excel atau cetak (pilih Simpan sebagai PDF untuk berkas PDF).</p></div><span class="badge info">Excel · Cetak/PDF</span></div>
 @if (!WorkspaceView.CanManage(Status))
 {
     <p id="report-not-allowed" class="notice">Laporan tersedia untuk kepala sekolah dan admin (PRD §3). Riwayat siswa kelas Anda dapat dilihat dari menu Siswa atau Absensi.</p>
@@ -39,8 +39,8 @@ else
         <div class="report-actions">
             <button id="report-show" class="primary" @onclick="Show">Tampilkan</button>
             <button id="report-excel" disabled="@(busy || !shown)" @onclick="() => Export(true)">Unduh Excel</button>
-            <button id="report-pdf" disabled="@(busy || !shown)" @onclick="() => Export(false)">Unduh PDF</button>
-            <button id="report-print" disabled="@(!shown)" @onclick="Print">Cetak</button>
+            @* QuestPDF tidak mendukung WebAssembly sejak 2024.3; di browser PDF dibuat lewat dialog cetak. *@
+            <button id="report-print" disabled="@(!shown)" @onclick="Print" title="Pilih printer, atau Simpan sebagai PDF">Cetak / Simpan PDF</button>
             <span class="muted">@ReportView.RangeText(Status, Request)</span>
         </div>
         @if (message is not null) { <p id="report-message" class="message @(messageOk ? "positive" : "danger")" role="@(messageOk ? "status" : "alert")">@message</p> }

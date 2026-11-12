@@ -340,23 +340,13 @@ await langkah('Laporan: pratinjau harian/bulanan/semester dan unduh Excel memaka
   await page.waitForSelector('#report-card');
 });
 
-await langkah('Laporan PDF: hasil di browser dicatat apa adanya', async () => {
+await langkah('Laporan: PDF di browser lewat Cetak / Simpan PDF, Excel per siswa dari panel', async () => {
   await page.selectOption('#report-kind', 'Daily');
   await page.fill('#report-date', '2026-11-04');
   await page.click('#report-show');
   await page.waitForSelector('#report-table');
-  const pending = page.waitForEvent('download', { timeout: 60_000 }).catch(() => null);
-  await page.click('#report-pdf');
-  await page.waitForSelector('#report-message', { timeout: 60_000 });
-  let result = `ditolak: ${await page.textContent('#report-message')}`;
-  if (await page.locator('#report-message.positive').count() === 1) {
-    const download = await pending;
-    const chunks = [];
-    for await (const chunk of await download.createReadStream()) chunks.push(chunk);
-    const bytes = Buffer.concat(chunks);
-    result = `unduhan ${download.suggestedFilename()} ${bytes.length} B, header ${bytes.subarray(0, 4).toString()}`;
-  }
-  console.log(`::notice::PDF laporan — ${result}`);
+  tegas(await page.locator('#report-pdf, #person-report-pdf').count() === 0, 'tombol PDF yang tidak berfungsi di browser masih tampil');
+  tegas((await page.textContent('#report-print')).includes('Simpan PDF'), 'jalur Cetak / Simpan PDF tidak tersedia');
   await page.click('#menu-siswa');
   await page.click('#student-detail-1');
   await page.waitForSelector('#person-detail');
