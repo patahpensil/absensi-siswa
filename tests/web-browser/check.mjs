@@ -359,6 +359,14 @@ await langkah('Laporan: PDF di browser lewat Cetak / Simpan PDF, Excel per siswa
 });
 
 await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reader bersama', async () => {
+  const longName = 'Siswa Contoh dengan Nama Panjang untuk Memeriksa Keterbacaan Layar Gerbang Sekolah';
+  await page.click('#menu-siswa');
+  await page.click('#edit-student-2');
+  const originalName = await page.inputValue('#master-edit-name');
+  await page.fill('#master-edit-name', longName);
+  await page.click('#master-edit-save');
+  await page.waitForSelector('#master-edit-success');
+  await page.getByRole('button', { name: 'Tutup ubah data' }).click();
   await setClock('2026-11-05T07:29:00');
   await page.click('#menu-layar-gerbang');
   await page.waitForSelector('#gate-controls');
@@ -380,6 +388,21 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   tegas((await tv.textContent('#gate-cards')).includes('Guru'), 'label guru hilang');
   tegas(await tv.locator('#gate-cards .card').count() >= 2, 'tap siswa dan guru tidak tampil bersamaan');
   tegas(await tv.locator('#gate-cards img.photo').count() >= 1, 'foto guru yang sudah diunggah tidak tampil');
+
+  await tv.setViewportSize({ width: 1920, height: 1080 });
+  for (const uid of ['0000111102', '0000999999']) {
+    await tv.fill('#gate-reader', uid, { force: true });
+    await tv.press('#gate-reader', 'Enter');
+  }
+  await tv.waitForFunction(() => document.querySelectorAll('#gate-cards .card').length === 4);
+  tegas((await tv.textContent('#gate-cards')).includes(longName), 'nama panjang terpotong pada TV');
+  const fits = await tv.locator('#gate-cards .card').evaluateAll(cards => cards.every(card => {
+    const name = card.querySelector('.name');
+    const box = card.getBoundingClientRect();
+    const text = name.getBoundingClientRect();
+    return box.left >= 0 && box.right <= innerWidth && box.bottom <= innerHeight && text.left >= box.left && text.right <= box.right;
+  }));
+  tegas(fits, 'empat kartu atau nama panjang meluap pada TV 1920 × 1080');
 
   await page.click('#menu-dashboard');
   tegas(await page.locator('#ringkasan').count() === 1 && !tv.isClosed(), 'dashboard dan layar TV tidak dapat dibuka terpisah');
@@ -412,6 +435,12 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   await page.fill('#gate-controller-uid', 'KARTU-TIDAK-TERDAFTAR');
   await page.press('#gate-controller-uid', 'Enter');
   await page.waitForFunction(() => document.querySelector('#gate-controller-uid')?.value === '');
+  await page.click('#menu-siswa');
+  await page.click('#edit-student-2');
+  await page.fill('#master-edit-name', originalName);
+  await page.click('#master-edit-save');
+  await page.waitForSelector('#master-edit-success');
+  await page.getByRole('button', { name: 'Tutup ubah data' }).click();
   await setClock('2026-11-04T13:10:00');
 });
 
@@ -427,7 +456,7 @@ await langkah('URL TV langsung tidak membuka sesi dan pesan palsu tidak memberi 
 });
 
 await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => {
-  for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+  for (const size of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 768 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
     for (const menu of ['dashboard', 'siswa', 'guru', 'absensi', 'layar-gerbang', 'pengaturan']) {
       await page.click(`#menu-${menu}`);
