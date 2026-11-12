@@ -20,7 +20,11 @@ const lapor = (lulus, teks) => {
   console.log(`${lulus ? '::notice::LULUS' : '::error::GAGAL'} — ${teks}`);
   if (!lulus) failed++;
 };
+// HANYA_MODE_NYATA=1: hanya langkah "Mode nyata" (dipakai repo Absensi-Uji-Real
+// untuk memeriksa hasil deploy yang memakai "Mode": "nyata").
+const onlyReal = process.env.HANYA_MODE_NYATA === '1';
 const langkah = async (nama, fn) => {
+  if (onlyReal && !nama.startsWith('Mode nyata')) return;
   try { await fn(); lapor(true, nama); }
   catch (e) {
     lapor(false, `${nama}: ${String(e.message).split('\n')[0]}`);
