@@ -70,7 +70,7 @@
         if (Status.TahunAjaranId is not { } period || new RepositoriTahunAjaran().FindForDate(connection, today) != period ||
             new RepositoriKalender().TentukanJenisHari(connection, today, period) == JenisHariKalender.Libur) return;
 
-        schedule = new RepositoriJadwalHari().CariUntukHari(connection, period, HariKalender.DariTanggal(today));
+        schedule = new RepositoriJadwalHari().CariUntukHari(connection, period, HariKalender.DariTanggal(today), tanggal: today);
         if (schedule is null) return;
         var rows = WorkspaceView.Attendance(Status);
         notTappedClasses = rows.Where(row => row.Status == StatusAbsensiSiswa.Alpa ||

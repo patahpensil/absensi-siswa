@@ -159,7 +159,7 @@ public sealed class Penjadwal
             return;
         }
 
-        var jadwal = _repositoriJadwalHari.CariUntukHari(_connection, tahunAjaranId, HariKalender.DariTanggal(tanggal));
+        var jadwal = _repositoriJadwalHari.CariUntukHari(_connection, tahunAjaranId, HariKalender.DariTanggal(tanggal), tanggal: tanggal);
         if (jadwal is not { HariSekolah: true })
         {
             return;

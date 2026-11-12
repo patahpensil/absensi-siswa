@@ -26,7 +26,7 @@ public sealed class RepositoriKalender
         }
 
         var hari = HariKalender.DariTanggal(tanggal);
-        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, hari, transaction);
+        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, hari, transaction, tanggal);
 
         return jadwal is { HariSekolah: true } ? JenisHariKalender.Sekolah : JenisHariKalender.Libur;
     }
@@ -146,8 +146,8 @@ public sealed class RepositoriKalender
             }
         }
 
-        var jadwalPerHari = _repositoriJadwalHari.DaftarUntukTahunAjaran(connection, tahunAjaranId)
-            .ToDictionary(j => j.Hari);
+        // PRD §7 P-15: each date uses the schedule version in force on that date.
+        var jadwal = _repositoriJadwalHari.LoadTimeline(connection, tahunAjaranId);
 
         var hasil = new Dictionary<DateOnly, JenisHariInfo>();
         for (var tanggal = tanggalAwal; tanggal <= tanggalAkhir; tanggal = tanggal.AddDays(1))
@@ -160,8 +160,7 @@ public sealed class RepositoriKalender
                 continue;
             }
 
-            var hariSekolah = jadwalPerHari.TryGetValue(HariKalender.DariTanggal(tanggal), out var jadwal)
-                && jadwal.HariSekolah;
+            var hariSekolah = jadwal.For(tanggal, HariKalender.DariTanggal(tanggal))?.HariSekolah == true;
             hasil[tanggal] = new JenisHariInfo(hariSekolah ? JenisHariKalender.Sekolah : JenisHariKalender.Libur, null);
         }
 

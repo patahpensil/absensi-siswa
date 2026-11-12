@@ -43,7 +43,7 @@ public sealed class PemrosesTap
         var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid, transaction);
         var tapTerakhir = _repositoriTapLog.CariWaktuTapTerakhir(connection, uid);
         var jedaTapMinimal = TimeSpan.FromSeconds(_repositoriPengaturan.BacaInt(connection, "jeda_tap_detik", 15));
-        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal), transaction);
+        var jadwal = _repositoriJadwalHari.CariUntukHari(connection, tahunAjaranId, HariKalender.DariTanggal(tanggal), transaction, tanggal);
 
         // Bug jadwal kosong (docs/MASTER-BUG-UIUX-REGISTER.md, analisis
         // penolakan Gerbang): sebelumnya jam jadwal yang NULL diam-diam

@@ -19,6 +19,10 @@
 </section>
 @code {
     private JadwalHariKonfigurasi? schedule;
-    protected override void OnInitialized() => schedule = new RepositoriJadwalHari().CariUntukHari(Status.Koneksi!, Status.TahunAjaranId ?? 0, HariKalender.DariTanggal(DateOnly.FromDateTime(Status.Jam.Sekarang)));
+    protected override void OnInitialized()
+    {
+        var today = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        schedule = new RepositoriJadwalHari().CariUntukHari(Status.Koneksi!, Status.TahunAjaranId ?? 0, HariKalender.DariTanggal(today), tanggal: today);
+    }
     private static string Format(TimeOnly? time) => time?.ToString("HH:mm") ?? "—";
 }
