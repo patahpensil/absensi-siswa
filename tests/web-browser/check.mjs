@@ -1057,6 +1057,41 @@ await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, d
   await page.waitForFunction(() => (document.querySelector('#audit-table')?.textContent ?? '').includes('ubah_identitas_sekolah'));
 });
 
+await langkah('Wizard instalasi web: mulai kosong, isian salah ditolak, akun kepala sekolah baru bisa masuk dan data bertahan setelah muat ulang', async () => {
+  await page.click('#menu-pengaturan');
+  await page.click('#reset-data');
+  await page.click('#confirm-reset-wizard');
+  await page.waitForSelector('#install-wizard');
+  await page.click('#wizard-next');
+  await page.waitForSelector('#wizard-error');
+  await page.fill('#wizard-license', 'LISENSI-UJI (contoh)');
+  await page.click('#wizard-next');
+  await page.fill('#wizard-school', 'SMP Wizard (contoh)');
+  await page.click('#wizard-next');
+  await page.waitForSelector('#wizard-period-name');
+  await page.click('#wizard-next');
+  await page.waitForSelector('#wizard-schedule');
+  await page.click('#wizard-next');
+  await page.fill('#wizard-username', 'kepala.baru');
+  await page.fill('#wizard-password', 'pendek');
+  await page.fill('#wizard-password-confirm', 'pendek');
+  await page.click('#wizard-finish');
+  await page.waitForFunction(() => document.querySelector('#wizard-error')?.textContent?.includes('minimal 8'));
+  await page.fill('#wizard-password', 'sandibaru123');
+  await page.fill('#wizard-password-confirm', 'sandibaru123');
+  await page.click('#wizard-finish');
+  await page.waitForSelector('#wizard-done');
+  await page.click('#wizard-to-login');
+  await masuk('kepala.baru', 'sandibaru123');
+  await page.waitForSelector('#ringkasan');
+  tegas((await page.textContent('#judul-sekolah')).trim() === 'SMP Wizard (contoh)', 'nama sekolah dari wizard tidak dipakai');
+  await page.reload();
+  await page.waitForSelector('#tombol-masuk');
+  tegas((await page.textContent('#nama-sekolah')).trim() === 'SMP Wizard (contoh)', 'hasil wizard hilang setelah muat ulang');
+  await masuk('kepala.baru', 'sandibaru123');
+  await page.waitForSelector('#ringkasan');
+});
+
 await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);

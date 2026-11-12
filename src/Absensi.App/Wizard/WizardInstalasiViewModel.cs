@@ -310,9 +310,18 @@ public sealed class WizardInstalasiViewModel : ObservableObject
             SandiKepalaSekolah);
 
         PesanGalat = null;
-        AkunKepalaSekolahDibuat = _layananWizard.Selesaikan(_connection, _penyediaWaktu.Sekarang, data);
+        // Aturan isian juga diperiksa LayananWizard; penolakannya tampil
+        // sebagai pesan, bukan menutup aplikasi.
+        if (!PenangananGalat.Coba(
+                () => AkunKepalaSekolahDibuat = _layananWizard.Selesaikan(_connection, _penyediaWaktu.Sekarang, data),
+                pesan => PesanGalat = pesan,
+                "WizardInstalasiViewModel.Selesaikan"))
+        {
+            return;
+        }
+
         LangkahSaatIni = LangkahWizard.Selesai;
-        WizardSelesai?.Invoke(this, AkunKepalaSekolahDibuat);
+        WizardSelesai?.Invoke(this, AkunKepalaSekolahDibuat!);
     }
 
     private bool CobaUraikanJam(string namaHari, string namaKolom, string? teks, bool wajib, out TimeOnly? hasil)

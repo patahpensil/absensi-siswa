@@ -110,4 +110,28 @@ public sealed class LayananWizardTests
         Assert.Equal(akun.Id, reader.GetInt32(0));
         Assert.Equal("wizard_selesai", reader.GetString(1));
     }
+
+    // Aturan isian wizard diperiksa di layanan, sama untuk desktop dan web uji.
+    [Theory]
+    [InlineData("npsn")]
+    [InlineData("tanggal")]
+    [InlineData("jam")]
+    [InlineData("sandi")]
+    [InlineData("username")]
+    public void Selesaikan_IsianTidakSah_DitolakTanpaMenulisSekolah(string kasus)
+    {
+        using var database = new MigratedDatabase();
+        var data = BuatData();
+        data = kasus switch
+        {
+            "npsn" => data with { Npsn = "123" },
+            "tanggal" => data with { TglSelesaiTahunAjaran = data.TglMulaiTahunAjaran },
+            "jam" => data with { JadwalHarian = data.JadwalHarian.Select(h => h.Hari == 1 ? h with { JamRekap = new TimeOnly(7, 0) } : h).ToList() },
+            "sandi" => data with { SandiKepalaSekolah = "pendek" },
+            _ => data with { UsernameKepalaSekolah = "Kepala Sekolah" },
+        };
+
+        Assert.Throws<InvalidOperationException>(() => _layanan.Selesaikan(database.Connection, Waktu, data));
+        Assert.Null(new RepositoriSekolah().CariSatuSatunya(database.Connection));
+    }
 }

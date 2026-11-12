@@ -1,0 +1,176 @@
+@using System.Globalization
+@using Absensi.Data.Repositori
+@using Absensi.Data.Wizard
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PANDUAN-UI-UX §9 Wizard instalasi: enam langkah, satu layar per langkah,
+   kemajuan di atas (PRD §16.1). Semua isian ditulis sekaligus oleh
+   LayananWizard.Selesaikan, yang juga memeriksa aturannya. Pemulihan dari
+   backup (cabang desktop langkah 1) tidak tersedia di browser. *@
+<main class="wizard-layout">
+    <section class="panel wizard-card" id="install-wizard">
+        <header class="panel-header"><h2><UiIcon Name="school" /> Instalasi pertama</h2><span class="panel-code">LANGKAH @(step + 1) / 6</span></header>
+        <ol class="wizard-steps" aria-label="Kemajuan instalasi">
+            @for (var i = 0; i < Steps.Length; i++)
+            {
+                <li class="@(i == step ? "is-current" : i < step ? "is-done" : "")">@Steps[i]</li>
+            }
+        </ol>
+        <div class="settings-body">
+            @switch (step)
+            {
+                case 0:
+                    <p>Masukkan kunci lisensi sekolah. Di web uji gunakan kunci contoh.</p>
+                    <label for="wizard-license">Kunci lisensi</label>
+                    <input id="wizard-license" @bind="license" autocomplete="off" />
+                    break;
+                case 1:
+                    <label for="wizard-school">Nama sekolah</label>
+                    <input id="wizard-school" maxlength="120" @bind="school" />
+                    <label for="wizard-npsn">NPSN (8 angka, boleh kosong)</label>
+                    <input id="wizard-npsn" inputmode="numeric" maxlength="8" @bind="npsn" />
+                    <label for="wizard-address">Alamat</label>
+                    <input id="wizard-address" maxlength="250" @bind="address" />
+                    <p class="field-help">Logo dapat diunggah setelah instalasi di Pengaturan → Identitas sekolah.</p>
+                    break;
+                case 2:
+                    <label for="wizard-period-name">Nama tahun ajaran</label>
+                    <input id="wizard-period-name" @bind="periodName" />
+                    <label for="wizard-semester">Semester</label>
+                    <select id="wizard-semester" @bind="semester"><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select>
+                    <label for="wizard-start">Tanggal mulai</label>
+                    <input id="wizard-start" type="date" value="@start.ToString("yyyy-MM-dd")" @onchange="e => start = ParseDate(e, start)" />
+                    <label for="wizard-end">Tanggal selesai</label>
+                    <input id="wizard-end" type="date" value="@end.ToString("yyyy-MM-dd")" @onchange="e => end = ParseDate(e, end)" />
+                    break;
+                case 3:
+                    <p>Jadwal harian dapat diubah kemudian di Pengaturan (berlaku mulai tanggal tertentu).</p>
+                    <div class="table-wrap">
+                        <table id="wizard-schedule">
+                            <thead><tr><th>Hari</th><th>Sekolah</th><th>Batas hadir</th><th>Belum tap</th><th>Rekap orang tua</th><th>Batas tap masuk</th><th>Mulai pulang</th></tr></thead>
+                            <tbody>
+                                @foreach (var row in days)
+                                {
+                                    <tr>
+                                        <td>@DayNames[row.Day]</td>
+                                        <td><input type="checkbox" id="wizard-school-day-@row.Day" aria-label="@DayNames[row.Day] hari sekolah" @bind="row.School" /></td>
+                                        <td><input type="time" id="wizard-arrival-@row.Day" aria-label="@DayNames[row.Day] batas hadir" value="@row.Arrival" @onchange="e => row.Arrival = Text(e)" disabled="@(!row.School)" /></td>
+                                        <td><input type="time" id="wizard-nottapped-@row.Day" aria-label="@DayNames[row.Day] daftar belum tap" value="@row.NotTapped" @onchange="e => row.NotTapped = Text(e)" disabled="@(!row.School)" /></td>
+                                        <td><input type="time" id="wizard-recap-@row.Day" aria-label="@DayNames[row.Day] rekap orang tua" value="@row.Recap" @onchange="e => row.Recap = Text(e)" disabled="@(!row.School)" /></td>
+                                        <td><input type="time" id="wizard-deadline-@row.Day" aria-label="@DayNames[row.Day] batas tap masuk" value="@row.Deadline" @onchange="e => row.Deadline = Text(e)" disabled="@(!row.School)" /></td>
+                                        <td><input type="time" id="wizard-departure-@row.Day" aria-label="@DayNames[row.Day] mulai pulang" value="@row.Departure" @onchange="e => row.Departure = Text(e)" disabled="@(!row.School)" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    break;
+                case 4:
+                    <label for="wizard-username">Username kepala sekolah</label>
+                    <input id="wizard-username" autocomplete="off" maxlength="32" @bind="username" />
+                    <label for="wizard-password">Sandi</label>
+                    <input id="wizard-password" type="password" autocomplete="new-password" @bind="password" />
+                    <label for="wizard-password-confirm">Ulangi sandi</label>
+                    <input id="wizard-password-confirm" type="password" autocomplete="new-password" @bind="confirm" />
+                    break;
+                default:
+                    <div class="message positive" id="wizard-done" role="status">
+                        <p>Instalasi selesai. Masuk memakai akun <strong>@username</strong>.</p>
+                    </div>
+                    break;
+            }
+            @if (error is not null) { <p id="wizard-error" class="message danger" role="alert">@error</p> }
+            <div class="button-row wizard-actions">
+                @if (step is > 0 and < 5) { <button type="button" id="wizard-back" disabled="@busy" @onclick="() => { error = null; step--; }">Kembali</button> }
+                @if (step < 4) { <button type="button" id="wizard-next" class="primary" @onclick="Next">Lanjut</button> }
+                else if (step == 4) { <button type="button" id="wizard-finish" class="primary" disabled="@busy" @onclick="Finish">Selesaikan instalasi</button> }
+                else { <button type="button" id="wizard-to-login" class="primary" @onclick="() => OnSelesai.InvokeAsync()">Ke halaman masuk</button> }
+            </div>
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter] public EventCallback OnSelesai { get; set; }
+
+    private static readonly string[] Steps = { "Lisensi", "Identitas sekolah", "Tahun ajaran", "Jadwal harian", "Akun kepala sekolah", "Selesai" };
+    private static readonly string[] DayNames = { "", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu" };
+    private int step;
+    private string license = "", school = "", npsn = "", address = "", periodName = "", semester = "ganjil", username = "", password = "", confirm = "";
+    private DateOnly start, end;
+    private List<DayRow> days = new();
+    private bool busy;
+    private string? error;
+
+    protected override void OnInitialized()
+    {
+        var today = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        start = today;
+        end = today.AddMonths(5);
+        periodName = $"{today.Year}/{today.Year + 1}";
+        // Isian awal sama dengan sekolah rujukan PRD §7; semua dapat diubah.
+        days = Enumerable.Range(1, 7).Select(day => day == 7
+            ? new DayRow { Day = 7 }
+            : new DayRow { Day = day, School = true, Arrival = "07:30", NotTapped = "08:00", Recap = "08:10", Deadline = day == 5 ? "10:00" : "12:00", Departure = day == 5 ? "11:30" : "13:10" }).ToList();
+    }
+
+    // Hanya kelengkapan isian per langkah; aturan isi diperiksa layanan saat Selesaikan.
+    private void Next()
+    {
+        error = step switch
+        {
+            0 when string.IsNullOrWhiteSpace(license) => "Kunci lisensi wajib diisi.",
+            1 when string.IsNullOrWhiteSpace(school) => "Nama sekolah wajib diisi.",
+            2 when string.IsNullOrWhiteSpace(periodName) => "Nama tahun ajaran wajib diisi.",
+            _ => null,
+        };
+        if (error is null) step++;
+    }
+
+    private async Task Finish()
+    {
+        if (password != confirm)
+        {
+            error = "Ulangi sandi tidak sama.";
+            return;
+        }
+
+        busy = true;
+        error = null;
+        try
+        {
+            new LayananWizard().Selesaikan(Status.Koneksi!, Status.Jam.Sekarang, new DataWizardInstalasi(
+                license.Trim(), school.Trim(), string.IsNullOrWhiteSpace(npsn) ? null : npsn.Trim(), string.IsNullOrWhiteSpace(address) ? null : address.Trim(),
+                LogoPath: null, periodName.Trim(), semester, start, end, days.Select(d => d.ToRow()).ToList(), username.Trim(), password));
+            step = 5;
+            await Status.CompleteInstallationAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        finally { busy = false; }
+    }
+
+    private static DateOnly ParseDate(ChangeEventArgs e, DateOnly fallback) =>
+        DateOnly.TryParse(e.Value?.ToString(), CultureInfo.InvariantCulture, out var date) ? date : fallback;
+
+    private static string Text(ChangeEventArgs e) => e.Value?.ToString() ?? "";
+
+    private sealed class DayRow
+    {
+        private static readonly string[] Formats = { "HH:mm", "HH:mm:ss" };
+        public int Day { get; init; }
+        public bool School { get; set; }
+        public string Arrival { get; set; } = "";
+        public string NotTapped { get; set; } = "";
+        public string Recap { get; set; } = "";
+        public string Deadline { get; set; } = "";
+        public string Departure { get; set; } = "";
+
+        public JadwalHariBaris ToRow() => School
+            ? new JadwalHariBaris(Day, true, Parse(Arrival), Parse(Recap), Parse(Deadline), Parse(Departure), Parse(NotTapped))
+            : new JadwalHariBaris(Day, false, null, null, null, null);
+
+        private static TimeOnly? Parse(string text) =>
+            TimeOnly.TryParseExact(text.Trim(), Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? time : null;
+    }
+}

@@ -15,6 +15,10 @@ else if (Status.PesanGalat is not null)
 {
     <p class="galat" id="galat-awal">@Status.PesanGalat</p>
 }
+else if (Status.NeedsInstallation)
+{
+    <WizardWeb OnSelesai="StateHasChanged" />
+}
 else if (Status.Akun is null)
 {
     <Masuk OnMasuk="StateHasChanged" />

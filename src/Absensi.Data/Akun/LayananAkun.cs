@@ -166,7 +166,7 @@ public sealed class LayananAkun
 
     // Aturan minimum yang sama untuk aplikasi desktop dan web uji. Desain
     // autentikasi online final (MFA, ASVS L3) tetap mengikuti PRD §22.
-    private static void PastikanUsernameValid(string username)
+    internal static void PastikanUsernameValid(string username)
     {
         if (!System.Text.RegularExpressions.Regex.IsMatch(username, "^[a-z0-9._]{3,32}$"))
         {
@@ -174,7 +174,7 @@ public sealed class LayananAkun
         }
     }
 
-    private static void PastikanSandiValid(string? sandi)
+    internal static void PastikanSandiValid(string? sandi)
     {
         if (sandi is null || sandi.Length < 8)
         {

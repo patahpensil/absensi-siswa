@@ -62,10 +62,20 @@ public sealed partial class StatusAplikasi
             Buka();
             if (new RepositoriSekolah().CariSatuSatunya(Koneksi!) is null)
             {
+                // PANDUAN-UI-UX §9 Wizard instalasi: bila pengguna memilih
+                // mulai dari wizard, data contoh tidak dibuat.
+                if (await WizardPendingAsync())
+                {
+                    NeedsInstallation = true;
+                    NamaSekolah = "";
+                    return;
+                }
+
                 DataContoh.Isi(Koneksi!, Jam.Sekarang);
                 await SimpanAsync();
             }
 
+            NeedsInstallation = false;
             MuatIdentitas();
             await LoadPhotosAsync();
         }
@@ -119,8 +129,39 @@ public sealed partial class StatusAplikasi
         await OpenCurrentDayAsync();
     }
 
-    public async Task ResetAsync()
+    // True sampai wizard instalasi web diselesaikan (database masih kosong).
+    public bool NeedsInstallation { get; private set; }
+
+    private const string KunciWizard = "wizard.pending";
+
+    private async Task<bool> WizardPendingAsync()
     {
+        try { return await _js.InvokeAsync<byte[]?>("absensiStorage.load", KunciWizard) is { Length: > 0 }; }
+        catch (JSException) { return false; }
+    }
+
+    // Dipanggil setelah LayananWizard.Selesaikan berhasil.
+    public async Task CompleteInstallationAsync()
+    {
+        try { await _js.InvokeVoidAsync("absensiStorage.remove", KunciWizard); }
+        catch (JSException) { }
+        NeedsInstallation = false;
+        MuatIdentitas();
+        await SimpanAsync();
+    }
+
+    public async Task ResetAsync(bool sampleData = true)
+    {
+        if (!sampleData)
+        {
+            await _js.InvokeVoidAsync("absensiStorage.save", KunciWizard, new byte[] { 1 });
+        }
+        else
+        {
+            try { await _js.InvokeVoidAsync("absensiStorage.remove", KunciWizard); }
+            catch (JSException) { }
+        }
+
         Akun = null;
         Koneksi?.Dispose();
         Koneksi = null;
