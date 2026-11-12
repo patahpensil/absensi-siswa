@@ -94,13 +94,15 @@ Riwayat koreksi tetap merujuk pelaku aslinya, bukan wali kelas yang kini menjaba
 
 | Komponen | Ketetapan |
 |---|---|
-| Reader | 4 unit, USB keyboard-emulation |
+| Reader | 4 unit, USB keyboard-emulation; mode USB serial/COM opsional |
 | Penempatan | Seluruhnya di satu pintu gerbang |
 | Fungsi reader | Sama untuk absen masuk dan pulang; dibedakan oleh logika aplikasi |
 | Layar | 1 unit layar besar (TV) di gerbang |
 | PC | 1 unit, menjalankan aplikasi |
 
 **Catatan teknis:** reader USB keyboard-emulation tidak dapat dibedakan satu sama lain oleh sistem operasi. Aplikasi karena itu tidak melabeli tap berdasarkan nomor reader.
+
+**Mode serial/COM (opsional, keputusan pemilik 12 November 2026):** bila reader mendukung mode USB serial/COM, admin dapat mendaftarkan 1–4 port di `data/rfid-serial.json`. Pada mode ini tap diterima walau jendela Gerbang tidak sedang difokus, dan status perangkat dapat menampilkan jumlah reader terhubung ("x dari y"). Tanpa berkas tersebut aplikasi tetap memakai mode keyboard-emulation. Mode serial juga tidak melabeli tap per reader. Kedua mode harus diuji dengan perangkat nyata sebelum dipakai.
 
 ---
 
@@ -1759,8 +1761,9 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **Keputusan 12 November 2026 (sore) — arsip audit pra-restore, disetujui pemilik:** DPAPI Windows **tidak dipakai**. Kunci DPAPI terikat pada instalasi Windows, sehingga arsip tidak terbaca lagi setelah PC diganti atau Windows dipasang ulang. Hilangnya berkas kunci juga memblokir pemulihan. Arsip riwayat audit yang dibuat saat restore mengikuti pola backup lokal (§18.2): dienkripsi dengan kunci lisensi sekolah bila lisensi aktif, dan disimpan polos bila lisensi belum aktif. Pilihan pola kunci lisensi adalah rekomendasi agen; pemilik memutuskan "jangan pakai DPAPI". Arsip yang terlanjur dibuat dengan DPAPI ditampilkan di layar Audit sebagai arsip yang tidak bisa dibaca.
 
+**Keputusan 12 November 2026 (sore) — disetujui pemilik:** mode reader USB serial/COM menjadi mode opsional (§4). Warna tombol Bahaya resmi `#9B2C2C` (PANDUAN-UI-UX §3.1).
+
 **Menunggu keputusan pemilik (dicatat 12 November 2026):** perubahan berikut ditambahkan agen lain tanpa pembaruan PRD dan belum disetujui.
-- **Mode reader USB serial/COM** (`data/rfid-serial.json`, 1–4 port) di samping mode keyboard-emulation §4. Pilihannya: dimasukkan ke §4 sebagai mode opsional, atau dihapus.
 - **.NET 10** sebagai versi runtime. Ini sesuai aturan §21.11 (versi yang masih didukung dipilih saat implementasi), tetapi belum dicatat sebagai pilihan versi proyek.
 - **Ukuran nama panjang di TV gerbang** diperkecil sampai 36 px, sedangkan PANDUAN-UI-UX §8.1 menetapkan 64 px.
 
