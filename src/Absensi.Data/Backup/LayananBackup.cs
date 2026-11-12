@@ -24,13 +24,11 @@ public sealed class LayananBackup
     // parameter konstruktor baru) supaya seluruh pemanggil yang sudah ada
     // (App.xaml.cs, test) tidak perlu diubah.
     private readonly LayananArsipAudit _layananArsipAudit;
-    private readonly Func<byte[]>? _archiveKey;
 
-    public LayananBackup(string folderBackup, IPenyimpanCloudBackup penyimpanCloud, Func<byte[]>? archiveKey = null)
+    public LayananBackup(string folderBackup, IPenyimpanCloudBackup penyimpanCloud)
     {
         _folderBackup = folderBackup;
         _penyimpanCloud = penyimpanCloud;
-        _archiveKey = archiveKey;
         _layananArsipAudit = new LayananArsipAudit(Path.Combine(folderBackup, "arsip-audit"));
     }
 
@@ -84,8 +82,6 @@ public sealed class LayananBackup
         var dataSumberRestore = EnkripsiBackup.BukaLokal(File.ReadAllBytes(berkasSumberRestore.PathBerkas), kunciLisensi);
         WithValidatedBackup(dataSumberRestore, _folderBackup, _ => { });
 
-        var archiveKey = _archiveKey?.Invoke()
-            ?? throw new InvalidOperationException("Kunci arsip audit tidak tersedia. Pemulihan dibatalkan.");
         BuatSnapshotLokal(sumber, waktu, kunciLisensi);
         var namaCadangan = $"{waktu.ToString(FormatWaktu)}.db";
         string? archivePath = null;
@@ -93,7 +89,7 @@ public sealed class LayananBackup
         {
             _jalurPerubahanData.Jalankan(sumber, akun, waktu, "restore_backup", "sekolah", _ => null,
                 nilaiLama: namaCadangan, nilaiBaru: berkasSumberRestore.NamaBerkas,
-                setelahAudit: transaction => archivePath = _layananArsipAudit.Write(sumber, transaction, waktu, archiveKey));
+                setelahAudit: transaction => archivePath = _layananArsipAudit.Write(sumber, transaction, waktu, kunciLisensi));
         }
         catch
         {

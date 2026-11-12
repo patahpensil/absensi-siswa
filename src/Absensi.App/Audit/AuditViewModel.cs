@@ -24,12 +24,12 @@ public sealed class AuditViewModel : ObservableObject
     private DateTime _sampaiTanggal;
     private string? _pesanGalat;
 
-    public AuditViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, string folderArsipAudit, Func<byte[]>? archiveKey = null)
+    public AuditViewModel(SqliteConnection connection, AkunTersimpan akun, IPenyediaWaktu penyediaWaktu, string folderArsipAudit)
     {
         _connection = connection;
         _akun = akun;
         _folderArsipAudit = folderArsipAudit;
-        _layananAudit = new LayananAudit(archiveKey);
+        _layananAudit = new LayananAudit();
 
         _sampaiTanggal = penyediaWaktu.Sekarang.Date;
         _dariTanggal = _sampaiTanggal.AddDays(-90); // PRD §12: 90 hari terakhir sebagai bawaan

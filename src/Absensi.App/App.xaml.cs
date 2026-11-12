@@ -1,4 +1,3 @@
-using Absensi.App.Audit;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
@@ -97,7 +96,7 @@ public partial class App : Application
             }
         }
 
-        _layananBackup = new LayananBackup(LokasiData.FolderBackup, new PenyimpanCloudBackupLokal(LokasiData.FolderBackupCloudStub), LocalAuditArchiveKey.GetOrCreate);
+        _layananBackup = new LayananBackup(LokasiData.FolderBackup, new PenyimpanCloudBackupLokal(LokasiData.FolderBackupCloudStub));
         JalankanBackupPembukaanAplikasi();
 
         JalankanPembukaanHariBilaSudahDikonfigurasi();

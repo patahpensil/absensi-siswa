@@ -13,7 +13,6 @@
   <ItemGroup>
     <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="System.IO.Ports" Version="10.0.0" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
   </ItemGroup>
 
   <!-- PANDUAN-UI-UX §4.1: IBM Plex Sans dibundel ke dalam .exe (lisensi OFL,

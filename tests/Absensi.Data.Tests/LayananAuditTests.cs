@@ -21,7 +21,7 @@ public sealed class LayananAuditTests : IDisposable
 
     private readonly string _folderBackup = Path.Combine(Path.GetTempPath(), $"absensi-audit-{Guid.NewGuid():N}");
     private readonly string _folderArsip;
-    private readonly LayananAudit _layananAudit = new(() => new byte[32]);
+    private readonly LayananAudit _layananAudit = new();
 
     public LayananAuditTests()
     {
@@ -64,7 +64,7 @@ public sealed class LayananAuditTests : IDisposable
     {
         Directory.CreateDirectory(_folderBackup);
         var penyimpanCloud = new PenyimpanCloudBackupLokal(Path.Combine(_folderBackup, "cloud"));
-        var layananBackup = new LayananBackup(_folderBackup, penyimpanCloud, () => new byte[32]);
+        var layananBackup = new LayananBackup(_folderBackup, penyimpanCloud);
 
         // T0: database baseline (akun admin1 id=1), jadi backup lama B1
         // yang akan dipakai sebagai TARGET restore berkali-kali di bawah.
@@ -163,7 +163,7 @@ public sealed class LayananAuditTests : IDisposable
         using var database = new MigratedDatabase();
         database.SeedMasterDataUntukUji();
         using var transaction = database.Connection.BeginTransaction();
-        var pathArsip = new LayananArsipAudit(_folderArsip).Write(database.Connection, transaction, new DateTime(2026, 9, 20, 8, 0, 0), new byte[32]);
+        var pathArsip = new LayananArsipAudit(_folderArsip).Write(database.Connection, transaction, new DateTime(2026, 9, 20, 8, 0, 0), "SEKOLAH-001-ABCD");
         transaction.Commit();
 
         // Rusak paksa: potong berkas jadi separuh (lihat pola sama di

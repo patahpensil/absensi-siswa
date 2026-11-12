@@ -12,7 +12,7 @@ public sealed class LayananBackupTests : IDisposable
     private readonly string _folderBackup = Path.Combine(Path.GetTempPath(), $"absensi-backup-{Guid.NewGuid():N}");
     private readonly string _folderCloudStub = Path.Combine(Path.GetTempPath(), $"absensi-cloud-{Guid.NewGuid():N}");
 
-    private LayananBackup BuatLayanan() => new(_folderBackup, new PenyimpanCloudBackupLokal(_folderCloudStub), () => new byte[32]);
+    private LayananBackup BuatLayanan() => new(_folderBackup, new PenyimpanCloudBackupLokal(_folderCloudStub));
 
     // Keputusan pemilik 12 November 2026: backup lokal dienkripsi kunci lisensi.
     [Fact]
@@ -199,9 +199,52 @@ public sealed class LayananBackupTests : IDisposable
         var pathArsip = Path.Combine(_folderBackup, "arsip-audit", $"arsip-audit-{waktuRestore:yyyyMMdd-HHmmss}.db");
         Assert.True(File.Exists(pathArsip));
 
-        var entry = Assert.Single(LayananArsipAudit.ReadProtected(pathArsip, () => new byte[32])!);
+        var entry = Assert.Single(LayananArsipAudit.Read(pathArsip, licenseKey: null)!);
         Assert.Equal("restore_backup", entry.Aksi);
-        Assert.Throws<InvalidOperationException>(() => LayananArsipAudit.ReadProtected(pathArsip, () => Enumerable.Repeat((byte)1, 32).ToArray()));
+    }
+
+    [Fact]
+    public async Task SiapkanRestore_LisensiAktif_ArsipTerenkripsiDenganKunciLisensi()
+    {
+        using var databaseAsal = new MigratedDatabase();
+        databaseAsal.SeedBaselineReferenceRows();
+        var layanan = BuatLayanan();
+        await layanan.JalankanAsync(databaseAsal.Connection, new DateTime(2026, 9, 1, 6, 0, 0), kunciLisensiAktif: "SEKOLAH-001-ABCD");
+
+        using var databaseTujuan = new MigratedDatabase();
+        databaseTujuan.SeedMasterDataUntukUji();
+        TulisLisensi(databaseTujuan, "SEKOLAH-001-ABCD");
+        var waktuRestore = new DateTime(2026, 9, 18, 7, 0, 0);
+
+        layanan.SiapkanRestore(databaseTujuan.Connection, Admin, waktuRestore, layanan.DaftarBackupLokal().Single());
+
+        var pathArsip = Path.Combine(_folderBackup, "arsip-audit", $"arsip-audit-{waktuRestore:yyyyMMdd-HHmmss}.db");
+        Assert.True(File.ReadAllBytes(pathArsip).AsSpan().StartsWith("ABSENSI-AUDIT-2\n"u8));
+        Assert.Contains(LayananArsipAudit.Read(pathArsip, "SEKOLAH-001-ABCD")!, e => e.Aksi == "restore_backup");
+        // Arsip berada di subfolder sehingga tidak ikut rotasi 7 berkas backup.
+        Assert.Equal(2, layanan.DaftarBackupLokal().Count);
+    }
+
+    [Fact]
+    public async Task SiapkanRestore_ArsipGagalDitulis_RestoreBatalTanpaJejakAudit()
+    {
+        using var databaseAsal = new MigratedDatabase();
+        databaseAsal.SeedBaselineReferenceRows();
+        var layanan = BuatLayanan();
+        await layanan.JalankanAsync(databaseAsal.Connection, new DateTime(2026, 9, 1, 6, 0, 0), kunciLisensiAktif: null);
+        var berkas = layanan.DaftarBackupLokal().Single();
+        File.WriteAllText(Path.Combine(_folderBackup, "arsip-audit"), "bukan folder");
+
+        using var databaseTujuan = new MigratedDatabase();
+        databaseTujuan.SeedMasterDataUntukUji();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            layanan.SiapkanRestore(databaseTujuan.Connection, Admin, new DateTime(2026, 9, 18, 7, 0, 0), berkas));
+
+        Assert.Contains("Pemulihan dibatalkan", error.Message);
+        using var command = databaseTujuan.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'restore_backup';";
+        Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
     }
 
     // PRD §24.3: pemeriksaan peran di lapisan layanan, bukan

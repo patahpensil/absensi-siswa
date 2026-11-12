@@ -21,10 +21,6 @@ namespace Absensi.Data.Audit;
 // riwayat keputusan proyek 2026-09-24/25.
 public sealed class LayananAudit
 {
-    private readonly Func<byte[]>? _archiveKey;
-
-    public LayananAudit(Func<byte[]>? archiveKey = null) => _archiveKey = archiveKey;
-
     // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
     // membaca riwayat audit, di rilis awal ini -- diperiksa DI SINI
     // (lapisan layanan), bukan cuma disembunyikan di UI. Pola sama seperti
@@ -59,6 +55,7 @@ public sealed class LayananAudit
         BacaDariSumber(sumber, "Aktif", dariTanggal, sampaiTanggal, baris);
 
         var arsipDirujuk = AmbilArsipDirujuk(sumber);
+        var kunciLisensi = new Absensi.Data.Lisensi.RepositoriLisensi().BacaStatus(sumber)?.Kunci;
         var arsipBermasalah = new List<ArsipTidakBisaDibaca>();
 
         var arsipAda = Directory.Exists(folderArsipAudit)
@@ -74,7 +71,7 @@ public sealed class LayananAudit
             var pathArsip = Path.Combine(folderArsipAudit, namaBerkas);
             try
             {
-                BacaDariArsip(pathArsip, namaBerkas, dariTanggal, sampaiTanggal, baris);
+                BacaDariArsip(pathArsip, namaBerkas, kunciLisensi, dariTanggal, sampaiTanggal, baris);
             }
             catch (Exception ex) when (ex is SqliteException or InvalidOperationException or IOException)
             {
@@ -164,10 +161,10 @@ public sealed class LayananAudit
     // tidak mengubah keadaan koneksi utama sama sekali. ReadOnly murni
     // untuk jaga-jaga (LayananAudit tidak pernah menulis, tapi menegaskan
     // niat itu di tingkat koneksi juga).
-    private void BacaDariArsip(
-        string pathArsip, string namaBerkas, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
+    private static void BacaDariArsip(
+        string pathArsip, string namaBerkas, string? kunciLisensi, DateTime dari, DateTime sampai, Dictionary<string, BarisAuditGabungan> tujuan)
     {
-        if (LayananArsipAudit.ReadProtected(pathArsip, _archiveKey) is { } entries)
+        if (LayananArsipAudit.Read(pathArsip, kunciLisensi) is { } entries)
         {
             foreach (var entry in entries.Where(entry => entry.Waktu >= dari && entry.Waktu <= sampai))
                 tujuan.TryAdd(entry.AuditUid, entry);

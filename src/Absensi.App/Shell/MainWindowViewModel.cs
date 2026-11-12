@@ -222,7 +222,7 @@ public sealed class MainWindowViewModel : ObservableObject
     // AuditViewModel.BolehAkses tetap jadi lapisan kedua (defense in depth).
     private AuditViewModel MuatUlangAuditViewModel()
     {
-        _auditViewModel ??= new AuditViewModel(_connection, _akun, _penyediaWaktu, LokasiData.FolderArsipAudit, LocalAuditArchiveKey.Read);
+        _auditViewModel ??= new AuditViewModel(_connection, _akun, _penyediaWaktu, LokasiData.FolderArsipAudit);
         _auditViewModel.MuatUlang();
         return _auditViewModel;
     }
