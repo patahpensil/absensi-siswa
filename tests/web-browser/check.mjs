@@ -446,7 +446,9 @@ await langkah('Tampilan mengikuti panduan UI: huruf, radius, bayangan, gradasi, 
   await page.evaluate(() => document.fonts.ready);
   tegas(await page.evaluate(() => document.fonts.check('14px "IBM Plex Sans"')), 'IBM Plex Sans tidak termuat');
   const menus = await page.$$eval('nav [id^="menu-"]', nodes => nodes.map(n => n.id));
+  tegas(menus.length >= 8, `menu yang diperiksa terlalu sedikit: ${menus.length}`);
   const problems = [];
+  let checked = 0;
   for (const id of menus) {
     await page.click(`#${id}`);
     await page.waitForTimeout(150);
@@ -455,11 +457,13 @@ await langkah('Tampilan mengikuti panduan UI: huruf, radius, bayangan, gradasi, 
       const allowedShadow = ['none', 'rgba(20, 24, 31, 0.06) 0px 1px 2px 0px', 'rgba(20, 24, 31, 0.12) 0px 4px 12px 0px'];
       const acronyms = new Set(['NISN', 'NIP', 'NPSN', 'RFID', 'PDF', 'WITA', 'TV', 'UID', 'SMP', 'HP', 'NO', 'ID', 'TU', 'II', 'III', 'IV', 'VII', 'VIII', 'IX', 'NAMA', 'KELAS', 'ALAMAT', 'PANGKAT', 'JABATAN']);
       const out = [];
+      let count = 0;
       for (const el of document.querySelectorAll('body *')) {
         const rect = el.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) continue;
         const cs = getComputedStyle(el);
         if (cs.visibility === 'hidden') continue;
+        count++;
         const tag = `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.classList.length ? '.' + [...el.classList].join('.') : ''}`;
         for (const corner of [cs.borderTopLeftRadius, cs.borderBottomRightRadius])
           if (!allowedRadius.has(corner)) out.push(`radius ${corner} pada ${tag}`);
@@ -473,10 +477,13 @@ await langkah('Tampilan mengikuti panduan UI: huruf, radius, bayangan, gradasi, 
           if (words.length >= 2) out.push(`label kapital "${node.textContent.trim().slice(0, 40)}" pada ${tag}`);
         }
       }
-      return out;
+      return { out, count };
     });
-    for (const f of found) problems.push(`${id}: ${f}`);
+    checked += found.count;
+    for (const f of found.out) problems.push(`${id}: ${f}`);
   }
+  tegas(checked > menus.length * 50, `elemen yang diperiksa terlalu sedikit: ${checked}`);
+  console.log(`::notice::Panduan UI: ${menus.length} menu, ${checked} elemen terlihat diperiksa`);
   const unique = [...new Set(problems)];
   tegas(unique.length === 0, `pelanggaran panduan UI (${unique.length}): ${unique.slice(0, 12).join(' | ')}`);
 });
