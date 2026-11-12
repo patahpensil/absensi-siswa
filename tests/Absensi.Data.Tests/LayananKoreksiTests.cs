@@ -57,8 +57,8 @@ public sealed class LayananKoreksiTests
         command.CommandText = "SELECT nilai_lama, nilai_baru, atas_permintaan FROM audit WHERE aksi = 'koreksi_status_siswa';";
         using var reader = command.ExecuteReader();
         Assert.True(reader.Read());
-        Assert.Equal("terlambat", reader.GetString(0));
-        Assert.Equal("izin", reader.GetString(1));
+        Assert.Equal($"tanggal={Tanggal:yyyy-MM-dd}; status=terlambat", reader.GetString(0));
+        Assert.Equal($"tanggal={Tanggal:yyyy-MM-dd}; status=izin; alasan=Acara keluarga", reader.GetString(1));
         Assert.Equal("Wali A", reader.GetString(2));
     }
 

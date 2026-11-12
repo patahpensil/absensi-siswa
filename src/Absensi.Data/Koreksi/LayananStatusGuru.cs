@@ -43,6 +43,14 @@ public sealed class LayananStatusGuru
             throw new InvalidOperationException($"Bulan {tanggal:MM/yyyy} sudah terkunci.");
         }
 
+        // PRD §16.17 langkah 4: keterangan wajib, diperiksa di layanan.
+        if (string.IsNullOrWhiteSpace(keterangan))
+        {
+            throw new InvalidOperationException("Keterangan status guru wajib diisi.");
+        }
+
+        var note = keterangan.Trim();
+
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
             akun,
@@ -57,8 +65,10 @@ public sealed class LayananStatusGuru
                 var before = _repositoriAbsensi.CariHariIniGuru(connection, tanggal, guruId, transaction);
                 _repositoriAbsensi.TetapkanStatusGuru(connection, transaction, tanggal, guruId, status, keterangan);
                 LocalAttendanceClosure.InvalidateDay(connection, transaction, tanggal);
-                return new CatatanPerubahan(guruId, before is null ? "(belum ada baris)" : PemetaanEnum.TeksDariStatusGuru(before.Status),
-                    PemetaanEnum.TeksDariStatusGuru(status));
+                // Audit memuat tanggal dan keterangan (PRD §16.17 langkah 5).
+                return new CatatanPerubahan(guruId,
+                    before is null ? $"tanggal={tanggal:yyyy-MM-dd}; status=(belum ada baris)" : $"tanggal={tanggal:yyyy-MM-dd}; status={PemetaanEnum.TeksDariStatusGuru(before.Status)}",
+                    $"tanggal={tanggal:yyyy-MM-dd}; status={PemetaanEnum.TeksDariStatusGuru(status)}; keterangan={note}");
             });
     }
 }

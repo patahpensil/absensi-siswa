@@ -111,4 +111,35 @@ public sealed class LayananStatusGuruTests
         Assert.Throws<InvalidOperationException>(() =>
             layanan.TetapkanStatus(database.Connection, Kepsek, Waktu, guruId: 3, HariIni, StatusAbsensiGuru.Sakit, "x"));
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("  ")]
+    public void TetapkanStatus_KeteranganKosong_DitolakTanpaPerubahan(string? keterangan)
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukKoreksi();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new LayananStatusGuru().TetapkanStatus(database.Connection, Kepsek, Waktu, guruId: 3, Mendatang, StatusAbsensiGuru.Izin, keterangan));
+
+        Assert.Null(new RepositoriAbsensi().CariHariIniGuru(database.Connection, Mendatang, 3));
+    }
+
+    // PRD §16.17 langkah 5: audit memuat tanggal, status lama → baru dan keterangan.
+    [Fact]
+    public void TetapkanStatus_DiMuka_AuditMemuatTanggalDanKeterangan()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukKoreksi();
+
+        new LayananStatusGuru().TetapkanStatus(database.Connection, Kepsek, Waktu, guruId: 3, Mendatang, StatusAbsensiGuru.DinasLuar, " Surat tugas 7 ");
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT nilai_lama, nilai_baru FROM audit WHERE aksi = 'tetapkan_status_guru';";
+        using var reader = command.ExecuteReader();
+        Assert.True(reader.Read());
+        Assert.Equal("tanggal=2026-09-25; status=(belum ada baris)", reader.GetString(0));
+        Assert.Equal("tanggal=2026-09-25; status=dinas_luar; keterangan=Surat tugas 7", reader.GetString(1));
+    }
 }

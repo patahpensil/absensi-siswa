@@ -48,6 +48,8 @@ public sealed class LayananKoreksi
             throw new InvalidOperationException("Alasan koreksi wajib diisi.");
         }
 
+        var reason = keterangan.Trim();
+
         if (!_layananAkun.BolehMenyentuhKelas(connection, akun, kelasId))
         {
             throw new InvalidOperationException("Anda tidak berwenang mengoreksi absensi kelas ini.");
@@ -74,7 +76,10 @@ public sealed class LayananKoreksi
                 before = _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, siswaId, transaction)!;
                 _repositoriAbsensi.KoreksiStatusSiswa(connection, transaction, tanggal, siswaId, statusBaru, keterangan);
                 LocalAttendanceClosure.InvalidateDay(connection, transaction, tanggal);
-                return new CatatanPerubahan(siswaId, PemetaanEnum.TeksDariStatusSiswa(before.Status), PemetaanEnum.TeksDariStatusSiswa(statusBaru));
+                // PRD §16.10 langkah 7: audit memuat tanggal kehadiran dan alasan.
+                return new CatatanPerubahan(siswaId,
+                    $"tanggal={tanggal:yyyy-MM-dd}; status={PemetaanEnum.TeksDariStatusSiswa(before.Status)}",
+                    $"tanggal={tanggal:yyyy-MM-dd}; status={PemetaanEnum.TeksDariStatusSiswa(statusBaru)}; alasan={reason}");
             },
             atasPermintaan: atasPermintaan);
 
