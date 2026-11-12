@@ -409,7 +409,7 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - **P-18** (`2512cfc`): migrasi 009 `siswa_kelas.start_date/end_date`. Tanggal mulai otomatis bila siswa ditambahkan/diimpor ke kelas setelah periode berjalan; hari terakhir otomatis saat mutasi (dicatat di audit `hari_terakhir`). Laporan Bulanan, Per orang, Per kelas dan Semester tidak menghitung hari di luar rentang (bukan Alpa, bukan penyebut). Tes `StudentEnrollmentCoverageTests`.
 - **Backup lokal terenkripsi** (`ed922c3`): `backup/*.db` ditulis AES-GCM dengan penanda `ABSENSI-BACKUP-1` bila lisensi aktif; restore mendekripsi dengan kunci lisensi aplikasi; kunci lain/berkas rusak → restore batal tanpa audit dan tanpa menimpa; backup lama SQLite polos tetap bisa dipulihkan.
 - **Wizard instalasi web** (`4c1bbfa`): enam langkah memakai `LayananWizard`; aturan isian (NPSN, tanggal, urutan jam, username, sandi) kini diperiksa di `LayananWizard` sehingga desktop dan web menolak hal yang sama; wizard desktop menampilkan penolakan sebagai pesan.
-- **PDF di browser** (`…`): QuestPDF tidak lagi mendukung WebAssembly sejak 2024.3 ([dokumentasi QuestPDF](https://www.questpdf.com/going-production/platform-specific-dependencies.html)); tombol PDF di web diganti "Cetak / Simpan PDF". Desktop tetap membuat PDF.
+- **PDF di browser** (`7acec31`): QuestPDF tidak lagi mendukung WebAssembly sejak 2024.3 ([dokumentasi QuestPDF](https://www.questpdf.com/going-production/platform-specific-dependencies.html)); tombol PDF di web diganti "Cetak / Simpan PDF". Desktop tetap membuat PDF.
 - **A-39** ternyata sudah selesai (Tahap 1 dan 2 ada di kode); status register diperbarui.
 - **DOC-01 (sebagian):** `SKEMA-DATABASE.md` memuat migrasi 006–009, finalisasi hari terlewat dan backup terenkripsi.
 
@@ -422,3 +422,8 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Pemulihan dari backup tidak tersedia di wizard web (browser tidak punya folder backup).
 - DOC-01 sisa: `PANDUAN-PEMASANGAN.md`, `PANDUAN-TESTER.md`, `RENCANA-TUGAS.md`.
 - UAT perangkat fisik (Windows, reader RFID, TV) tetap harus dilakukan pemilik.
+
+**Bukti tambahan:** `7acec31` (PDF web) diverifikasi oleh [bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43151481359) dan [deploy](https://github.com/patahpensil/absensi-smp1/actions/runs/43151481273) pada `9c94f04` (semua langkah lulus, versi `https://1618e1b3.absensi-uji.pages.dev`). Perubahan setelah `4c1bbfa` hanya lapisan web dan dokumen.
+
+**Kendala (12 November 2026 ±11.57 WITA):** workflow CI Windows tidak dijalankan GitHub — anotasi: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* Pemilik perlu memeriksa Settings → Billing & plans di GitHub. Selama itu build/tes Windows (Domain/Data/Telegram/Laporan/App) tidak berjalan untuk commit baru; workflow web (Ubuntu) masih berjalan.
+
