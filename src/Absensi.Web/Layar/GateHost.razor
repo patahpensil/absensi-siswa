@@ -8,7 +8,7 @@
 
 @if (PageActive)
 {
-    <div class="page-heading"><div><p class="eyebrow">OPERASIONAL / TV GERBANG</p><h1>Layar gerbang</h1><p>Pengendali tampilan TV dan penerimaan kartu RFID.</p></div></div>
+    <div class="page-heading"><div><h1>Layar gerbang</h1><p>Pengendali tampilan TV dan penerimaan kartu RFID.</p></div></div>
     @if (!WorkspaceView.CanManage(Status))
     {
         <p id="gate-access-denied" class="message danger" role="alert">Hanya kepala sekolah dan admin/TU yang boleh mengakses pengendali gerbang.</p>
@@ -16,7 +16,7 @@
     else
     {
         <section id="gate-controls" class="panel">
-            <header class="panel-header"><h2><UiIcon Name="card" /> Pengendali gerbang</h2><span class="panel-code">TV / RFID</span></header>
+            <header class="panel-header"><h2><UiIcon Name="card" /> Pengendali gerbang</h2></header>
             <div class="reader-body">
                 <div class="gate-control-status">
                     <span id="gate-receiving-state" class="badge @(gate.Receiving ? "positive" : "neutral")">@(gate.Receiving ? "Penerimaan tap aktif" : "Penerimaan tap dihentikan")</span>

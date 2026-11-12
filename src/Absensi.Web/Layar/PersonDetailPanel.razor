@@ -54,7 +54,7 @@
             @if (detail.ParentChannel is not null && WorkspaceView.CanManage(Status))
             {
                 <section aria-labelledby="channel-title" class="channel-settings">
-                    <h4 id="channel-title" class="eyebrow">KANAL NOTIFIKASI ORANG TUA</h4>
+                    <h4 id="channel-title" class="eyebrow">Kanal notifikasi orang tua</h4>
                     <div class="channel-form">
                         <label for="person-channel-select">Pilihan orang tua</label>
                         <select id="person-channel-select" @bind="channelChoice" disabled="@savingChannel">
@@ -75,7 +75,7 @@
             </div>
 
             <section aria-labelledby="recap-title">
-                <h4 id="recap-title" class="eyebrow">REKAP BULAN</h4>
+                <h4 id="recap-title" class="eyebrow">Rekap bulan</h4>
                 @if (detail.Recap is { } r)
                 {
                     <div id="person-detail-recap" class="recap-grid">
@@ -92,7 +92,7 @@
             </section>
 
             <section aria-labelledby="history-title">
-                <h4 id="history-title" class="eyebrow">RIWAYAT ABSENSI</h4>
+                <h4 id="history-title" class="eyebrow">Riwayat absensi</h4>
                 @if (correcting is { ClassId: { } correctionClass, StudentStatus: { } correctionStatus })
                 {
                     <div class="drawer-correction"><CorrectionForm ClassId="correctionClass" StudentId="detail.Id" StudentName="@detail.Name" Date="correcting.Date" CurrentStatus="correctionStatus" OnSaved="Load" OnClose="() => correcting = null" /></div>

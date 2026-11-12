@@ -8,7 +8,7 @@
 <div class="workspace">
     <a class="skip-link" href="#isi">Lewati navigasi</a>
     <header class="topbar">
-        <div class="brand"><span class="brand-mark"><UiIcon Name="school" /></span><strong>Absensi<span> / SMP</span></strong></div>
+        <div class="brand"><span class="brand-mark"><UiIcon Name="school" /></span><strong>Absensi siswa</strong></div>
         <span class="environment-tag"><span class="dot"></span> Lingkungan uji</span>
         <div class="account"><span id="akun-aktif">@RoleLabel · @Status.Akun!.Username</span><span class="avatar">@WorkspaceView.Initials(Status.Akun.Username)</span><button id="tombol-keluar" class="text-button" @onclick="Logout">Keluar</button></div>
     </header>
@@ -21,13 +21,12 @@
     <div class="schoolbar">
         @if (Status.PhotoUrl(Status.LogoName) is { } logo) { <img id="school-logo-header" class="school-symbol school-logo-img" src="@logo" alt="Logo sekolah" /> }
         else { <span class="school-symbol"><UiIcon Name="school" /></span> }
-        <div><strong id="judul-sekolah">@Status.NamaSekolah</strong><small>Monitoring kehadiran siswa dan guru</small></div>
+        <div><strong id="judul-sekolah">@Status.NamaSekolah</strong><small>Absensi siswa dan guru</small></div>
         <div class="school-context"><span>Tahun ajaran<strong>@Status.TahunAjaran</strong></span><span>@(Status.Jam.IsScenario ? "Waktu uji · simulasi" : "Waktu sekolah")<strong id="jam-simulasi" class="mono">@Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm:ss") WITA</strong></span></div>
     </div>
     <div class="command-strip">
-        <span class="terminal-label">TERMINAL <b>01</b></span>
         <form class="command-form" @onsubmit="RunCommand" @onsubmit:preventDefault>
-            <span class="command-prompt">›</span><input id="workspace-command" aria-label="Perintah navigasi atau pencarian siswa" placeholder="Ketik menu atau cari nama / NISN…" @bind="command" autocomplete="off" /><kbd>Ctrl K</kbd>
+            <input id="workspace-command" aria-label="Perintah navigasi atau pencarian siswa" placeholder="Ketik menu atau cari nama / NISN…" @bind="command" autocomplete="off" /><kbd>Ctrl K</kbd>
         </form>
         <span class="command-hint">F2 Absensi <span>·</span> F3 Siswa</span>
     </div>
@@ -52,7 +51,7 @@
         }
         <GateHost PageActive='@(activePage == "Layar gerbang")' OnTapRecorded="RefreshAttendance" />
     </main>
-    <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>07.30 batas hadir <b>·</b> 08.00 daftar wali <b>·</b> 08.10 rekap orang tua</span><span class="mono">WEB UJI / 01</span></footer>
+    <footer class="statusbar"><span><span class="dot"></span> Data contoh · tersimpan di browser ini</span><span>Lingkungan uji · gunakan data sintetis saja</span></footer>
 </div>
 
 @code {

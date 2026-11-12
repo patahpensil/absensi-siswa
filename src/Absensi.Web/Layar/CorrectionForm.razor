@@ -7,7 +7,7 @@
 @* PRD §10/§16.10: status choices, mandatory reason and "atas permintaan" for
    admin help. Authorization, month lock and audit stay in LayananKoreksi. *@
 <form id="correction-form" class="correction-form" @onsubmit="Save" @onsubmit:preventDefault>
-    <p class="eyebrow">KOREKSI STATUS</p>
+    <p class="eyebrow">Koreksi status</p>
     <h3>@StudentName</h3>
     <p class="mono muted">@Date.ToString("dddd, d MMMM yyyy", Indonesian) · status sekarang @CurrentStatus</p>
     @if (locked)

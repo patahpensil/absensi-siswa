@@ -4,9 +4,9 @@
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<div class="page-heading"><div><p class="eyebrow">MASTER DATA / SISWA</p><h1>Data siswa</h1><p>Identitas, kelas, dan kartu RFID dalam satu daftar.</p></div><span class="page-total"><strong class="mono">@students.Count</strong> siswa</span></div>
+<div class="page-heading"><div><h1>Data siswa</h1><p>Identitas, kelas, dan kartu RFID dalam satu daftar.</p></div><span class="page-total"><strong class="mono">@students.Count</strong> siswa</span></div>
 <section class="panel">
-    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar siswa</h2><span class="panel-code">MASTER / 01</span></header>
+    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar siswa</h2></header>
     <div class="panel-toolbar"><div class="search-field"><UiIcon Name="search" /><input id="student-search" aria-label="Cari nama atau NISN siswa" placeholder="Cari nama atau NISN…" @bind="query" @bind:event="oninput" /></div><select id="student-class" aria-label="Filter kelas siswa" @bind="className"><option value="">Semua kelas</option>@foreach (var c in WorkspaceView.Classes(Status)) { <option value="@c.Nama">@c.Nama</option> }</select>@if (WorkspaceView.CanManage(Status)) { <button type="button" class="primary" id="student-add" @onclick="() => addOpen = true">Tambah siswa</button><button type="button" id="student-import-excel" @onclick="() => importOpen = true">Impor Excel</button> }<span class="muted">@Filtered().Count() hasil · @students.Count(s => s.Aktif && !s.PunyaKartu) belum punya kartu</span></div>
     <div class="table-wrap"><table id="tabel-siswa"><thead><tr><th>Siswa</th><th>NISN</th><th>L/P</th><th>Kelas</th><th>Kartu RFID</th><th>Status</th>@if (WorkspaceView.CanManage(Status)) { <th>Tindakan</th> }</tr></thead><tbody>
         @foreach (var student in Filtered())
@@ -28,7 +28,7 @@
     <div class="modal-backdrop" @onkeydown="HandleDialogKey">
         <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="registration-title">
             <header class="panel-header"><h2 id="registration-title">@(selectedStudent.PunyaKartu ? "Ganti kartu siswa" : "Registrasi kartu siswa")</h2><button class="icon-button" aria-label="Tutup registrasi" @onclick="CloseRegistration">×</button></header>
-            <div class="dialog-body"><p class="eyebrow">SISWA TERPILIH</p><h3>@selectedStudent.Nama</h3><p class="mono muted">@selectedStudent.Nisn · @selectedStudent.KelasNama</p><p>Pilih siswa dahulu, lalu baca kartu. Input ini menerima UID untuk pengujian browser.</p>
+            <div class="dialog-body"><p class="eyebrow">Siswa terpilih</p><h3>@selectedStudent.Nama</h3><p class="mono muted">@selectedStudent.Nisn · @selectedStudent.KelasNama</p><p>Pilih siswa dahulu, lalu baca kartu. Input ini menerima UID untuk pengujian browser.</p>
                 <form @onsubmit:preventDefault>
                     @if (selectedStudent.PunyaKartu)
                     {

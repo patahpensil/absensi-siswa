@@ -10,7 +10,7 @@
    Luar/Cuti untuk tanggal mendatang) atau setelahnya. Kewenangan, kunci
    bulan dan audit ada di LayananStatusGuru; Admin hanya melihat. *@
 <section class="panel" id="teacher-attendance">
-    <header class="panel-header"><h2><UiIcon Name="clock" /> Kehadiran guru</h2><span class="panel-code">§16.17</span></header>
+    <header class="panel-header"><h2><UiIcon Name="clock" /> Kehadiran guru</h2></header>
     <div class="panel-toolbar">
         <label for="teacher-attendance-date">Tanggal</label>
         <input id="teacher-attendance-date" type="date" value="@date.ToString("yyyy-MM-dd")" @onchange="ChangeDate" />
@@ -123,7 +123,7 @@
         if (string.IsNullOrWhiteSpace(note))
         {
             ok = false;
-            message = "Keterangan wajib diisi (PRD §16.17 langkah 4).";
+            message = "Keterangan wajib diisi, misalnya nomor surat tugas atau alasan izin.";
             return;
         }
 

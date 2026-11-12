@@ -5,7 +5,7 @@
 @inject StatusAplikasi Status
 
 <div class="page-heading">
-    <div><p class="eyebrow">MASTER DATA / GURU</p><h1>Data guru</h1><p>Identitas guru dan kartu pegawai.</p></div>
+    <div><h1>Data guru</h1><p>Identitas guru dan kartu pegawai.</p></div>
     <span class="page-total"><strong class="mono">@teachers.Count</strong> guru</span>
 </div>
 @if (!WorkspaceView.CanManage(Status))
@@ -15,7 +15,7 @@
 else
 {
     <section class="panel">
-        <header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2><span class="panel-code">MASTER / 02</span></header>
+        <header class="panel-header"><h2><UiIcon Name="people" /> Daftar guru</h2></header>
         <div class="panel-toolbar">
             <div class="search-field"><UiIcon Name="search" /><input id="teacher-search" aria-label="Cari nama atau NIP guru" placeholder="Cari nama atau NIP…" @bind="query" @bind:event="oninput" /></div>
             <button type="button" class="primary" id="teacher-add" @onclick="() => addOpen = true">Tambah guru</button>
@@ -77,7 +77,7 @@ else
                 <button type="button" class="icon-button" aria-label="Tutup registrasi guru" disabled="@saving" @onclick="CloseRegistration">×</button>
             </header>
             <div class="dialog-body">
-                <p class="eyebrow">GURU TERPILIH</p><h3>@selectedTeacher.Nama</h3><p class="mono muted">NIP @selectedTeacher.Nip</p>
+                <p class="eyebrow">Guru terpilih</p><h3>@selectedTeacher.Nama</h3><p class="mono muted">NIP @selectedTeacher.Nip</p>
                 <p>Tap kartu pada reader, periksa nomor dan identitas guru, lalu simpan. Pembacaan di formulir ini tidak dicatat sebagai absensi.</p>
                 <form @onsubmit:preventDefault>
                     @if (selectedTeacher.PunyaKartu)

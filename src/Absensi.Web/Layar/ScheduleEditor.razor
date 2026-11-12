@@ -8,7 +8,7 @@
    sebelumnya tetap memakai jadwal lama. Aturan urutan jam, kewenangan dan
    audit ada di LayananJadwalHari.ScheduleFrom. *@
 <section class="panel settings-wide" id="schedule-settings">
-    <header class="panel-header"><h2><UiIcon Name="clock" /> Jadwal harian</h2><span class="panel-code">P-15 · WITA</span></header>
+    <header class="panel-header"><h2><UiIcon Name="clock" /> Jadwal harian</h2></header>
     <div class="settings-body">
         @if (Status.TahunAjaranId is not { } periodId)
         {
@@ -68,7 +68,7 @@
                     </table>
                 </div>
                 <p class="field-help">Urutan jam: batas hadir &lt; rekap orang tua &lt; batas tap masuk ≤ mulai pulang. Daftar belum tap setelah batas hadir dan paling lambat batas tap masuk.</p>
-                <button id="schedule-save" type="submit" class="primary" disabled="@busy">Simpan jadwal berlaku mulai @effective.ToString("dd/MM/yyyy")</button>
+                <button id="schedule-save" type="submit" disabled="@busy">Simpan jadwal berlaku mulai @effective.ToString("dd/MM/yyyy")</button>
             </form>
             @if (message is not null) { <p id="schedule-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
         }

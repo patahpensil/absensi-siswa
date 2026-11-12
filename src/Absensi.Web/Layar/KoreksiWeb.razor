@@ -2,9 +2,9 @@
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / KOREKSI</p><h1>Koreksi status</h1><p>Pilih kelas dan tanggal, lalu ubah status siswa dengan alasan yang jelas.</p></div><span class="badge info">@(WorkspaceView.IsClassTeacher(Status) ? "Kelas Anda" : "Semua kelas")</span></div>
+<div class="page-heading"><div><h1>Koreksi status</h1><p>Pilih kelas dan tanggal, lalu ubah status siswa dengan alasan yang jelas.</p></div><span class="badge info">@(WorkspaceView.IsClassTeacher(Status) ? "Kelas Anda" : "Semua kelas")</span></div>
 <section class="panel">
-    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar kehadiran</h2><span class="panel-code">KOREKSI / 01</span></header>
+    <header class="panel-header"><h2><UiIcon Name="people" /> Daftar kehadiran</h2></header>
     <div class="panel-toolbar">
         <select id="correction-class" aria-label="Pilih kelas" @bind="classId" @bind:after="Reload">
             @foreach (var c in classes) { <option value="@c.Id">@c.Nama</option> }

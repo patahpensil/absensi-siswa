@@ -377,7 +377,7 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   await tv.locator('#gate-reader').pressSequentially('0000222201');
   await tv.press('#gate-reader', 'Enter');
   await tv.waitForFunction(() => document.querySelector('#gate-cards')?.textContent?.includes('Ibu Sari'));
-  tegas((await tv.textContent('#gate-cards')).includes('GURU'), 'label guru hilang');
+  tegas((await tv.textContent('#gate-cards')).includes('Guru'), 'label guru hilang');
   tegas(await tv.locator('#gate-cards .card').count() >= 2, 'tap siswa dan guru tidak tampil bersamaan');
   tegas(await tv.locator('#gate-cards img.photo').count() >= 1, 'foto guru yang sudah diunggah tidak tampil');
 

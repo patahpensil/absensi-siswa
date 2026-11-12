@@ -8,7 +8,7 @@
    Semua aturan (hierarki, satu guru per akun wali, audit) dijalankan oleh
    LayananAkun — layar ini hanya memanggilnya. *@
 <section class="panel settings-wide" id="account-management">
-    <header class="panel-header"><h2><UiIcon Name="people" /> Akun pengguna</h2><span class="panel-code">§3.1</span></header>
+    <header class="panel-header"><h2><UiIcon Name="people" /> Akun pengguna</h2></header>
     <div class="settings-body">
         <p>@(IsHead ? "Kepala sekolah dapat membuat akun Admin dan Wali Kelas." : "Admin dapat membuat dan mengelola akun Wali Kelas.") Akun tidak dihapus; akun yang tidak dipakai lagi dinonaktifkan.</p>
         <div class="table-wrap">
@@ -89,11 +89,11 @@
                                 <option value="@teacher.Id">@teacher.Nama</option>
                             }
                         </select>
-                        <p class="field-help">Akses kelas mengikuti penugasan wali kelas guru ini (§3.3).</p>
+                        <p class="field-help">Akses kelas mengikuti kelas yang diwalikan guru ini.</p>
                     </div>
                 }
             </fieldset>
-            <button id="account-create" type="submit" class="primary" disabled="@busy">Buat akun</button>
+            <button id="account-create" type="submit" disabled="@busy">Buat akun</button>
         </form>
         @if (message is not null) { <p id="account-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
     </div>

@@ -3,11 +3,11 @@
 @inject StatusAplikasi Status
 
 <div class="page-heading">
-    <div><p class="eyebrow">MASTER DATA / KELAS</p><h1>Kelas dan wali</h1><p>Penugasan kelas per periode akademik.</p></div>
+    <div><h1>Kelas dan wali</h1><p>Penugasan kelas per periode akademik.</p></div>
     <span class="page-total"><strong class="mono">@classes.Count</strong> kelas</span>
 </div>
 <section class="panel">
-    <header class="panel-header"><h2><UiIcon Name="school" /> Daftar kelas</h2><span class="panel-code">MASTER / 03</span></header>
+    <header class="panel-header"><h2><UiIcon Name="school" /> Daftar kelas</h2></header>
     @if (WorkspaceView.CanManage(Status))
     {
         <div class="panel-toolbar">

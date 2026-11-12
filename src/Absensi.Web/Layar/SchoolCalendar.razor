@@ -7,7 +7,7 @@
 @using Microsoft.Data.Sqlite
 @inject StatusAplikasi Status
 
-<div class="page-heading"><div><p class="eyebrow">OPERASIONAL / KALENDER</p><h1>Kalender sekolah</h1><p>Hari efektif, libur, dan penutupan absensi.</p></div></div>
+<div class="page-heading"><div><h1>Kalender sekolah</h1><p>Hari efektif, libur, dan penutupan absensi.</p></div></div>
 <section class="panel" id="school-calendar">
     <header class="panel-header">
         <h2>@month.ToString("MMMM yyyy", Indonesian)</h2>
@@ -58,7 +58,7 @@
                 @if (readiness is null)
                 {
                     <label><input id="calendar-lock-consent" type="checkbox" @bind="confirmLock" disabled="@busy" /> Saya sudah memeriksa laporan bulan ini.</label>
-                    <button type="button" id="calendar-lock" class="primary" disabled="@(!confirmLock || busy)" @onclick="LockMonth">Kunci bulan</button>
+                    <button type="button" id="calendar-lock" class="bahaya" disabled="@(!confirmLock || busy)" @onclick="LockMonth">Kunci bulan</button>
                 }
             }
         </div>

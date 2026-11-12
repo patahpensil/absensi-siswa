@@ -7,7 +7,7 @@
 @* PANDUAN-UI-UX §9 Pengaturan: identitas sekolah. Validasi dan audit ada di
    SchoolIdentityService; layar ini hanya memanggilnya lalu membaca ulang. *@
 <section class="panel" id="school-identity">
-    <header class="panel-header"><h2><UiIcon Name="school" /> Identitas sekolah</h2><span class="panel-code">LAPORAN</span></header>
+    <header class="panel-header"><h2><UiIcon Name="school" /> Identitas sekolah</h2></header>
     <div class="settings-body">
         <p>Nama, NPSN dan alamat dipakai pada judul aplikasi dan kepala laporan.</p>
         <div class="logo-row">
@@ -33,7 +33,7 @@
                     <input id="school-address" maxlength="250" @bind="address" />
                 </div>
             </fieldset>
-            <button id="school-identity-save" type="submit" class="primary" disabled="@busy">Simpan identitas</button>
+            <button id="school-identity-save" type="submit" disabled="@busy">Simpan identitas</button>
         </form>
         @if (message is not null) { <p id="school-identity-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
     </div>
