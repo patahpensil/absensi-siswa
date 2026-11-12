@@ -1,23 +1,57 @@
 # PRD — Layanan Absensi Siswa dan Guru RFID
 
-**Versi dokumen:** 1.0 — RANCANGAN ONLINE, keputusan terbuka masih dicatat
-**Tanggal revisi:** 12 November 2026 (WITA)
+**Versi dokumen:** 2.0 — disusun ulang mengikuti aplikasi yang ada; rancangan online tetap dicatat sebagai Rencana
+**Tanggal revisi:** 13 November 2026 (WITA)
 **Pemilik produk:** penyedia layanan aplikasi absensi untuk sekolah-sekolah pelanggan
 **Sekolah rujukan aturan bisnis:** UPT SMP Negeri 1 Pancarijang
 **Sumber:** `patahpensil/absensi-smp1`, `docs/PRD.md`, cabang `master`
-**Commit basis:** `9e686e232f0b027446f74743fcad19ddd1cbdbfc`
-**Status:** rancangan dan keputusan pembahasan dicatat di repositori atas instruksi pemilik; P-16 tetap ditangguhkan; D-01–D-11 belum seluruhnya selesai; implementasi online, kelayakan biaya dan kelulusan keamanan belum dibuktikan
-**Utang pembahasan:** [PROGRES-DAN-UTANG.md §6](PROGRES-DAN-UTANG.md#6-utang-pembahasan-prd-online)
+**Status:** aplikasi desktop Windows dan aplikasi web berjalan tanpa server (data lokal). Layanan online multi sekolah (§13, §18, §21–§23) belum dibangun. Keputusan terbuka D-01–D-11 tetap menunggu pemilik (§25.1).
+**Utang dan bukti:** [PROGRES-DAN-UTANG.md](PROGRES-DAN-UTANG.md)
 
-> Revisi ini menggantikan arah standalone dengan SaaS multi sekolah. Desktop tetap C#/WPF dan backend menggunakan C#/ASP.NET Core. Detail arsitektur ada di §21, keamanan di §22, biaya di §23, standar kode/atribusi di §24, dan keputusan terbuka serta gerbang rilis di §25.
+> **Cara membaca versi 2.0 (instruksi pemilik, 13 November 2026):** nomor bab tidak diubah karena dirujuk kode dan tes. Setiap bab diawali kotak **Status aplikasi** yang menjelaskan apa yang sudah ada di aplikasi. Label:
+> - **[Ada: web + desktop]** — tersedia di kedua bentuk aplikasi;
+> - **[Ada: web]** / **[Ada: desktop]** — hanya pada satu bentuk;
+> - **[Sebagian]** — sebagian ketentuan bab sudah ada, sisanya dirinci di kotak status;
+> - **[Rencana]** — rancangan versi online yang belum dibangun; tetap mengikat bila kelak dibangun.
 >
-> **Instruksi pemilik, 4 November 2026:** commit dan push pembaruan PRD beserta catatan utang pembahasan diotorisasi. Otorisasi ini hanya untuk dokumen. Implementasi aplikasi online, migrasi data nyata, pengadaan berbayar dan deployment belum diotorisasi; target ASVS L3 belum dibuktikan.
->
-> **Aturan prioritas:** untuk lokasi proses, penyimpanan, autentikasi, isolasi, backup, dan deployment, §21–§25 mengungguli deskripsi standalone yang masih ada pada dokumen turunan. Aturan bisnis status, kalender, kartu dan laporan yang tidak diubah eksplisit tetap menjadi baseline. Detail yang belum disepakati tercatat pada §25.1; agen tidak boleh mengisinya dengan asumsi.
+> Aturan bisnis (status, kalender, kartu, koreksi, laporan) berlaku untuk kedua bentuk aplikasi dan dijalankan oleh layanan yang sama di `Absensi.Domain` dan `Absensi.Data`. Ketentuan yang bergantung pada server (backend, MFA, tenant, outbox server, sinkronisasi offline) baru berlaku ketika versi online dibangun. Agen tidak boleh mengisi detail yang belum diputuskan dengan asumsi (§25.1).
+
+---
+
+## 0. Status Aplikasi Saat Ini
+
+Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
+
+| Bentuk | Teknologi | Penyimpanan data | Tempat berjalan |
+|---|---|---|---|
+| Desktop Windows | .NET 10, WPF/MVVM | SQLite di folder `data/` PC sekolah | PC gerbang sekolah |
+| Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | `absensi-uji.pages.dev` (Cloudflare Pages, berkas statis) |
+| Web — mode nyata | sama dengan mode uji, `"Mode": "nyata"` di `wwwroot/appsettings.json` | IndexedDB browser perangkat yang dipakai; tidak ada server | `absensi-uji-real.pages.dev`, repo `patahpensil/Absensi-Uji-Real` |
+| Layanan online multi sekolah | C#/ASP.NET Core, PostgreSQL (rancangan) | server di Indonesia (rancangan) | **[Rencana]** — belum dibangun |
+
+| Area | Web | Desktop | Catatan |
+|---|---|---|---|
+| Wizard instalasi, login, akun dan peran | Ada | Ada | Login sandi lokal; MFA dan undangan akun = Rencana |
+| Master tahun ajaran, kelas, siswa, guru, impor Excel | Ada | Ada | Impor foto massal tidak tersedia (dihapus atas instruksi pemilik) |
+| Registrasi dan penggantian kartu RFID | Ada | Ada | Satu kartu aktif per orang, unik lintas siswa/guru |
+| Tap gerbang, layar TV, aturan status | Ada | Ada | Web: reader keyboard-emulation saja. Desktop: juga mode serial/COM opsional |
+| Koreksi, kalender, kunci bulan, jadwal berlaku mulai | Ada | Ada | |
+| Kehadiran guru (status oleh Kepala Sekolah) | Ada | Ada | |
+| Laporan Excel/PDF | Ada (PDF lewat cetak browser) | Ada (PDF QuestPDF) | |
+| Notifikasi orang tua, wali kelas, guru | Pratinjau dan antrean saja, tidak ada pesan terkirim | Telegram dikirim penjadwal desktop selama aplikasi menyala; WhatsApp hanya diantre | Penyedia WhatsApp menunggu D-03 |
+| Pairing Telegram (QR) | Tidak ada | Ada | |
+| Jejak audit | Ada | Ada | Log keamanan terpisah = Rencana |
+| Backup/restore | Unduh/pulihkan berkas `.zip` (database + foto) | Backup lokal 7 berkas, terenkripsi kunci lisensi; tempat "cloud" masih folder lokal | Backup server = Rencana |
+| Lisensi | Kunci apa pun diterima (belum ada server lisensi) | sama | Rencana |
+| Sinkronisasi offline P-08 | — | — | Rencana (versi online) |
+
+**Batas yang harus diketahui pemakai uji coba (keputusan pemilik 12 November 2026):** data web mode nyata hanya ada di satu browser; hilang bila data situs dihapus, kecuali dipulihkan dari berkas cadangan. Berkas cadangan dan data di browser belum dienkripsi. Keamanan data dan lokasi server diselesaikan pemilik bersama versi online (VPS di Indonesia, PP 71/2019 Pasal 20 untuk lingkup publik; data anak termasuk data pribadi spesifik menurut UU 27/2022 Pasal 4).
 
 ---
 
 ## 1. Ringkasan Produk
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Aplikasi yang ada adalah desktop Windows dan web tanpa server (§0). Tabel di bawah adalah rancangan layanan online multi sekolah **[Rencana]**; baris Desktop, Notifikasi dan aturan bisnis paragraf terakhir sudah berlaku pada aplikasi yang ada.
 
 Layanan absensi siswa dan guru menggunakan kartu RFID untuk banyak sekolah pelanggan. Pemilik aplikasi bertindak sebagai penyedia layanan; setiap sekolah mempunyai ruang data, akun, perangkat dan kewenangannya sendiri. Produk mencakup desktop terpasang di sekolah, website publik, portal sekolah, portal pengelola layanan, serta backend yang terpisah dari frontend.
 
@@ -41,6 +75,8 @@ Nama sekolah, identitas, kalender, kelas, jadwal dan tahun ajaran merupakan konf
 
 ## 2. Tujuan
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** untuk tujuan 1 dan 3. Tujuan 2 (kepastian harian orang tua) baru terpenuhi pada desktop yang mengirim Telegram; web belum mengirim pesan. Tujuan 4 menunggu versi online dan paket desktop bertanda tangan.
+
 1. Menghapus absensi manual di buku dan rekap tulis tangan.
 2. Memberi orang tua kepastian harian tentang kehadiran anaknya.
 3. Menghasilkan laporan kehadiran yang siap diserahkan ke kepala sekolah dan dinas.
@@ -49,6 +85,12 @@ Nama sekolah, identitas, kalender, kelas, jadwal dan tahun ajaran merupakan konf
 ---
 
 ## 3. Pengguna dan Hak Akses
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak yang terbukti di tes:
+> - Kepala Sekolah: semua menu kecuali Audit; satu-satunya yang membuat akun Admin/TU dan menetapkan status kehadiran guru.
+> - Admin/TU: semua menu termasuk Audit; membuat dan mengelola akun Wali Kelas, tidak dapat membuat Admin; melihat status guru tanpa mengubahnya.
+> - Wali Kelas: tanpa menu Layar gerbang, Notifikasi dan Audit; hanya melihat siswa kelasnya; tidak dapat mengubah master, kartu, foto, kalender, laporan atau data guru; koreksi hanya untuk kelasnya tanpa kolom "atas permintaan".
+> - Pemeriksaan hak dijalankan layanan `Absensi.Data` (bukan hanya tampilan); "backend" pada bab ini berarti layanan tersebut sampai versi online dibangun.
 
 Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem online, autentikasi dan pemulihan wajib mengikuti MFA serta kontrol ASVS L3 pada §22; username/password saja bukan desain autentikasi final. Hak akses bisnis sekolah pada tabel berikut dipertahankan. Hak penyedia layanan diatur terpisah pada §21.10.
 
@@ -92,6 +134,8 @@ Riwayat koreksi tetap merujuk pelaku aslinya, bukan wali kelas yang kini menjaba
 
 ## 4. Perangkat Keras
 
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Desktop: mode keyboard-emulation dan mode serial/COM opsional. Web: hanya keyboard-emulation (browser tidak membaca port serial); tap hanya diterima saat jendela TV atau kolom pembacaan memegang fokus. Reader, TV/HDMI, suara dan empat reader bersamaan belum diuji dengan perangkat nyata.
+
 | Komponen | Ketetapan |
 |---|---|
 | Reader | 4 unit, USB keyboard-emulation; mode USB serial/COM opsional |
@@ -107,6 +151,8 @@ Riwayat koreksi tetap merujuk pelaku aslinya, bukan wali kelas yang kini menjaba
 ---
 
 ## 5. Master Data
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** kecuali yang disebut di subbab: impor foto massal (§5.5) tidak tersedia, pengubahan manual tanggal mulai/hari terakhir siswa (§5.3) belum tersedia.
 
 ### 5.1 Tahun Ajaran
 
@@ -174,10 +220,10 @@ Keputusan P-03 menambahkan registrasi kartu melalui file yang **diimpor**. Jika 
 
 ### 5.5 Foto Siswa
 
-- **Impor massal:** operator memilih satu folder berisi file foto dengan nama file sesuai NISN. Dijalankan **setelah** impor Excel.
-- **Unggah per siswa:** untuk foto susulan dan siswa pindahan.
+- **Impor massal:** ~~operator memilih satu folder berisi file foto dengan nama file sesuai NISN~~ — **tidak tersedia**; dihapus dari tampilan atas instruksi pemilik (§14.4, §16.4).
+- **Unggah per siswa/guru:** satu-satunya cara memasang foto, dari panel detail atau daftar. **[Ada: web + desktop]**
 - Foto dikecilkan ke ±200×200 saat impor, bukan saat tampil.
-- Dimuat ke memori sekali saat aplikasi dibuka.
+- Dimuat ke memori sekali saat aplikasi dibuka. Web menyimpan foto di IndexedDB dan ikut dalam berkas cadangan.
 - Siswa tanpa foto ditampilkan sebagai lingkaran inisial.
 
 ### 5.6 Kartu RFID
@@ -221,6 +267,8 @@ Untuk siswa baru yang diimpor tanpa UID, kolom kartu menampilkan "Belum terdafta
 
 ## 6. Kalender Pendidikan
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** input libur/hari sekolah per rentang dengan keterangan wajib, tutup hari, dan kunci bulan. Penetapan libur membatalkan pesan antrean tanggal itu (`BatalkanAntreUntukTanggal`, web dan desktop); pemberitahuan koreksi kalender P-14 untuk pesan yang sudah terkirim belum dibangun.
+
 Diinput **manual** oleh admin (tanggal, bulan, tahun). Tidak membaca file Excel. Diulang tiap semester.
 
 Jenis hari:
@@ -240,6 +288,8 @@ Jenis hari:
 
 ## 7. Jadwal Harian
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jadwal per hari (sekolah/tidak, batas hadir, daftar belum tap, rekap orang tua, batas tap masuk, mulai pulang) dan perubahan berlaku mulai tanggal (P-15) di kedua bentuk.
+
 | Hari | Batas Hadir | Rekap orang tua | Batas akhir tap masuk | Mulai absen pulang |
 |---|---|---|---|---|
 | Senin–Kamis, Sabtu | 07.30 | 08.10 | 12.00 | 13.10 |
@@ -257,6 +307,8 @@ Seluruh nilai di atas adalah **konfigurasi per sekolah**, bukan nilai tetap.
 ---
 
 ## 8. Aturan Status Kehadiran
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** dijalankan `PemrosesTap` dan `PenentuStatusKehadiran` yang sama. Penetapan Bolos: desktop menjalankan finalisasi pada jamnya selama aplikasi menyala; web (dan desktop yang tidak menyala) menetapkannya saat aplikasi dibuka pada hari berikutnya (`LocalAttendanceClosure.FinalizeMissedDays`) atau lewat **Tutup hari terpilih** di Kalender.
 
 Status awal seluruh siswa setiap hari adalah **Alpa**. Tap kartu dapat mengubahnya sesuai aturan berikut; status Izin/Sakit yang sudah ditetapkan melalui koreksi tidak dibatalkan otomatis oleh tap (§8.3).
 
@@ -302,6 +354,8 @@ Hak akses wali kelas diperiksa terpisah di backend sesuai kewenangan sah (§3/§
 ---
 
 ## 9. Notifikasi Telegram dan WhatsApp
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Aturan waktu dan isi notifikasi diterapkan pada antrean (outbox) lokal. Desktop mengirim Telegram melalui penjadwal setiap 30 detik selama aplikasi menyala dan menyediakan pairing QR; belum diuji dengan bot nyata oleh pemilik. Pesan WhatsApp hanya diantre (penyedia menunggu D-03). Web hanya menampilkan pratinjau dan antrean; tidak ada pesan terkirim dan tidak ada pairing. Penjadwal/outbox server pada §9.4 **[Rencana]**.
 
 **Keputusan kanal — P-19, disetujui pemilik 12 November 2026:** layanan mendukung dua kanal notifikasi, **Telegram dan WhatsApp**. Rincian Telegram di bawah tetap berlaku untuk kanal Telegram; rincian kanal WhatsApp (penyedia/API, penautan penerima, isi pesan, biaya per pesan dan aliran data pihak ketiga) masih mengikuti D-03. P-16 tetap ditangguhkan: usulan tambahan verifikasi penautan oleh admin/TU belum disetujui dan belum dimasukkan sebagai ketentuan wajib.
 
@@ -380,6 +434,8 @@ Riwayat notifikasi awal tetap tercatat dan dihubungkan dengan koreksi kalender b
 
 ## 10. Koreksi Status
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** alasan wajib, kolom atas permintaan (tidak tampil untuk wali kelas), kunci bulan, audit. Pemeriksaan sinkronisasi P-11 berlaku sebagai pemeriksaan hari yang belum ditutup (`PendingDays`) sampai versi online ada.
+
 - Wali kelas dapat melakukan koreksi langsung terhadap siswa pada kelas yang menjadi kewenangannya, termasuk tanggal lampau.
 - Admin dapat membantu dengan akun admin sendiri; jika atas permintaan wali kelas, nama pemohon dicatat dalam kolom "atas permintaan".
 - Koreksi hanya terbuka selama bulan bersangkutan belum dikunci. Setelah dikunci, koreksi ditolak; revisi ini tidak membuat jalur pembukaan kunci.
@@ -392,6 +448,8 @@ Riwayat notifikasi awal tetap tercatat dan dihubungkan dengan koreksi kalender b
 ---
 
 ## 11. Laporan
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jenis Harian, Mingguan, Bulanan, Per orang dan Semester untuk siswa dan guru, Excel dan PDF. Web membuat PDF lewat **Cetak / Simpan PDF** browser (pustaka PDF tidak berjalan di WebAssembly); desktop memakai QuestPDF. Di web, menu Laporan hanya untuk Kepala Sekolah dan Admin; wali kelas melihat riwayat siswanya dari menu Siswa atau Absensi.
 
 Keluaran: **Excel dan PDF**.
 
@@ -456,6 +514,8 @@ Dengan cara ini, persentase kehadiran tetap adil, sementara pola siswa yang seri
 
 ## 12. Jejak Audit
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** audit bisnis append-only, layar Audit khusus Admin dengan bawaan 90 hari dan saringan akun/tanggal. Log keamanan terpisah dan retensi D-05 **[Rencana]**. Pemulihan cadangan di web belum menulis baris audit (utang).
+
 Mencatat setiap perubahan data yang **tidak** berasal dari tap:
 
 | Dicatat | Isi catatan |
@@ -476,6 +536,8 @@ Mencatat setiap perubahan data yang **tidak** berasal dari tap:
 
 ## 13. Model Layanan, Aktivasi dan Pembaruan
 
+> **Status aplikasi (13 November 2026):** **[Rencana]** untuk model layanan online, provisioning tenant, undangan dan pembaruan bertanda tangan. Yang ada sekarang: wizard instalasi lokal (Lisensi → Identitas sekolah → Tahun ajaran → Jadwal harian → Akun kepala sekolah → Selesai) di web dan desktop; kunci lisensi apa pun diterima karena server lisensi belum ada (`LayananLisensiLokal`); desktop dibagikan sebagai paket uji yang belum ditandatangani; web diperbarui otomatis setiap deploy Cloudflare Pages.
+
 ### 13.1 Model layanan
 
 Pemilik aplikasi menjual layanan kepada sekolah pelanggan. Paket, tarif, kontrak, masa aktif, pembaruan, bantuan, ekspor akhir layanan dan konsekuensi tunggakan belum ditentukan. Ketentuan lama "beli putus" dan "sekali aktivasi online lalu offline selamanya" tidak menjadi ketentuan final layanan online. Pembahasan komersial mengikuti D-04 dan berada di luar evaluasi pengeluaran pemilik pada §23; evaluasi biaya tidak menetapkan tarif atau beban sekolah.
@@ -489,7 +551,7 @@ Pemilik aplikasi menjual layanan kepada sekolah pelanggan. Paket, tarif, kontrak
 5. Desktop resmi ditandatangani, dipasang di PC sekolah, dan diikat ke tenant melalui registrasi perangkat yang terbatas.
 6. Guru, kelas, siswa dan kartu disiapkan melalui alur bisnis yang ditetapkan. Token bot dikonfigurasi belakangan oleh pihak berwenang dan dikelola pada server.
 
-Wizard lama menjadi alur onboarding tenant; bukan lagi deteksi bahwa file database lokal belum ada. Pengulangan setup tidak boleh menimpa data sekolah atau membuka pembuatan ulang akun pemilik tanpa verifikasi.
+Pada versi online, wizard lama menjadi alur onboarding tenant; bukan lagi deteksi bahwa file database lokal belum ada. Pengulangan setup tidak boleh menimpa data sekolah atau membuka pembuatan ulang akun pemilik tanpa verifikasi.
 
 ### 13.3 Pembaruan
 
@@ -503,6 +565,8 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 
 ### 14.1 Layar Absensi (Gerbang)
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** layar TV terpisah dengan foto, label GURU/SISWA, nama dan NISN/NIP, beberapa kartu sekaligus, ringkasan harian. Nama pendek 64 px; nama panjang mengecil agar status dan jam tetap terlihat (keputusan pemilik 12 November 2026, PANDUAN-UI-UX §8.1).
+
 - Tampil di **satu layar besar (TV)**
 - Fullscreen, tanpa menu, tanpa mouse
 - **Foto ditampilkan** saat tap — satu-satunya pengaman terhadap titip kartu
@@ -513,6 +577,8 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 - Ringkasan harian: Hadir / Terlambat / Belum tap / Guru
 
 ### 14.1.1 Pengendali Gerbang dan TV
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** tabel hak dan dua tindakan terpisah terbukti di tes web. Konfirmasi memakai sandi akun sendiri; reautentikasi/MFA produksi **[Rencana]**.
 
 **Keputusan pemilik, 7 November 2026:** layar gerbang berbeda dari dashboard dan halaman daftar absensi. Fitur **Layar gerbang** membuka tampilan TV fullscreen; kontrolnya hanya dapat diakses oleh **Kepala Sekolah dan Admin/TU**. Pemeriksaan berlaku pada aksi/layanan, bukan hanya visibilitas menu. Wali kelas tidak boleh membuka, menutup atau menghentikan gerbang melalui menu, perintah maupun pemanggilan langsung. Petugas di gerbang dapat melihat TV yang sudah diaktifkan tanpa memperoleh akun admin. Akun vendor tidak otomatis mendapat hak operasional sekolah.
 
@@ -533,7 +599,9 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 
 ### 14.2 Layar Admin
 
-Menu: Dashboard, Absensi, **Layar gerbang** (kepala sekolah/admin saja), Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi, Audit, Pengaturan.
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Menu sesuai daftar (Layar gerbang dan Notifikasi hanya Kepala Sekolah/Admin; Audit hanya Admin). Header memuat nama sekolah, logo dan tahun ajaran aktif. Dashboard web berisi: Pusat kendali kehadiran (ringkasan harian, tombol Layar gerbang TV dan Buka absensi), Pantauan kedatangan, Tindak lanjut siswa (belum tap) dan Kesiapan data. Status rekap notifikasi dan peringatan pairing belum ada di dashboard web.
+
+Menu: Dashboard, Absensi, **Layar gerbang** (kepala sekolah/admin saja), Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi (kepala sekolah/admin saja), Audit (admin saja), Pengaturan.
 
 Header memuat **nama sekolah, logo, dan tahun ajaran aktif**. Menampilkan tahun ajaran di header berfungsi sebagai pengaman — admin langsung sadar bila masih memakai tahun ajaran lama setelah Juli.
 
@@ -546,6 +614,8 @@ Dashboard menjawab satu pertanyaan utama: **siapa yang belum tap hari ini**. Isi
 - Tombol cepat: Koreksi · Mode gerbang
 
 ### 14.3 Menu Absensi
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Web: kolom pembacaan **Nomor kartu RFID** (hanya Kepala Sekolah/Admin), tabel Catatan kehadiran dengan saringan status, dan panel jadwal. Status perangkat "x dari y" hanya ada di desktop mode serial. Di web, mode registrasi diaktifkan dari dialog **Daftarkan kartu**/**Ganti kartu** di menu Siswa/Guru, bukan dari menu Absensi.
 
 Bukan layar gerbang, melainkan pengendalinya:
 
@@ -560,6 +630,8 @@ Bukan layar gerbang, melainkan pengendalinya:
 Siswa yang belum tap tetap muncul sebagai Alpa, bukan hilang dari daftar — sesuai aturan bahwa seluruh siswa punya baris sejak awal hari.
 
 ### 14.4 Menu Siswa
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Web: satu halaman daftar dengan pencarian, saringan kelas, tombol **Tambah siswa** dan **Impor Excel** (dialog), serta aksi per baris **Ubah**, **Daftarkan kartu**/**Ganti kartu**, **Mutasi**; klik nama membuka panel detail tempat foto diunggah. Sub-halaman Impor Foto tidak ada (revisi 2026-09-23 di bawah).
 
 Empat sub-halaman:
 
@@ -583,6 +655,8 @@ Di atas tabel ditampilkan hitungan untuk kelas yang sedang dipilih, mis. "Kelas 
 
 ### 14.5 Tampilan Hasil Impor
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** pratinjau dengan hasil validasi per baris sebelum konfirmasi; berkas `.xlsx` maksimal 5 MB di web.
+
 Layar impor menampilkan:
 
 - Kemajuan langkah: Analisis → Validasi → Preview → Impor
@@ -592,6 +666,8 @@ Layar impor menampilkan:
 - Tombol impor menyebut jumlahnya, mis. "Impor 812 baris"
 
 ### 14.6 Panel Detail Siswa
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web membukanya dari menu Siswa, Guru dan Absensi; berisi identitas, foto (unggah), kartu, rekap bulan, riwayat dengan penanda koreksi, tombol **Ubah** pada riwayat, **Laporan Excel**, dan pilihan kanal orang tua (Telegram/WhatsApp) untuk Kepala Sekolah/Admin. Status pairing Telegram tidak ada di web.
 
 Di menu Absensi, **nama siswa dapat diklik** untuk memunculkan panel detail tanpa berpindah halaman. Isi panel:
 
@@ -608,12 +684,16 @@ Penanda "koreksi" pada baris riwayat membedakan data yang berasal dari tap dan y
 
 ### 14.7 Ketentuan Visual
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** ketentuan rinci kini mengikuti `PANDUAN-UI-UX.md` (huruf IBM Plex Sans, palet, radius, bayangan).
+
 - Setiap box, toggle, dan elemen berwarna memakai **shadow/overlay** — tidak flat
 - Penempatan huruf **presisi dan proporsional**: perataan, jarak, dan ukuran konsisten
 
 ---
 
 ## 15. Ketentuan Teknis
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Tabel di bawah adalah rancangan versi online **[Rencana]**. Yang ada: solusi .NET 10 (disetujui pemilik) dengan proyek `Absensi.Domain` (aturan murni), `Absensi.Data` (SQLite, migrasi bernomor, layanan), `Absensi.Laporan` (Excel/PDF), `Absensi.Telegram`, `Absensi.App` (WPF/MVVM) dan `Absensi.Web` (Blazor WebAssembly statis). Web memuat SQLite di memori browser dan menyalinnya ke IndexedDB setiap perubahan. CI GitHub Actions membangun, menjalankan tes .NET di Windows dan tes Chromium sebelum deploy.
 
 | Lapisan | Ketentuan |
 |---|---|
@@ -640,7 +720,11 @@ Database tidak dibuka lewat internet ke desktop; menaruh SQLite di server lalu m
 
 ## 16. Alur Kerja Detail
 
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Alur bisnis 16.2–16.17 berjalan di aplikasi kecuali yang disebut di subbab. Pekerjaan "worker server" dijalankan lokal: pembukaan hari saat aplikasi dibuka, penjadwal notifikasi/finalisasi di desktop selama menyala.
+
 ### 16.1 Instalasi Pertama
+
+> **Status aplikasi (13 November 2026):** **[Rencana]** untuk alur online. Yang ada: wizard lokal (§13). Desktop dapat memulihkan backup pada wizard; web memulihkan berkas cadangan dari Pengaturan setelah wizard selesai.
 
 Alur online mengikuti §13.2: provisioning tenant → undangan kepala sekolah + MFA → konfigurasi sekolah/tahun ajaran/jadwal → akun sekolah → pemasangan desktop resmi → pengikatan perangkat → data awal dan registrasi kartu melalui API. Tidak membuat database resmi SQLite di PC dan tidak mengaktifkan lisensi offline selamanya.
 
@@ -682,6 +766,8 @@ Impor data siswa tanpa nomor kartu tetap dapat digunakan untuk mengisi master se
 
 ### 16.4 Impor Foto
 
+> **Status aplikasi (13 November 2026):** **[Sebagian]** langkah 1–5 tidak tersedia; langkah 6 (unggah satu per satu) ada di web dan desktop.
+
 ```
 1. Operator menaruh seluruh file foto dalam satu folder
    Nama file = NISN, contoh 0012345678.jpg
@@ -713,6 +799,8 @@ Kegagalan validasi, penyimpanan atau verifikasi tampil sebagai galat yang dapat 
 
 ### 16.6 Pairing Orang Tua
 
+> **Status aplikasi (13 November 2026):** **[Ada: desktop]** web belum memiliki pairing.
+
 ```
 1. Sekolah membuat bot Telegram sendiri lewat BotFather
 2. Admin memasukkan token bot dan username bot di menu Pengaturan
@@ -731,6 +819,8 @@ Kegagalan validasi, penyimpanan atau verifikasi tampil sebagai galat yang dapat 
 ```
 
 ### 16.7 Alur Harian
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** baris absensi dibuat saat aplikasi dibuka pada hari itu (`PembukaanHari`); pesan wali kelas/orang tua hanya terkirim dari desktop yang menyala; Bolos lihat §8.
 
 Pada versi online, pembukaan hari dan finalisasi dijalankan worker server menurut zona waktu sekolah (§21.8–§21.9). Jadwal bisnis berikut dipertahankan; P-08 menyetujui perekaman tap sementara saat offline. Rincian bukti waktu, sinkronisasi, job terlewat dan notifikasi data terlambat masih mengikuti D-01/D-02.
 
@@ -839,6 +929,8 @@ Jika siswa yang sudah berstatus Izin/Sakit ternyata hadir, wali kelas yang berwe
 > Status guru menjadi **HADIR** hanya setelah tap pulang. Bila sampai akhir hari hanya ada tap masuk, status menjadi **Tidak lengkap** dan menunggu keputusan Kepala Sekolah.
 
 ### 16.9 Alur Notifikasi
+
+> **Status aplikasi (13 November 2026):** **[Sebagian]** langkah 1–2 dan 5 berjalan pada outbox lokal; pengiriman Telegram hanya dari desktop. Langkah 3 (penahanan karena sinkronisasi) dan 6 (replay server) **[Rencana]**.
 
 Tap yang terhalang status Izin/Sakit (§8.3/§16.8.a) tidak membuat pekerjaan notifikasi Hadir/Terlambat. Perubahan oleh koreksi berwenang tetap mengikuti alur koreksi.
 
@@ -956,6 +1048,8 @@ Jumlah antrean server nol saja tidak membuktikan kelengkapan apabila ada perangk
 
 ### 16.15 Onboarding Data Guru
 
+> **Status aplikasi (13 November 2026):** **[Sebagian]** langkah 3 (foto massal) tidak tersedia; langkah 7 (QR pairing guru) hanya desktop.
+
 ```
 1. TU atau Kepala Sekolah membuka Master Guru
 2. Impor Excel guru (kolom: NAMA, NIP, PANGKAT, JABATAN, NO_KARTU)
@@ -978,6 +1072,8 @@ Jumlah antrean server nol saja tidak membuktikan kelengkapan apabila ada perangk
 
 ### 16.16 Alur Harian Guru
 
+> **Status aplikasi (13 November 2026):** **[Sebagian]** status Masuk/Hadir/Tidak lengkap berjalan di web dan desktop; notifikasi ke guru hanya terkirim dari desktop.
+
 Finalisasi akhir hari dijalankan worker server sesuai tanggal/zona waktu sekolah dan terpisah dari pengiriman notifikasi (§21.9). Kebijakan mengejar finalisasi yang terlewat harus diputuskan melalui D-02.
 
 ```
@@ -999,6 +1095,8 @@ Pagi    Guru tap → status MASUK, jam tap dicatat
 
 ### 16.17 Penetapan Status Guru oleh Kepala Sekolah
 
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web: menu **Guru** → panel **Kehadiran guru** → **Tetapkan status**; di muka pilihan Izin/Dinas luar/Cuti, sesudahnya Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib; Admin hanya melihat. Status Dinas luar di muka ketika harinya tiba tanpa tap belum dibuktikan tes.
+
 ```
 1. Kepala Sekolah membuka menu Guru → Kehadiran
 2. Pilih tanggal
@@ -1014,6 +1112,8 @@ Pagi    Guru tap → status MASUK, jam tap dicatat
 ---
 
 ## 17. Modul Absensi Guru
+
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** kecuali foto massal (§17.2) dan notifikasi guru (§17.6, hanya desktop).
 
 ### 17.1 Master Guru
 
@@ -1112,6 +1212,10 @@ Guru memakai **reader yang sama** dengan siswa di gerbang. Aplikasi membedakan k
 
 ## 18. Backup dan Restore Layanan Online
 
+> **Status aplikasi (13 November 2026):** **[Rencana]** untuk backup server. Yang ada sekarang:
+> - **Desktop:** backup otomatis saat aplikasi dibuka, 7 berkas terbaru di `backup/`, dienkripsi kunci lisensi bila lisensi aktif; salinan "cloud" masih folder lokal. Restore memvalidasi berkas (integrity_check, tabel wajib, foreign_key_check), mencatat audit `restore_backup`, dan menyimpan arsip riwayat audit yang dienkripsi kunci lisensi (tanpa DPAPI, keputusan pemilik 12 November 2026).
+> - **Web:** Kepala Sekolah/Admin mengunduh berkas `.zip` (database + foto) dari Pengaturan → Cadangan data dan memulihkannya; database divalidasi dengan pemeriksaan restore desktop. Berkas belum dienkripsi dan pemulihan belum tercatat di audit.
+
 ### 18.1 Pelaksana dan sasaran
 
 Pencadangan dijalankan pada infrastruktur server dan tidak bergantung pada PC sekolah hidup. Jadwal, retensi, RPO dan RTO ditetapkan berdasarkan klasifikasi data, risiko dan biaya (D-05/D-07). Ketentuan lama dua titik backup saat desktop dibuka/batas tap tidak menjadi jadwal backup server final.
@@ -1138,6 +1242,8 @@ Uji pemulihan berkala harus memulihkan data dan berkas, memeriksa relasi, riwaya
 
 ## 19. Keputusan dan Poin Terbuka
 
+> **Status aplikasi (13 November 2026):** Arah online di bawah tetap rancangan **[Rencana]**; keputusan terbuka ada di §25.1.
+
 Arah SaaS multi sekolah, desktop C#/WPF, backend C#/ASP.NET Core, pemisahan frontend/backend, isolasi runtime dan database per sekolah, lokasi data Indonesia serta target verifikasi ASVS L3 telah disepakati sebagai kebutuhan rancangan.
 
 Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail itu membatasi pekerjaan yang bergantung padanya; bukan izin menebak konfigurasi, tarif, kebijakan data atau perilaku offline. Evaluasi teknis/biaya berada di §23. Status implementasi lama tetap mengacu register bug dan progres, bukan diasumsikan selesai.
@@ -1145,6 +1251,8 @@ Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail i
 ---
 
 ## 20. Lingkup Rancangan dan Batas Rilis
+
+> **Status aplikasi (13 November 2026):** Aplikasi web mode nyata dipakai untuk uji coba data asli atas keputusan pemilik 12 November 2026 (§25.5); itu bukan rilis produksi layanan online.
 
 Masuk lingkup rancangan online: website publik, portal pemilik layanan, portal sekolah yang dapat diakses browser termasuk HP, desktop RFID, backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
 
@@ -1155,6 +1263,8 @@ Pembaruan desktop otomatis dapat dinilai pada desain rilis; belum diputuskan. Ja
 ---
 
 ## 21. Arsitektur Layanan Online Multi Sekolah
+
+> **Status aplikasi (13 November 2026):** **[Rencana]** seluruh bab; belum ada server, tenant, PostgreSQL atau sinkronisasi offline.
 
 ### 21.1 Kedudukan pemilik dan pelanggan
 
@@ -1353,6 +1463,8 @@ Aturan bisnis mengikuti keputusan eksplisit dalam PRD ini dan riwayat §25.5: P-
 
 ## 22. Standar Keamanan dan Verifikasi ASVS Level 3
 
+> **Status aplikasi (13 November 2026):** **[Rencana]** target untuk versi online; aplikasi yang ada belum diverifikasi ASVS.
+
 ### 22.1 Target dan lingkup
 
 Target adalah **OWASP ASVS v5.0.0 Level 3**, meliputi seluruh persyaratan L1, L2, dan L3 yang berlaku, termasuk persyaratan dengan kondisi lebih ketat pada L3. Versi dibekukan agar nomor kontrol tidak berubah mengikuti cabang `master` standar. Keterpenuhan belum diperiksa dan belum boleh diklaim.
@@ -1467,6 +1579,8 @@ Matriks lengkap harus memuat: ID+versi, applicability/alasan, komponen pemilik k
 
 ## 23. Anggaran yang Harus Disiapkan Pemilik Layanan
 
+> **Status aplikasi (13 November 2026):** **[Rencana]** belum disusun; pemilik sedang mencari VPS di Indonesia.
+
 ### 23.1 Tujuan evaluasi
 
 **Seluruh evaluasi biaya pada bagian ini menghitung dana yang harus disiapkan pemilik aplikasi sebagai penyedia layanan.** Yang dinilai adalah pengeluaran untuk membangun, menjalankan, mengamankan, memelihara dan memulihkan platform sesuai arsitektur yang disepakati.
@@ -1541,6 +1655,8 @@ PRD ini tidak mengotorisasi pengujian berbayar, pembelian atau provisioning. Jik
 
 ## 24. Standar Wajib Penulisan Kode dan Ketentuan Atribusi
 
+> **Status aplikasi (13 November 2026):** **Berlaku sekarang** untuk seluruh kode dan dokumen.
+
 ### 24.1 Bahasa, struktur dan batas tanggung jawab
 
 Kode bisnis desktop dan backend tetap **C#**. Desktop mengikuti WPF/MVVM. Backend mengikuti pemisahan domain, application/use case, infrastructure, dan API. Nama/struktur folder dapat disesuaikan setelah desain rinci; batas dependensinya wajib dipertahankan:
@@ -1609,6 +1725,8 @@ Tes harus membuktikan perilaku atau batas keamanan yang bermakna. Tidak menambah
 ---
 
 ## 25. Keputusan Terbuka, Migrasi dan Gerbang Rilis
+
+> **Status aplikasi (13 November 2026):** §25.1 tetap terbuka; §25.2–§25.4 **[Rencana]** untuk versi online; §25.5 mencatat keputusan pemilik yang sudah berlaku.
 
 ### 25.1 Keputusan yang tidak boleh ditebak agen
 
@@ -1771,6 +1889,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Data hanya tersimpan di browser perangkat itu (IndexedDB), tidak dikirim ke server. Risiko yang diterima pemilik: data hilang bila riwayat browser dihapus, tidak ada pengiriman notifikasi, dan berkas cadangan berisi data pribadi tanpa enkripsi.
 - **Cadangan web:** Admin/Kepala Sekolah dapat mengunduh satu berkas `.zip` (database + foto) dan memulihkannya. Database divalidasi dengan validasi restore desktop (§18.2) sebelum menggantikan data. Pemulihan mengganti seluruh data di browser dan mengeluarkan pengguna. Pemulihan web belum mencatat baris audit restore (utang).
 - Rencana awal pemilik menyusun ulang PRD sebelum repo baru diubah: kode disalin dulu, PRD disusun ulang menyusul berdasarkan aplikasi yang ada.
+
+**Revisi 2.0, 13 November 2026 — atas instruksi pemilik:** PRD disusun ulang mengikuti aplikasi yang ada. Pilihan pemilik: nomor bab tetap (dirujuk kode dan tes), cakupan desktop dan web dengan web sebagai bentuk utama uji coba, bagian yang belum dibangun tetap dicatat sebagai **[Rencana]**. Ditambahkan §0 (status aplikasi) dan kotak status di setiap bab; isi keputusan P-01–P-20 dan D-01–D-11 tidak diubah. Disetujui pemilik pada hari yang sama: .NET 10 sebagai versi proyek dan ukuran nama TV (nama pendek 64 px, nama panjang mengecil).
 
 ### 25.6 Referensi primer
 

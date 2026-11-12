@@ -489,3 +489,11 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 **Repo Absensi-Uji-Real:** diisi salinan bersih dari `77b5f0f` (commit `f7a3083`, cabang `main`, tanpa `arsip/`, tanpa riwayat). Workflow deploy menguji mode uji dan nyata sebelum deploy, lalu memeriksa hasil deploy dengan `HANYA_MODE_NYATA=1`. Deploy pertama [gagal karena secret Cloudflare belum diisi](https://github.com/patahpensil/Absensi-Uji-Real/actions/runs/43226435744); menunggu pemilik mengisi `CLOUDFLARE_API_TOKEN` dan `CLOUDFLARE_ACCOUNT_ID`. Penyalinan perubahan berikutnya dilakukan manual atas permintaan pemilik.
 - Pembaruan: secret diisi pemilik; [deploy](https://github.com/patahpensil/Absensi-Uji-Real/actions/runs/43231432663) membuat proyek Pages `absensi-uji-real` di akun Cloudflare Patahpensil01 dan lulus pemeriksaan Chromium mode nyata pada `https://b0351c62.absensi-uji-real.pages.dev` (percobaan pertama gagal SSL karena sertifikat proyek baru belum siap). Alamat produksi `https://absensi-uji-real.pages.dev` belum dicek langsung oleh agen (proxy memblokir).
 - Perbaikan teks mode nyata: catatan penyimpanan tidak lagi menyuruh menjalankan wizard setelah instalasi selesai; panel "Cara menguji" di Absensi diganti "Cara memakai" tanpa menyebut waktu uji.
+
+## 28. PRD versi 2.0 mengikuti aplikasi yang ada — 13 November 2026
+
+**Instruksi pemilik:** susun ulang PRD mengikuti aplikasi yang ada. Pilihan pemilik: nomor bab tetap, cakupan web + desktop (web utama), bagian belum dibangun ditandai Rencana.
+
+**Selesai:** kepala dokumen versi 2.0 dengan cara membaca dan label status; §0 baru (bentuk aplikasi, tabel fitur web/desktop, batas uji coba data asli); kotak "Status aplikasi" di setiap bab 1–25 dan subbab yang menyimpang (14.x, 16.x); koreksi teks foto massal, menu, wizard. Klaim status diperiksa terhadap kode (`Absensi.Web`, `Absensi.App`, `Absensi.Data`) dan tes Chromium; keputusan P-01–P-20 dan D-01–D-11 tidak diubah.
+
+**Belum/perlu diperhatikan:** isi rinci bab rancangan online (§13, §18, §21–§23) dibiarkan sebagai Rencana tanpa ditulis ulang. Klaim pengiriman Telegram desktop berasal dari kode, belum diuji pemilik dengan bot nyata.
