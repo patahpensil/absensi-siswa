@@ -57,7 +57,7 @@ jobs:
 
       - name: Simpan hasil tes
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hasil-tes
           path: TestResults
@@ -81,7 +81,7 @@ jobs:
 
       - name: Simpan paket uji Windows x64
         if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AbsensiSekolah-uji-win-x64-${{ github.sha }}
           path: ${{ runner.temp }}/paket-uji/
