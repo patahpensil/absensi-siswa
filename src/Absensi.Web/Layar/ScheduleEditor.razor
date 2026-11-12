@@ -1,0 +1,181 @@
+@using System.Globalization
+@using Absensi.Data.Repositori
+@using Absensi.Data.Waktu
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PRD §7 P-15: perubahan jadwal berlaku mulai tanggal tertentu; tanggal
+   sebelumnya tetap memakai jadwal lama. Aturan urutan jam, kewenangan dan
+   audit ada di LayananJadwalHari.ScheduleFrom. *@
+<section class="panel settings-wide" id="schedule-settings">
+    <header class="panel-header"><h2><UiIcon Name="clock" /> Jadwal harian</h2><span class="panel-code">P-15 · WITA</span></header>
+    <div class="settings-body">
+        @if (Status.TahunAjaranId is not { } periodId)
+        {
+            <p class="notice">Belum ada periode akademik aktif.</p>
+        }
+        else
+        {
+            <p>Perubahan jadwal berlaku mulai tanggal yang dipilih (paling cepat besok). Hasil tap pada tanggal sebelumnya tetap dihitung dengan jadwal lama.</p>
+
+            <div class="schedule-view-bar">
+                <label for="schedule-view-date">Lihat jadwal yang berlaku pada</label>
+                <input id="schedule-view-date" type="date" value="@viewDate.ToString("yyyy-MM-dd")" @onchange="ChangeViewDate" />
+            </div>
+            <div class="table-wrap">
+                <table id="schedule-view-table">
+                    <thead><tr><th>Hari</th><th>Batas hadir</th><th>Daftar belum tap</th><th>Rekap orang tua</th><th>Batas tap masuk</th><th>Mulai pulang</th></tr></thead>
+                    <tbody>
+                        @foreach (var day in viewRows)
+                        {
+                            <tr class="@(day.HariSekolah ? "" : "is-inactive")" data-day="@day.Hari">
+                                <td>@DayNames[day.Hari]</td>
+                                @if (day.HariSekolah)
+                                {
+                                    <td class="mono">@Show(day.JamMasuk)</td><td class="mono">@Show(day.NotTappedListTime)</td><td class="mono">@Show(day.JamRekap)</td><td class="mono">@Show(day.BatasTapMasuk)</td><td class="mono">@Show(day.MulaiPulang)</td>
+                                }
+                                else { <td colspan="5">Libur</td> }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="field-help" id="schedule-versions">Perubahan terjadwal: @(versions.Count == 0 ? "belum ada" : string.Join(", ", versions.Select(v => $"mulai {v:dd/MM/yyyy}")))</p>
+
+            <h3>Ubah jadwal</h3>
+            <form @onsubmit="() => Save(periodId)" @onsubmit:preventDefault>
+                <div class="schedule-view-bar">
+                    <label for="schedule-effective">Berlaku mulai</label>
+                    <input id="schedule-effective" type="date" value="@effective.ToString("yyyy-MM-dd")" @onchange="ChangeEffective" disabled="@busy" />
+                </div>
+                <div class="table-wrap">
+                    <table id="schedule-edit-table">
+                        <thead><tr><th>Hari</th><th>Hari sekolah</th><th>Batas hadir</th><th>Daftar belum tap</th><th>Rekap orang tua</th><th>Batas tap masuk</th><th>Mulai pulang</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in editRows)
+                            {
+                                <tr>
+                                    <td>@DayNames[row.Day]</td>
+                                    <td><input type="checkbox" id="schedule-school-@row.Day" aria-label="@DayNames[row.Day] hari sekolah" @bind="row.School" disabled="@busy" /></td>
+                                    <td><input type="time" id="schedule-arrival-@row.Day" aria-label="@DayNames[row.Day] batas hadir" @bind="row.Arrival" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-nottapped-@row.Day" aria-label="@DayNames[row.Day] daftar belum tap" @bind="row.NotTapped" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-recap-@row.Day" aria-label="@DayNames[row.Day] rekap orang tua" @bind="row.Recap" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-deadline-@row.Day" aria-label="@DayNames[row.Day] batas tap masuk" @bind="row.Deadline" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-departure-@row.Day" aria-label="@DayNames[row.Day] mulai pulang" @bind="row.Departure" disabled="@(busy || !row.School)" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="field-help">Urutan jam: batas hadir &lt; rekap orang tua &lt; batas tap masuk ≤ mulai pulang. Daftar belum tap setelah batas hadir dan paling lambat batas tap masuk.</p>
+                <button id="schedule-save" type="submit" class="primary" disabled="@busy">Simpan jadwal berlaku mulai @effective.ToString("dd/MM/yyyy")</button>
+            </form>
+            @if (message is not null) { <p id="schedule-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
+        }
+    </div>
+</section>
+
+@code {
+    private static readonly string[] DayNames = { "", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu" };
+    private readonly RepositoriJadwalHari repository = new();
+    private DateOnly viewDate, effective;
+    private IReadOnlyList<JadwalHariBaris> viewRows = Array.Empty<JadwalHariBaris>();
+    private List<EditRow> editRows = new();
+    private IReadOnlyList<DateOnly> versions = Array.Empty<DateOnly>();
+    private bool busy, ok;
+    private string? message;
+
+    protected override void OnInitialized()
+    {
+        var today = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        viewDate = today;
+        effective = today.AddDays(1);
+        Reload();
+    }
+
+    private void Reload()
+    {
+        if (Status.TahunAjaranId is not { } periodId) return;
+        viewRows = repository.DaftarUntukTahunAjaran(Status.Koneksi!, periodId, viewDate);
+        versions = repository.ListChanges(Status.Koneksi!, periodId).Select(c => c.EffectiveFrom).Distinct().ToList();
+        editRows = repository.DaftarUntukTahunAjaran(Status.Koneksi!, periodId, effective).Select(EditRow.From).ToList();
+    }
+
+    private void ChangeViewDate(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), CultureInfo.InvariantCulture, out var date)) { viewDate = date; Reload(); }
+    }
+
+    private void ChangeEffective(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), CultureInfo.InvariantCulture, out var date)) { effective = date; message = null; Reload(); }
+    }
+
+    private async Task Save(int periodId)
+    {
+        busy = true;
+        message = null;
+        try
+        {
+            var wanted = editRows.Select(r => r.ToRow()).ToList();
+            new LayananJadwalHari().ScheduleFrom(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, periodId, effective, wanted);
+            var stored = repository.DaftarUntukTahunAjaran(Status.Koneksi!, periodId, effective);
+            if (!stored.SequenceEqual(wanted.Select(Normalize)))
+            {
+                ok = false;
+                message = "Jadwal belum terbaca kembali sesuai isian. Coba simpan lagi.";
+                return;
+            }
+
+            await Status.SimpanAsync();
+            ok = true;
+            message = Status.StorageFailed
+                ? "Jadwal tersimpan di sesi ini, tetapi belum tersimpan ke browser."
+                : $"Jadwal baru tersimpan dan berlaku mulai {effective:dd/MM/yyyy}. Tanggal sebelumnya tetap memakai jadwal lama.";
+            viewDate = effective;
+            Reload();
+        }
+        catch (InvalidOperationException ex)
+        {
+            ok = false;
+            message = ex.Message;
+        }
+        finally { busy = false; }
+    }
+
+    // Libur disimpan tanpa jam; bandingkan dengan bentuk yang sama.
+    private static JadwalHariBaris Normalize(JadwalHariBaris row) =>
+        row.HariSekolah ? row : new JadwalHariBaris(row.Hari, false, null, null, null, null);
+
+    private static string Show(TimeOnly? time) => time?.ToString("HH:mm") ?? "—";
+
+    // Isian jam dipegang sebagai teks "HH:mm" (nilai bawaan input time di
+    // browser); teks kosong atau tidak sah menjadi null sehingga layanan
+    // menolaknya dengan pesan "kelima jam wajib diisi".
+    private sealed class EditRow
+    {
+        private static readonly string[] Formats = { "HH:mm", "HH:mm:ss" };
+        public int Day { get; init; }
+        public bool School { get; set; }
+        public string Arrival { get; set; } = "";
+        public string NotTapped { get; set; } = "";
+        public string Recap { get; set; } = "";
+        public string Deadline { get; set; } = "";
+        public string Departure { get; set; } = "";
+
+        public static EditRow From(JadwalHariBaris row) => new()
+        {
+            Day = row.Hari, School = row.HariSekolah, Arrival = Text(row.JamMasuk), NotTapped = Text(row.NotTappedListTime),
+            Recap = Text(row.JamRekap), Deadline = Text(row.BatasTapMasuk), Departure = Text(row.MulaiPulang),
+        };
+
+        public JadwalHariBaris ToRow() => School
+            ? new JadwalHariBaris(Day, true, Parse(Arrival), Parse(Recap), Parse(Deadline), Parse(Departure), Parse(NotTapped))
+            : new JadwalHariBaris(Day, false, null, null, null, null);
+
+        private static string Text(TimeOnly? time) => time?.ToString("HH:mm", CultureInfo.InvariantCulture) ?? "";
+
+        private static TimeOnly? Parse(string text) =>
+            TimeOnly.TryParseExact(text.Trim(), Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? time : null;
+    }
+}

@@ -8,6 +8,8 @@
     <section class="panel"><header class="panel-header"><h2>Penyimpanan data uji</h2><span class="panel-code">BROWSER LOKAL</span></header><div class="settings-body"><p>@Status.CatatanPenyimpanan</p><p class="muted">Data contoh pada browser ini tidak dibagikan ke perangkat lain. Gunakan data sintetis selama pengembangan.</p><button id="retry-storage" @onclick="Status.SimpanAsync">Simpan ulang ke browser</button><hr /><h3>Mulai ulang pengujian</h3><p class="muted">Menghapus data contoh di browser ini dan membuat data contoh baru.</p>@if (!confirmReset) { <button id="reset-data" class="bahaya" @onclick="() => confirmReset = true">Hapus data uji dan buat ulang</button> } else { <div class="message danger"><p>Hapus seluruh perubahan data contoh di browser ini?</p><div class="button-row"><button @onclick="() => confirmReset = false">Batal</button><button class="bahaya" id="confirm-reset-data" @onclick="ResetData">Hapus dan mulai ulang</button></div></div> }</div></section>
     @if (WorkspaceView.CanManage(Status))
     {
+        <SchoolIdentityPanel OnSaved="OnIdentityChanged" />
+        <ScheduleEditor />
         <AccountManagement />
     }
 </div>
@@ -15,6 +17,7 @@
 @code {
     [Parameter] public EventCallback OnReset { get; set; }
     [Parameter] public EventCallback OnClockChanged { get; set; }
+    [Parameter] public EventCallback OnIdentityChanged { get; set; }
     private DateTime scenario;
     private string? message;
     private bool confirmReset;
