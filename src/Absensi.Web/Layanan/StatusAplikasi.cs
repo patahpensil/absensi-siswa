@@ -172,6 +172,7 @@ public sealed partial class StatusAplikasi
         MuatIdentitas();
         await SimpanAsync();
         NeedsInstallation = StorageFailed;
+        if (!StorageFailed) CatatanPenyimpanan = "Instalasi selesai; data tersimpan di browser ini.";
     }
 
     public async Task<bool> ResetAsync(bool sampleData = true)

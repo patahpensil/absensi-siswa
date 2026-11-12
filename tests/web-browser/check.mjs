@@ -1271,8 +1271,12 @@ if (realUrl) {
       await real.click('#tombol-masuk');
       await real.waitForSelector('#ringkasan');
       tegas((await real.textContent('.topbar .environment-tag')).includes('Uji coba data asli'), 'label mode nyata tidak tampil');
+      await real.click('#menu-absensi');
+      await real.waitForSelector('#tap-uid');
+      tegas(!(await real.textContent('#isi')).includes('waktu uji'), 'petunjuk waktu uji tampil di mode nyata');
       await real.click('#menu-pengaturan');
       await real.waitForSelector('#backup-download');
+      tegas(!(await real.textContent('#isi')).includes('selesaikan wizard'), 'catatan penyimpanan masih menyuruh wizard');
       tegas(await real.locator('#scenario-time').count() === 0, 'jam skenario tampil di mode nyata');
       await real.click('#reset-data');
       tegas(await real.locator('#confirm-reset-data').count() === 0, 'pilihan data contoh tampil di mode nyata');

@@ -28,7 +28,7 @@
             @if (!Filtered().Any()) { <div class="empty-state">Tidak ada catatan yang sesuai dengan filter hari ini.</div> }
         </section>
     </div>
-    <aside class="side-column"><SchedulePanel /><section class="info-panel"><h3>Cara menguji</h3><p>Daftarkan kartu di menu Siswa atau Guru, atur waktu uji di Pengaturan, lalu masukkan nomor kartu di sini.</p><p>Tap kartu yang sama kurang dari 15 detik kemudian diabaikan. Pesan ke orang tua tidak dikirim.</p></section></aside>
+    <aside class="side-column"><SchedulePanel /><section class="info-panel">@if (Status.Mode.IsReal) { <h3>Cara memakai</h3><p>Daftarkan kartu di menu Siswa atau Guru, lalu tap kartu pada reader saat kolom nomor kartu aktif.</p> } else { <h3>Cara menguji</h3><p>Daftarkan kartu di menu Siswa atau Guru, atur waktu uji di Pengaturan, lalu masukkan nomor kartu di sini.</p> }<p>Tap kartu yang sama kurang dari 15 detik kemudian diabaikan. Pesan ke orang tua tidak dikirim.</p></section></aside>
 </div>
 
 @if (detailId is { } openStudentId)
