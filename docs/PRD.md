@@ -1763,8 +1763,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **Keputusan 12 November 2026 (sore) — disetujui pemilik:** mode reader USB serial/COM menjadi mode opsional (§4). Warna tombol Bahaya resmi `#9B2C2C` (PANDUAN-UI-UX §3.1). Versi runtime proyek **.NET 10** (LTS) disetujui sesuai §21.11.
 
-**Menunggu keputusan pemilik (dicatat 12 November 2026):** perubahan berikut ditambahkan agen lain tanpa pembaruan PRD dan belum disetujui.
-- **Ukuran nama panjang di TV gerbang.** PANDUAN-UI-UX §8.1 menetapkan 64 px. Web mengecilkan nama 29–52 huruf ke 48 px dan nama lebih panjang ke 36 px. Desktop sejak September 2026 mengecilkan sampai 34 px. Pemilik memilih 64 px, tetapi pengukuran di Chrome 1920×1080 dengan empat kartu menunjukkan nama 37 huruf menjadi 5 baris dan status/jam terdorong keluar layar. Menunggu konfirmasi pemilik.
+**Keputusan 12 November 2026 (malam) — disetujui pemilik:** nama panjang di TV gerbang boleh mengecil (PANDUAN-UI-UX §8.1); nama pendek tetap 64 px. Dasarnya pengukuran Chrome 1920×1080 dengan empat kartu: pada 64 px nama 37 huruf menjadi 5 baris dan status/jam keluar layar.
 
 ### 25.6 Referensi primer
 

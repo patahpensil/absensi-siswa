@@ -475,3 +475,5 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Kerentanan dependensi:** daftar peringatan Dependabot tidak bisa dibaca agen (403). Dicocokkan dengan PR keamanan terbuka dan data OSV: playwright 1.48.0 (CVE-2025-59288, hanya skrip unduh browser macOS; CI memakai Ubuntu) sempat dinaikkan ke 1.55.1 (`7931782`), tetapi [bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43191244107) gagal 21 langkah (data hilang setelah muat ulang, klik timeout). Kenaikan dibatalkan; penyebabnya belum diketahui dan menjadi utang.
 - `arsip/proyek-python-lama`: python-multipart 0.0.20 → 0.0.31 dan pytest 8.3.4 → 9.0.3 agar peringatan hilang. Proyek ini arsip dan tidak dijalankan, jadi perubahan versi tidak diuji. Kerentanan paket NuGet aplikasi utama belum bisa diperiksa agen; pemilik dapat membuka tab Security → Dependabot di GitHub.
+
+**Keputusan pemilik (12 November 2026, ±18.00 WITA):** ukuran nama TV tetap seperti sekarang (nama pendek 64 px, nama panjang mengecil). Dicatat di PRD §25.5 dan PANDUAN-UI-UX §8.1. Tidak ada lagi keputusan yang menunggu dari audit PR #20.

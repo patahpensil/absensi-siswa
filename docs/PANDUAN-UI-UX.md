@@ -222,6 +222,8 @@ Layar ini punya aturan sendiri karena dilihat dari jarak 3–5 meter oleh orang 
 | Label Guru/Siswa | 24 px |
 | Foto | rasio 3:4, tinggi minimal 320 px |
 
+Nama panjang boleh mengecil agar status dan jam tetap terlihat saat empat kartu tampil (keputusan pemilik 12 November 2026). Web: sampai 28 huruf 64 px, 29–52 huruf 48 px, lebih dari 52 huruf 36 px. Desktop: ukuran turun bertahap sampai 34 px. Nama tidak dipotong.
+
 ### 8.2 Ketentuan
 
 - Tanpa menu, tanpa kursor, tidak bisa ditutup tanpa sandi
