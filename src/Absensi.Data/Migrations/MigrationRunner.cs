@@ -17,6 +17,7 @@ public sealed class MigrationRunner
         new Migration006SchoolOperations(),
         new Migration007ParentNotificationChannel(),
         new Migration008ScheduleChange(),
+        new Migration009StudentEnrollmentDates(),
     };
 
     public void Run(SqliteConnection connection)

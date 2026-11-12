@@ -212,8 +212,8 @@ public sealed class KelengkapanAuditTests
         siswa.TandaiTidakAktif(database.Connection, Admin, Waktu, 2, "pindah");
 
         var barisSiswa = BacaAudit(database, "nonaktifkan_siswa");
-        Assert.Equal("status=aktif", barisSiswa[0].Lama);
-        Assert.Equal("status=nonaktif (pindah)", barisSiswa[0].Baru);
+        Assert.Equal("status=aktif; hari_terakhir=(kosong)", barisSiswa[0].Lama);
+        Assert.Equal("status=nonaktif (pindah); hari_terakhir=2026-09-23", barisSiswa[0].Baru);
         Assert.Null(barisSiswa[1].Lama);
         Assert.Equal(RingkasanPerubahan.TidakAdaPerubahan, barisSiswa[1].Baru);
 

@@ -14,6 +14,8 @@ public sealed class LayananSiswa
     private readonly RepositoriSiswa _repositoriSiswa = new();
     private readonly RepositoriSiswaKelas _repositoriSiswaKelas = new();
     private readonly RepositoriKartu _repositoriKartu = new();
+    private readonly RepositoriTahunAjaran _repositoriTahunAjaran = new();
+    private readonly RepositoriAbsensi _repositoriAbsensi = new();
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     // kelas: (TahunAjaranId, KelasId) opsional — bila diisi, keanggotaan
@@ -41,7 +43,7 @@ public sealed class LayananSiswa
                 idBaru = _repositoriSiswa.Tambah(connection, transaction, data);
                 if (kelas is { } k)
                 {
-                    _repositoriSiswaKelas.Tetapkan(connection, transaction, idBaru, k.KelasId, k.TahunAjaranId);
+                    _repositoriSiswaKelas.Tetapkan(connection, transaction, idBaru, k.KelasId, k.TahunAjaranId, DateOnly.FromDateTime(waktu));
                 }
 
                 return idBaru;
@@ -78,7 +80,7 @@ public sealed class LayananSiswa
                 _repositoriSiswa.Perbarui(connection, transaction, id, data);
                 if (kelas is { } k)
                 {
-                    _repositoriSiswaKelas.Tetapkan(connection, transaction, id, k.KelasId, k.TahunAjaranId);
+                    _repositoriSiswaKelas.Tetapkan(connection, transaction, id, k.KelasId, k.TahunAjaranId, DateOnly.FromDateTime(waktu));
                 }
 
                 var kelasBaru = kelas is { } kb ? _repositoriSiswaKelas.CariNamaKelas(connection, transaction, id, kb.TahunAjaranId) : null;
@@ -132,11 +134,31 @@ public sealed class LayananSiswa
                     _repositoriKartu.Nonaktifkan(connection, transaction, JenisPemilikKartu.Siswa, id, waktu, $"siswa nonaktif: {alasan}");
                 }
 
+                // P-18: hari terakhir bersekolah pada periode berjalan — hari
+                // mutasi bila siswa sempat tap masuk hari itu, kalau tidak
+                // sehari sebelumnya. Hari sesudahnya tidak dihitung Alpa.
+                var mutationDate = DateOnly.FromDateTime(waktu);
+                RingkasanPerubahan.Kolom? kolomHariTerakhir = null;
+                if (_repositoriTahunAjaran.FindForDate(connection, mutationDate, transaction) is { } periodId)
+                {
+                    var attendedToday = _repositoriAbsensi.CariHariIniSiswa(connection, mutationDate, id, transaction)?.JamMasuk is not null;
+                    var lastDay = attendedToday ? mutationDate : mutationDate.AddDays(-1);
+                    var (changed, oldValue) = _repositoriSiswaKelas.SetLastSchoolDay(connection, transaction, id, periodId, lastDay);
+                    if (changed)
+                    {
+                        kolomHariTerakhir = new RingkasanPerubahan.Kolom("hari_terakhir", oldValue, lastDay.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                }
+
                 var kolom = new[]
                 {
                     new RingkasanPerubahan.Kolom("status", lama is null ? null : StatusAktif.Teks(lama.Aktif, lama.AlasanNonaktif), StatusAktif.Teks(false, alasan)),
                     new RingkasanPerubahan.Kolom("kartu_aktif", kartuLama, null),
                 };
+                if (kolomHariTerakhir is { } hariTerakhir)
+                {
+                    kolom = [.. kolom, hariTerakhir];
+                }
                 return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom[0]) : RingkasanPerubahan.Bandingkan(id, kolom);
             });
     }

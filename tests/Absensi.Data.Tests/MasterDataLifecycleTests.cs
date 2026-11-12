@@ -24,8 +24,8 @@ public sealed class MasterDataLifecycleTests
 
         Assert.Null(new RepositoriKartu().CariUidAktifUntukPemilik(database.Connection, JenisPemilikKartu.Siswa, 1));
         Assert.Equal(1L, Scalar(database, "SELECT COUNT(*) FROM kartu WHERE uid = 'UID-SISWA-LAMA' AND aktif = 0 AND alasan = 'siswa nonaktif: pindah';"));
-        Assert.Equal("status=aktif; kartu_aktif=UID-SISWA-LAMA", Scalar(database, "SELECT nilai_lama FROM audit WHERE aksi = 'nonaktifkan_siswa';"));
-        Assert.Equal("status=nonaktif (pindah); kartu_aktif=(kosong)", Scalar(database, "SELECT nilai_baru FROM audit WHERE aksi = 'nonaktifkan_siswa';"));
+        Assert.Equal("status=aktif; kartu_aktif=UID-SISWA-LAMA; hari_terakhir=(kosong)", Scalar(database, "SELECT nilai_lama FROM audit WHERE aksi = 'nonaktifkan_siswa';"));
+        Assert.Equal("status=nonaktif (pindah); kartu_aktif=(kosong); hari_terakhir=2026-09-16", Scalar(database, "SELECT nilai_baru FROM audit WHERE aksi = 'nonaktifkan_siswa';"));
     }
 
     [Fact]

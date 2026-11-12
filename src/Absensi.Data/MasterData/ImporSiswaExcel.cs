@@ -218,7 +218,7 @@ public sealed class ImporSiswaExcel
                         ditambah++;
                     }
 
-                    _repositoriSiswaKelas.Tetapkan(connection, transaction, idSiswa, idKelas, tahunAjaranId);
+                    _repositoriSiswaKelas.Tetapkan(connection, transaction, idSiswa, idKelas, tahunAjaranId, DateOnly.FromDateTime(waktu));
                     _kartu.Tautkan(connection, transaction, baris.NoKartu, idSiswa, waktu, baris.NomorBaris, ref kartuDitautkan, ref kartuTetap);
                 }
 

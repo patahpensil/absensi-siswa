@@ -24,6 +24,7 @@ public sealed class LayananLaporan
     private readonly RepositoriTahunAjaran _repositoriTahunAjaran = new();
     private readonly RepositoriSiswa _repositoriSiswa = new();
     private readonly RepositoriGuru _repositoriGuru = new();
+    private readonly RepositoriSiswaKelas _repositoriSiswaKelas = new();
 
     // Harian (§11, satu tanggal) dan Mingguan (§11.1, Senin-Sabtu) berbagi
     // bentuk baris yang sama — pemanggil (App/Laporan) yang menentukan
@@ -81,13 +82,15 @@ public sealed class LayananLaporan
             return new LaporanBulanan(kolom, baris);
         }
 
+        var cakupan = new CakupanSiswa(_repositoriSiswaKelas.ListEnrollmentDates(connection, tahunAjaranId), jenisHari);
         var barisSiswa = StudentRowsExcludingHolidays(connection, tanggalAwal, tanggalAkhir, kelasId)
+            .Where(b => cakupan.Mencakup(b.SiswaId, b.Tanggal))
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
             .Select(g => new BarisBulanan(
                 g.Key.Nama, g.Key.Nisn, g.Key.KelasNama,
                 g.ToDictionary(b => b.Tanggal, b => KodeStatus.Huruf(b.Status)),
-                HitungRekapSiswa(g.Select(b => b.Status).ToList(), hariEfektif)))
+                HitungRekapSiswa(g.Select(b => b.Status).ToList(), cakupan.HariEfektif(g.Key.SiswaId))))
             .ToList();
         return new LaporanBulanan(kolom, barisSiswa);
     }
@@ -116,10 +119,11 @@ public sealed class LayananLaporan
 
         var identitasSiswa = _repositoriSiswa.CariIdentitasUntukLaporan(connection, id, tahunAjaranId)
             ?? throw new InvalidOperationException($"Siswa {id} tidak ditemukan.");
+        var cakupanSiswa = Cakupan(connection, tahunAjaranId, tanggalAwal, tanggalAkhir);
         var barisSiswa = StudentRowsExcludingHolidays(connection, tanggalAwal, tanggalAkhir, kelasId: null)
-            .Where(b => b.SiswaId == id)
+            .Where(b => b.SiswaId == id && cakupanSiswa.Mencakup(id, b.Tanggal))
             .ToList();
-        return BangunKartuSiswa(connection, id, identitasSiswa.Nama, identitasSiswa.Nisn, identitasSiswa.KelasNama, barisSiswa, hariEfektif);
+        return BangunKartuSiswa(connection, id, identitasSiswa.Nama, identitasSiswa.Nisn, identitasSiswa.KelasNama, barisSiswa, cakupanSiswa.HariEfektif(id));
     }
 
     // Cetak sekaligus satu kelas (siswa, §11.3) atau seluruh guru (§17.8) —
@@ -140,10 +144,12 @@ public sealed class LayananLaporan
                 .ToList();
         }
 
+        var cakupan = Cakupan(connection, tahunAjaranId, tanggalAwal, tanggalAkhir);
         return StudentRowsExcludingHolidays(connection, tanggalAwal, tanggalAkhir, kelasId)
+            .Where(b => cakupan.Mencakup(b.SiswaId, b.Tanggal))
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
-            .Select(g => BangunKartuSiswa(connection, g.Key.SiswaId, g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, g.ToList(), hariEfektif))
+            .Select(g => BangunKartuSiswa(connection, g.Key.SiswaId, g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, g.ToList(), cakupan.HariEfektif(g.Key.SiswaId)))
             .ToList();
     }
 
@@ -169,10 +175,12 @@ public sealed class LayananLaporan
                 .ToList();
         }
 
+        var cakupan = Cakupan(connection, tahunAjaranId, rentang.TglMulai, rentang.TglSelesai);
         return StudentRowsExcludingHolidays(connection, rentang.TglMulai, rentang.TglSelesai, kelasId)
+            .Where(b => cakupan.Mencakup(b.SiswaId, b.Tanggal))
             .GroupBy(b => (b.SiswaId, b.Nama, b.Nisn, b.KelasNama))
             .OrderBy(g => g.Key.KelasNama).ThenBy(g => g.Key.Nama)
-            .Select(g => new BarisSemester(g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, HitungRekapSiswa(g.Select(b => b.Status).ToList(), hariEfektif)))
+            .Select(g => new BarisSemester(g.Key.Nama, g.Key.Nisn, g.Key.KelasNama, HitungRekapSiswa(g.Select(b => b.Status).ToList(), cakupan.HariEfektif(g.Key.SiswaId))))
             .ToList();
     }
 
@@ -206,6 +214,26 @@ public sealed class LayananLaporan
         return _repositoriAbsensi.DaftarGuruUntukRentang(connection, tanggalAwal, tanggalAkhir)
             .Where(b => !holidayDates.Contains(b.Tanggal))
             .ToList();
+    }
+
+    private CakupanSiswa Cakupan(SqliteConnection connection, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir) =>
+        new(_repositoriSiswaKelas.ListEnrollmentDates(connection, tahunAjaranId),
+            _repositoriKalender.DaftarJenisHariUntukRentang(connection, tahunAjaranId, tanggalAwal, tanggalAkhir));
+
+    // P-18 (§5.3/§11): siswa pindah masuk/keluar di tengah periode hanya
+    // dihitung dari tanggal mulai bersekolah sampai hari terakhirnya. Hari di
+    // luar cakupan tidak menjadi Alpa dan tidak masuk penyebut persentase.
+    // Siswa tanpa tanggal khusus mengikuti kalender periode.
+    private sealed class CakupanSiswa(
+        IReadOnlyDictionary<int, (DateOnly? Start, DateOnly? End)> tanggal,
+        IReadOnlyDictionary<DateOnly, JenisHariInfo> hari)
+    {
+        public bool Mencakup(int siswaId, DateOnly tanggalAbsensi) =>
+            !tanggal.TryGetValue(siswaId, out var rentang) ||
+            ((rentang.Start is null || tanggalAbsensi >= rentang.Start) && (rentang.End is null || tanggalAbsensi <= rentang.End));
+
+        public int HariEfektif(int siswaId) =>
+            hari.Count(kv => kv.Value.Jenis == JenisHariKalender.Sekolah && Mencakup(siswaId, kv.Key));
     }
 
     private int HitungHariEfektif(SqliteConnection connection, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir) =>
