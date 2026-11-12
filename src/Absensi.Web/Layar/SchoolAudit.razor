@@ -12,6 +12,7 @@
         <div class="panel-toolbar report-toolbar">
             <label>Dari<input id="audit-from" type="date" @bind="from" /></label>
             <label>Sampai<input id="audit-to" type="date" @bind="to" /></label>
+            <label>Akun<select id="audit-account" @bind="account"><option value="">Semua akun</option>@foreach (var name in rows.Select(r => r.NamaPelaku).Distinct().Order()) { <option value="@name">@name</option> }</select></label>
             <label>Cari aksi atau pelaku<input id="audit-search" @bind="query" @bind:event="oninput" /></label>
             <button type="button" id="audit-refresh" @onclick="Load">Tampilkan</button>
         </div>
@@ -36,6 +37,7 @@
 @code {
     private DateOnly from, to;
     private string query = "";
+    private string account = "";
     private string? error;
     private IReadOnlyList<BarisAuditGabungan> rows = [];
 
@@ -62,7 +64,9 @@
         catch (SqliteException) { error = "Jejak audit belum dapat dibaca."; }
     }
 
+    // PANDUAN-UI-UX §9: saring per akun dan tanggal (90 hari bawaan).
     private IEnumerable<BarisAuditGabungan> Filtered() => rows.Where(row =>
-        row.Aksi.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) ||
-        row.NamaPelaku.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase));
+        (account.Length == 0 || row.NamaPelaku == account) &&
+        (row.Aksi.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) ||
+         row.NamaPelaku.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase)));
 }

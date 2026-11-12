@@ -1030,12 +1030,17 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
   tegas(await adminRow.locator('[id^=teacher-status-]').count() === 0, 'admin masih bisa menetapkan status guru');
 });
 
-await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, dan status guru', async () => {
+await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, dan status guru; saringan akun bekerja', async () => {
   await page.click('#menu-audit');
   for (const [action, expected] of [['ubah_identitas_sekolah', 'SMP Uji Ubah'], ['jadwal_berlaku_mulai', 'berlaku_mulai=2027-01-05'], ['tetapkan_status_guru', 'dinas_luar']]) {
     await page.fill('#audit-search', action);
     await page.waitForFunction(([a, e]) => { const t = document.querySelector('#audit-table')?.textContent ?? ''; return t.includes(a) && t.includes(e); }, [action, expected]);
   }
+  await page.fill('#audit-search', 'ubah_identitas_sekolah');
+  await page.selectOption('#audit-account', 'admin');
+  await page.waitForFunction(() => !(document.querySelector('#audit-table')?.textContent ?? '').includes('ubah_identitas_sekolah'));
+  await page.selectOption('#audit-account', 'kepsek');
+  await page.waitForFunction(() => (document.querySelector('#audit-table')?.textContent ?? '').includes('ubah_identitas_sekolah'));
 });
 
 await browser.close();
