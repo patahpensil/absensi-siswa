@@ -429,3 +429,21 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Penyelesaian kendala (12 November 2026, ±14.26 WITA):** pemilik menjadikan repo **public** sehingga GitHub Actions tidak lagi memakai jatah menit akun gratis. Sebelumnya isi repo (178 commit, semua cabang/tag) diperiksa: tidak ada token/kunci asli, token Cloudflare hanya di GitHub Secrets, data di `arsip/` sintetis. [CI Windows](https://github.com/patahpensil/absensi-smp1/actions/runs/43168213412) dijalankan ulang untuk HEAD `f9a5eb9` dan **lulus** (build dan seluruh tes).
 
+
+## 25. Pembersihan tampilan terhadap PANDUAN-UI-UX — 12 November 2026
+
+**Permintaan pemilik:** pastikan tampilan tidak memuat ciri desain asal jadi.
+
+**Dikerjakan:**
+- **Teks:** rujukan "(PRD §…)" dihapus dari semua pesan yang tampil ke pengguna (layanan Data, desktop, web). Kode hiasan di kepala panel ("MASTER / 01", "02 / WATCHLIST", "RFID / UJI BROWSER", "§16.17", dll.), jejak navigasi kapital ("OPERASIONAL / LAPORAN"), "TERMINAL 01", "WEB UJI / 01", slogan layar masuk dan dasbor, serta jam statis di bilah status (tidak mengikuti jadwal sebenarnya) dihapus. Label kapital menjadi sentence case; layar gerbang memakai "Guru"/"Siswa" (§4.3).
+- **Gaya web (`app.css`):** token palet §3.1/§3.2; tiga radius 6/10/999 (§5.2); dua bayangan (§5.3); gradasi, blur dan lingkaran hiasan dihapus; jarak huruf dihapus; seluruh padding/margin/gap di kisi 4 px (§5.1); skala huruf 12/14/18/22/28 (§4.2, sebelumnya ada 7–11 px); tinggi tombol dan kolom isian 36 px; fokus kolom isian garis biru 2 px (§6.2).
+- **Huruf:** IBM Plex Sans (OFL) dibundel di web (`wwwroot/fonts`) dan desktop (`Resources/Fonts`, resource WPF); angka tabular tanpa huruf monospace terpisah (§4.1).
+- **Layar gerbang (`gate.css`):** kartu berlatar warna status penuh (§8.2); nama 64 px, status/jam 40 px, NISN/NIP 28 px, label 24 px, foto 3:4 (§8.1, menyesuaikan layar lebih kecil).
+- **Satu tombol utama per layar (§6.1):** tombol simpan di Pengaturan menjadi sekunder; "Kunci bulan" memakai gaya bahaya.
+- **Bukti otomatis:** langkah Chromium baru memeriksa gaya terhitung di 11 menu (±2.300 elemen terlihat): IBM Plex termuat, radius hanya 0/6/10/999/50%, bayangan hanya dua tingkat, tanpa gradasi, tanpa jarak huruf, tanpa kapital paksa atau label kapital. [CI](https://github.com/patahpensil/absensi-smp1/actions), bukti browser dan deploy lulus.
+
+**Belum terbukti / menunggu keputusan:**
+- Belum dilihat langsung oleh pemilik; lingkungan agen tidak dapat membuka situs uji untuk tangkapan layar.
+- Font di desktop WPF baru terbukti terkompilasi dan tes App lulus; tampilannya di Windows belum dilihat.
+- **Warna tombol Bahaya:** §3 tidak punya merah umum dan §3.3 melarang warna status untuk tombol. Web memakai merah Alpa `#9B2C2C`, desktop memakai `#B3261E` (sementara). Perlu keputusan pemilik: satu warna resmi ditambahkan ke §3.1.
+- Layar gerbang (jendela TV) tidak ikut diperiksa langkah otomatis di atas.
