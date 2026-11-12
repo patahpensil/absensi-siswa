@@ -153,6 +153,38 @@ public sealed class ScheduleAndSchoolSettingsTests
             new SchoolIdentityService().Update(database.Connection, Wali, Today, new SchoolIdentity("SMP Lain", null, null)));
     }
 
+    [Fact]
+    public void SchoolLogo_Set_StoredAndAudited()
+    {
+        using var database = Prepare();
+
+        new SchoolIdentityService().SetLogo(database.Connection, Admin, Today, "logo-sekolah.png");
+
+        Assert.Equal("logo-sekolah.png", new RepositoriSekolah().CariSatuSatunya(database.Connection)!.LogoPath);
+        Assert.Contains("logo=logo-sekolah.png", (string)Scalar(database, "SELECT nilai_baru FROM audit WHERE aksi = 'ubah_logo_sekolah';")!);
+    }
+
+    [Theory]
+    [InlineData("../logo.png")]
+    [InlineData("logo.exe")]
+    [InlineData("folder/logo.png")]
+    [InlineData("")]
+    public void SchoolLogo_UnsafeName_Rejected(string fileName)
+    {
+        using var database = Prepare();
+
+        Assert.Throws<InvalidOperationException>(() => new SchoolIdentityService().SetLogo(database.Connection, Admin, Today, fileName));
+        Assert.Null(new RepositoriSekolah().CariSatuSatunya(database.Connection)!.LogoPath);
+    }
+
+    [Fact]
+    public void SchoolLogo_HomeroomTeacher_Rejected()
+    {
+        using var database = Prepare();
+
+        Assert.Throws<InvalidOperationException>(() => new SchoolIdentityService().SetLogo(database.Connection, Wali, Today, "logo-sekolah.png"));
+    }
+
     private static MigratedDatabase Prepare()
     {
         var database = new MigratedDatabase();

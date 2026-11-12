@@ -146,8 +146,15 @@ public sealed partial class StatusAplikasi
 
     // Dipanggil setelah identitas sekolah diubah di Pengaturan supaya judul
     // aplikasi dan kepala laporan memakai nama yang tersimpan.
-    public void RefreshSchoolName() =>
-        NamaSekolah = new RepositoriSekolah().CariSatuSatunya(Koneksi!)?.Nama ?? "";
+    public void RefreshSchoolName()
+    {
+        var school = new RepositoriSekolah().CariSatuSatunya(Koneksi!);
+        NamaSekolah = school?.Nama ?? "";
+        LogoName = school?.LogoPath;
+    }
+
+    // Nama berkas logo (disimpan bersama foto di IndexedDB); null bila belum ada.
+    public string? LogoName { get; private set; }
 
     private void MuatIdentitas()
     {

@@ -967,7 +967,7 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang, akun dinonakt
   tegas(await page.locator('#account-role option').count() === 2, 'kepala sekolah tidak bisa memilih peran Admin');
 });
 
-await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul aplikasi', async () => {
+await langkah('Identitas sekolah: NPSN salah ditolak, nama dan logo baru tampil di judul aplikasi', async () => {
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#school-identity');
   await page.fill('#school-name', 'SMP Uji Ubah (contoh)');
@@ -980,6 +980,18 @@ await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul 
   await page.click('#school-identity-save');
   await page.waitForSelector('#school-identity-message.positive');
   tegas((await page.textContent('#judul-sekolah')).trim() === 'SMP Uji Ubah (contoh)', 'judul aplikasi tidak memakai nama baru');
+
+  const logo = Buffer.from(await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 120; c.height = 80;
+    const g = c.getContext('2d'); g.fillStyle = '#1b7f4c'; g.fillRect(0, 0, 120, 80);
+    return c.toDataURL('image/png').split(',')[1];
+  }), 'base64');
+  await page.setInputFiles('#school-logo-input', { name: 'catatan.txt', mimeType: 'text/plain', buffer: Buffer.from('bukan gambar') });
+  await page.waitForSelector('#school-logo-message.danger');
+  await page.setInputFiles('#school-logo-input', { name: 'logo-contoh.png', mimeType: 'image/png', buffer: logo });
+  await page.waitForSelector('#school-logo-message.positive');
+  await page.waitForSelector('#school-logo-preview');
+  await page.waitForSelector('#school-logo-header');
 });
 
 await langkah('Jadwal berlaku mulai besok (P-15): hari ini tetap jadwal lama, tap besok memakai jadwal baru', async () => {
@@ -1032,7 +1044,7 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
 
 await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, dan status guru; saringan akun bekerja', async () => {
   await page.click('#menu-audit');
-  for (const [action, expected] of [['ubah_identitas_sekolah', 'SMP Uji Ubah'], ['jadwal_berlaku_mulai', 'berlaku_mulai=2027-01-05'], ['tetapkan_status_guru', 'dinas_luar']]) {
+  for (const [action, expected] of [['ubah_identitas_sekolah', 'SMP Uji Ubah'], ['ubah_logo_sekolah', 'logo-sekolah.png'], ['jadwal_berlaku_mulai', 'berlaku_mulai=2027-01-05'], ['tetapkan_status_guru', 'dinas_luar']]) {
     await page.fill('#audit-search', action);
     await page.waitForFunction(([a, e]) => { const t = document.querySelector('#audit-table')?.textContent ?? ''; return t.includes(a) && t.includes(e); }, [action, expected]);
   }

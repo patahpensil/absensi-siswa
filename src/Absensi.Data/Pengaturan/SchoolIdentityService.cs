@@ -52,4 +52,30 @@ public sealed class SchoolIdentityService
                     new RingkasanPerubahan.Kolom("alamat", before?.Address, clean.Address));
             });
     }
+
+    // PANDUAN-UI-UX §11: logo tampil di kepala laporan. Yang disimpan hanya
+    // nama berkasnya (seperti foto siswa/guru); berkas gambarnya dikelola
+    // pemanggil. Nama berkas dibatasi agar tidak bisa menunjuk folder lain.
+    public void SetLogo(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, string fileName)
+    {
+        AuthorizationGuard.EnsureFullAuthority(akun, "mengubah logo sekolah");
+
+        if (!Regex.IsMatch(fileName, "^[A-Za-z0-9._-]{1,60}\\.png$") || fileName.Contains(".."))
+        {
+            throw new InvalidOperationException("Nama berkas logo tidak sah.");
+        }
+
+        _jalurPerubahanData.JalankanDenganCatatan(
+            connection,
+            akun,
+            waktu,
+            aksi: "ubah_logo_sekolah",
+            entitas: "sekolah",
+            perubahan: transaction =>
+            {
+                var before = _schools.CariSatuSatunya(connection)?.LogoPath;
+                _schools.UpdateLogo(connection, transaction, fileName);
+                return RingkasanPerubahan.Bandingkan(1, new RingkasanPerubahan.Kolom("logo", before, fileName));
+            });
+    }
 }

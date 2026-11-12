@@ -2125,3 +2125,8 @@ img.detail-avatar {
 .schedule-view-bar label { margin:0 }
 #schedule-edit-table input[type=time] { width:100%; min-width:92px }
 #teacher-status-form { border-top:1px solid var(--line) }
+.logo-row { display:flex; gap:14px; align-items:center; margin:8px 0 14px }
+.school-logo { width:64px; height:64px; border-radius:8px; object-fit:contain; border:1px solid var(--line); background:#fff }
+.school-logo.empty { display:inline-flex; align-items:center; justify-content:center; text-align:center; font-size:11px; color:var(--muted) }
+.school-logo-img { object-fit:contain; background:#fff; padding:2px }
+.login-logo { display:block; width:56px; height:56px; object-fit:contain; margin:12px 0 4px }

@@ -19,7 +19,8 @@
         }
     </nav>
     <div class="schoolbar">
-        <span class="school-symbol"><UiIcon Name="school" /></span>
+        @if (Status.PhotoUrl(Status.LogoName) is { } logo) { <img id="school-logo-header" class="school-symbol school-logo-img" src="@logo" alt="Logo sekolah" /> }
+        else { <span class="school-symbol"><UiIcon Name="school" /></span> }
         <div><strong id="judul-sekolah">@Status.NamaSekolah</strong><small>Monitoring kehadiran siswa dan guru</small></div>
         <div class="school-context"><span>Tahun ajaran<strong>@Status.TahunAjaran</strong></span><span>@(Status.Jam.IsScenario ? "Waktu uji · simulasi" : "Waktu sekolah")<strong id="jam-simulasi" class="mono">@Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm:ss") WITA</strong></span></div>
     </div>

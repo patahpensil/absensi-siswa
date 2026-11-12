@@ -53,6 +53,33 @@ public sealed partial class StatusAplikasi
         return StorageFailed ? CatatanPenyimpanan : null;
     }
 
+    public const string LogoFileName = "logo-sekolah.png";
+
+    // Logo sekolah untuk judul aplikasi dan kepala laporan (PANDUAN-UI-UX §11).
+    // Same storage path as photos; success only after the database change is saved.
+    public async Task<string?> UploadLogoAsync(byte[] original)
+    {
+        if (!WorkspaceView.CanManage(this)) return "Akun ini tidak berwenang mengubah logo.";
+        if (original.Length == 0) return "Berkas logo kosong.";
+
+        byte[]? resized;
+        try { resized = await _js.InvokeAsync<byte[]?>("absensiPhoto.resize", original); }
+        catch (JSException) { resized = null; }
+        if (resized is not { Length: > 0 }) return "Berkas tidak dikenali sebagai gambar. Gunakan JPG atau PNG.";
+
+        try { await _js.InvokeVoidAsync("absensiStorage.save", PhotoKeyPrefix + LogoFileName, resized); }
+        catch (JSException) { return "Logo belum dapat disimpan ke penyimpanan browser. Coba kembali."; }
+
+        try { new Absensi.Data.Pengaturan.SchoolIdentityService().SetLogo(Koneksi!, Akun!, Jam.Sekarang, LogoFileName); }
+        catch (InvalidOperationException ex) { return ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { return "Data logo belum dapat dicatat. Coba kembali."; }
+
+        CachePhoto(LogoFileName, resized);
+        RefreshSchoolName();
+        await SimpanAsync();
+        return StorageFailed ? CatatanPenyimpanan : null;
+    }
+
     private async Task LoadPhotosAsync()
     {
         _photoUrls.Clear();

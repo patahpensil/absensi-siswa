@@ -50,6 +50,19 @@ public sealed class RepositoriSekolah
         }
     }
 
+    // Only called through Absensi.Data.Pengaturan.SchoolIdentityService (audited).
+    public void UpdateLogo(SqliteConnection connection, SqliteTransaction transaction, string? logoPath)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "UPDATE sekolah SET logo_path = $logoPath WHERE id = 1;";
+        command.Parameters.AddWithValue("$logoPath", (object?)logoPath ?? DBNull.Value);
+        if (command.ExecuteNonQuery() != 1)
+        {
+            throw new InvalidOperationException("Identitas sekolah belum ada; selesaikan instalasi terlebih dahulu.");
+        }
+    }
+
     // Hanya dipanggil dari Absensi.Data.Wizard.LayananWizard. Baris id=1 ini
     // menjadi penanda "wizard sudah selesai" (App.xaml.cs) — begitu ada,
     // wizard tidak pernah dijalankan ulang (PRD §16.1).
