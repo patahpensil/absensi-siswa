@@ -1,0 +1,158 @@
+@using System.Globalization
+@using Absensi.Data.Koreksi
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Akun
+@using Absensi.Domain.Kehadiran
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PRD §16.17: Kepala Sekolah menetapkan status guru di muka (Izin/Dinas
+   Luar/Cuti untuk tanggal mendatang) atau setelahnya. Kewenangan, kunci
+   bulan dan audit ada di LayananStatusGuru; Admin hanya melihat. *@
+<section class="panel" id="teacher-attendance">
+    <header class="panel-header"><h2><UiIcon Name="clock" /> Kehadiran guru</h2><span class="panel-code">§16.17</span></header>
+    <div class="panel-toolbar">
+        <label for="teacher-attendance-date">Tanggal</label>
+        <input id="teacher-attendance-date" type="date" value="@date.ToString("yyyy-MM-dd")" @onchange="ChangeDate" />
+        <span class="muted">@(IsHead ? (IsFuture ? "Tanggal mendatang: tandai Izin, Dinas luar atau Cuti di muka." : "Ubah status setelah laporan datang.") : "Hanya kepala sekolah yang dapat menetapkan status guru.")</span>
+    </div>
+    @if (locked) { <p class="notice">Bulan @date.ToString("MM/yyyy") sudah dikunci. Status tidak dapat diubah.</p> }
+    <div class="table-wrap">
+        <table id="teacher-attendance-table">
+            <thead><tr><th>Guru</th><th>NIP</th><th>Status</th><th>Keterangan</th>@if (CanEdit) { <th>Tindakan</th> }</tr></thead>
+            <tbody>
+                @foreach (var teacher in rows)
+                {
+                    <tr data-teacher="@teacher.GuruId">
+                        <td>@teacher.Nama</td>
+                        <td class="mono muted">@teacher.Nip</td>
+                        <td>@if (teacher.Status is { } status) { <span class="badge @PersonDetailView.TeacherTone(status)">@PersonDetailView.TeacherStatus(status)</span> } else { <span class="muted">@(IsFuture ? "Belum ditetapkan" : "Belum ada catatan")</span> }</td>
+                        <td>@(teacher.Keterangan ?? "—")</td>
+                        @if (CanEdit) { <td><button type="button" class="text-button" id="teacher-status-@teacher.GuruId" @onclick="() => Start(teacher)">Tetapkan status</button></td> }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (rows.Count == 0) { <div class="empty-state">Tidak ada guru aktif.</div> }
+
+    @if (target is not null)
+    {
+        <form class="settings-body account-inline" id="teacher-status-form" @onsubmit="Save" @onsubmit:preventDefault>
+            <h3>Status @target.Nama · @date.ToString("dd/MM/yyyy")</h3>
+            <fieldset class="master-fields" disabled="@busy">
+                <div>
+                    <label for="teacher-status-value">Status</label>
+                    <select id="teacher-status-value" @bind="status">
+                        @foreach (var option in Options) { <option value="@option">@PersonDetailView.TeacherStatus(option)</option> }
+                    </select>
+                </div>
+                <div>
+                    <label for="teacher-status-note">Keterangan</label>
+                    <input id="teacher-status-note" maxlength="200" @bind="note" />
+                    <p class="field-help">Wajib diisi, misalnya nomor surat tugas atau alasan izin.</p>
+                </div>
+            </fieldset>
+            <div class="button-row">
+                <button type="button" disabled="@busy" @onclick="Cancel">Batal</button>
+                <button id="teacher-status-save" type="submit" class="primary" disabled="@busy">Simpan status</button>
+            </div>
+        </form>
+    }
+    @if (message is not null) { <p id="teacher-status-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
+</section>
+
+@code {
+    // Masuk dan Tidak lengkap adalah hasil tap otomatis (PRD §17.3), tidak
+    // ditetapkan manual — sama dengan layar desktop StatusGuruViewModel.
+    private static readonly StatusAbsensiGuru[] InAdvance = { StatusAbsensiGuru.Izin, StatusAbsensiGuru.DinasLuar, StatusAbsensiGuru.Cuti };
+    private static readonly StatusAbsensiGuru[] Afterwards =
+    {
+        StatusAbsensiGuru.Hadir, StatusAbsensiGuru.Izin, StatusAbsensiGuru.Sakit,
+        StatusAbsensiGuru.DinasLuar, StatusAbsensiGuru.Cuti, StatusAbsensiGuru.Alpa,
+    };
+
+    private readonly LayananStatusGuru service = new();
+    private DateOnly date;
+    private IReadOnlyList<GuruUntukKehadiran> rows = Array.Empty<GuruUntukKehadiran>();
+    private GuruUntukKehadiran? target;
+    private StatusAbsensiGuru status = StatusAbsensiGuru.Izin;
+    private string note = "";
+    private bool busy, ok, locked;
+    private string? message;
+
+    private bool IsHead => Status.Akun?.Peran == PeranAkun.KepalaSekolah;
+    private bool IsFuture => date > DateOnly.FromDateTime(Status.Jam.Sekarang);
+    private bool CanEdit => IsHead && !locked;
+    private StatusAbsensiGuru[] Options => IsFuture ? InAdvance : Afterwards;
+
+    protected override void OnInitialized()
+    {
+        date = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        Reload();
+    }
+
+    private void Reload()
+    {
+        rows = new RepositoriAbsensi().DaftarGuruUntukKehadiran(Status.Koneksi!, date);
+        locked = service.BulanTerkunci(Status.Koneksi!, date);
+    }
+
+    private void ChangeDate(ChangeEventArgs e)
+    {
+        if (!DateOnly.TryParse(e.Value?.ToString(), CultureInfo.InvariantCulture, out var picked)) return;
+        date = picked;
+        target = null;
+        message = null;
+        Reload();
+    }
+
+    private void Start(GuruUntukKehadiran teacher)
+    {
+        target = teacher;
+        status = teacher.Status is { } current && Options.Contains(current) ? current : Options[0];
+        note = teacher.Keterangan ?? "";
+        message = null;
+    }
+
+    private void Cancel() { target = null; message = null; }
+
+    private async Task Save()
+    {
+        if (target is null) return;
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            ok = false;
+            message = "Keterangan wajib diisi (PRD §16.17 langkah 4).";
+            return;
+        }
+
+        busy = true;
+        message = null;
+        try
+        {
+            service.TetapkanStatus(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, target.GuruId, date, status, note.Trim());
+            Reload();
+            var stored = rows.FirstOrDefault(r => r.GuruId == target.GuruId);
+            if (stored?.Status != status)
+            {
+                ok = false;
+                message = "Status belum terbaca kembali dari data. Coba simpan lagi.";
+                return;
+            }
+
+            await Status.SimpanAsync();
+            ok = true;
+            message = Status.StorageFailed
+                ? "Status tersimpan di sesi ini, tetapi belum tersimpan ke browser."
+                : $"Status {stored.Nama} pada {date:dd/MM/yyyy}: {PersonDetailView.TeacherStatus(status)}.";
+            target = null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            ok = false;
+            message = ex.Message;
+        }
+        finally { busy = false; }
+    }
+}

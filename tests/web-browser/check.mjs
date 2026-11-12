@@ -967,6 +967,79 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang, akun dinonakt
   tegas(await page.locator('#account-role option').count() === 2, 'kepala sekolah tidak bisa memilih peran Admin');
 });
 
+await langkah('Identitas sekolah: NPSN salah ditolak, nama baru tampil di judul dan tercatat di audit', async () => {
+  await page.click('#menu-pengaturan');
+  await page.waitForSelector('#school-identity');
+  await page.fill('#school-name', 'SMP Uji Ubah (contoh)');
+  await page.fill('#school-npsn', '1234');
+  await page.click('#school-identity-save');
+  await page.waitForSelector('#school-identity-message.danger');
+  tegas((await page.textContent('#school-identity-message')).includes('8 angka'), 'NPSN 4 angka tidak ditolak');
+  tegas(!(await page.textContent('#judul-sekolah')).includes('Ubah'), 'nama berubah walau ditolak');
+  await page.fill('#school-npsn', '12345678');
+  await page.click('#school-identity-save');
+  await page.waitForSelector('#school-identity-message.positive');
+  tegas((await page.textContent('#judul-sekolah')).trim() === 'SMP Uji Ubah (contoh)', 'judul aplikasi tidak memakai nama baru');
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'ubah_identitas_sekolah');
+  tegas((await page.textContent('#audit-table')).includes('SMP Uji Ubah'), 'perubahan identitas tidak tercatat di audit');
+});
+
+await langkah('Jadwal berlaku mulai besok (P-15): hari ini tetap jadwal lama, tap besok memakai jadwal baru', async () => {
+  await page.click('#menu-pengaturan');
+  await page.waitForSelector('#schedule-settings');
+  tegas(await page.inputValue('#schedule-effective') === '2027-01-05', 'tanggal berlaku bawaan bukan besok');
+  await page.fill('#schedule-arrival-2', '09:00');
+  await page.click('#schedule-save');
+  await page.waitForSelector('#schedule-message.danger');
+  tegas((await page.textContent('#schedule-message')).startsWith('Selasa'), 'urutan jam salah tidak ditolak');
+  await page.fill('#schedule-arrival-2', '07:00');
+  await page.click('#schedule-save');
+  await page.waitForSelector('#schedule-message.positive');
+  tegas((await page.textContent('#schedule-view-table tr[data-day="2"]')).includes('07:00'), 'jadwal baru tidak tampil untuk tanggal berlakunya');
+  tegas((await page.textContent('#schedule-versions')).includes('05/01/2027'), 'versi jadwal tidak tercantum');
+  await page.fill('#schedule-view-date', '2027-01-04');
+  await page.waitForFunction(() => document.querySelector('#schedule-view-table tr[data-day="2"]')?.textContent?.includes('07:30'));
+
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'jadwal_berlaku_mulai');
+  tegas((await page.textContent('#audit-table')).includes('berlaku_mulai'), 'perubahan jadwal tidak tercatat di audit');
+
+  await setClock('2027-01-05T07:15:00');
+  await tapCard('0000999201');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat ·'));
+});
+
+await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di muka, admin hanya melihat', async () => {
+  await page.click('#menu-guru');
+  await page.waitForSelector('#teacher-attendance');
+  await page.fill('#teacher-attendance-date', '2027-01-08');
+  const row = page.locator('#teacher-attendance-table tbody tr').filter({ hasText: 'Ibu Lina (contoh)' });
+  await row.locator('[id^=teacher-status-]').click();
+  await page.waitForSelector('#teacher-status-form');
+  tegas(await page.locator('#teacher-status-value option').count() === 3, 'pilihan di muka bukan Izin/Dinas luar/Cuti');
+  await page.selectOption('#teacher-status-value', 'DinasLuar');
+  await page.click('#teacher-status-save');
+  await page.waitForSelector('#teacher-status-message.danger');
+  await page.fill('#teacher-status-note', 'Surat tugas 12 (contoh)');
+  await page.click('#teacher-status-save');
+  await page.waitForSelector('#teacher-status-message.positive');
+  const stored = await row.textContent();
+  tegas(stored.includes('Dinas luar') && stored.includes('Surat tugas 12'), `status guru tidak tersimpan: ${stored}`);
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'tetapkan_status_guru');
+  tegas((await page.textContent('#audit-table')).includes('dinas_luar'), 'penetapan status guru tidak tercatat di audit');
+
+  await page.click('#tombol-keluar');
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await page.click('#menu-guru');
+  await page.fill('#teacher-attendance-date', '2027-01-08');
+  const adminRow = page.locator('#teacher-attendance-table tbody tr').filter({ hasText: 'Ibu Lina (contoh)' });
+  await page.waitForFunction(() => document.querySelector('#teacher-attendance-table')?.textContent?.includes('Dinas luar'));
+  tegas(await adminRow.locator('[id^=teacher-status-]').count() === 0, 'admin masih bisa menetapkan status guru');
+});
+
 await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);

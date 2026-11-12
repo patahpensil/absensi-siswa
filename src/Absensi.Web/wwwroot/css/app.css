@@ -2119,3 +2119,9 @@ img.detail-avatar {
   .calendar-day { padding:5px 2px; min-height:48px; text-align:center }
   .calendar-day small { font-size:8px }
 }
+
+.master-fields.single { grid-template-columns:1fr }
+.schedule-view-bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:12px 0 }
+.schedule-view-bar label { margin:0 }
+#schedule-edit-table input[type=time] { width:100%; min-width:92px }
+#teacher-status-form { border-top:1px solid var(--line) }
