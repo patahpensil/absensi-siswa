@@ -74,6 +74,7 @@
         }),
         saveDatabase: (version, bytes, photos) => updateDatabase(version, bytes, false, photos, false),
         resetDatabase: (version, wizardPending) => updateDatabase(version, null, wizardPending, {}, true),
+        restoreDatabase: (version, bytes, photos) => updateDatabase(version, bytes, false, photos, true),
         load: key => transaction('readonly', (store, done) => {
             const request = store.get(key);
             request.onsuccess = () => done(request.result ?? null);

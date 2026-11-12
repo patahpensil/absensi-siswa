@@ -190,8 +190,7 @@ public sealed partial class StatusAplikasi
             Koneksi?.Dispose();
             Koneksi = null;
             SqliteConnection.ClearAllPools();
-            foreach (var path in new[] { BerkasDb, BerkasDb + "-wal", BerkasDb + "-shm" })
-                File.Delete(path);
+            DeleteDatabaseFiles(BerkasDb);
 
             _pendingPhotos.Clear();
             ClearLocalPhotos();

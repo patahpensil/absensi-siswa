@@ -1199,6 +1199,44 @@ await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset da
   }
 });
 
+await langkah('Cadangan web: unduh .zip, berkas salah ditolak, pulihkan mengembalikan data dan logo', async () => {
+  await page.click('#menu-pengaturan');
+  await page.waitForSelector('#backup-download');
+  const logo = Buffer.from(await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = 90; c.height = 90;
+    const g = c.getContext('2d'); g.fillStyle = '#1b3a6b'; g.fillRect(0, 0, 90, 90);
+    return c.toDataURL('image/png').split(',')[1];
+  }), 'base64');
+  await page.setInputFiles('#school-logo-input', { name: 'logo-cadangan.png', mimeType: 'image/png', buffer: logo });
+  await page.waitForSelector('#school-logo-message.positive');
+  const nameBefore = (await page.textContent('#judul-sekolah')).trim();
+
+  const backup = await downloadBytes('#backup-download');
+  tegas(/^absensi-cadangan-\d{8}-\d{4}\.zip$/.test(backup.name), `nama berkas cadangan ${backup.name}`);
+  tegas(backup.bytes.subarray(0, 2).toString() === 'PK', 'cadangan bukan berkas zip');
+
+  await page.fill('#school-name', 'SMP Setelah Cadangan (contoh)');
+  await page.click('#school-identity-save');
+  await page.waitForSelector('#school-identity-message.positive');
+
+  await page.setInputFiles('#backup-file', { name: 'bukan-cadangan.zip', mimeType: 'application/zip', buffer: Buffer.from('bukan zip') });
+  await page.click('#backup-restore');
+  await page.waitForSelector('#backup-message.danger');
+  tegas((await page.textContent('#judul-sekolah')).includes('Setelah Cadangan'), 'berkas salah mengubah data');
+
+  await page.setInputFiles('#backup-file', { name: backup.name, mimeType: 'application/zip', buffer: backup.bytes });
+  await page.click('#backup-restore');
+  await page.waitForSelector('#tombol-masuk');
+  tegas((await page.textContent('#nama-sekolah')).trim() === nameBefore, 'nama sekolah tidak kembali ke isi cadangan');
+  await page.waitForSelector('#login-logo');
+  await page.reload();
+  await page.waitForSelector('#tombol-masuk');
+  tegas((await page.textContent('#nama-sekolah')).trim() === nameBefore, 'hasil pemulihan hilang setelah muat ulang');
+  await page.waitForSelector('#login-logo');
+  await masuk('kepala.baru', 'sandibaru123');
+  await page.waitForSelector('#ringkasan');
+});
+
 if (realUrl) {
   await langkah('Mode nyata: mulai dari wizard, tanpa akun contoh dan jam skenario, label uji coba data asli', async () => {
     const realContext = await browser.newContext();

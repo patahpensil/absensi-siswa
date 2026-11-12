@@ -1,0 +1,90 @@
+@using Absensi.Web.Layanan
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@inject StatusAplikasi Status
+@inject IJSRuntime JS
+@implements IDisposable
+
+@* Cadangan web (PRD §25.5, 12 November 2026): satu berkas .zip berisi database dan foto. *@
+<section class="panel" id="backup-panel">
+    <header class="panel-header"><h2>Cadangan data</h2></header>
+    <div class="settings-body">
+        <p>Unduh cadangan secara rutin dan simpan di tempat aman. Berkas berisi seluruh data sekolah, termasuk data pribadi siswa dan guru.</p>
+        <button id="backup-download" disabled="@busy" @onclick="Download">Unduh cadangan</button>
+        <hr />
+        <h3>Pulihkan dari cadangan</h3>
+        <p class="muted">Seluruh data di browser ini diganti isi berkas cadangan. Setelah selesai, masuk kembali dengan akun yang ada di cadangan.</p>
+        <label for="backup-file">Berkas cadangan (.zip)</label>
+        <InputFile id="backup-file" accept=".zip" OnChange="SelectFile" disabled="@busy" />
+        @if (selected is not null)
+        {
+            <div class="message danger"><p>Ganti seluruh data di browser ini dengan isi <strong>@selectedName</strong>?</p><div class="button-row"><button @onclick="Cancel">Batal</button><button class="bahaya" id="backup-restore" disabled="@busy" @onclick="Restore">Pulihkan</button></div></div>
+        }
+        @if (message is not null) { <p class="@(failed ? "message danger" : "notice")" role="status" id="backup-message">@message</p> }
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback OnRestored { get; set; }
+    private byte[]? selected;
+    private string selectedName = "";
+    private string? message;
+    private bool busy, failed;
+    private readonly CancellationTokenSource lifetime = new();
+
+    private async Task Download()
+    {
+        busy = true;
+        try
+        {
+            var file = await Status.CreateBackupAsync();
+            if (file is null) { Show("Cadangan belum dapat dibuat.", true); return; }
+            await JS.InvokeVoidAsync("absensiDownload.save", file.Name, "application/zip", file.Bytes);
+            Show($"Cadangan {file.Name} diunduh.", false);
+        }
+        catch (Exception) { Show("Cadangan belum dapat dibuat. Coba kembali.", true); }
+        finally { busy = false; }
+    }
+
+    private async Task SelectFile(InputFileChangeEventArgs e)
+    {
+        selected = null;
+        var file = e.File;
+        if (!file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || file.Size is <= 0 or > StatusAplikasi.MaxBackupBytes)
+        {
+            Show("Pilih berkas cadangan .zip dari aplikasi ini.", true);
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            using var stream = new MemoryStream((int)file.Size);
+            await using var source = file.OpenReadStream(StatusAplikasi.MaxBackupBytes, lifetime.Token);
+            await source.CopyToAsync(stream, lifetime.Token);
+            selected = stream.ToArray();
+            selectedName = file.Name;
+            message = null;
+        }
+        catch (OperationCanceledException) { }
+        catch (IOException) { Show("Berkas cadangan tidak dapat dibaca.", true); }
+        finally { busy = false; }
+    }
+
+    private void Cancel() { selected = null; message = null; }
+
+    private async Task Restore()
+    {
+        if (selected is null) return;
+        busy = true;
+        var error = await Status.RestoreBackupAsync(selected);
+        busy = false;
+        selected = null;
+        if (error is not null) { Show(error, true); return; }
+        await OnRestored.InvokeAsync();
+    }
+
+    private void Show(string text, bool isError) { message = text; failed = isError; }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

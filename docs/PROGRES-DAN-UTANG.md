@@ -482,6 +482,6 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Keputusan pemilik:** uji coba data asli lewat web mode nyata di repo `Absensi-Uji-Real` (PRD §25.5). Kode dikembangkan di repo ini; repo baru hanya salinan dengan `"Mode": "nyata"`.
 
-**Selesai (bukti: langkah Chromium "Mode nyata …"):** `ModeAplikasi` dari `appsettings.json`; mode nyata memulai wizard pada database kosong, tanpa akun contoh, tanpa jam skenario, label "Uji coba data asli", reset hanya ke wizard dan hanya untuk Admin/Kepala Sekolah. TV gerbang membaca mode yang sama.
+**Selesai (bukti: langkah Chromium "Mode nyata …" dan "Cadangan web …"):** `ModeAplikasi` dari `appsettings.json`; mode nyata memulai wizard pada database kosong, tanpa akun contoh, tanpa jam skenario, label "Uji coba data asli", reset hanya ke wizard dan hanya untuk Admin/Kepala Sekolah. Cadangan web `.zip` (database + foto) diunduh dan dipulihkan dari Pengaturan; database divalidasi dengan `LayananBackup.TerapkanRestore`.
 
-**Belum/utang:** notifikasi orang tua tetap tidak dikirim dari web.
+**Belum/utang:** pemulihan web tidak menulis audit restore; berkas cadangan tidak terenkripsi (AES-GCM tidak tersedia di WebAssembly — belum diuji alternatifnya); notifikasi orang tua tetap tidak dikirim dari web.
