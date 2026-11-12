@@ -427,3 +427,5 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Kendala (12 November 2026 ±11.57 WITA):** workflow CI Windows tidak dijalankan GitHub — anotasi: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* Pemilik perlu memeriksa Settings → Billing & plans di GitHub. Selama itu build/tes Windows (Domain/Data/Telegram/Laporan/App) tidak berjalan untuk commit baru; workflow web (Ubuntu) masih berjalan.
 
+**Penyelesaian kendala (12 November 2026, ±14.26 WITA):** pemilik menjadikan repo **public** sehingga GitHub Actions tidak lagi memakai jatah menit akun gratis. Sebelumnya isi repo (178 commit, semua cabang/tag) diperiksa: tidak ada token/kunci asli, token Cloudflare hanya di GitHub Secrets, data di `arsip/` sintetis. [CI Windows](https://github.com/patahpensil/absensi-smp1/actions/runs/43168213412) dijalankan ulang untuk HEAD `f9a5eb9` dan **lulus** (build dan seluruh tes).
+
