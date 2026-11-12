@@ -57,11 +57,11 @@
                                 <tr>
                                     <td>@DayNames[row.Day]</td>
                                     <td><input type="checkbox" id="schedule-school-@row.Day" aria-label="@DayNames[row.Day] hari sekolah" @bind="row.School" disabled="@busy" /></td>
-                                    <td><input type="time" id="schedule-arrival-@row.Day" aria-label="@DayNames[row.Day] batas hadir" @bind="row.Arrival" disabled="@(busy || !row.School)" /></td>
-                                    <td><input type="time" id="schedule-nottapped-@row.Day" aria-label="@DayNames[row.Day] daftar belum tap" @bind="row.NotTapped" disabled="@(busy || !row.School)" /></td>
-                                    <td><input type="time" id="schedule-recap-@row.Day" aria-label="@DayNames[row.Day] rekap orang tua" @bind="row.Recap" disabled="@(busy || !row.School)" /></td>
-                                    <td><input type="time" id="schedule-deadline-@row.Day" aria-label="@DayNames[row.Day] batas tap masuk" @bind="row.Deadline" disabled="@(busy || !row.School)" /></td>
-                                    <td><input type="time" id="schedule-departure-@row.Day" aria-label="@DayNames[row.Day] mulai pulang" @bind="row.Departure" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-arrival-@row.Day" aria-label="@DayNames[row.Day] batas hadir" value="@row.Arrival" @onchange="e => row.Arrival = e.Value?.ToString() ?? string.Empty" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-nottapped-@row.Day" aria-label="@DayNames[row.Day] daftar belum tap" value="@row.NotTapped" @onchange="e => row.NotTapped = e.Value?.ToString() ?? string.Empty" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-recap-@row.Day" aria-label="@DayNames[row.Day] rekap orang tua" value="@row.Recap" @onchange="e => row.Recap = e.Value?.ToString() ?? string.Empty" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-deadline-@row.Day" aria-label="@DayNames[row.Day] batas tap masuk" value="@row.Deadline" @onchange="e => row.Deadline = e.Value?.ToString() ?? string.Empty" disabled="@(busy || !row.School)" /></td>
+                                    <td><input type="time" id="schedule-departure-@row.Day" aria-label="@DayNames[row.Day] mulai pulang" value="@row.Departure" @onchange="e => row.Departure = e.Value?.ToString() ?? string.Empty" disabled="@(busy || !row.School)" /></td>
                                 </tr>
                             }
                         </tbody>
