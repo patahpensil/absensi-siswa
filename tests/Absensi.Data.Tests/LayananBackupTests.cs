@@ -14,6 +14,66 @@ public sealed class LayananBackupTests : IDisposable
 
     private LayananBackup BuatLayanan() => new(_folderBackup, new PenyimpanCloudBackupLokal(_folderCloudStub));
 
+    // Keputusan pemilik 12 November 2026: backup lokal dienkripsi kunci lisensi.
+    [Fact]
+    public async Task JalankanAsync_LisensiAktif_BerkasLokalTerenkripsiDanBukanSqlitePolos()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedBaselineReferenceRows();
+
+        await BuatLayanan().JalankanAsync(database.Connection, new DateTime(2026, 9, 18, 6, 0, 0), kunciLisensiAktif: "SEKOLAH-001-ABCD");
+
+        var isi = File.ReadAllBytes(Assert.Single(Directory.GetFiles(_folderBackup, "*.db")));
+        Assert.True(EnkripsiBackup.TerenkripsiLokal(isi));
+        Assert.False(System.Text.Encoding.ASCII.GetString(isi, 0, 15).StartsWith("SQLite format", StringComparison.Ordinal));
+        Assert.Empty(Directory.GetFiles(_folderBackup, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task SiapkanRestore_BackupTerenkripsiDenganLisensiSama_DidekripsiMenjadiSqlite()
+    {
+        using var databaseAsal = new MigratedDatabase();
+        databaseAsal.SeedBaselineReferenceRows();
+        var layanan = BuatLayanan();
+        await layanan.JalankanAsync(databaseAsal.Connection, new DateTime(2026, 9, 1, 6, 0, 0), kunciLisensiAktif: "SEKOLAH-001-ABCD");
+
+        using var databaseTujuan = new MigratedDatabase();
+        databaseTujuan.SeedMasterDataUntukUji();
+        TulisLisensi(databaseTujuan, "SEKOLAH-001-ABCD");
+
+        var data = layanan.SiapkanRestore(databaseTujuan.Connection, Admin, new DateTime(2026, 9, 18, 7, 0, 0), layanan.DaftarBackupLokal().Single());
+
+        Assert.Equal("SQLite format 3", System.Text.Encoding.ASCII.GetString(data, 0, 15));
+    }
+
+    [Fact]
+    public async Task SiapkanRestore_BackupTerenkripsiLisensiLain_DitolakTanpaMenulisAudit()
+    {
+        using var databaseAsal = new MigratedDatabase();
+        databaseAsal.SeedBaselineReferenceRows();
+        var layanan = BuatLayanan();
+        await layanan.JalankanAsync(databaseAsal.Connection, new DateTime(2026, 9, 1, 6, 0, 0), kunciLisensiAktif: "SEKOLAH-001-ABCD");
+        var berkas = layanan.DaftarBackupLokal().Single();
+
+        using var databaseTujuan = new MigratedDatabase();
+        databaseTujuan.SeedMasterDataUntukUji();
+        TulisLisensi(databaseTujuan, "SEKOLAH-LAIN-9999");
+
+        Assert.Throws<InvalidOperationException>(() =>
+            layanan.SiapkanRestore(databaseTujuan.Connection, Admin, new DateTime(2026, 9, 18, 7, 0, 0), berkas));
+
+        using var command = databaseTujuan.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'restore_backup';";
+        Assert.Equal(0, Convert.ToInt32(command.ExecuteScalar()));
+    }
+
+    private static void TulisLisensi(MigratedDatabase database, string kunci)
+    {
+        using var transaction = database.Connection.BeginTransaction();
+        new Absensi.Data.Lisensi.RepositoriLisensi().Tulis(database.Connection, transaction, kunci, new DateTime(2026, 9, 1, 6, 0, 0));
+        transaction.Commit();
+    }
+
     [Fact]
     public async Task JalankanAsync_MembuatSatuBerkasDb()
     {

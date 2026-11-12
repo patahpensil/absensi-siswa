@@ -40,11 +40,10 @@ public sealed class LayananBackup
     // walau sudah lewat toleransi, tidak seperti titik notifikasi lain.
     public async Task JalankanAsync(SqliteConnection sumber, DateTime waktu, string? kunciLisensiAktif)
     {
-        var pathBaru = BuatSnapshotLokal(sumber, waktu);
+        var data = BuatSnapshotLokal(sumber, waktu, kunciLisensiAktif);
 
         if (!string.IsNullOrWhiteSpace(kunciLisensiAktif))
         {
-            var data = await File.ReadAllBytesAsync(pathBaru);
             var terenkripsi = EnkripsiBackup.Enkripsi(data, kunciLisensiAktif);
             await _penyimpanCloud.UnggahAsync(kunciLisensiAktif, terenkripsi, waktu);
         }
@@ -85,8 +84,12 @@ public sealed class LayananBackup
         // tidak pernah lanjut ke TerapkanRestore.
         var pathArsip = _layananArsipAudit.BuatDanVerifikasi(sumber, waktu);
 
-        var dataSumberRestore = File.ReadAllBytes(berkasSumberRestore.PathBerkas);
-        var pathCadangan = BuatSnapshotLokal(sumber, waktu);
+        // Backup lokal terenkripsi dibuka dengan kunci lisensi aplikasi ini;
+        // gagal dibuka = restore batal sebelum apa pun ditimpa.
+        var kunciLisensi = new Absensi.Data.Lisensi.RepositoriLisensi().BacaStatus(sumber)?.Kunci;
+        var dataSumberRestore = EnkripsiBackup.BukaLokal(File.ReadAllBytes(berkasSumberRestore.PathBerkas), kunciLisensi);
+        BuatSnapshotLokal(sumber, waktu, kunciLisensi);
+        var pathCadangan = Path.Combine(_folderBackup, $"{waktu.ToString(FormatWaktu)}.db");
 
         _jalurPerubahanData.Jalankan(
             sumber,
@@ -124,12 +127,16 @@ public sealed class LayananBackup
         File.Delete(pathDatabaseTujuan + "-shm");
     }
 
-    private string BuatSnapshotLokal(SqliteConnection sumber, DateTime waktu)
+    // Mengembalikan isi SQLite polos snapshot. Berkas lokal ditulis
+    // terenkripsi bila kunci lisensi tersedia; tanpa lisensi aktif (sebelum
+    // aktivasi) tetap polos seperti sebelumnya.
+    private byte[] BuatSnapshotLokal(SqliteConnection sumber, DateTime waktu, string? kunciLisensi)
     {
         Directory.CreateDirectory(_folderBackup);
         var pathTujuan = Path.Combine(_folderBackup, $"{waktu.ToString(FormatWaktu)}.db");
+        var pathSementara = pathTujuan + ".tmp";
 
-        using (var tujuan = new SqliteConnection($"Data Source={pathTujuan}"))
+        using (var tujuan = new SqliteConnection($"Data Source={pathSementara};Pooling=False"))
         {
             tujuan.Open();
             sumber.BackupDatabase(tujuan);
@@ -140,8 +147,12 @@ public sealed class LayananBackup
         // baru saja ditulis sehingga baca/hapus berikutnya gagal.
         SqliteConnection.ClearAllPools();
 
+        var data = File.ReadAllBytes(pathSementara);
+        File.WriteAllBytes(pathTujuan, string.IsNullOrWhiteSpace(kunciLisensi) ? data : EnkripsiBackup.BungkusLokal(data, kunciLisensi));
+        File.Delete(pathSementara);
+
         HapusBerkasSelainNTerbaru(JumlahBerkasDisimpan);
-        return pathTujuan;
+        return data;
     }
 
     private void HapusBerkasSelainNTerbaru(int jumlahDisimpan)

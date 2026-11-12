@@ -52,6 +52,42 @@ public static class EnkripsiBackup
         return plainText;
     }
 
+    // Keputusan pemilik 12 November 2026: berkas backup LOKAL juga
+    // dienkripsi dengan kunci lisensi. Penanda di awal berkas membedakannya
+    // dari backup lama yang masih berupa SQLite polos (diawali
+    // "SQLite format 3"), sehingga backup lama tetap bisa dipulihkan.
+    private static readonly byte[] PenandaLokal = Encoding.ASCII.GetBytes("ABSENSI-BACKUP-1\n");
+
+    public static byte[] BungkusLokal(byte[] data, string kunciLisensi) =>
+        [.. PenandaLokal, .. Enkripsi(data, kunciLisensi)];
+
+    public static bool TerenkripsiLokal(byte[] isiBerkas) =>
+        isiBerkas.Length > PenandaLokal.Length && isiBerkas.AsSpan(0, PenandaLokal.Length).SequenceEqual(PenandaLokal);
+
+    // Mengembalikan isi SQLite polos. Backup lama tanpa penanda dikembalikan
+    // apa adanya.
+    public static byte[] BukaLokal(byte[] isiBerkas, string? kunciLisensi)
+    {
+        if (!TerenkripsiLokal(isiBerkas))
+        {
+            return isiBerkas;
+        }
+
+        if (string.IsNullOrWhiteSpace(kunciLisensi))
+        {
+            throw new InvalidOperationException("Backup ini terenkripsi, tetapi lisensi pada aplikasi ini belum aktif sehingga backup tidak bisa dibuka.");
+        }
+
+        try
+        {
+            return Dekripsi(isiBerkas[PenandaLokal.Length..], kunciLisensi);
+        }
+        catch (CryptographicException)
+        {
+            throw new InvalidOperationException("Backup ini dienkripsi dengan kunci lisensi lain atau berkasnya rusak, sehingga tidak bisa dipulihkan di sini.");
+        }
+    }
+
     private static byte[] TurunkanKunci(string kunciLisensi) =>
         Rfc2898DeriveBytes.Pbkdf2(kunciLisensi, Garam, JumlahIterasi, HashAlgorithmName.SHA256, PanjangKunciByte);
 }
