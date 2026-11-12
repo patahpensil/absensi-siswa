@@ -24,7 +24,7 @@ Panduan ini untuk Tata Usaha (TU) sekolah. Tidak perlu latar belakang komputer �
    - **Langkah 1 — Lisensi**: masukkan kunci lisensi yang diberikan developer. Pilih **"Instalasi Baru"** (pilih **"Pulihkan dari PC Lama"** hanya bila ini pemasangan ulang di komputer pengganti — lihat bagian 7).
    - **Langkah 2 — Sekolah**: isi nama sekolah, NPSN, alamat, dan logo (opsional).
    - **Langkah 3 — Tahun Ajaran**: isi nama tahun ajaran (contoh `2026/2027`), semester, dan tanggal mulai/selesai.
-   - **Langkah 4 — Jadwal Harian**: isi jam masuk, jam rekap, batas akhir tap, dan jam mulai pulang untuk tiap hari. Kosongkan jam pada hari yang libur (contoh: Minggu).
+   - **Langkah 4 — Jadwal Harian**: isi jam masuk, jam daftar belum tap (wali kelas), jam rekap orang tua, batas akhir tap, dan jam mulai pulang untuk tiap hari, dengan urutan jam masuk < rekap < batas akhir ≤ mulai pulang. Kosongkan jam pada hari yang libur (contoh: Minggu). Setelah instalasi, perubahan jadwal di Pengaturan berlaku mulai tanggal yang dipilih (paling cepat besok); jadwal untuk hari yang sudah lewat tidak berubah.
    - **Langkah 5 — Akun Kepala Sekolah**: buat username dan sandi untuk Kepala Sekolah. **Catat baik-baik.**
    - **Langkah 6 — Selesai**: klik **"Buka Halaman Masuk"**.
 
@@ -113,6 +113,10 @@ Untuk cadangan tambahan (misalnya sebelum mengganti komputer), TU bisa membackup
 `[GAMBAR: folder data disalin]`
 
 > Folder `backup` di dalam folder AbsensiSekolah juga menyimpan 7 backup harian terakhir secara otomatis — folder ini boleh ikut disalin juga sebagai cadangan tambahan.
+>
+> Sejak 12 November 2026, berkas di folder `backup` dienkripsi dengan kunci lisensi sekolah (bila lisensi sudah aktif). Berkas itu hanya bisa dipulihkan oleh aplikasi dengan kunci lisensi yang sama — **simpan kunci lisensi di tempat aman, terpisah dari PC**. Salinan folder `data` hasil langkah manual di atas TIDAK terenkripsi; simpan di tempat yang hanya bisa diakses orang berwenang karena berisi data pribadi siswa.
+>
+> Bila PC mati sebelum jam finalisasi (mis. 14.10), status Bolos siswa dan Tidak lengkap guru untuk hari itu ditetapkan otomatis saat aplikasi dibuka lagi; notifikasi yang terlewat tidak dikirim.
 
 ---
 

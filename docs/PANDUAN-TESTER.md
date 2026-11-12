@@ -8,7 +8,7 @@ RENCANA-TUGAS.md Tugas 14 menemukan bug nyata yang **lolos dari 318 unit test**:
 
 ## Persiapan
 
-1. Publish build self-contained (lihat perintah di README/CLAUDE.md bagian build, atau):
+1. Publish build self-contained (lihat perintah di README bagian build, atau):
    ```
    dotnet publish src/Absensi.App/Absensi.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:PublishTrimmed=false -o publish/AbsensiSekolah
    ```
@@ -55,7 +55,7 @@ RENCANA-TUGAS.md Tugas 14 menemukan bug nyata yang **lolos dari 318 unit test**:
 ## Skenario 5 — Restore Selesai → Aplikasi Menutup Diri (Perilaku yang Memang Diharapkan)
 
 1. Login sebagai Kepala Sekolah/Admin → menu Pengaturan → bagian Backup.
-2. Pulihkan dari salah satu berkas backup lokal, konfirmasi dialog.
+2. Pulihkan dari salah satu berkas backup lokal, konfirmasi dialog. Backup yang dibuat sejak 12 November 2026 terenkripsi kunci lisensi; backup dari instalasi dengan kunci lisensi lain harus ditolak dengan pesan, tanpa mengubah data.
 3. **Harap:** pesan "Restore selesai" muncul, lalu aplikasi menutup diri sepenuhnya (ini SATU-SATUNYA skenario yang memang harus otomatis menutup aplikasi tanpa interaksi tambahan — sudah benar sejak Tugas 13, dipertahankan di Tugas 14).
 
 ## Skenario 6 — Manajemen Akun (Pengaturan → Akun)
@@ -319,3 +319,11 @@ tombol X sungguhan, bukan sekadar memanggil `Window.Close()` dari kode):
 | 2026-09-21 (sesi hardening kedua — A.1/A.2 docs/INVESTIGASI-CRASH-2026-09-21.md) | 10, langkah 2 — **DIULANG dengan skenario yang benar** | ✅ Lulus, lewat UI Automation sungguhan (bukan pemanggilan method langsung) | Skenario "Impor Excel berkas terkunci" yang direkomendasikan baris tabel di atas **TERNYATA SALAH** — dicoba dibaca kodenya lebih dulu sebelum eksekusi, ketahuan `ImporGuruWizardViewModel.AnalisisBerkas` menangkap exception LOKAL tanpa memanggil `PencatatGalat` sama sekali (celah terpisah, sudah ada di `TODO-VERSI-BERIKUTNYA.md` A.3.2). Diganti skenario "Pulihkan dari PC Lama" + berkas `backup/cloud-stub/<hash>/terakhir.enc` yang sengaja dirusak (lihat Skenario 10 langkah 2 di atas untuk detail persis) — DITUNTASKAN penuh lewat `System.Windows.Automation` (`InvokePattern`/`ValuePattern` pada kontrol sungguhan, `.exe` yang dijalankan di-hash dan dikonfirmasi = hasil publish terbaru): wizard dituntaskan penuh sekali (lisensi→login→MainWindow, memverifikasi juga bahwa `DatePicker` butuh format `dd/MM/yyyy` bukan `M/d/yyyy` — kultur aplikasi `id-ID`), lalu percobaan terpisah dihentikan sengaja di langkah 1 dengan backup cloud rusak → `logs/20260921.log` terkonfirmasi berisi entri nyata (`WizardInstalasiViewModel.PulihkanDariPcLama`, `AuthenticationTagMismatchException`, stack trace lengkap), aplikasi tetap `Responding=True` sesudahnya, pesan ke pengguna ramah tanpa stack trace. |
 | 2026-09-21 (sesi hardening kedua) | 10, langkah 4 (dialog tidak berulang) | ⛔ **BELUM TERVERIFIKASI DINAMIS** (status resmi, bukan kegagalan) | Sesuai arahan eksplisit: tidak dipaksakan, tidak ditambah tombol/hook/env var pengujian permanen untuk memicu exception global buatan. Tidak ada exception global (`DispatcherUnhandledException`) yang aman DAN sudah bisa direproduksi lewat UI ditemukan sesi ini. Menunggu Tahap D. |
 | 2026-09-21 (sesi hardening kedua) | Regresi penuh | ✅ 351/351 unit test hijau (Debug DAN Release), 4 test baru (`PencatatGalatTests`: 2 `AggregateException`, 2 batas ukuran/kegagalan ganda berkas cadangan) | `dotnet test Absensi.sln -c Debug` DAN `-c Release` masing-masing 351/351 (54+172+13+8+104). `dotnet publish` Release/self-contained ulang, 0 error, exe di-hash sebelum dipakai untuk verifikasi UI. |
+
+
+## Skenario tambahan 12 November 2026 (perlu dicoba di Windows)
+
+1. **Jadwal berlaku mulai (P-15):** Pengaturan → Jadwal Harian → ubah jam masuk Senin, pilih "Berlaku mulai" minggu depan → Simpan. **Harap:** pesan menyebut tanggal berlaku; tap hari ini tetap memakai jam lama. Pilih tanggal hari ini → **harap:** ditolak.
+2. **Finalisasi hari terlewat (T3):** siswa tap masuk, jangan tap pulang, tutup aplikasi sebelum jam finalisasi Bolos; buka lagi keesokan harinya. **Harap:** status siswa kemarin menjadi Bolos tanpa pesan Telegram baru.
+3. **Siswa pindahan (P-18):** tambah siswa baru di tengah bulan → laporan bulanan siswa itu hanya menghitung hari sejak ditambahkan.
+4. **Backup terenkripsi:** buka folder `backup` → berkas `.db` terbaru tidak bisa dibuka dengan DB Browser (bukan SQLite polos).
