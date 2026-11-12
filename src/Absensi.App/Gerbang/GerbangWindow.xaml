@@ -136,9 +136,6 @@
                         HorizontalAlignment="Left"
                         Margin="0,0,0,24" />
 
-        <TextBlock x:Name="ReaderStatus" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Top"
-                   Foreground="{StaticResource PutihBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
-
         <!-- Sampai empat kartu tap aktif (PANDUAN-UI-UX.md §8.2) -->
         <ItemsControl Grid.Row="2" ItemsSource="{Binding KartuAktif}">
             <ItemsControl.ItemsPanel>
@@ -333,6 +330,12 @@
                 Height="{Binding Tipografi.TinggiRiwayat}"
                 ClipToBounds="True">
             <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="ReaderStatus" Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"
+                           MaxWidth="400" TextWrapping="Wrap" Style="{StaticResource LabelKecilStyle}" />
                 <TextBlock Text="Tap sebelumnya tampil di sini"
                            VerticalAlignment="Center">
                     <TextBlock.Style>
@@ -347,7 +350,7 @@
                     </TextBlock.Style>
                 </TextBlock>
 
-                <ItemsControl ItemsSource="{Binding Ringkasan}" VerticalAlignment="Center">
+                <ItemsControl ItemsSource="{Binding Ringkasan}" VerticalAlignment="Center" ClipToBounds="True">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <StackPanel Orientation="Horizontal" />
