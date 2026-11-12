@@ -72,14 +72,8 @@
     <!-- §5.4 Overlay dialog/panel: rgba(20,24,31,0.45) -->
     <SolidColorBrush x:Key="OverlayBrush" Color="#7314181F" />
 
-    <!--
-        §6.1 tombol "Bahaya" butuh warna merah, tapi §3 palet dasar tidak
-        mendefinisikan merah umum (hanya merah status Alpa/Ditolak, dan §3.3
-        melarang warna status dipakai untuk tombol). BELUM ADA DI PALET
-        RESMI — nilai di bawah ini pengganti sementara, tanyakan pemilik
-        proyek apakah perlu ditambahkan ke docs/PANDUAN-UI-UX.md §3.1.
-    -->
-    <SolidColorBrush x:Key="BahayaBrush" Color="#B3261E" />
+    <!-- §3.1 Bahaya: resmi sejak keputusan pemilik 12 November 2026, sama dengan web. -->
+    <SolidColorBrush x:Key="BahayaBrush" Color="#9B2C2C" />
 
     <!-- ================= 3.2 Warna Status ================= -->
     <SolidColorBrush x:Key="HadirTeksBrush" Color="#166534" />

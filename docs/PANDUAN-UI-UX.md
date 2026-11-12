@@ -47,6 +47,7 @@ Tiga prinsip:
 | Kertas | `#F5F6F7` | Latar halaman |
 | Putih | `#FFFFFF` | Latar kartu dan tabel |
 | Garis | `#DFE3E8` | Pembatas, bingkai kolom |
+| Bahaya | `#9B2C2C` | Tombol aksi berisiko (hapus, kunci bulan, pulihkan backup) |
 
 Biru tua dipilih karena itu warna seragam SMP — bukan biru korporat yang bisa dipakai aplikasi apa pun.
 
@@ -66,7 +67,7 @@ Seluruh pasangan teks-latar di atas melewati rasio kontras 4.5:1.
 
 ### 3.3 Aturan Pemakaian
 
-- Jangan memakai warna status untuk tombol, tautan, atau hiasan
+- Jangan memakai warna status untuk tombol, tautan, atau hiasan. Satu-satunya pengecualian: warna Bahaya (§3.1) sama dengan teks Alpa dan hanya dipakai untuk tombol aksi berisiko (keputusan pemilik 12 November 2026)
 - Jangan mengandalkan warna saja: selalu ada teks status di sebelahnya, karena sebagian guru buta warna
 - Latar halaman selalu Kertas, kartu selalu Putih — perbedaan tipis ini yang membuat kartu terlihat terangkat tanpa bingkai tebal
 
