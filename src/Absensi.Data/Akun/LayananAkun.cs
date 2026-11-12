@@ -64,6 +64,14 @@ public sealed class LayananAkun
             throw new InvalidOperationException("Akun Wali Kelas wajib ditautkan ke seorang guru.");
         }
 
+        username = (username ?? string.Empty).Trim();
+        PastikanUsernameValid(username);
+        PastikanSandiValid(sandi);
+        if (_repositoriAkun.CariBerdasarkanUsername(connection, username) is not null)
+        {
+            throw new InvalidOperationException($"Username \"{username}\" sudah dipakai. Pilih username lain.");
+        }
+
         var sandiHash = HashSandi.Buat(sandi);
         int? idBaru = null;
 
@@ -124,6 +132,7 @@ public sealed class LayananAkun
     {
         PastikanBolehMengelolaAkun(pembuat);
         PastikanBerwenangAtasTarget(connection, pembuat, akunIdTarget);
+        PastikanSandiValid(sandiBaru);
 
         var sandiHash = HashSandi.Buat(sandiBaru);
 
@@ -152,6 +161,24 @@ public sealed class LayananAkun
         if (pembuat.Peran == PeranAkun.Admin && target.Peran != PeranAkun.WaliKelas)
         {
             throw new InvalidOperationException("Admin hanya berwenang atas akun Wali Kelas (PRD §3.1).");
+        }
+    }
+
+    // Aturan minimum yang sama untuk aplikasi desktop dan web uji. Desain
+    // autentikasi online final (MFA, ASVS L3) tetap mengikuti PRD §22.
+    private static void PastikanUsernameValid(string username)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(username, "^[a-z0-9._]{3,32}$"))
+        {
+            throw new InvalidOperationException("Username 3–32 karakter: huruf kecil, angka, titik atau garis bawah.");
+        }
+    }
+
+    private static void PastikanSandiValid(string? sandi)
+    {
+        if (sandi is null || sandi.Length < 8)
+        {
+            throw new InvalidOperationException("Sandi minimal 8 karakter.");
         }
     }
 

@@ -1,5 +1,6 @@
 using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
+using Absensi.Domain.Kehadiran;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.Data.MasterData;
@@ -12,6 +13,7 @@ public sealed class LayananSiswa
 {
     private readonly RepositoriSiswa _repositoriSiswa = new();
     private readonly RepositoriSiswaKelas _repositoriSiswaKelas = new();
+    private readonly RepositoriKartu _repositoriKartu = new();
     private readonly JalurPerubahanData _jalurPerubahanData = new();
 
     // kelas: (TahunAjaranId, KelasId) opsional — bila diisi, keanggotaan
@@ -106,6 +108,10 @@ public sealed class LayananSiswa
     public void TandaiTidakAktif(SqliteConnection connection, AkunTersimpan akun, DateTime waktu, int id, string alasan)
     {
         AuthorizationGuard.EnsureFullAuthority(akun, "menonaktifkan siswa");
+        if (string.IsNullOrWhiteSpace(alasan))
+        {
+            throw new InvalidOperationException("Alasan mutasi wajib diisi.");
+        }
 
         _jalurPerubahanData.JalankanDenganCatatan(
             connection,
@@ -118,8 +124,20 @@ public sealed class LayananSiswa
                 var lama = _repositoriSiswa.CariUntukAudit(connection, transaction, id);
                 _repositoriSiswa.TandaiTidakAktif(connection, transaction, id, alasan);
 
-                var kolom = new RingkasanPerubahan.Kolom("status", lama is null ? null : StatusAktif.Teks(lama.Aktif, lama.AlasanNonaktif), StatusAktif.Teks(false, alasan));
-                return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom) : RingkasanPerubahan.Bandingkan(id, kolom);
+                // PRD §5.8: siswa yang keluar/lulus tidak lagi memakai
+                // kartunya; kartu aktif dinonaktifkan, riwayatnya tetap.
+                var kartuLama = _repositoriKartu.CariUidAktifUntukPemilik(connection, JenisPemilikKartu.Siswa, id, transaction);
+                if (kartuLama is not null)
+                {
+                    _repositoriKartu.Nonaktifkan(connection, transaction, JenisPemilikKartu.Siswa, id, waktu, $"siswa nonaktif: {alasan}");
+                }
+
+                var kolom = new[]
+                {
+                    new RingkasanPerubahan.Kolom("status", lama is null ? null : StatusAktif.Teks(lama.Aktif, lama.AlasanNonaktif), StatusAktif.Teks(false, alasan)),
+                    new RingkasanPerubahan.Kolom("kartu_aktif", kartuLama, null),
+                };
+                return lama is null ? RingkasanPerubahan.HanyaBaru(id, kolom[0]) : RingkasanPerubahan.Bandingkan(id, kolom);
             });
     }
 
