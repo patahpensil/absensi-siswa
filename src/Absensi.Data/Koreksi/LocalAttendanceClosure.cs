@@ -37,25 +37,72 @@ public sealed class LocalAttendanceClosure
             if (day.Value.Closed)
                 throw new InvalidOperationException("Hari ini sudah ditutup.");
 
+            var (students, teachers) = ApplyEndOfDayRules(connection, transaction, date);
             using var command = connection.CreateCommand();
             command.Transaction = transaction;
             command.Parameters.AddWithValue("$date", DateText(date));
-            command.CommandText = """
-                UPDATE absensi_siswa SET status = 'bolos'
-                WHERE tanggal = $date AND status IN ('hadir','terlambat') AND sumber <> 'koreksi'
-                  AND jam_masuk IS NOT NULL AND jam_pulang IS NULL;
-                """;
-            var students = command.ExecuteNonQuery();
-            command.CommandText = """
-                UPDATE absensi_guru SET status = 'tidak_lengkap'
-                WHERE tanggal = $date AND status = 'masuk' AND jam_pulang IS NULL;
-                """;
-            var teachers = command.ExecuteNonQuery();
             command.Parameters.AddWithValue("$time", time.ToString("o"));
             command.CommandText = "UPDATE opened_school_day SET closed_at = $time WHERE date = $date;";
             command.ExecuteNonQuery();
             return new CatatanPerubahan(null, null, $"{date:yyyy-MM-dd} · {students} Bolos · {teachers} Tidak lengkap");
         });
+    }
+
+    // T3 (keputusan pemilik 12 November 2026): bila PC mati pada jam
+    // finalisasi, aturan akhir hari (Bolos siswa, Tidak lengkap guru) tidak
+    // pernah dijalankan. Saat aplikasi dibuka, setiap hari sekolah lampau yang
+    // sudah dibuka tetapi belum ditutup diberi aturan yang sama. Tidak
+    // mengirim notifikasi (pesan terlambat tidak lagi berguna), tidak menutup
+    // hari (penutupan tetap tindakan admin), dan melewati bulan terkunci
+    // serta tanggal yang kemudian ditetapkan libur. Idempoten.
+    public int FinalizeMissedDays(SqliteConnection connection, DateOnly today)
+    {
+        var dates = new List<DateOnly>();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT date FROM opened_school_day WHERE date < $today AND closed_at IS NULL ORDER BY date;";
+            command.Parameters.AddWithValue("$today", DateText(today));
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                dates.Add(DateOnly.ParseExact(reader.GetString(0), "yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+
+        var changed = 0;
+        foreach (var date in dates)
+        {
+            using var transaction = connection.BeginTransaction(deferred: false);
+            var day = ReadDay(connection, transaction, date);
+            if (day is not { Closed: false } open ||
+                _locks.SudahDikunci(connection, date.Year, date.Month, transaction) ||
+                _calendar.TentukanJenisHari(connection, date, open.Period, transaction) != JenisHariKalender.Sekolah)
+                continue;
+
+            var (students, teachers) = ApplyEndOfDayRules(connection, transaction, date);
+            transaction.Commit();
+            changed += students + teachers;
+        }
+
+        return changed;
+    }
+
+    // Aturan akhir hari yang sama dengan Penjadwal: masuk tanpa pulang →
+    // Bolos (siswa, kecuali hasil koreksi) / Tidak lengkap (guru).
+    private static (int Students, int Teachers) ApplyEndOfDayRules(SqliteConnection connection, SqliteTransaction transaction, DateOnly date)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.Parameters.AddWithValue("$date", DateText(date));
+        command.CommandText = """
+            UPDATE absensi_siswa SET status = 'bolos'
+            WHERE tanggal = $date AND status IN ('hadir','terlambat') AND sumber <> 'koreksi'
+              AND jam_masuk IS NOT NULL AND jam_pulang IS NULL;
+            """;
+        var students = command.ExecuteNonQuery();
+        command.CommandText = """
+            UPDATE absensi_guru SET status = 'tidak_lengkap'
+            WHERE tanggal = $date AND status = 'masuk' AND jam_pulang IS NULL;
+            """;
+        return (students, command.ExecuteNonQuery());
     }
 
     public IReadOnlyList<DateOnly> PendingDays(SqliteConnection connection, DateOnly month, SqliteTransaction? transaction = null)

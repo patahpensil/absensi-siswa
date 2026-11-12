@@ -21,6 +21,9 @@ public sealed class PembukaanHari
         var tahunAjaranId = _repositoriTahunAjaran.CariIdAktif(connection)
             ?? throw new InvalidOperationException("Tidak ada tahun ajaran aktif; pembukaan hari tidak bisa dijalankan.");
 
+        // T3: hari sekolah lampau yang terlewat finalisasinya (PC mati).
+        new LocalAttendanceClosure().FinalizeMissedDays(connection, tanggal);
+
         using var transaction = connection.BeginTransaction(deferred: false);
         var jenisHari = _repositoriKalender.TentukanJenisHari(connection, tanggal, tahunAjaranId, transaction);
         if (_repositoriTahunAjaran.FindForDate(connection, tanggal, transaction) != tahunAjaranId ||
