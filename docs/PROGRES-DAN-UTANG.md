@@ -396,6 +396,6 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **P1 yang belum dikerjakan:**
 - **PDF di browser:** dugaan kuat pustaka QuestPDF memerlukan pustaka native yang tidak tersedia untuk WebAssembly; belum diselidiki tuntas. Jalur yang berfungsi: Cetak → Simpan sebagai PDF, dan Excel.
-- **Penautan Telegram dan status bot (simulasi):** layanan asli `PemrosesPembaruanPairing` hanya berjalan bila token bot tersimpan. Simulasi di web uji membutuhkan token/username bot palsu atau jalur khusus; cara simulasinya perlu disetujui pemilik.
+- **Penautan Telegram dan status bot (simulasi):** **ditangguhkan atas keputusan pemilik (12 November 2026, 11.16 WITA):** simulasi kanal Telegram dan WhatsApp dikerjakan bersamaan dengan versi online (poin E).
 - **Wizard instalasi** di web uji belum dibuat.
 - **Kolom kanal pada impor Excel** dipindah ke P2: format kolom impor (PRD §5.4) belum memuat kanal dan termasuk rincian D-03.
