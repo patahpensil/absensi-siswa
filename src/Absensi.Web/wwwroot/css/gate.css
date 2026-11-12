@@ -1,226 +1,167 @@
+/* Layar gerbang — PANDUAN-UI-UX §8. Dilihat dari 3–5 meter: kartu memakai
+   warna status penuh (§8.2), ukuran mengikuti §8.1 pada 1920×1080 dan
+   mengecil seimbang pada layar lebih kecil. Warna dari palet §3. */
+@font-face { font-family:"IBM Plex Sans"; src:url("../fonts/IBMPlexSans-Regular.woff2") format("woff2"); font-weight:400; font-display:swap }
+@font-face { font-family:"IBM Plex Sans"; src:url("../fonts/IBMPlexSans-SemiBold.woff2") format("woff2"); font-weight:600; font-display:swap }
+
 :root {
     color-scheme:dark;
-    font-family:Segoe UI,Arial,sans-serif;
-    background:#0b172b;
-    color:#f3f6fb
+    --ink:#14181f;
+    --panel:#1f252e;
+    --line:#3a414c;
+    --text:#ffffff;
+    --soft:#dfe3e8;
+    --green:#166534;
+    --amber:#92610d;
+    --red:#9b2c2c;
+    --navy:#1b3a6b;
+    --neutral:#5b6472;
+    font-family:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+    font-variant-numeric:tabular-nums;
+    background:var(--ink);
+    color:var(--text)
 }
-* {
-    box-sizing:border-box
-}
-body {
-    margin:0
-}
+* { box-sizing:border-box }
+body { margin:0 }
 main {
     min-height:100vh;
     padding:24px 32px;
     display:flex;
     flex-direction:column;
-    gap:18px
+    gap:16px
 }
 header {
     display:flex;
     justify-content:space-between;
     align-items:center;
-    border-bottom:1px solid #33445e;
+    border-bottom:1px solid var(--line);
     padding-bottom:16px
 }
-.eyebrow,.kind {
-    font-size:13px;
-    letter-spacing:.16em;
-    color:#afc3df;
-    font-weight:700
-}
-h1 {
-    font-size:28px;
-    margin:6px 0
-}
-header p {
-    margin:4px 0;
-    color:#aabbd1
-}
-.clock {
-    text-align:right
-}
-.clock strong {
-    display:block;
-    font:600 23px Consolas,monospace
-}
-.clock span {
-    font-size:12px;
-    color:#aabbd1
-}
+h1 { font-size:28px; font-weight:600; margin:0 }
+header p { margin:4px 0 0; color:var(--soft); font-size:18px }
+/* §8.2 jam besar di pojok */
+.clock { text-align:right }
+.clock strong { display:block; font-size:clamp(28px,2.5vw,48px); font-weight:600 }
+.clock span { font-size:18px; color:var(--soft) }
 .summary {
     display:grid;
     grid-template-columns:repeat(4,1fr);
-    background:#14243c;
-    border:1px solid #33445e;
+    background:var(--panel);
+    border:1px solid var(--line);
     border-radius:10px
 }
 .summary div {
-    padding:13px 24px;
-    border-right:1px solid #33445e;
+    padding:12px 24px;
+    border-right:1px solid var(--line);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px
+    gap:12px;
+    font-size:18px
 }
-.summary div:last-child {
-    border-right:0
-}
-.summary span {
-    color:#bbcae0
-}
-.summary strong {
-    font:700 32px Consolas,monospace
-}
+.summary div:last-child { border-right:0 }
+.summary span { color:var(--soft) }
+.summary strong { font-size:28px; font-weight:600 }
 #gate-status {
     margin:0;
     text-align:center;
-    padding:10px;
+    padding:8px;
     border-radius:6px;
-    background:#1b2d48
+    background:var(--panel);
+    font-size:18px
 }
-.ready {
-    color:#a7ebc8
-}
-.warning {
-    color:#ffdb96!important
-}
+.ready { color:var(--text) }
+.warning { color:var(--text); background:var(--amber)!important }
 #gate-setup {
     text-align:center;
     padding:12px;
-    border:1px dashed #61738d;
-    border-radius:8px
+    border:1px dashed var(--line);
+    border-radius:10px
 }
-#gate-setup p {
-    margin:0 0 10px
-}
+#gate-setup p { margin:0 0 8px; font-size:18px }
 button {
-    font:600 16px Segoe UI,sans-serif;
-    background:#e7effb;
-    color:#142949;
+    font:600 18px "IBM Plex Sans","Segoe UI",sans-serif;
+    background:var(--text);
+    color:var(--ink);
     border:0;
     border-radius:6px;
-    padding:12px 24px;
+    min-height:48px;
+    padding:8px 24px;
     cursor:pointer
 }
-button:disabled {
-    opacity:.45
-}
+button:disabled { opacity:.45 }
 .cards {
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:18px;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:16px;
     align-items:stretch;
     flex:1
 }
-.cards:empty {
-    display:none
-}
+.cards:empty { display:none }
+/* §8.2 latar kartu memakai warna status penuh */
 .card {
-    background:#14243c;
-    border:2px solid #3a536f;
-    border-top:8px solid #3a536f;
+    background:var(--neutral);
     border-radius:10px;
-    padding:18px;
+    padding:16px;
     display:flex;
     flex-direction:column;
     align-items:center;
     text-align:center;
-    gap:10px;
+    gap:8px;
     min-width:0
 }
-.card.positive {
-    border-color:#45c48a
-}
-.card.warning {
-    border-color:#e9ae45
-}
-.card.danger {
-    border-color:#f07676
-}
-.kind {
-    font-size:17px;
-    color:#fff
-}
+.card.positive { background:var(--green) }
+.card.warning { background:var(--amber) }
+.card.danger { background:var(--red) }
+/* §8.1 label Guru/Siswa 24 px, sentence case (§4.3) */
+.kind { font-size:clamp(16px,1.25vw,24px); font-weight:600 }
+/* §8.1 foto rasio 3:4, tinggi minimal 320 px pada 1080 */
 .photo {
-    width:100%;
-    height:clamp(120px,25vh,310px);
-    object-fit:contain;
-    background:#0e1b30;
+    height:clamp(160px,30vh,420px);
+    aspect-ratio:3 / 4;
+    max-width:100%;
+    object-fit:cover;
+    background:rgba(0,0,0,.18);
     border-radius:6px
 }
-.placeholder {
-    display:grid;
-    place-items:center;
-    font-size:18px;
-    color:#b9c9de
-}
+.placeholder { display:grid; place-items:center; font-size:18px; color:var(--soft) }
+/* §8.1 nama 64 px tebal 600 */
 .name {
-    font-size:clamp(20px,2vw,34px);
+    font-size:clamp(28px,3.33vw,64px);
+    font-weight:600;
     line-height:1.15;
     margin:0;
     overflow-wrap:anywhere
 }
-.identity {
-    font:16px Consolas,monospace;
-    color:#b9c9de;
-    margin:0
-}
-.result {
-    font-size:clamp(23px,2.5vw,38px)
-}
-.positive .result {
-    color:#9dedc4
-}
-.warning .result {
-    color:#ffda93
-}
-.danger .result {
-    color:#ffb1b1
-}
-time {
-    font:600 25px Consolas,monospace
-}
-.reason {
-    margin:0;
-    font-size:15px;
-    color:#e0e7f3
-}
+/* §8.1 NISN/NIP 28 px */
+.identity { font-size:clamp(18px,1.46vw,28px); margin:0 }
+/* §8.1 status dan jam 40 px tebal 600 */
+.result, time { font-size:clamp(22px,2.08vw,40px); font-weight:600 }
+.reason { margin:0; font-size:18px }
 .empty {
     flex:1;
     min-height:220px;
     display:grid;
     place-items:center;
-    font-size:36px;
-    color:#c1d1e7;
-    border:1px dashed #3b526f;
+    font-size:28px;
+    color:var(--soft);
+    border:1px dashed var(--line);
     border-radius:10px
 }
-.recent h2 {
-    font-size:13px;
-    color:#aabbd1;
-    font-weight:500
-}
-.recent>div {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px
-}
+.recent h2 { font-size:18px; color:var(--soft); font-weight:400; margin:0 0 8px }
+.recent>div { display:flex; flex-wrap:wrap; gap:8px }
 .recent-item {
     padding:8px 12px;
-    background:#14243c;
-    border-radius:5px;
-    font-size:13px
+    background:var(--panel);
+    border-radius:6px;
+    font-size:18px
 }
-.recent-item.danger {
-    color:#ffb1b1
-}
+.recent-item.danger { background:var(--red) }
 footer {
     display:flex;
     justify-content:space-between;
-    color:#9fb2cc;
-    font-size:12px;
+    color:var(--soft);
+    font-size:14px;
     margin-top:auto
 }
 #gate-reader {
@@ -233,73 +174,17 @@ footer {
     border:0;
     padding:0
 }
-[hidden] {
-    display:none!important
-}
+[hidden] { display:none!important }
 @media(max-height:800px) {
-    main {
-        padding:14px 24px;
-        gap:10px
-    }
-    header {
-        padding-bottom:10px
-    }
-    h1 {
-        font-size:23px
-    }
-    .summary div {
-        padding:8px 18px
-    }
-    .summary strong {
-        font-size:27px
-    }
-    .card {
-        padding:12px;
-        gap:7px
-    }
-    .photo {
-        height:25vh
-    }
-    .recent h2 {
-        margin:4px 0
-    }
+    main { padding:12px 24px; gap:8px }
+    header { padding-bottom:8px }
+    .summary div { padding:8px 16px }
+    .card { padding:12px; gap:4px }
 }
 @media(max-width:700px) {
-    main {
-        padding:12px
-    }
-    .summary {
-        grid-template-columns:repeat(2,1fr)
-    }
-    .summary div {
-        padding:10px
-    }
-    .summary span {
-        font-size:12px
-    }
-    .clock strong {
-        font-size:16px
-    }
-    h1 {
-        font-size:20px
-    }
-    .cards {
-        grid-template-columns:repeat(2,minmax(0,1fr))
-    }
-    .photo {
-        height:130px
-    }
-    .identity {
-        font-size:12px
-    }
-    .name {
-        font-size:20px
-    }
-    .result {
-        font-size:21px
-    }
-    footer {
-        gap:8px;
-        font-size:10px
-    }
+    main { padding:12px }
+    .summary { grid-template-columns:repeat(2,1fr) }
+    .summary div { padding:8px 12px; font-size:14px }
+    .cards { grid-template-columns:repeat(2,minmax(0,1fr)) }
+    footer { gap:8px; font-size:12px }
 }

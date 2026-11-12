@@ -104,7 +104,7 @@ public sealed class GateController(StatusAplikasi state)
         };
         var tone = rejected ? "danger" : decision.StatusSiswaBaru == StatusAbsensiSiswa.Terlambat ? "warning" : "positive";
         await state.SimpanAsync();
-        cards.Insert(0, new GateCard(Guid.NewGuid().ToString("N"), teacher ? "GURU" : owner is null ? "KARTU" : "SISWA",
+        cards.Insert(0, new GateCard(Guid.NewGuid().ToString("N"), teacher ? "Guru" : owner is null ? "Kartu" : "Siswa",
             name, identity, photo, title, message, now.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture), tone, DateTime.UtcNow));
         if (cards.Count > 8) cards.RemoveRange(8, cards.Count - 8);
         return true;
