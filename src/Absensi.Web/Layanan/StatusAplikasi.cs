@@ -49,6 +49,8 @@ public sealed partial class StatusAplikasi
 
     public bool StorageConflict { get; private set; }
 
+    public event Action? StorageConflictDetected;
+
     public async Task MulaiAsync()
     {
         try
@@ -141,6 +143,7 @@ public sealed partial class StatusAplikasi
     {
         StorageFailed = StorageConflict = true;
         CatatanPenyimpanan = "Data sudah berubah di tab lain. Perubahan dari tab ini tidak disimpan. Muat ulang halaman sebelum melanjutkan.";
+        StorageConflictDetected?.Invoke();
     }
 
     public async Task OpenCurrentDayAsync()

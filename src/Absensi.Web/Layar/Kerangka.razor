@@ -72,6 +72,8 @@
         return items.Where(m => (m != "Audit" || Status.Akun!.Peran == PeranAkun.Admin)
             && (m is not ("Layar gerbang" or "Notifikasi") || WorkspaceView.CanManage(Status)));
     }
+    protected override void OnInitialized() => Status.StorageConflictDetected += OnStorageConflict;
+    private void OnStorageConflict() => _ = InvokeAsync(StateHasChanged);
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -107,6 +109,7 @@
     private async Task Logout() { Status.Keluar(); await OnKeluar.InvokeAsync(); }
     public async ValueTask DisposeAsync()
     {
+        Status.StorageConflictDetected -= OnStorageConflict;
         if (module is not null) { await module.InvokeVoidAsync("detach"); await module.DisposeAsync(); }
         reference?.Dispose();
     }

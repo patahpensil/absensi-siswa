@@ -47,7 +47,10 @@
         if (typeof card.photo === 'string' && card.photo.startsWith('data:image/png;base64,')) {
             const photo = node('img', 'photo'); photo.src = card.photo; photo.alt = `Foto ${card.name}`; article.append(photo);
         } else article.append(node('div', 'photo placeholder', 'Foto belum tersedia'));
-        article.append(node('h2', 'name', card.name), node('p', 'identity', `${card.kind === 'Guru' ? 'NIP' : 'NISN'} ${card.identity}`),
+        const name = node('h2', 'name', card.name);
+        if (card.name.length > 52) name.classList.add('name-long');
+        else if (card.name.length > 28) name.classList.add('name-medium');
+        article.append(name, node('p', 'identity', `${card.kind === 'Guru' ? 'NIP' : 'NISN'} ${card.identity}`),
             node('strong', 'result', card.status), node('time', '', card.time), node('p', 'reason', card.message));
         return article;
     };

@@ -1,6 +1,7 @@
 @using Absensi.Data.Repositori
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
+@implements IDisposable
 
 <div class="page-heading"><div><h1>Pengaturan pengujian</h1><p>Atur waktu skenario dan kelola data contoh pada browser ini.</p></div></div>
 <div class="settings-grid">
@@ -21,7 +22,13 @@
     private DateTime scenario;
     private string? message;
     private bool confirmReset;
-    protected override void OnInitialized() => scenario = Status.Jam.Sekarang;
+    protected override void OnInitialized()
+    {
+        scenario = Status.Jam.Sekarang;
+        Status.StorageConflictDetected += OnStorageConflict;
+    }
+    private void OnStorageConflict() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => Status.StorageConflictDetected -= OnStorageConflict;
     private async Task ApplyScenario()
     {
         var date = DateOnly.FromDateTime(scenario);

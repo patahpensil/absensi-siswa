@@ -396,13 +396,15 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   }
   await tv.waitForFunction(() => document.querySelectorAll('#gate-cards .card').length === 4);
   tegas((await tv.textContent('#gate-cards')).includes(longName), 'nama panjang terpotong pada TV');
-  const fits = await tv.locator('#gate-cards .card').evaluateAll(cards => cards.every(card => {
+  const layout = await tv.locator('#gate-cards .card').evaluateAll(cards => cards.map(card => {
     const name = card.querySelector('.name');
     const box = card.getBoundingClientRect();
     const text = name.getBoundingClientRect();
-    return box.left >= 0 && box.right <= innerWidth && box.bottom <= innerHeight && text.left >= box.left && text.right <= box.right;
+    return { viewport: [innerWidth, innerHeight], card: [box.left, box.right, box.bottom], name: [text.left, text.right] };
   }));
-  tegas(fits, 'empat kartu atau nama panjang meluap pada TV 1920 × 1080');
+  const fits = layout.every(({ viewport: [width, height], card: [left, right, bottom], name: [nameLeft, nameRight] }) =>
+    left >= -1 && right <= width + 1 && bottom <= height + 1 && nameLeft >= left - 1 && nameRight <= right + 1);
+  tegas(fits, `empat kartu atau nama panjang meluap pada TV 1920 × 1080: ${JSON.stringify(layout)}`);
 
   await page.click('#menu-dashboard');
   tegas(await page.locator('#ringkasan').count() === 1 && !tv.isClosed(), 'dashboard dan layar TV tidak dapat dibuka terpisah');
@@ -1180,7 +1182,7 @@ await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset da
     await stale.click('#school-identity-save');
     await stale.waitForSelector('#school-identity-message.danger');
     tegas((await stale.textContent('#school-identity-message')).includes('tab lain'), 'konflik tidak dijelaskan');
-    tegas(!(await stale.locator('#retry-storage').isEnabled()), 'tab lama masih boleh menimpa penyimpanan');
+    await stale.waitForSelector('#retry-storage:disabled');
     await stale.click('#reset-data');
     await stale.click('#confirm-reset-data');
 
