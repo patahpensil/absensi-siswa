@@ -51,10 +51,14 @@ internal sealed partial class SerialGateReaders : IDisposable
         port.Open();
     }
 
-    public bool AllConnected()
+    public int Count => _ports.Count;
+
+    // PRD §2 (status perangkat "4 dari 4"): hanya mode serial yang bisa
+    // menghitung reader; mode keyboard tidak dapat membedakan perangkat.
+    public int ConnectedCount()
     {
         var available = SerialPort.GetPortNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
-        return _ports.All(port => port.IsOpen && available.Contains(port.PortName));
+        return _ports.Count(port => port.IsOpen && available.Contains(port.PortName));
     }
 
     public void Dispose()

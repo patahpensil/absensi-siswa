@@ -19,6 +19,7 @@ public partial class GerbangWindow : Window
     private SerialGateReaders? _serialReaders;
     private bool _serialRequested;
     private bool _readerFault;
+    private int? _connectedReaders;
     private bool _closing;
 
     public GerbangWindow(GerbangViewModel viewModel, SqliteConnection connection)
@@ -167,7 +168,7 @@ public partial class GerbangWindow : Window
                 () => Dispatcher.BeginInvoke(() =>
                 {
                     _readerFault = true;
-                    RefreshReaderStatus();
+                    CheckSerialReaders();
                 }));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or JsonException or ArgumentException)
@@ -175,14 +176,21 @@ public partial class GerbangWindow : Window
             _readerFault = true;
             Absensi.Data.Diagnostik.PencatatGalat.Catat(ex, "Gerbang.Serial", "ERROR");
         }
-        RefreshReaderStatus();
+        CheckSerialReaders();
     }
 
     private void CheckSerialReaders()
     {
+        if (_serialReaders is not { } readers)
+        {
+            RefreshReaderStatus();
+            return;
+        }
+
         try
         {
-            _readerFault |= !_serialReaders!.AllConnected();
+            _connectedReaders = readers.ConnectedCount();
+            _readerFault |= _connectedReaders != readers.Count;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -193,9 +201,11 @@ public partial class GerbangWindow : Window
 
     private void RefreshReaderStatus()
     {
-        ReaderStatus.Text = _readerFault ? "Reader serial bermasalah. Periksa sambungan, lalu buka ulang gerbang."
+        var count = _serialReaders is { } readers && _connectedReaders is { } connected
+            ? $" {connected} dari {readers.Count} reader terhubung." : "";
+        ReaderStatus.Text = _readerFault ? "Reader serial bermasalah." + count + " Periksa sambungan, lalu buka ulang gerbang."
             : _dialogTutupSedangTerbuka ? "Tap dijeda selama konfirmasi penutupan."
-            : _serialRequested ? "Reader serial siap menerima tap."
+            : _serialRequested ? "Reader serial siap menerima tap." + count
             : IsActive ? "Reader keyboard siap menerima tap."
             : "Tap dijeda. Aktifkan Layar Gerbang sebelum menempelkan kartu.";
         FokusKolomTap();
