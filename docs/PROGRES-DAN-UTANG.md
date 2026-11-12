@@ -399,3 +399,26 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - **Penautan Telegram dan status bot (simulasi):** **ditangguhkan atas keputusan pemilik (12 November 2026, 11.16 WITA):** simulasi kanal Telegram dan WhatsApp dikerjakan bersamaan dengan versi online (poin E).
 - **Wizard instalasi** di web uji belum dibuat.
 - **Kolom kanal pada impor Excel** dipindah ke P2: format kolom impor (PRD §5.4) belum memuat kanal dan termasuk rincian D-03.
+
+## 24. Penyelesaian sisa prioritas selain versi online — 12 November 2026
+
+**Keputusan pemilik (12 November 2026, 11.37 WITA, lewat pilihan di chat):** T3 finalisasi saat aplikasi dibuka; P-18 otomatis dari data; backup lokal dienkripsi kunci lisensi; wizard web dipilih dari "Mulai ulang pengujian". Dicatat di PRD §5.3 dan §25.5.
+
+**Selesai:**
+- **T3** (`ffedbbf`): `LocalAttendanceClosure.FinalizeMissedDays` dipanggil dari `PembukaanHari` — hari sekolah lampau yang dibuka tetapi belum ditutup diberi aturan akhir hari (Bolos siswa kecuali hasil koreksi, Tidak lengkap guru), tanpa notifikasi, tanpa menutup hari; bulan terkunci dan tanggal libur dilewati. Tes `MissedDayFinalizationTests`.
+- **P-18** (`2512cfc`): migrasi 009 `siswa_kelas.start_date/end_date`. Tanggal mulai otomatis bila siswa ditambahkan/diimpor ke kelas setelah periode berjalan; hari terakhir otomatis saat mutasi (dicatat di audit `hari_terakhir`). Laporan Bulanan, Per orang, Per kelas dan Semester tidak menghitung hari di luar rentang (bukan Alpa, bukan penyebut). Tes `StudentEnrollmentCoverageTests`.
+- **Backup lokal terenkripsi** (`ed922c3`): `backup/*.db` ditulis AES-GCM dengan penanda `ABSENSI-BACKUP-1` bila lisensi aktif; restore mendekripsi dengan kunci lisensi aplikasi; kunci lain/berkas rusak → restore batal tanpa audit dan tanpa menimpa; backup lama SQLite polos tetap bisa dipulihkan.
+- **Wizard instalasi web** (`4c1bbfa`): enam langkah memakai `LayananWizard`; aturan isian (NPSN, tanggal, urutan jam, username, sandi) kini diperiksa di `LayananWizard` sehingga desktop dan web menolak hal yang sama; wizard desktop menampilkan penolakan sebagai pesan.
+- **PDF di browser** (`…`): QuestPDF tidak lagi mendukung WebAssembly sejak 2024.3 ([dokumentasi QuestPDF](https://www.questpdf.com/going-production/platform-specific-dependencies.html)); tombol PDF di web diganti "Cetak / Simpan PDF". Desktop tetap membuat PDF.
+- **A-39** ternyata sudah selesai (Tahap 1 dan 2 ada di kode); status register diperbarui.
+- **DOC-01 (sebagian):** `SKEMA-DATABASE.md` memuat migrasi 006–009, finalisasi hari terlewat dan backup terenkripsi.
+
+**Bukti:** commit `4c1bbfa` — [CI](https://github.com/patahpensil/absensi-smp1/actions/runs/43150852265), [bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43150852201) dan [deploy](https://github.com/patahpensil/absensi-smp1/actions/runs/43150852214) lulus, termasuk langkah Chromium wizard instalasi.
+
+**Belum / utang:**
+- Pengubahan manual tanggal mulai/hari terakhir siswa (P-18) oleh admin belum ada; laporan Harian/Mingguan (daftar kejadian) masih menampilkan baris di luar cakupan.
+- Arsip audit pra-restore (`backup/arsip-audit/`) belum dienkripsi.
+- Layar masuk web setelah wizard masih menampilkan daftar akun contoh yang tidak berlaku.
+- Pemulihan dari backup tidak tersedia di wizard web (browser tidak punya folder backup).
+- DOC-01 sisa: `PANDUAN-PEMASANGAN.md`, `PANDUAN-TESTER.md`, `RENCANA-TUGAS.md`.
+- UAT perangkat fisik (Windows, reader RFID, TV) tetap harus dilakukan pemilik.
