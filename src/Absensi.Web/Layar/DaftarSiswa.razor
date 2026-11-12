@@ -11,7 +11,7 @@
     <div class="table-wrap"><table id="tabel-siswa"><thead><tr><th>Siswa</th><th>NISN</th><th>L/P</th><th>Kelas</th><th>Kartu RFID</th><th>Status</th>@if (WorkspaceView.CanManage(Status)) { <th>Tindakan</th> }</tr></thead><tbody>
         @foreach (var student in Filtered())
         {
-            <tr><td class="name-cell"><button type="button" class="name-link" id="student-detail-@student.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = student.Id">@if (student.PunyaFoto && Status.PhotoUrl($"{student.Nisn}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> } else { <span class="mini-avatar">@WorkspaceView.Initials(student.Nama)</span> }@student.Nama</button> @if (!student.Aktif) { <small class="muted">(@student.AlasanNonaktif)</small> }</td><td class="mono muted">@student.Nisn</td><td>@student.JenisKelamin</td><td>@student.KelasNama</td><td class="mono">@(student.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(student.Aktif ? "positive" : "neutral")">@(student.Aktif ? "Aktif" : "Tidak aktif")</span></td>@if (WorkspaceView.CanManage(Status)) { <td><div class="master-row-actions"><button type="button" class="text-button" id="edit-student-@student.Id" @onclick="() => editId = student.Id">Ubah</button>@if (student.Aktif && !student.PunyaKartu) { <button class="text-button" id="register-card-@student.Id" @onclick="() => OpenRegistration(student)">Daftarkan kartu</button> } else if (student.Aktif) { <button type="button" class="text-button" id="replace-student-card-@student.Id" @onclick="() => OpenRegistration(student)">Ganti kartu</button> }</div></td> }</tr>
+            <tr><td class="name-cell"><button type="button" class="name-link" id="student-detail-@student.Id" title="Lihat detail dan riwayat absensi" @onclick="() => detailId = student.Id">@if (student.PunyaFoto && Status.PhotoUrl($"{student.Nisn}.png") is { } photo) { <img class="mini-avatar" src="@photo" alt="" /> } else { <span class="mini-avatar">@WorkspaceView.Initials(student.Nama)</span> }@student.Nama</button> @if (!student.Aktif) { <small class="muted">(@student.AlasanNonaktif)</small> }</td><td class="mono muted">@student.Nisn</td><td>@student.JenisKelamin</td><td>@student.KelasNama</td><td class="mono">@(student.KartuUid ?? "Belum terdaftar")</td><td><span class="badge @(student.Aktif ? "positive" : "neutral")">@(student.Aktif ? "Aktif" : "Tidak aktif")</span></td>@if (WorkspaceView.CanManage(Status)) { <td><div class="master-row-actions"><button type="button" class="text-button" id="edit-student-@student.Id" @onclick="() => editId = student.Id">Ubah</button>@if (student.Aktif && !student.PunyaKartu) { <button class="text-button" id="register-card-@student.Id" @onclick="() => OpenRegistration(student)">Daftarkan kartu</button> } else if (student.Aktif) { <button type="button" class="text-button" id="replace-student-card-@student.Id" @onclick="() => OpenRegistration(student)">Ganti kartu</button> }@if (student.Aktif) { <button type="button" class="text-button" id="mutate-student-@student.Id" @onclick="() => mutation = student">Mutasi</button> }</div></td> }</tr>
         }
     </tbody></table></div>
     @if (!Filtered().Any()) { <div class="empty-state">Tidak ada siswa yang cocok. Ubah pencarian atau filter kelas.</div> }
@@ -49,6 +49,10 @@
 {
     <MasterPersonEditor Kind="PersonKind.Student" Id="editId" OnClose="CloseEditor" OnSaved="Reload" />
 }
+@if (mutation is not null && WorkspaceView.CanManage(Status))
+{
+    <MutationDialog Kind="PersonKind.Student" Id="mutation.Id" Name="@mutation.Nama" OnClose="() => mutation = null" OnSaved="Reload" />
+}
 @if (importOpen && WorkspaceView.CanManage(Status))
 {
     <MasterImportDialog Kind="PersonKind.Student" OnClose="CloseImport" OnSaved="Reload" />
@@ -56,6 +60,7 @@
 
 @code {
     private int? editId;
+    private SiswaDaftar? mutation;
     private bool importOpen;
     private bool addOpen;
     private void CloseEditor() { editId = null; addOpen = false; }

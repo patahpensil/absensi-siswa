@@ -49,6 +49,10 @@ else
                                 {
                                     <button type="button" class="text-button" id="replace-teacher-card-@teacher.Id" @onclick="() => OpenRegistration(teacher)">Ganti kartu</button>
                                 }
+                                @if (teacher.Aktif)
+                                {
+                                    <button type="button" class="text-button" id="deactivate-teacher-@teacher.Id" @onclick="() => mutation = teacher">Nonaktifkan</button>
+                                }
                             </div></td>
                         </tr>
                     }
@@ -99,6 +103,10 @@ else
 {
     <MasterPersonEditor Kind="PersonKind.Teacher" Id="editId" OnClose="CloseEditor" OnSaved="Reload" />
 }
+@if (mutation is not null && WorkspaceView.CanManage(Status))
+{
+    <MutationDialog Kind="PersonKind.Teacher" Id="mutation.Id" Name="@mutation.Nama" OnClose="() => mutation = null" OnSaved="Reload" />
+}
 @if (importOpen && WorkspaceView.CanManage(Status))
 {
     <MasterImportDialog Kind="PersonKind.Teacher" OnClose="CloseImport" OnSaved="Reload" />
@@ -106,6 +114,7 @@ else
 
 @code {
     private int? editId;
+    private GuruDaftar? mutation;
     private bool importOpen;
     private bool addOpen;
     private void CloseEditor() { editId = null; addOpen = false; }

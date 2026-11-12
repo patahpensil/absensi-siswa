@@ -886,6 +886,87 @@ await langkah('Naik kelas massal mempertahankan kartu dan laporan periode sebelu
   tegas(history.includes('7A') && history.includes('07:30:00'), 'riwayat laporan kelas asal berubah');
 });
 
+
+await langkah('Mutasi siswa dan nonaktif guru: data tetap, kartu siswa dinonaktifkan, tercatat di audit', async () => {
+  await page.click('#menu-siswa');
+  const studentRow = page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa Excel RFID' });
+  await studentRow.locator('[id^=mutate-student-]').click();
+  await page.waitForSelector('#mutation-title');
+  await page.selectOption('#mutation-reason', 'pindah');
+  await page.fill('#mutation-note', 'ke SMP Negeri 2 (contoh)');
+  await page.click('#mutation-confirm');
+  await page.waitForSelector('#mutation-success');
+  await page.click('#mutation-done');
+  await page.waitForSelector('#mutation-title', { state: 'detached' });
+  const student = await studentRow.textContent();
+  tegas(student.includes('Tidak aktif') && student.includes('pindah: ke SMP Negeri 2') && student.includes('Belum terdaftar'), `mutasi siswa salah: ${student}`);
+  tegas(await studentRow.locator('[id^=mutate-student-]').count() === 0, 'siswa tidak aktif masih bisa dimutasi');
+
+  await page.click('#menu-absensi');
+  await tapCard('0000999101');
+  await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Kartu belum terdaftar'));
+
+  await page.click('#menu-guru');
+  const teacherRow = page.locator('#tabel-guru tbody tr').filter({ hasText: 'Guru Excel RFID' });
+  await teacherRow.locator('[id^=deactivate-teacher-]').click();
+  await page.selectOption('#mutation-reason', 'pensiun');
+  await page.click('#mutation-confirm');
+  await page.waitForSelector('#mutation-success');
+  await page.click('#mutation-done');
+  tegas((await teacherRow.textContent()).includes('pensiun'), 'guru tidak tercatat pensiun');
+
+  await page.click('#menu-audit');
+  await page.fill('#audit-search', 'nonaktifkan_siswa');
+  tegas((await page.textContent('#audit-table')).includes('kartu_aktif'), 'penonaktifan kartu tidak tercatat di audit');
+});
+
+await langkah('Akun: admin membuat wali kelas, sandi diatur ulang, akun dinonaktifkan tidak bisa masuk', async () => {
+  await page.click('#menu-pengaturan');
+  await page.waitForSelector('#account-management');
+  tegas(await page.locator('#account-role option').count() === 1, 'admin masih bisa memilih peran Admin');
+  await page.fill('#account-username', 'wali8a');
+  await page.fill('#account-password', 'pendek');
+  await page.selectOption('#account-teacher', { label: 'Ibu Lina (contoh)' });
+  await page.click('#account-create');
+  await page.waitForSelector('#account-message.danger');
+  tegas((await page.textContent('#account-message')).includes('minimal 8'), 'sandi pendek tidak ditolak');
+  await page.fill('#account-password', 'sandiwali8a');
+  await page.click('#account-create');
+  await page.waitForSelector('#account-message.positive');
+  const account = page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' });
+  tegas((await account.textContent()).includes('Ibu Lina'), 'akun wali tidak tertaut ke guru');
+  await page.fill('#account-username', 'wali8a');
+  await page.fill('#account-password', 'sandiwali8a');
+  await page.selectOption('#account-teacher', { label: 'Ibu Lina (contoh)' });
+  await page.click('#account-create');
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('sudah dipakai'));
+
+  await account.locator('[id^=account-reset-]').click();
+  await page.fill('#account-reset-password', 'sandibaru123');
+  await page.click('#account-reset-confirm');
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('diganti'));
+  await page.click('#tombol-keluar');
+  await masuk('wali8a', 'sandibaru123');
+  await page.waitForSelector('#akun-aktif');
+  await page.click('#tombol-keluar');
+
+  await masuk('admin', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await page.click('#menu-pengaturan');
+  await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).locator('[id^=account-deactivate-]').click();
+  await page.click('#account-deactivate-confirm');
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('dinonaktifkan'));
+  tegas((await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).textContent()).includes('Nonaktif'), 'status akun tidak berubah');
+  await page.click('#tombol-keluar');
+  await masuk('wali8a', 'sandibaru123');
+  await page.waitForSelector('#galat-masuk');
+
+  await masuk('kepsek', 'contoh123');
+  await page.waitForSelector('#ringkasan');
+  await page.click('#menu-pengaturan');
+  tegas(await page.locator('#account-role option').count() === 2, 'kepala sekolah tidak bisa memilih peran Admin');
+});
+
 await browser.close();
 for (const t of consoleErrors) console.log(`::warning::Konsol browser: ${t}`);
 console.log(`Ringkasan: ${failed === 0 ? 'semua langkah lulus' : `${failed} langkah gagal`}.`);

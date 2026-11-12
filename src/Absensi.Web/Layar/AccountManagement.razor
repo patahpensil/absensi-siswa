@@ -1,0 +1,186 @@
+@using Absensi.Data.Akun
+@using Absensi.Data.Repositori
+@using Absensi.Domain.Akun
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PRD §3.1: Kepala Sekolah membuat akun Admin; Admin membuat akun Wali Kelas.
+   Semua aturan (hierarki, satu guru per akun wali, audit) dijalankan oleh
+   LayananAkun — layar ini hanya memanggilnya. *@
+<section class="panel settings-wide" id="account-management">
+    <header class="panel-header"><h2><UiIcon Name="people" /> Akun pengguna</h2><span class="panel-code">§3.1</span></header>
+    <div class="settings-body">
+        <p>@(IsHead ? "Kepala sekolah dapat membuat akun Admin dan Wali Kelas." : "Admin dapat membuat dan mengelola akun Wali Kelas.") Akun tidak dihapus; akun yang tidak dipakai lagi dinonaktifkan.</p>
+        <div class="table-wrap">
+            <table id="account-table">
+                <thead><tr><th>Username</th><th>Peran</th><th>Guru terkait</th><th>Status</th><th>Tindakan</th></tr></thead>
+                <tbody>
+                    @foreach (var account in accounts)
+                    {
+                        <tr class="@(account.Aktif ? "" : "is-inactive")">
+                            <td class="mono">@account.Username</td>
+                            <td>@RoleText(account.Peran)</td>
+                            <td>@(account.NamaGuru ?? "—")</td>
+                            <td><span class="badge @(account.Aktif ? "positive" : "neutral")">@(account.Aktif ? "Aktif" : "Nonaktif")</span></td>
+                            <td><div class="master-row-actions">
+                                @if (account.Aktif && CanTouch(account))
+                                {
+                                    <button type="button" class="text-button" id="account-reset-@account.Id" @onclick="() => StartReset(account)">Atur ulang sandi</button>
+                                    <button type="button" class="text-button" id="account-deactivate-@account.Id" @onclick="() => StartDeactivate(account)">Nonaktifkan</button>
+                                }
+                            </div></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (resetTarget is not null)
+        {
+            <form class="account-inline" @onsubmit="ResetPassword" @onsubmit:preventDefault>
+                <label for="account-reset-password">Sandi baru untuk <strong>@resetTarget.Username</strong></label>
+                <input id="account-reset-password" type="password" autocomplete="new-password" minlength="8" @bind="resetPassword" disabled="@busy" />
+                <div class="button-row">
+                    <button type="button" disabled="@busy" @onclick="CancelAction">Batal</button>
+                    <button id="account-reset-confirm" type="submit" class="primary" disabled="@busy">Simpan sandi baru</button>
+                </div>
+            </form>
+        }
+
+        @if (deactivateTarget is not null)
+        {
+            <div class="message danger account-inline">
+                <p>Nonaktifkan akun <strong>@deactivateTarget.Username</strong>? Akun tidak bisa dipakai masuk lagi; riwayat dan jejak auditnya tetap tersimpan.</p>
+                <div class="button-row">
+                    <button type="button" disabled="@busy" @onclick="CancelAction">Batal</button>
+                    <button id="account-deactivate-confirm" type="button" class="bahaya" disabled="@busy" @onclick="Deactivate">Nonaktifkan akun</button>
+                </div>
+            </div>
+        }
+
+        <h3>Tambah akun</h3>
+        <form class="account-form" @onsubmit="Create" @onsubmit:preventDefault>
+            <fieldset class="master-fields" disabled="@busy">
+                <div>
+                    <label for="account-username">Username</label>
+                    <input id="account-username" autocomplete="off" maxlength="32" @bind="username" />
+                    <p class="field-help">3–32 karakter: huruf kecil, angka, titik atau garis bawah.</p>
+                </div>
+                <div>
+                    <label for="account-password">Sandi awal</label>
+                    <input id="account-password" type="password" autocomplete="new-password" @bind="password" />
+                    <p class="field-help">Minimal 8 karakter. Sampaikan langsung kepada pemilik akun.</p>
+                </div>
+                <div>
+                    <label for="account-role">Peran</label>
+                    <select id="account-role" @bind="role">
+                        @if (IsHead) { <option value="@PeranAkun.Admin">Admin / TU</option> }
+                        <option value="@PeranAkun.WaliKelas">Wali Kelas</option>
+                    </select>
+                </div>
+                @if (role == PeranAkun.WaliKelas)
+                {
+                    <div>
+                        <label for="account-teacher">Guru</label>
+                        <select id="account-teacher" @bind="teacherId">
+                            <option value="0">Pilih guru</option>
+                            @foreach (var teacher in teachers)
+                            {
+                                <option value="@teacher.Id">@teacher.Nama</option>
+                            }
+                        </select>
+                        <p class="field-help">Akses kelas mengikuti penugasan wali kelas guru ini (§3.3).</p>
+                    </div>
+                }
+            </fieldset>
+            <button id="account-create" type="submit" class="primary" disabled="@busy">Buat akun</button>
+        </form>
+        @if (message is not null) { <p id="account-message" class="message @(ok ? "positive" : "danger")" role="@(ok ? "status" : "alert")">@message</p> }
+    </div>
+</section>
+
+@code {
+    private readonly LayananAkun service = new();
+    private IReadOnlyList<AkunDaftar> accounts = Array.Empty<AkunDaftar>();
+    private IReadOnlyList<GuruDaftar> teachers = Array.Empty<GuruDaftar>();
+    private string username = "", password = "", resetPassword = "";
+    private PeranAkun role = PeranAkun.WaliKelas;
+    private int teacherId;
+    private AkunDaftar? resetTarget, deactivateTarget;
+    private bool busy, ok;
+    private string? message;
+
+    private bool IsHead => Status.Akun?.Peran == PeranAkun.KepalaSekolah;
+
+    protected override void OnInitialized() => Reload();
+
+    private void Reload()
+    {
+        accounts = service.DaftarAkun(Status.Koneksi!, Status.Akun!);
+        teachers = new RepositoriGuru().DaftarLengkap(Status.Koneksi!).Where(t => t.Aktif).ToList();
+    }
+
+    // Mirrors LayananAkun's own checks so the screen does not offer actions
+    // the service would refuse; the service remains the authority.
+    private bool CanTouch(AkunDaftar account) =>
+        account.Id != Status.Akun!.Id && (IsHead || account.Peran == PeranAkun.WaliKelas);
+
+    private static string RoleText(PeranAkun role) => role switch
+    {
+        PeranAkun.KepalaSekolah => "Kepala Sekolah",
+        PeranAkun.Admin => "Admin / TU",
+        _ => "Wali Kelas",
+    };
+
+    private void StartReset(AkunDaftar account) { CancelAction(); resetTarget = account; }
+    private void StartDeactivate(AkunDaftar account) { CancelAction(); deactivateTarget = account; }
+    private void CancelAction() { if (busy) return; resetTarget = null; deactivateTarget = null; resetPassword = ""; }
+
+    private Task Create() => Run(() =>
+    {
+        var created = service.BuatAkun(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, username, password, role,
+            role == PeranAkun.WaliKelas && teacherId > 0 ? teacherId : null);
+        // PRD §16.10 langkah 6: report success only after the account is read back.
+        if (new RepositoriAkun().CariBerdasarkanId(Status.Koneksi!, created.Id) is null)
+            throw new InvalidOperationException("Akun belum dapat dipastikan tersimpan. Muat ulang lalu periksa kembali.");
+        var text = $"Akun {created.Username} ({RoleText(created.Peran)}) dibuat.";
+        username = ""; password = ""; teacherId = 0;
+        return text;
+    });
+
+    private Task ResetPassword() => Run(() =>
+    {
+        var target = resetTarget!;
+        service.ResetSandi(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, target.Id, resetPassword);
+        resetTarget = null; resetPassword = "";
+        return $"Sandi akun {target.Username} diganti.";
+    });
+
+    private Task Deactivate() => Run(() =>
+    {
+        var target = deactivateTarget!;
+        service.NonaktifkanAkun(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, target.Id);
+        if (new RepositoriAkun().CariBerdasarkanId(Status.Koneksi!, target.Id)?.Aktif != false)
+            throw new InvalidOperationException("Perubahan belum dapat dipastikan. Muat ulang lalu periksa kembali.");
+        deactivateTarget = null;
+        return $"Akun {target.Username} dinonaktifkan.";
+    });
+
+    private async Task Run(Func<string> action)
+    {
+        if (busy) return;
+        busy = true;
+        message = null;
+        try
+        {
+            var text = action();
+            await Status.SimpanAsync();
+            Reload();
+            ok = true;
+            message = text;
+        }
+        catch (InvalidOperationException ex) { ok = false; message = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { ok = false; message = "Perubahan akun belum dapat disimpan. Coba kembali."; }
+        finally { busy = false; }
+    }
+}

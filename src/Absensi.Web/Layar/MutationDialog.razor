@@ -1,0 +1,109 @@
+@using Absensi.Data.MasterData
+@using Absensi.Data.Repositori
+@using Absensi.Web.Layanan
+@inject StatusAplikasi Status
+
+@* PRD §5.3/§14.4 (Mutasi siswa) dan §17.7 (guru pensiun/pindah): data
+   ditandai tidak aktif, tidak dihapus. Kartu siswa ikut dinonaktifkan
+   (§5.8) oleh layanan; riwayat absensi tetap utuh. *@
+<div class="modal-backdrop" @onkeydown="HandleKey">
+    <section class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="mutation-title">
+        <header class="panel-header">
+            <h2 id="mutation-title">@(IsStudent ? "Mutasi siswa" : "Nonaktifkan guru")</h2>
+            <button type="button" class="icon-button" aria-label="Tutup mutasi" disabled="@saving" @onclick="Close">×</button>
+        </header>
+        <div class="dialog-body">
+            <p class="eyebrow">@(IsStudent ? "SISWA" : "GURU") TERPILIH</p>
+            <h3>@Name</h3>
+            @if (!done)
+            {
+                <form @onsubmit="Save" @onsubmit:preventDefault>
+                    <fieldset class="master-fields" disabled="@saving">
+                        <div>
+                            <label for="mutation-reason">Alasan</label>
+                            <select id="mutation-reason" @bind="reason">
+                                @foreach (var option in Reasons)
+                                {
+                                    <option value="@option">@option</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="master-field-wide">
+                            <label for="mutation-note">Keterangan (opsional)</label>
+                            <input id="mutation-note" maxlength="120" @bind="note" placeholder="@(IsStudent ? "Mis. ke SMP Negeri 2 (contoh)" : "Mis. SK mutasi nomor …")" />
+                        </div>
+                    </fieldset>
+                    <p class="message danger">
+                        @(IsStudent
+                            ? "Siswa berhenti muncul di absensi harian mulai hari ini dan kartu aktifnya dinonaktifkan. Riwayat absensi tetap tersimpan."
+                            : "Guru berhenti muncul di absensi harian mulai hari ini. Riwayat absensi tetap tersimpan.")
+                    </p>
+                    @if (error is not null) { <p id="mutation-error" class="message danger" role="alert">@error</p> }
+                    <div class="button-row">
+                        <button type="button" disabled="@saving" @onclick="Close">Batal</button>
+                        <button id="mutation-confirm" type="submit" class="bahaya" disabled="@saving">@(saving ? "Menyimpan…" : IsStudent ? "Tandai tidak aktif" : "Nonaktifkan guru")</button>
+                    </div>
+                </form>
+            }
+            else
+            {
+                <p id="mutation-success" class="message positive" role="status">@Name ditandai tidak aktif (@StoredReason).</p>
+                <div class="button-row"><button id="mutation-done" type="button" class="primary" @onclick="Close">Selesai</button></div>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PersonKind Kind { get; set; }
+    [Parameter, EditorRequired] public int Id { get; set; }
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private static readonly string[] StudentReasons = { "pindah", "keluar" };
+    private static readonly string[] TeacherReasons = { "pensiun", "pindah tugas", "berhenti" };
+    private bool IsStudent => Kind == PersonKind.Student;
+    private string[] Reasons => IsStudent ? StudentReasons : TeacherReasons;
+    private string reason = "";
+    private string note = "";
+    private bool saving, done;
+    private string? error;
+    private string StoredReason => note.Trim().Length == 0 ? reason : $"{reason}: {note.Trim()}";
+
+    protected override void OnInitialized() => reason = Reasons[0];
+
+    private async Task Save()
+    {
+        if (saving || done || !WorkspaceView.CanManage(Status)) return;
+        saving = true;
+        error = null;
+        try
+        {
+            var stored = StoredReason;
+            bool? active;
+            if (IsStudent)
+            {
+                new LayananSiswa().TandaiTidakAktif(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, Id, stored);
+                active = new RepositoriSiswa().CariUntukAudit(Status.Koneksi!, null, Id)?.Aktif;
+            }
+            else
+            {
+                new LayananGuru().TandaiTidakAktif(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, Id, stored);
+                active = new RepositoriGuru().CariUntukAudit(Status.Koneksi!, null, Id)?.Aktif;
+            }
+
+            // Report success only after the stored state is read back (PRD §16.10 langkah 6).
+            if (active != false) throw new InvalidOperationException("Perubahan belum dapat dipastikan. Muat ulang data lalu periksa kembali.");
+            await Status.SimpanAsync();
+            done = true;
+            await OnSaved.InvokeAsync();
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (Microsoft.Data.Sqlite.SqliteException) { error = "Perubahan belum dapat disimpan. Coba kembali."; }
+        finally { saving = false; }
+    }
+
+    private async Task Close() { if (!saving) await OnClose.InvokeAsync(); }
+    private async Task HandleKey(KeyboardEventArgs e) { if (e.Key == "Escape") await Close(); }
+}
