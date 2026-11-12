@@ -338,3 +338,30 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 **Bukti, 12 November 2026 ±05.45 WITA, commit `50e7f05`:** [CI Windows](https://github.com/patahpensil/absensi-smp1/actions/runs/43105025248) lulus (build dan seluruh tes, termasuk tes baru Domain/Data/Telegram). [Bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43105025370) lulus. [Deploy Cloudflare](https://github.com/patahpensil/absensi-smp1/actions/runs/43105025910) lulus **34 langkah browser sebelum dan 34 sesudah deploy**, termasuk penolakan WhatsApp tanpa nomor HP, normalisasi `080000000001` → `6280000000001`, tap Terlambat 08.20 masuk antrean kanal WhatsApp (bukan Telegram) dan audit `ubah_kanal_notifikasi`. Versi `https://cd17d8a5.absensi-uji.pages.dev`, tautan tetap `https://absensi-uji.pages.dev/`. Belum ada pemeriksaan visual oleh pemilik.
 
 **Belum dikerjakan / butuh keputusan Edgar (D-03):** penyedia/API WhatsApp dan pengirimnya; kanal untuk wali kelas dan guru (masih Telegram); kolom kanal pada impor Excel siswa (siswa hasil impor memakai Telegram); tampilan kanal di aplikasi desktop WPF; aliran data ke pihak ketiga luar negeri dan biaya per pesan.
+
+## 22. Sisa master data dan operasional sekolah di web uji — 12 November 2026
+
+**Acuan:** PRD §3.1, §5.8, §7 P-15, §16.17; PANDUAN-UI-UX §9.
+
+**Master data (commit `09dcf6f`, `4a92095`):**
+- **Mutasi siswa:** `LayananSiswa.TandaiTidakAktif` kini mewajibkan alasan (pindah/keluar + catatan) dan menonaktifkan kartu aktif siswa dalam transaksi yang sama (PRD §5.8). Audit mencatat `status` dan `kartu_aktif`. Riwayat absensi tetap.
+- **Nonaktif guru:** alasan pensiun/pindah tugas/berhenti lewat dialog yang sama (`MutationDialog`).
+- **Manajemen akun (Pengaturan):** buat akun, atur ulang sandi, nonaktifkan, mengikuti hierarki §3.1 (Kepala Sekolah → Admin, Admin → Wali Kelas). `LayananAkun` kini memvalidasi username (`a–z 0–9 . _`, 3–32), sandi minimal 8, dan menolak username ganda.
+- Bukti: [CI](https://github.com/patahpensil/absensi-smp1/actions/runs/43134963849), [bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43134964029), [deploy](https://github.com/patahpensil/absensi-smp1/actions/runs/43134963836) lulus.
+
+**Operasional (commit `f920766`…`f561d21`):**
+- **Identitas sekolah (Pengaturan):** `SchoolIdentityService` — nama wajib (≤120), NPSN 8 angka bila diisi, alamat ≤250, Kepala Sekolah/Admin saja, audit `ubah_identitas_sekolah`. Judul aplikasi langsung memakai nama baru.
+- **Jadwal harian berlaku mulai tanggal (P-15):** migrasi 008 tabel `schedule_change`; `ScheduleTimeline` memilih versi terakhir yang berlaku pada tanggal itu, kalau tidak ada memakai `jadwal_hari`. `LayananJadwalHari.ScheduleFrom` menolak tanggal hari ini/lampau dan di luar periode, menolak urutan jam yang salah (pesan menyebut harinya), audit `jadwal_berlaku_mulai` (lama→baru per hari). Pemroses tap, pembukaan hari, kalender (hari sekolah/libur), Notifikasi dan panel jadwal dasbor memakai jadwal pada tanggal yang bersangkutan. Pengaturan: lihat jadwal untuk tanggal tertentu, daftar versi, dan isian 7 hari "berlaku mulai" (bawaan besok).
+- **Kehadiran guru (§16.17, menu Guru):** Kepala Sekolah memilih tanggal; tanggal mendatang hanya Izin/Dinas luar/Cuti, tanggal hari ini/lampau Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib. Memakai `LayananStatusGuru` (kunci bulan dan audit `tetapkan_status_guru`). Admin hanya melihat.
+- **Tes disiapkan:** Data `ScheduleAndSchoolSettingsTests` (versi lama/baru per tanggal, tap Senin lama Hadir vs Senin baru Terlambat, Sabtu jadi libur hanya sejak tanggal berlaku, penolakan tanggal/peran/urutan jam, audit, identitas sekolah). Chromium 4 langkah baru.
+- **Perbaikan selama uji:** `@bind` pada `input type=time` dengan properti teks gagal dikompilasi (`c8028c5`); langkah audit dipindah ke akun Admin karena menu Audit memang hanya untuk Admin (`f561d21`).
+
+**Bukti, 12 November 2026 ±10.20 WITA, commit `f561d21`:** [CI Windows](https://github.com/patahpensil/absensi-smp1/actions/runs/43140007982) lulus (build dan seluruh tes). [Bukti browser](https://github.com/patahpensil/absensi-smp1/actions/runs/43140007865) lulus. [Deploy Cloudflare](https://github.com/patahpensil/absensi-smp1/actions/runs/43140007983) lulus **40 langkah browser sebelum dan 40 sesudah deploy**. Versi `https://2a5aee99.absensi-uji.pages.dev`. Belum ada pemeriksaan visual oleh pemilik.
+
+**Belum dikerjakan / utang:**
+- **P-18 tanggal mulai/berakhir siswa:** ditunda (belum ada kolom dan aturan laporannya). Perlu dibahas dengan Edgar.
+- **Impor foto massal:** tidak dibuat, sesuai instruksi Edgar menghapusnya.
+- **Desktop WPF masih memakai `LayananJadwalHari.Perbarui`** yang mengubah jadwal secara retroaktif — bertentangan dengan P-15. Perlu dipindah ke `ScheduleFrom`.
+- **Periode akademik baru menyalin jadwal dasar saja**, bukan versi jadwal terjadwal di periode aktif.
+- **Kehadiran guru di muka:** belum ada tes yang membuktikan status Dinas luar tetap benar ketika hari itu tiba dan guru tidak tap.
+- Backup dan token bot tidak berlaku di web uji (browser lokal); tetap fitur desktop.
