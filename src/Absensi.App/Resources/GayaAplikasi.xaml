@@ -135,12 +135,10 @@
     <sys:Double x:Key="LebarMenuSamping">240</sys:Double>
 
     <!--
-        §4.1 IBM Plex Sans belum dibundel sebagai berkas font di proyek ini
-        (belum ada .ttf di repo) — jatuh ke Segoe UI bila IBM Plex Sans
-        tidak terpasang di PC. Membundel font sungguhan kemungkinan bagian
-        Tugas 14 (pengerasan/paket .exe self-contained).
+        §4.1 IBM Plex Sans dibundel sebagai resource (Resources/Fonts,
+        lisensi OFL). Segoe UI hanya cadangan bila resource gagal dimuat.
     -->
-    <FontFamily x:Key="FontUtama">IBM Plex Sans, Segoe UI</FontFamily>
+    <FontFamily x:Key="FontUtama">/Absensi.App;component/Resources/Fonts/#IBM Plex Sans, Segoe UI</FontFamily>
 
     <!-- ================= 4.2 Skala Huruf ================= -->
     <Style x:Key="JudulHalamanStyle" TargetType="TextBlock">

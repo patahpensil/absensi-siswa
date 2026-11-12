@@ -10,6 +10,13 @@
     <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
+  <!-- PANDUAN-UI-UX §4.1: IBM Plex Sans dibundel ke dalam .exe (lisensi OFL,
+       Resources/Fonts/OFL-IBM-Plex.txt) agar tampil sama di PC mana pun. -->
+  <ItemGroup>
+    <Resource Include="Resources\Fonts\IBMPlexSans-Regular.ttf" />
+    <Resource Include="Resources\Fonts\IBMPlexSans-SemiBold.ttf" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
