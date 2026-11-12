@@ -74,7 +74,7 @@ public sealed class LayananBackup
     {
         if (akun.Peran == PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang memulihkan backup (PRD §18.4).");
+            throw new InvalidOperationException("Wali kelas tidak berwenang memulihkan backup.");
         }
 
         // Master Bug & UI/UX Register A-39: arsip riwayat audit dibuat DAN

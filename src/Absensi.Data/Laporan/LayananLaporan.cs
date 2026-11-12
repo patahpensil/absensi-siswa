@@ -188,7 +188,7 @@ public sealed class LayananLaporan
     {
         if (akun.Peran == PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengakses laporan (PRD §3).");
+            throw new InvalidOperationException("Wali kelas tidak berwenang mengakses laporan.");
         }
     }
 

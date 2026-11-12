@@ -26,7 +26,7 @@
             </Grid>
 
             <TextBlock DockPanel.Dock="Top"
-                       Text="Bulan ini sudah terkunci — koreksi tidak dapat disimpan (PRD §10)."
+                       Text="Bulan ini sudah terkunci — koreksi tidak dapat disimpan."
                        Style="{StaticResource PesanSalahKolomStyle}"
                        Visibility="{Binding BulanTerkunci, Converter={StaticResource BoolKeVisibilitas}}"
                        Margin="0,0,0,8" />

@@ -33,7 +33,7 @@ public sealed class LayananJadwalHari
 
         if (effectiveFrom <= DateOnly.FromDateTime(waktu))
         {
-            throw new InvalidOperationException("Tanggal mulai berlaku harus setelah hari ini. Jadwal untuk hari ini dan sebelumnya tidak diubah (PRD §7).");
+            throw new InvalidOperationException("Tanggal mulai berlaku harus setelah hari ini. Jadwal untuk hari ini dan sebelumnya tidak diubah.");
         }
 
         if (_repositoriTahunAjaran.CariRentang(connection, tahunAjaranId) is not { } range || effectiveFrom < range.TglMulai || effectiveFrom > range.TglSelesai)
@@ -128,7 +128,7 @@ public sealed class LayananJadwalHari
         // Sekolah/Admin) — wali kelas tidak disebutkan berwenang di sini.
         if (akun.Peran == PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengubah jadwal harian (PRD §3).");
+            throw new InvalidOperationException("Wali kelas tidak berwenang mengubah jadwal harian.");
         }
 
         // PRD §10/§16.13: jadwal_hari berdampak retroaktif ke seluruh

@@ -16,7 +16,7 @@
             </DockPanel>
 
             <TextBlock DockPanel.Dock="Top"
-                       Text="Anda tidak berwenang menetapkan status kehadiran guru (PRD §17.10) — hanya Kepala Sekolah."
+                       Text="Anda tidak berwenang menetapkan status kehadiran guru — hanya Kepala Sekolah."
                        Style="{StaticResource PesanSalahKolomStyle}"
                        Visibility="{Binding TidakBolehMengubah, Converter={StaticResource BoolKeVisibilitas}}"
                        TextWrapping="Wrap"

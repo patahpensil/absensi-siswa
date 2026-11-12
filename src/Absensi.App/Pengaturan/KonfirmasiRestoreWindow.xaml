@@ -17,7 +17,7 @@
                 <!-- Mode=OneWay wajib: Run.Text TwoWay bawaan, HariDataHilang
                      tidak punya setter (ditemukan lewat smoke-test .exe
                      Tugas 14, sama seperti temuan lain di berkas ini). -->
-                <Run Text="Data saat ini akan dicadangkan otomatis lebih dulu (PRD §18.4). Sekitar " /><Run Text="{Binding HariDataHilang, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" hari data setelah tanggal itu akan hilang." />
+                <Run Text="Data saat ini akan dicadangkan otomatis lebih dulu. Sekitar " /><Run Text="{Binding HariDataHilang, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" hari data setelah tanggal itu akan hilang." />
             </TextBlock>
 
             <TextBlock Style="{StaticResource TeksUtamaStyle}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,16">

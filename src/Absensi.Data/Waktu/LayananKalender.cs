@@ -38,7 +38,7 @@ public sealed class LayananKalender
         // Sekolah/Admin) — wali kelas tidak disebutkan berwenang di sini.
         if (akun.Peran == PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengubah kalender pendidikan (PRD §3).");
+            throw new InvalidOperationException("Wali kelas tidak berwenang mengubah kalender pendidikan.");
         }
 
         if (tanggalAkhir < tanggalAwal)
@@ -48,7 +48,7 @@ public sealed class LayananKalender
 
         if (jenis == JenisHariKalender.Libur && string.IsNullOrWhiteSpace(keterangan))
         {
-            throw new ArgumentException("Keterangan wajib diisi saat menandai tanggal sebagai libur (PRD §6).", nameof(keterangan));
+            throw new ArgumentException("Keterangan wajib diisi saat menandai tanggal sebagai libur.", nameof(keterangan));
         }
 
         var jumlahHari = tanggalAkhir.DayNumber - tanggalAwal.DayNumber + 1;

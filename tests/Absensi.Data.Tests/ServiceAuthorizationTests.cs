@@ -40,7 +40,7 @@ public sealed class ServiceAuthorizationTests
         var error = Assert.Throws<InvalidOperationException>(
             () => AuthorizationGuard.EnsureFullAuthority(WaliKelas, "menguji"));
 
-        Assert.Equal("Wali kelas tidak berwenang menguji (PRD §3).", error.Message);
+        Assert.Equal("Wali kelas tidak berwenang menguji.", error.Message);
     }
 
     [Fact]

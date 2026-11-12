@@ -35,7 +35,7 @@ public sealed class LayananStatusGuru
     {
         if (akun.Peran != PeranAkun.KepalaSekolah)
         {
-            throw new InvalidOperationException("Hanya kepala sekolah yang berwenang menetapkan status kehadiran guru (PRD §17.10).");
+            throw new InvalidOperationException("Hanya kepala sekolah yang berwenang menetapkan status kehadiran guru.");
         }
 
         if (BulanTerkunci(connection, tanggal))

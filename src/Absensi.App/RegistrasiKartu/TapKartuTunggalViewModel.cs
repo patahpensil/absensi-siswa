@@ -56,7 +56,7 @@ public sealed class TapKartuTunggalViewModel : ObservableObject
     public string Judul => _modeGanti ? $"Ganti kartu — {NamaPemilik}" : $"Daftarkan kartu — {NamaPemilik}";
 
     public string Instruksi => _modeGanti
-        ? "Tempelkan kartu baru pada reader. Kartu lama otomatis dinonaktifkan (PRD §16.11)."
+        ? "Tempelkan kartu baru pada reader. Kartu lama otomatis dinonaktifkan."
         : "Tempelkan kartu pada reader untuk mendaftarkan.";
 
     public string? PesanGalat

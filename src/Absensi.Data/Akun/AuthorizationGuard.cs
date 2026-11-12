@@ -19,6 +19,6 @@ public static class AuthorizationGuard
             return;
         }
 
-        throw new InvalidOperationException($"Wali kelas tidak berwenang {action} (PRD §3).");
+        throw new InvalidOperationException($"Wali kelas tidak berwenang {action}.");
     }
 }

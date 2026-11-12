@@ -53,7 +53,7 @@ public sealed class LayananAkun
 
         if (pembuat.Peran == PeranAkun.Admin && peran == PeranAkun.Admin)
         {
-            throw new InvalidOperationException("Admin tidak berwenang membuat akun Admin lain — hanya Kepala Sekolah yang bisa (PRD §3.1).");
+            throw new InvalidOperationException("Admin tidak berwenang membuat akun Admin lain — hanya Kepala Sekolah yang bisa.");
         }
 
         // PRD §9 (daftar layar Kelas): wali kelas ditentukan dari
@@ -160,7 +160,7 @@ public sealed class LayananAkun
 
         if (pembuat.Peran == PeranAkun.Admin && target.Peran != PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Admin hanya berwenang atas akun Wali Kelas (PRD §3.1).");
+            throw new InvalidOperationException("Admin hanya berwenang atas akun Wali Kelas.");
         }
     }
 
@@ -186,7 +186,7 @@ public sealed class LayananAkun
     {
         if (akun.Peran is not (PeranAkun.KepalaSekolah or PeranAkun.Admin))
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengelola akun (PRD §3).");
+            throw new InvalidOperationException("Wali kelas tidak berwenang mengelola akun.");
         }
     }
 

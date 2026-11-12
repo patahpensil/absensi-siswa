@@ -74,7 +74,7 @@ public sealed class LaporanViewModel : ObservableObject
         }
         else
         {
-            PesanGalat = "Wali kelas tidak berwenang mengakses laporan (PRD §3).";
+            PesanGalat = "Wali kelas tidak berwenang mengakses laporan.";
         }
     }
 

@@ -28,7 +28,7 @@
                         <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
                             <StackPanel>
                                 <TextBlock Text="Jadwal Harian" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap (PRD §7). Kosongkan jam untuk hari yang bukan hari sekolah."
+                                <TextBlock Text="Seluruh nilai adalah konfigurasi per sekolah, bukan nilai tetap. Kosongkan jam untuk hari yang bukan hari sekolah."
                                            Style="{StaticResource TeksUtamaStyle}"
                                            Foreground="{StaticResource AbuTulisBrush}"
                                            TextWrapping="Wrap"
@@ -90,7 +90,7 @@
                         <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
                             <StackPanel>
                                 <TextBlock Text="Bot Telegram" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                                <TextBlock Text="Sekolah membuat bot sendiri lewat BotFather (PRD §16.6). Username tanpa tanda @."
+                                <TextBlock Text="Sekolah membuat bot sendiri lewat BotFather. Username tanpa tanda @."
                                            Style="{StaticResource TeksUtamaStyle}"
                                            Foreground="{StaticResource AbuTulisBrush}"
                                            TextWrapping="Wrap"
@@ -133,7 +133,7 @@
                         <Border Style="{StaticResource KartuStyle}" HorizontalAlignment="Stretch">
                             <StackPanel>
                                 <TextBlock Text="Backup" Style="{StaticResource JudulBagianStyle}" Margin="0,0,0,4" />
-                                <TextBlock Text="Backup berjalan otomatis setiap aplikasi dibuka dan setelah batas akhir tap masuk (PRD §18.1). Tujuh berkas terakhir disimpan di folder backup/."
+                                <TextBlock Text="Backup berjalan otomatis setiap aplikasi dibuka dan setelah batas akhir tap masuk. Tujuh berkas terakhir disimpan di folder backup/."
                                            Style="{StaticResource TeksUtamaStyle}"
                                            Foreground="{StaticResource AbuTulisBrush}"
                                            TextWrapping="Wrap"
