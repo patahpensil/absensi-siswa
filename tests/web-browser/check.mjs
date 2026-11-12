@@ -439,6 +439,48 @@ await langkah('Layout desktop dan HP tidak meluap di luar halaman', async () => 
   await page.setViewportSize({ width: 1440, height: 900 });
 });
 
+// PANDUAN-UI-UX §3–§5 dan §12, diperiksa pada gaya yang benar-benar dihitung
+// browser: satu keluarga huruf, tiga radius, dua bayangan, tanpa gradasi,
+// tanpa jarak huruf, tanpa label kapital semua.
+await langkah('Tampilan mengikuti panduan UI: huruf, radius, bayangan, gradasi, label kapital', async () => {
+  await page.evaluate(() => document.fonts.ready);
+  tegas(await page.evaluate(() => document.fonts.check('14px "IBM Plex Sans"')), 'IBM Plex Sans tidak termuat');
+  const menus = await page.$$eval('nav [id^="menu-"]', nodes => nodes.map(n => n.id));
+  const problems = [];
+  for (const id of menus) {
+    await page.click(`#${id}`);
+    await page.waitForTimeout(150);
+    const found = await page.evaluate(() => {
+      const allowedRadius = new Set(['0px', '6px', '10px', '999px', '50%']);
+      const allowedShadow = ['none', 'rgba(20, 24, 31, 0.06) 0px 1px 2px 0px', 'rgba(20, 24, 31, 0.12) 0px 4px 12px 0px'];
+      const acronyms = new Set(['NISN', 'NIP', 'NPSN', 'RFID', 'PDF', 'WITA', 'TV', 'UID', 'SMP', 'HP', 'NO', 'ID', 'TU', 'II', 'III', 'IV', 'VII', 'VIII', 'IX', 'NAMA', 'KELAS', 'ALAMAT', 'PANGKAT', 'JABATAN']);
+      const out = [];
+      for (const el of document.querySelectorAll('body *')) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) continue;
+        const cs = getComputedStyle(el);
+        if (cs.visibility === 'hidden') continue;
+        const tag = `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.classList.length ? '.' + [...el.classList].join('.') : ''}`;
+        for (const corner of [cs.borderTopLeftRadius, cs.borderBottomRightRadius])
+          if (!allowedRadius.has(corner)) out.push(`radius ${corner} pada ${tag}`);
+        if (!allowedShadow.includes(cs.boxShadow) && document.activeElement !== el) out.push(`bayangan ${cs.boxShadow} pada ${tag}`);
+        if (cs.backgroundImage.includes('gradient')) out.push(`gradasi pada ${tag}`);
+        if (cs.letterSpacing !== 'normal' && cs.letterSpacing !== '0px') out.push(`jarak huruf ${cs.letterSpacing} pada ${tag}`);
+        if (cs.textTransform === 'uppercase') out.push(`huruf kapital paksa pada ${tag}`);
+        for (const node of el.childNodes) {
+          if (node.nodeType !== 3) continue;
+          const words = node.textContent.split(/[^A-Za-zÀ-ÿ]+/).filter(w => w.length >= 3 && w === w.toUpperCase() && !acronyms.has(w));
+          if (words.length >= 2) out.push(`label kapital "${node.textContent.trim().slice(0, 40)}" pada ${tag}`);
+        }
+      }
+      return out;
+    });
+    for (const f of found) problems.push(`${id}: ${f}`);
+  }
+  const unique = [...new Set(problems)];
+  tegas(unique.length === 0, `pelanggaran panduan UI (${unique.length}): ${unique.slice(0, 12).join(' | ')}`);
+});
+
 await langkah('Kalender dan pratinjau Notifikasi bisa dibuka', async () => {
   await page.click('#menu-kalender');
   await page.waitForSelector('#school-calendar');
