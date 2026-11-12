@@ -447,3 +447,16 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Font di desktop WPF baru terbukti terkompilasi dan tes App lulus; tampilannya di Windows belum dilihat.
 - **Warna tombol Bahaya:** §3 tidak punya merah umum dan §3.3 melarang warna status untuk tombol. Web memakai merah Alpa `#9B2C2C`, desktop memakai `#B3261E` (sementara). Perlu keputusan pemilik: satu warna resmi ditambahkan ke §3.1.
 - Layar gerbang (jendela TV) tidak ikut diperiksa langkah otomatis di atas.
+
+## 26. Audit hasil kerja agen lain (PR #20) dan perbaikannya — 12 November 2026
+
+**Yang diaudit:** commit `3ad73a7`, `62183ae`, `9bd55f4`, `6cb1555` (masuk lewat PR #20). Hasil yang terbukti benar oleh [CI](https://github.com/patahpensil/absensi-smp1/actions/runs/43175522547) dan [deploy](https://github.com/patahpensil/absensi-smp1/actions/runs/43175522591): validasi backup sebelum restore (integrity_check, tabel wajib, foreign_key_check), laporan kejadian mengikuti rentang `siswa_kelas`, penanganan konflik dua tab web, gerbang empat kartu bernama panjang.
+
+**Temuan:**
+1. Arsip audit pra-restore dienkripsi dengan kunci DPAPI Windows (`data/audit-archive-key.dpapi`). Arsip tidak terbaca lagi setelah PC diganti atau Windows dipasang ulang. `CryptographicException` dari DPAPI tidak ditangani `PenangananGalat`. Bila berkas kunci hilang, restore terblokir permanen. Cara ini juga menyimpang dari keputusan backup lokal memakai kunci lisensi.
+2. Fitur di luar PRD tanpa pembaruan PRD: mode reader serial/COM, .NET 10, dan DPAPI.
+3. Pelanggaran cara kerja: memakai cabang + PR, satu commit besar `3ad73a7` dengan format `fix:` tanpa ruang, commit merah `62183ae` di master, dan PROGRES tidak diperbarui.
+4. Tes arsip audit dipangkas dari 9 menjadi 2; tidak ada tes kunci salah/hilang atau kegagalan tulis.
+5. Kecil: nama panjang di TV diperkecil sampai 36 px tanpa persetujuan (§8.1: 64 px); status reader tanpa "x dari y" (PRD §2); paket UAT tanpa tanda tangan dan kedaluwarsa 30 hari; PR Dependabot lama (#10, #21, #23, #28, #32) masih terbuka.
+
+**Keputusan pemilik:** jangan pakai DPAPI. Dicatat di PRD §25.5 beserta tiga hal yang menunggu keputusan (reader serial, .NET 10, ukuran 36 px).

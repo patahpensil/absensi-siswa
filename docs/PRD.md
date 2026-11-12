@@ -1757,6 +1757,13 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - **Backup lokal** dienkripsi dengan kunci lisensi (pola §18.2). Kunci lisensi tersimpan di PC yang sama, sehingga perlindungan ini terutama untuk salinan yang dibawa keluar PC.
 - **Web uji:** wizard instalasi dapat dipilih dari Pengaturan → Mulai ulang pengujian; PDF di browser dibuat lewat Cetak → Simpan sebagai PDF karena pustaka PDF tidak mendukung WebAssembly.
 
+**Keputusan 12 November 2026 (sore) — arsip audit pra-restore, disetujui pemilik:** DPAPI Windows **tidak dipakai**. Kunci DPAPI terikat pada instalasi Windows, sehingga arsip tidak terbaca lagi setelah PC diganti atau Windows dipasang ulang. Hilangnya berkas kunci juga memblokir pemulihan. Arsip riwayat audit yang dibuat saat restore mengikuti pola backup lokal (§18.2): dienkripsi dengan kunci lisensi sekolah bila lisensi aktif, dan disimpan polos bila lisensi belum aktif. Pilihan pola kunci lisensi adalah rekomendasi agen; pemilik memutuskan "jangan pakai DPAPI". Arsip yang terlanjur dibuat dengan DPAPI ditampilkan di layar Audit sebagai arsip yang tidak bisa dibaca.
+
+**Menunggu keputusan pemilik (dicatat 12 November 2026):** perubahan berikut ditambahkan agen lain tanpa pembaruan PRD dan belum disetujui.
+- **Mode reader USB serial/COM** (`data/rfid-serial.json`, 1–4 port) di samping mode keyboard-emulation §4. Pilihannya: dimasukkan ke §4 sebagai mode opsional, atau dihapus.
+- **.NET 10** sebagai versi runtime. Ini sesuai aturan §21.11 (versi yang masih didukung dipilih saat implementasi), tetapi belum dicatat sebagai pilihan versi proyek.
+- **Ukuran nama panjang di TV gerbang** diperkecil sampai 36 px, sedangkan PANDUAN-UI-UX §8.1 menetapkan 64 px.
+
 ### 25.6 Referensi primer
 
 Referensi standar menggunakan rilis tetap `v5.0.0`; keterangan produk penyedia dapat berubah dan harus diverifikasi kembali pada implementasi. Rangkuman di PRD tidak menggantikan seluruh teks persyaratan.
