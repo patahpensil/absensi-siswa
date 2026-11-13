@@ -1275,7 +1275,10 @@ Masuk lingkup rancangan online: website publik, portal pemilik layanan, desktop 
 5. **Login dan sesi.** Satu akun untuk satu orang, tidak boleh dipakai bersama; jendela kerja keluar otomatis saat tidak dipakai. MFA dan pemulihan mengikuti D-10.
 6. **Pembaruan aplikasi.** Pembaruan ditandatangani secara digital dan diperiksa sebelum dipasang. PC yang sedang menjalankan Layar gerbang hanya diperbarui di luar jam tap. Aplikasi dapat kembali ke versi sebelumnya bila versi baru bermasalah. Versi yang terlalu lama ditolak setelah masa transisi. Alat teknis ditetapkan saat perancangan.
 7. **Tahap pengembangan berikutnya.** Aplikasi HP untuk wali kelas dengan HP yang didaftarkan seperti PC. Platform (Android/iPhone) dan cara distribusi diputuskan nanti.
-8. **Belum ditetapkan:** batas jumlah PC per sekolah, lama waktu sebelum keluar otomatis, dan masa berlaku sertifikat perangkat.
+8. **Parameter (ditetapkan pemilik 14 November 2026):**
+   - Batas **5 PC terdaftar per sekolah**. PC yang dicabut tidak dihitung.
+   - Jendela kerja **keluar otomatis setelah 10 menit** tidak dipakai. Jendela Layar gerbang tidak ikut tertutup (poin 3).
+   - Sertifikat perangkat berlaku **1 tahun** dan diperbarui otomatis selama langganan sekolah aktif, tanpa pendaftaran ulang.
 
 Ketentuan "portal sekolah" pada §21 berikut tidak berlaku untuk rilis pertama; dipertahankan sebagai rancangan bila kelak pemilik memutuskan lain.
 
@@ -1933,7 +1936,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
 - Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
 
-**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama.
+**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama. Parameter poin 8: 5 PC per sekolah, keluar otomatis 10 menit, sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan.
 
 ### 25.6 Referensi primer
 

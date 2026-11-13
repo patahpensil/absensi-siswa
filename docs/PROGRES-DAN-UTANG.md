@@ -542,4 +542,4 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Desktop sekarang: perlu dicek apakah Layar gerbang ikut tertutup saat pengguna keluar dan apakah reader model keyboard bisa menelan tap ke jendela kerja.
 - Web uji (`absensi-uji`, `absensi-uji-real`) tetap alat uji, bukan produk.
 
-**Keputusan yang menunggu Edgar (P-24 poin 8):** batas jumlah PC per sekolah, lama waktu keluar otomatis, masa berlaku sertifikat perangkat.
+**P-24 poin 8 ditetapkan (14 November 2026):** 5 PC per sekolah, keluar otomatis 10 menit (jendela gerbang tetap berjalan), sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan. Belum ada kode untuk ketiganya.
