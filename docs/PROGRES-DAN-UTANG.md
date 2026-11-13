@@ -543,3 +543,11 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Web uji (`absensi-uji`, `absensi-uji-real`) tetap alat uji, bukan produk.
 
 **P-24 poin 8 ditetapkan (14 November 2026):** 5 PC per sekolah, keluar otomatis 10 menit (jendela gerbang tetap berjalan), sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan. Belum ada kode untuk ketiganya.
+
+## 32. Koreksi isi data uji coba mode nyata — 14 November 2026
+
+**Instruksi pemilik:** "data asli" di `Absensi-Uji-Real` berarti data pribadi pemilik, bukan data siswa Dapodik.
+
+**Selesai (dokumen):** PRD §0, status §20 dan §25.5 diluruskan: uji coba memakai data pribadi pemilik sendiri atau nama karangan; data siswa asli tetap dilarang di kedua situs uji sampai layanan online siap (P-23, B-01). README `Absensi-Uji-Real` ikut diluruskan.
+
+**Utang:** bug tengah malam dan wizard yang mengunci semester (PROGRES §29) tetap memengaruhi hasil uji coba mode nyata.

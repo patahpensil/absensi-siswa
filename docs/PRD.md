@@ -45,6 +45,8 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Lisensi | Kunci apa pun diterima (belum ada server lisensi) | sama | Rencana |
 | Sinkronisasi offline P-08 | — | — | Rencana (versi online) |
 
+**Isi data uji coba (koreksi pemilik 14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01).
+
 **Batas yang harus diketahui pemakai uji coba (keputusan pemilik 12 November 2026):** data web mode nyata hanya ada di satu browser; hilang bila data situs dihapus, kecuali dipulihkan dari berkas cadangan. Berkas cadangan dan data di browser belum dienkripsi. Keamanan data dan lokasi server diselesaikan pemilik bersama versi online (VPS di Indonesia, PP 71/2019 Pasal 20 untuk lingkup publik; data anak termasuk data pribadi spesifik menurut UU 27/2022 Pasal 4).
 
 ---
@@ -1263,7 +1265,7 @@ Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail i
 
 ## 20. Lingkup Rancangan dan Batas Rilis
 
-> **Status aplikasi (13 November 2026):** Aplikasi web mode nyata dipakai untuk uji coba data asli atas keputusan pemilik 12 November 2026 (§25.5); itu bukan rilis produksi layanan online.
+> **Status aplikasi (13 November 2026):** Aplikasi web mode nyata dipakai untuk uji coba dengan data pribadi pemilik atau nama karangan atas keputusan pemilik 12 November 2026 dan koreksi 14 November 2026 (§0, §25.5); bukan data siswa Dapodik; itu bukan rilis produksi layanan online.
 
 Masuk lingkup rancangan online: website publik, portal pemilik layanan, desktop RFID (satu-satunya jalur akses sekolah, P-24), backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
 
@@ -1920,7 +1922,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **Keputusan 12 November 2026 (malam) — disetujui pemilik:** nama panjang di TV gerbang boleh mengecil (PANDUAN-UI-UX §8.1); nama pendek tetap 64 px. Dasarnya pengukuran Chrome 1920×1080 dengan empat kartu: pada 64 px nama 37 huruf menjadi 5 baris dan status/jam keluar layar.
 
-**Keputusan 12 November 2026 (malam) — uji coba data asli, disetujui pemilik:** uji coba dengan data sekolah sungguhan memakai **versi web mode nyata** di repo terpisah `patahpensil/Absensi-Uji-Real` (salinan bersih tanpa riwayat, Cloudflare Pages proyek tersendiri). Situs `absensi-uji` tetap khusus data sintetis (D-12). Ketentuan mode nyata:
+**Keputusan 12 November 2026 (malam) — uji coba mode nyata, disetujui pemilik (dikoreksi 14 November 2026):** uji coba dengan data pribadi pemilik sendiri atau nama karangan — bukan data siswa/guru Dapodik — memakai **versi web mode nyata** di repo terpisah `patahpensil/Absensi-Uji-Real` (salinan bersih tanpa riwayat, Cloudflare Pages proyek tersendiri). Situs `absensi-uji` tetap khusus data sintetis (D-12). Ketentuan mode nyata:
 - Mode diatur `wwwroot/appsettings.json` (`"Mode": "nyata"`). Kode tetap satu, dikembangkan di `absensi-smp1`.
 - Database kosong selalu memulai wizard instalasi; tidak ada data contoh, akun contoh, atau jam skenario.
 - Data hanya tersimpan di browser perangkat itu (IndexedDB), tidak dikirim ke server. Risiko yang diterima pemilik: data hilang bila riwayat browser dihapus, tidak ada pengiriman notifikasi, dan berkas cadangan berisi data pribadi tanpa enkripsi.
@@ -1936,7 +1938,9 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
 - Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
 
-**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama. Parameter poin 8: 5 PC per sekolah, keluar otomatis 10 menit, sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan.
+**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **Koreksi isi data uji coba (14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01). Kalimat lama "data sekolah sungguhan" di §25.5 dan §20 diganti.
+
+**P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama. Parameter poin 8: 5 PC per sekolah, keluar otomatis 10 menit, sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan.
 
 ### 25.6 Referensi primer
 
