@@ -584,3 +584,9 @@ Kartu guru (baru dan pengganti) gratis.
 - CI belum menjalankan pemeriksa ejaan otomatis dan belum menjadikan semua peringatan analyzer galat build; perlu dicek dan ditambahkan.
 - Belum ada tes dua permintaan bersamaan maupun pemantauan memori untuk Layar gerbang/worker.
 - Referensi tampilan dari GitHub (skill) belum ditambahkan pemilik.
+
+## 37. Ganti nama repo — 14 November 2026
+
+Pemilik mengganti nama repo `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Rujukan aktif di PRD (kepala dokumen, §25.5) diperbarui. Tautan bukti historis di dokumen ini sengaja tidak diubah karena GitHub mengalihkan alamat lama.
+
+**Yang harus dilakukan Edgar:** perbarui instruksi proyek Claude (bagian ACUAN dan TUJUAN) yang masih menyebut `absensi-smp1`; jangan membuat repo baru bernama `absensi-smp1`. Deskripsi "About" repo masih menyebut satu sekolah dan SQLite; dapat diperbarui lewat ikon pengaturan di samping "About".

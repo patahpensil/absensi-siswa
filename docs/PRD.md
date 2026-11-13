@@ -4,7 +4,7 @@
 **Tanggal revisi:** 13 November 2026 (WITA)
 **Pemilik produk:** penyedia layanan aplikasi absensi untuk sekolah-sekolah pelanggan
 **Sekolah rujukan aturan bisnis:** UPT SMP Negeri 1 Pancarijang
-**Sumber:** `patahpensil/absensi-smp1`, `docs/PRD.md`, cabang `master`
+**Sumber:** `patahpensil/absensi-siswa` (sebelumnya `absensi-smp1`, diganti nama 14 November 2026), `docs/PRD.md`, cabang `master`
 **Status:** aplikasi desktop Windows dan aplikasi web berjalan tanpa server (data lokal). Layanan online multi sekolah (§13, §18, §21–§23) belum dibangun. Keputusan terbuka D-01–D-11 tetap menunggu pemilik (§25.1).
 **Utang dan bukti:** [PROGRES-DAN-UTANG.md](PROGRES-DAN-UTANG.md)
 
@@ -1986,7 +1986,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **Keputusan 12 November 2026 (malam) — disetujui pemilik:** nama panjang di TV gerbang boleh mengecil (PANDUAN-UI-UX §8.1); nama pendek tetap 64 px. Dasarnya pengukuran Chrome 1920×1080 dengan empat kartu: pada 64 px nama 37 huruf menjadi 5 baris dan status/jam keluar layar.
 
 **Keputusan 12 November 2026 (malam) — uji coba mode nyata, disetujui pemilik (dikoreksi 14 November 2026):** uji coba dengan data pribadi pemilik sendiri atau nama karangan — bukan data siswa/guru Dapodik — memakai **versi web mode nyata** di repo terpisah `patahpensil/Absensi-Uji-Real` (salinan bersih tanpa riwayat, Cloudflare Pages proyek tersendiri). Situs `absensi-uji` tetap khusus data sintetis (D-12). Ketentuan mode nyata:
-- Mode diatur `wwwroot/appsettings.json` (`"Mode": "nyata"`). Kode tetap satu, dikembangkan di `absensi-smp1`.
+- Mode diatur `wwwroot/appsettings.json` (`"Mode": "nyata"`). Kode tetap satu, dikembangkan di `absensi-siswa` (dahulu `absensi-smp1`).
 - Database kosong selalu memulai wizard instalasi; tidak ada data contoh, akun contoh, atau jam skenario.
 - Data hanya tersimpan di browser perangkat itu (IndexedDB), tidak dikirim ke server. Risiko yang diterima pemilik: data hilang bila riwayat browser dihapus, tidak ada pengiriman notifikasi, dan berkas cadangan berisi data pribadi tanpa enkripsi.
 - **Cadangan web:** Admin/Kepala Sekolah dapat mengunduh satu berkas `.zip` (database + foto) dan memulihkannya. Database divalidasi dengan validasi restore desktop (§18.2) sebelum menggantikan data. Pemulihan mengganti seluruh data di browser dan mengeluarkan pengguna. Pemulihan web belum mencatat baris audit restore (utang).
@@ -2008,6 +2008,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **P-30** (14 November 2026) rincian penahanan notifikasi D-02: offline 5 menit, tunda rekap, tidak kirim Alpa bila offline sampai batas akhir tap masuk, pesan basi >1 hari tidak dikirim, pesan ralat (§21.9).
 
 **P-31** (14 November 2026) aturan tambahan penulisan kode (§24.7): kode baru wajib bahasa Inggris dengan penggantian nama lama bertahap, pemeriksaan wajib setiap fitur (async, deadlock, race/TOCTOU, loop, memory leak, parameter, typo), tanpa watermark AI, tampilan tanpa AI slop.
+
+**Ganti nama repo (14 November 2026):** pemilik mengganti nama `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Tautan lama dialihkan GitHub; tautan bukti historis di PROGRES-DAN-UTANG.md tidak diubah.
 
 **Koreksi isi data uji coba (14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01). Kalimat lama "data sekolah sungguhan" di §25.5 dan §20 diganti.
 
