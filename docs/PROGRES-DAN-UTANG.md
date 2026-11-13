@@ -551,3 +551,11 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 **Selesai (dokumen):** PRD §0, status §20 dan §25.5 diluruskan: uji coba memakai data pribadi pemilik sendiri atau nama karangan; data siswa asli tetap dilarang di kedua situs uji sampai layanan online siap (P-23, B-01). README `Absensi-Uji-Real` ikut diluruskan.
 
 **Utang:** bug tengah malam dan wizard yang mengunci semester (PROGRES §29) tetap memengaruhi hasil uji coba mode nyata.
+
+## 33. Keputusan komersial dan hukum P-25–P-28 — 14 November 2026
+
+**Selesai (dokumen):** PRD §21.10 (P-25 harga, P-26 menunggak/berhenti, P-27 retensi dan arsip, P-28 pengendali/prosesor), §25.1 (B-04, D-04, D-05, D-11), §25.5.
+
+**Belum ditetapkan / menunggu Edgar:** jumlah hari masa tenggang, tahap hanya-lihat dan masa ekspor; biaya kartu guru; angka retensi per kelas data; template kontrak (perlu ahli hukum).
+
+**Belum terbukti:** aturan retensi daftar hadir SMP yang berlaku (Permendikbud 45/2016 telah dicabut Permendikbudriset 20/2022; isi pengganti belum dibaca). Belum ada kode untuk penagihan, status langganan, atau penolakan PC sekolah yang menunggak.

@@ -1482,7 +1482,33 @@ Aturan lama toleransi jadwal 15 menit, pekerjaan yang dikejar/dibuang, dan ralat
 | Operasi | Status layanan, kapasitas, versi klien/API dan kesehatan koneksi terlihat sesuai kewenangan |
 | Bantuan | Persetujuan pihak berwenang sekolah, alasan/tiket, tenant, operasi, durasi, dan pencabutan otomatis untuk akses data; tindakan tercatat |
 | Pemulihan darurat | Prosedur akses darurat terpisah, verifikasi kuat dan review; tidak ada backdoor atau password universal |
-| Layanan berakhir | Ekspor, akses setelah kontrak, retensi, pemusnahan, backup dan kunci mengikuti kebijakan yang belum diputuskan; tidak boleh otomatis menghapus data |
+| Layanan berakhir | Mengikuti P-26 dan P-27 di bawah; tidak boleh otomatis menghapus data |
+
+**Keputusan komersial dan hukum — disetujui pemilik 14 November 2026:**
+
+**P-25 — Harga (D-04).**
+- Rp90.000 per siswa, **sudah termasuk kartu RFID**. Dihitung saat kontrak pertama untuk seluruh siswa dan berlaku sampai penerimaan siswa baru tahun ajaran berikutnya.
+- Tahun-tahun berikutnya biaya hanya untuk siswa baru.
+- Siswa yang masuk di tengah tahun: Rp90.000 per siswa. Penggantian kartu siswa hilang/rusak: Rp90.000 per kartu.
+- **Guru tidak dikenai biaya.** Biaya kartu guru (baru atau pengganti) belum ditetapkan.
+- Catatan agen: mulai tahun kedua pemasukan per sekolah hanya dari siswa baru (sekitar sepertiga siswa SMP), sehingga marjin terhadap biaya server, kartu, pesan WhatsApp dan bantuan menjadi tipis; perhitungan rinci menunggu D-07/B-02.
+
+**P-26 — Menunggak dan berhenti berlangganan (D-04).**
+- Tahapan: jatuh tempo (peringatan) → masa tenggang (berjalan normal dengan pengingat) → hanya-lihat dan ekspor (tap dan perubahan data berhenti) → dibekukan (akses ditutup, data tetap disimpan) → kontrak berakhir (masa ekspor, lalu penghapusan dengan bukti penghapusan kepada sekolah).
+- Tidak ada penghapusan otomatis tanpa tahapan ini.
+- Server memeriksa sertifikat PC dan status langganan sekolah pada setiap permintaan, lalu menolak tap/perubahan sesuai tahap dengan pesan alasan di aplikasi. Sertifikat PC (P-24) tidak diperpanjang selama langganan tidak aktif.
+- Jumlah hari masa tenggang, tahap hanya-lihat dan masa ekspor belum ditetapkan.
+
+**P-27 — Lama penyimpanan dan arsip (D-05).**
+- Lama penyimpanan ditetapkan sekolah sesuai jadwal retensi arsipnya dan dicantumkan di kontrak; selama belum ditetapkan, data disimpan selama sekolah berlangganan. Aturan retensi daftar hadir SMP yang berlaku belum diverifikasi agen.
+- Arsip dan backup disimpan terenkripsi di AWS region Jakarta (§21.6). **Data sekolah tidak boleh disimpan di PC pribadi siapa pun**, termasuk penyedia.
+- Saat kontrak berakhir, data diserahkan ke sekolah lalu dihapus dari server beserta bukti penghapusan (P-26).
+
+**P-28 — Tanggung jawab hukum (D-11).**
+- Sekolah adalah **pengendali data pribadi**; penyedia adalah **prosesor data pribadi** yang mengolah data atas perintah sekolah (UU 27/2022).
+- Kontrak memuat: jenis dan tujuan pengolahan, kewajiban keamanan, pemberitahuan kegagalan pelindungan data, daftar subprosesor (AWS, Telegram, penyedia WhatsApp), lama penyimpanan, pengembalian dan penghapusan data.
+- Permintaan orang tua (akses, koreksi, penghapusan) diajukan ke sekolah dan dijalankan bersama penyedia.
+- Template kontrak diperiksa ahli hukum sebelum dipakai.
 
 Admin platform dapat melihat metrik minimum seperti jumlah perangkat sehat dan kegagalan job tanpa menampilkan nama, NISN, atau foto siswa. Akun operasional platform tidak memegang hak superuser database untuk pekerjaan sehari-hari. Administrator infrastruktur tetap merupakan batas kepercayaan yang harus diawasi; portal yang tidak menampilkan siswa saja tidak menghapus risiko akses infrastruktur.
 
@@ -1686,7 +1712,7 @@ Target kapasitas, latensi, uptime, RPO/RTO dan retensi belum ditetapkan. Jumlah 
 | B-01 | Bukti lokasi Indonesia, HSM, perlindungan memori dan kelayakan kontrol L3 | Provider ditetapkan AWS Jakarta (P-23); bukti lokasi dan HSM/KMS belum dikumpulkan, produksi tidak boleh dimulai tanpa bukti |
 | B-02 | Dana awal, rutin, penggunaan, tambahan tenant, keamanan dan cadangan beserta penawaran bertanggal | Kebutuhan dana pemilik belum dianggap pasti tanpa rincian lengkap |
 | B-03 | Kebutuhan resource dan pengeluaran penyedia pada skenario beban yang disepakati | Tidak menjanjikan kapasitas tanpa hasil ukur |
-| B-04 | Batas dana dan rencana pengeluaran disetujui pemilik | Tidak melakukan pengadaan berbayar atau deploy tanpa instruksi |
+| B-04 | Batas dana dan rencana pengeluaran disetujui pemilik. Batas awal: alarm tagihan AWS Rp1,5 juta/bulan; kredit akun baru dipakai lebih dulu (14 November 2026) | Tidak melakukan pengadaan berbayar atau deploy tanpa instruksi |
 
 PRD ini tidak mengotorisasi pengujian berbayar, pembelian atau provisioning. Jika kebutuhan dana melampaui anggaran pemilik, opsi perubahan harus dijelaskan beserta dampaknya. Isolasi atau keamanan tidak diturunkan diam-diam; kekurangan dana juga tidak otomatis dialihkan menjadi tagihan sekolah.
 
@@ -1776,14 +1802,14 @@ Ketentuan arsitektur dan C# yang telah disepakati tidak dibuka ulang oleh tabel 
 | D-01 | P-08 memilih antrean tap lokal terenkripsi; P-09 menetapkan waktu tap terverifikasi sebagai dasar Hadir/Terlambat dan Perlu pemeriksaan bila waktu tidak dapat dipercaya. Metode bukti waktu, ambang penyimpangan, batas offline, data minimum, kunci, retensi, alur pemeriksaan dan rekonsiliasi masih harus ditetapkan | Pilihan antrean dan prinsip waktu tap tidak dibuka ulang; gerbang produksi menunggu rincian dan bukti pengujian yang relevan |
 | D-02 | P-10 menetapkan penahanan notifikasi Alpa/Bolos yang belum pasti akibat gangguan sinkronisasi, peringatan admin dan evaluasi setelah sinkronisasi/pemeriksaan selesai. Deteksi kelengkapan, cakupan terdampak, batas tunggu/eskalasi, finalisasi, replay job setelah downtime, toleransi jadwal dan ralat data terlambat masih harus dirinci | Prinsip penahanan tidak dibuka ulang; notifikasi/finalisasi produksi menunggu rincian dan bukti pengujian yang relevan |
 | D-03 | P-19 menetapkan dua kanal: Telegram dan WhatsApp. P-20 menetapkan satu kanal per siswa pilihan orang tua dan WhatsApp memakai nomor HP orang tua langsung. P-16 tentang verifikasi penautan Telegram ditangguhkan. Penyedia/API WhatsApp, kanal untuk wali kelas/guru, isi pesan, batas data keluar, biaya per pesan serta aliran pihak ketiga masih harus diputuskan | Pilihan dua kanal tidak dibuka ulang; tidak mengimplementasikan WhatsApp atau usulan P-16 sebelum rincian diputuskan; tidak mengklaim semua salinan data siswa hanya di Indonesia sambil mengirim detail lewat pihak ketiga |
-| D-04 | Model komersial/tarif/kontrak, masa aktif, akses saat menunggak/berakhir, ekspor dan bantuan | Tidak menetapkan harga atau menjalankan suspend/penghapusan otomatis |
-| D-05 | Retensi per kelas data, audit/log, cache lokal, laporan sementara, backup dan pascakontrak; dasar dan prosedur pemusnahan | Tidak mengaktifkan penghapusan; konflik retensi "selamanya" belum ditutup |
+| D-04 | Harga ditetapkan P-25, tahapan menunggak/berhenti P-26 (§21.10). Masih terbuka: jumlah hari tiap tahap, biaya kartu guru, isi kontrak dan bantuan | Tidak menjalankan penghapusan otomatis |
+| D-05 | Prinsip ditetapkan P-27 (retensi ditetapkan sekolah di kontrak, arsip di AWS Jakarta, tidak di PC pribadi). Masih terbuka: angka retensi per kelas data, audit/log, cache lokal dan prosedur pemusnahan | Tidak mengaktifkan penghapusan |
 | D-06 | Provider ditetapkan P-23 (AWS Jakarta, RDS PostgreSQL). Masih terbuka: pembagian instance, ukuran final, HSM/KMS, perlindungan memori, biaya final dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
 | D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
 | D-08 | Teknologi frontend web (website publik dan portal pemilik saja sejak P-24) dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
 | D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
 | D-10 | Pendaftaran hardware MFA, autentikator cadangan, pemulihan, posture perangkat, nilai umur sesi dan tata kelola bantuan | Tidak membuat login password saja sebagai pengecualian otomatis L3 |
-| D-11 | Tanggung jawab penyedia/sekolah, kewenangan pihak sekolah, pengaturan privasi/aliran data, dan proses permintaan data | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
+| D-11 | Pola pengendali (sekolah) dan prosesor (penyedia) ditetapkan P-28. Masih terbuka: template kontrak yang diperiksa ahli hukum, kewenangan pihak sekolah, aliran data pihak ketiga | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
 
 Dokumen ini bukan nasihat hukum atau penetapan bahwa penyedia/sekolah otomatis memiliki peran hukum tertentu. Pengaturan data anak dan kontrak harus dievaluasi sesuai operasi nyata oleh pihak yang berwenang sebelum produksi.
 
@@ -1938,7 +1964,9 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
 - Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
 
-**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **Koreksi isi data uji coba (14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01). Kalimat lama "data sekolah sungguhan" di §25.5 dan §20 diganti.
+**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **Keputusan komersial dan hukum (14 November 2026):** P-25 harga Rp90.000 per siswa termasuk kartu, guru gratis; P-26 tahapan menunggak/berhenti tanpa penghapusan otomatis; P-27 retensi ditetapkan sekolah, arsip di AWS Jakarta, tidak di PC pribadi; P-28 sekolah pengendali, penyedia prosesor; B-04 alarm tagihan Rp1,5 juta/bulan (§21.10, §25.1).
+
+**Koreksi isi data uji coba (14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01). Kalimat lama "data sekolah sungguhan" di §25.5 dan §20 diganti.
 
 **P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama. Parameter poin 8: 5 PC per sekolah, keluar otomatis 10 menit, sertifikat perangkat 1 tahun dengan perpanjangan otomatis selama berlangganan.
 
