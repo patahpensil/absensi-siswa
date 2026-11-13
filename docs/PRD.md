@@ -86,7 +86,7 @@ Nama sekolah, identitas, kalender, kelas, jadwal dan tahun ajaran merupakan konf
 
 ## 3. Pengguna dan Hak Akses
 
-> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak yang terbukti di tes:
+> **Status aplikasi (13 November 2026):** **[Sebagian]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak di aplikasi saat ini (terbukti di tes) **belum mengikuti keputusan P-21 dan P-22** di bawah; penyesuaian kode dicatat sebagai utang:
 > - Kepala Sekolah: semua menu kecuali Audit; satu-satunya yang membuat akun Admin/TU dan menetapkan status kehadiran guru.
 > - Admin/TU: semua menu termasuk Audit; membuat dan mengelola akun Wali Kelas, tidak dapat membuat Admin; melihat status guru tanpa mengubahnya.
 > - Wali Kelas: tanpa menu Layar gerbang, Notifikasi dan Audit; hanya melihat siswa kelasnya; tidak dapat mengubah master, kartu, foto, kalender, laporan atau data guru; koreksi hanya untuk kelasnya tanpa kolom "atas permintaan".
@@ -98,21 +98,32 @@ Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem 
 |---|---|---|
 | Kepala Sekolah | 1 | Penuh |
 | Admin / TU | 2 | Penuh (setara kepala sekolah) |
-| Wali Kelas | 1 per kelas | Koreksi status kehadiran siswa di kelasnya saja; tidak mengendalikan layar gerbang |
+| Wali Kelas | 1 per kelas | Koreksi status kehadiran siswa di kelasnya saja; melihat dan mengunduh laporan kelasnya (P-22); tidak mengendalikan layar gerbang |
 
-**Kewenangan penuh mencakup:** master siswa, master kelas, registrasi dan penggantian kartu, kalender pendidikan, naik kelas massal, kunci bulan, koreksi status, pembuatan akun, laporan, pengaturan.
+**Kewenangan penuh mencakup:** master siswa, master kelas, registrasi dan penggantian kartu, kalender pendidikan, naik kelas massal, kunci bulan, koreksi status, status kehadiran guru, jejak audit, pembuatan akun, laporan, pengaturan.
 
 **Wali kelas tidak dapat:** mengubah master data, mendaftarkan kartu, mengunci bulan, atau menyentuh data kelas lain.
+
+**Keputusan P-21 — disetujui pemilik 13 November 2026:** Kepala Sekolah dan Admin/TU **setara untuk seluruh pekerjaan sekolah**: keduanya membuka semua menu termasuk Audit dan dapat menetapkan status kehadiran guru (§16.17, §17.10); seluruh perubahan tercatat di audit (§12). Perbedaan hanya pada pengelolaan akun:
+- Hanya Kepala Sekolah yang membuat dan menonaktifkan akun Admin.
+- Admin tidak dapat menonaktifkan akun Kepala Sekolah.
+- Kepala Sekolah dan Admin boleh saling mereset sandi agar sekolah tidak buntu bila salah satu lupa sandi. Reset dicatat di audit, dan pemilik akun wajib mengganti sandi saat login berikutnya.
+- Akun Kepala Sekolah pengganti (mutasi atau pergantian jabatan) dibuat lewat verifikasi penyedia layanan, bukan oleh Admin; rincian verifikasi dan pemulihan mengikuti D-10.
+
+Alasan pembedaan (saran agen, disetujui pemilik): bila seluruh urusan akun disamakan, satu Admin dapat menonaktifkan Kepala Sekolah lalu menguasai data sekolah; bila terlalu dibedakan, sekolah buntu saat Kepala Sekolah lupa sandi.
+
+**Keputusan P-22 — disetujui pemilik 13 November 2026:** wali kelas boleh melihat dan mengunduh laporan kehadiran (Excel/PDF) untuk kelas yang sedang ditugaskan kepadanya saja (§3.3). Laporan kelas lain dan laporan guru tetap tertutup bagi wali kelas.
 
 ### 3.1 Hierarki Pembuatan Akun
 
 ```
 Aktivasi tenant pertama   →  akun Kepala Sekolah
-Kepala Sekolah            →  akun Admin
-Admin                     →  akun Wali Kelas
+Kepala Sekolah            →  akun Admin (membuat dan menonaktifkan)
+Kepala Sekolah / Admin    →  akun Wali Kelas
+Verifikasi penyedia       →  akun Kepala Sekolah pengganti
 ```
 
-Kepala sekolah dan admin sama-sama berwenang penuh, sehingga tidak terjadi kebuntuan bila salah satu berhalangan atau dimutasi.
+Kepala sekolah dan admin sama-sama berwenang penuh atas pekerjaan sekolah (P-21), sehingga tidak terjadi kebuntuan bila salah satu berhalangan atau dimutasi. Keduanya boleh saling mereset sandi dengan kewajiban ganti sandi saat login berikutnya; Admin tidak dapat menonaktifkan Kepala Sekolah.
 
 ### 3.2 Koreksi Langsung Wali Kelas dan Bantuan Admin
 
@@ -449,7 +460,7 @@ Riwayat notifikasi awal tetap tercatat dan dihubungkan dengan koreksi kalender b
 
 ## 11. Laporan
 
-> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jenis Harian, Mingguan, Bulanan, Per orang dan Semester untuk siswa dan guru, Excel dan PDF. Web membuat PDF lewat **Cetak / Simpan PDF** browser (pustaka PDF tidak berjalan di WebAssembly); desktop memakai QuestPDF. Di web, menu Laporan hanya untuk Kepala Sekolah dan Admin; wali kelas melihat riwayat siswanya dari menu Siswa atau Absensi.
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jenis Harian, Mingguan, Bulanan, Per orang dan Semester untuk siswa dan guru, Excel dan PDF. Web membuat PDF lewat **Cetak / Simpan PDF** browser (pustaka PDF tidak berjalan di WebAssembly); desktop memakai QuestPDF. Di web, menu Laporan hanya untuk Kepala Sekolah dan Admin; wali kelas melihat riwayat siswanya dari menu Siswa atau Absensi. Keputusan P-22 (§3) memberi wali kelas laporan kelasnya sendiri; belum diterapkan di kode.
 
 Keluaran: **Excel dan PDF**.
 
@@ -599,7 +610,7 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 
 ### 14.2 Layar Admin
 
-> **Status aplikasi (13 November 2026):** **[Sebagian]** Menu sesuai daftar (Layar gerbang dan Notifikasi hanya Kepala Sekolah/Admin; Audit hanya Admin). Header memuat nama sekolah, logo dan tahun ajaran aktif. Dashboard web berisi: Pusat kendali kehadiran (ringkasan harian, tombol Layar gerbang TV dan Buka absensi), Pantauan kedatangan, Tindak lanjut siswa (belum tap) dan Kesiapan data. Status rekap notifikasi dan peringatan pairing belum ada di dashboard web.
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Menu sesuai daftar (Layar gerbang dan Notifikasi hanya Kepala Sekolah/Admin; Audit hanya Admin — P-21 membuka Audit juga untuk Kepala Sekolah, kode belum disesuaikan). Header memuat nama sekolah, logo dan tahun ajaran aktif. Dashboard web berisi: Pusat kendali kehadiran (ringkasan harian, tombol Layar gerbang TV dan Buka absensi), Pantauan kedatangan, Tindak lanjut siswa (belum tap) dan Kesiapan data. Status rekap notifikasi dan peringatan pairing belum ada di dashboard web.
 
 Menu: Dashboard, Absensi, **Layar gerbang** (kepala sekolah/admin saja), Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi (kepala sekolah/admin saja), Audit (admin saja), Pengaturan.
 
@@ -1093,9 +1104,9 @@ Pagi    Guru tap → status MASUK, jam tap dicatat
         → menunggu keputusan Kepala Sekolah
 ```
 
-### 16.17 Penetapan Status Guru oleh Kepala Sekolah
+### 16.17 Penetapan Status Guru oleh Kepala Sekolah atau Admin
 
-> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web: menu **Guru** → panel **Kehadiran guru** → **Tetapkan status**; di muka pilihan Izin/Dinas luar/Cuti, sesudahnya Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib; Admin hanya melihat. Status Dinas luar di muka ketika harinya tiba tanpa tap belum dibuktikan tes.
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web: menu **Guru** → panel **Kehadiran guru** → **Tetapkan status**; di muka pilihan Izin/Dinas luar/Cuti, sesudahnya Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib; Admin hanya melihat (P-21 memberi Admin wewenang yang sama; kode belum disesuaikan). Status Dinas luar di muka ketika harinya tiba tanpa tap belum dibuktikan tes.
 
 ```
 1. Kepala Sekolah membuka menu Guru → Kehadiran
@@ -1205,7 +1216,7 @@ Guru memakai **reader yang sama** dengan siswa di gerbang. Aplikasi membedakan k
 |---|---|---|---|
 | Kelola master guru | Ya | Ya | Tidak |
 | Registrasi kartu guru | Ya | Ya | Tidak |
-| Ubah status kehadiran guru | Tidak | **Ya** | Tidak |
+| Ubah status kehadiran guru | **Ya** (P-21; kode belum disesuaikan) | **Ya** | Tidak |
 | Lihat laporan guru | Ya | Ya | Tidak |
 
 ---
@@ -1256,7 +1267,9 @@ Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail i
 
 Masuk lingkup rancangan online: website publik, portal pemilik layanan, portal sekolah yang dapat diakses browser termasuk HP, desktop RFID, backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
 
-Lingkup pembaruan ini adalah commit/push dokumen PRD dan catatan utang yang diperintahkan pemilik. Implementasi kode online, pengadaan hosting/layanan berbayar, migrasi data nyata dan deployment berada di luar otorisasi pembaruan dokumen ini. Telegram dan WhatsApp ditetapkan sebagai dua kanal notifikasi yang didukung (P-19); implementasi WhatsApp menunggu rincian D-03 dan tetap di luar otorisasi pembaruan dokumen ini (P-16 ditangguhkan). Fitur cetak kartu dan absensi per mata pelajaran tidak ditambahkan. Keputusan harga/biaya lama yang belum diverifikasi tidak dipakai sebagai perhitungan layanan online.
+Lingkup pembaruan ini adalah commit/push dokumen PRD dan catatan utang yang diperintahkan pemilik. Implementasi kode online, pengadaan hosting/layanan berbayar, migrasi data nyata dan deployment berada di luar otorisasi pembaruan dokumen ini. Telegram dan WhatsApp ditetapkan sebagai dua kanal notifikasi yang didukung (P-19); implementasi WhatsApp menunggu rincian D-03 dan tetap di luar otorisasi pembaruan dokumen ini (P-16 ditangguhkan). Fitur cetak kartu dan absensi per mata pelajaran tidak ditambahkan.
+
+**Saran pengembangan, belum disetujui untuk dibangun (13 November 2026):** kode QR/barcode pada kartu siswa untuk orang tua. Bila kelak dibangun, barcode hanya dipakai untuk menautkan nomor orang tua yang dikonfirmasi sekolah, tidak boleh langsung membuka data siswa: barcode yang tercetak dapat difoto atau ditemukan orang lain, sedangkan data anak termasuk data pribadi spesifik (UU 27/2022 Pasal 4). Fitur ini bergantung pada layanan online dan pada keputusan cetak kartu di atas. Keputusan harga/biaya lama yang belum diverifikasi tidak dipakai sebagai perhitungan layanan online.
 
 Pembaruan desktop otomatis dapat dinilai pada desain rilis; belum diputuskan. Jangan menafsirkan pemisahan frontend/backend atau target L3 sebagai kewajiban langsung memakai microservices, Kubernetes, satu server fisik per sekolah, atau teknologi frontend tertentu.
 
@@ -1891,6 +1904,13 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Rencana awal pemilik menyusun ulang PRD sebelum repo baru diubah: kode disalin dulu, PRD disusun ulang menyusul berdasarkan aplikasi yang ada.
 
 **Revisi 2.0, 13 November 2026 — atas instruksi pemilik:** PRD disusun ulang mengikuti aplikasi yang ada. Pilihan pemilik: nomor bab tetap (dirujuk kode dan tes), cakupan desktop dan web dengan web sebagai bentuk utama uji coba, bagian yang belum dibangun tetap dicatat sebagai **[Rencana]**. Ditambahkan §0 (status aplikasi) dan kotak status di setiap bab; isi keputusan P-01–P-20 dan D-01–D-11 tidak diubah. Disetujui pemilik pada hari yang sama: .NET 10 sebagai versi proyek dan ukuran nama TV (nama pendek 64 px, nama panjang mengecil).
+
+**Keputusan 13 November 2026 (malam) — disetujui pemilik:**
+- **P-21** hak akses Kepala Sekolah dan Admin setara untuk pekerjaan sekolah, dengan pembedaan pengelolaan akun (§3, §3.1, §17.10).
+- **P-22** wali kelas melihat dan mengunduh laporan kelasnya sendiri (§3, §11).
+- **P-08 ditegaskan ulang:** tap wajib tetap terekam saat internet sekolah putus; rincian teknis tetap terbuka di D-01.
+- Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
+- Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
 
 ### 25.6 Referensi primer
 

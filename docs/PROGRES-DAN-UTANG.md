@@ -497,3 +497,23 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 **Selesai:** kepala dokumen versi 2.0 dengan cara membaca dan label status; §0 baru (bentuk aplikasi, tabel fitur web/desktop, batas uji coba data asli); kotak "Status aplikasi" di setiap bab 1–25 dan subbab yang menyimpang (14.x, 16.x); koreksi teks foto massal, menu, wizard. Klaim status diperiksa terhadap kode (`Absensi.Web`, `Absensi.App`, `Absensi.Data`) dan tes Chromium; keputusan P-01–P-20 dan D-01–D-11 tidak diubah.
 
 **Belum/perlu diperhatikan:** isi rinci bab rancangan online (§13, §18, §21–§23) dibiarkan sebagai Rencana tanpa ditulis ulang. Klaim pengiriman Telegram desktop berasal dari kode, belum diuji pemilik dengan bot nyata.
+
+## 29. Keputusan hak akses P-21/P-22 — 13 November 2026
+
+**Instruksi pemilik:** catat keputusan yang sudah disetujui di PRD, lalu bahas bentuk akses sekolah secara terpisah.
+
+**Selesai (dokumen):** PRD §3 (P-21, P-22), §3.1, §11, §17.10, §20 (barcode orang tua sebagai saran pengembangan) dan §25.5 (riwayat, termasuk penegasan ulang P-08).
+
+**Belum terbukti / utang kode (kode belum diubah):**
+- Kepala Sekolah belum bisa membuka menu Audit di web dan desktop.
+- Admin belum bisa menetapkan status kehadiran guru (masih hanya lihat).
+- Admin belum bisa mereset sandi Kepala Sekolah; wajib ganti sandi setelah direset belum ada; ganti sandi sendiri belum ada.
+- Wali kelas belum bisa membuka atau mengunduh laporan kelasnya.
+- Pembuatan akun Kepala Sekolah pengganti lewat verifikasi penyedia menunggu versi online dan D-10.
+
+**Temuan pembacaan repo `Absensi-Uji-Real` (13 November 2026), belum diperbaiki:**
+- Web tidak membuka hari baru bila halaman dibiarkan terbuka melewati tengah malam: tap tampil "Hadir" di TV tetapi tidak tersimpan di `absensi_siswa` (`RepositoriAbsensi.SimpanKeputusanSiswa` memakai `UPDATE`); setelah muat ulang siswa tercatat Alpa. Desktop tidak terdampak (penjadwal 00.01).
+- Wizard mengisi akhir periode bawaan hari ini + 5 bulan dan tanggal periode tidak dapat diubah; periode semester berikutnya bisa tertolak karena tumpang tindih.
+- Web tidak meminta penyimpanan tetap (`navigator.storage.persist()`); tidak ada keluar otomatis; teks sisa mode uji masih tampil di mode nyata (`MasterImportDialog.razor:252`, BelumDibangun, SchoolAudit, Dasbor).
+
+**Keputusan yang menunggu Edgar:** apakah sekolah hanya memakai aplikasi desktop atau juga portal browser/HP (bertentangan dengan rancangan portal sekolah §20–§21), dan apakah satu sekolah boleh memasang aplikasi di banyak PC.
