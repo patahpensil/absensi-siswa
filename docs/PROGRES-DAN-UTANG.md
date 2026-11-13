@@ -563,3 +563,9 @@ Kartu guru (baru dan pengganti) gratis.
 **Belum ditetapkan / menunggu Edgar:** angka retensi per kelas data; template kontrak (perlu ahli hukum).
 
 **Belum terbukti:** aturan retensi daftar hadir SMP yang berlaku (Permendikbud 45/2016 telah dicabut Permendikbudriset 20/2022; isi pengganti belum dibaca). Belum ada kode untuk penagihan, status langganan, atau penolakan PC sekolah yang menunggak.
+
+## 34. Rincian antrean offline P-29 (D-01) — 14 November 2026
+
+**Selesai (dokumen):** PRD §21.8 P-29 butir 1–9, §25.1 D-01, §25.5.
+
+**Belum terbukti / utang:** belum ada kode untuk penghitung monoton, rantai catatan, buku wajah terenkripsi, sinkronisasi antrean, label Perlu pemeriksaan (ringan) maupun sahkan massal. Desktop dan web saat ini tidak memiliki antrean offline. Metode kriptografi dan penyimpanan kunci konkret ditetapkan saat perancangan teknis.
