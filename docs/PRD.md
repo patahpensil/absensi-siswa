@@ -27,7 +27,7 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Desktop Windows | .NET 10, WPF/MVVM | SQLite di folder `data/` PC sekolah | PC gerbang sekolah |
 | Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | `absensi-uji.pages.dev` (Cloudflare Pages, berkas statis) |
 | Web — mode nyata | sama dengan mode uji, `"Mode": "nyata"` di `wwwroot/appsettings.json` | IndexedDB browser perangkat yang dipakai; tidak ada server | `absensi-uji-real.pages.dev`, repo `patahpensil/Absensi-Uji-Real` |
-| Layanan online multi sekolah | C#/ASP.NET Core, PostgreSQL (rancangan) | server di Indonesia (rancangan) | **[Rencana]** — belum dibangun |
+| Layanan online multi sekolah | C#/ASP.NET Core, PostgreSQL (rancangan) | AWS region Jakarta (P-23, §21.6) | **[Rencana]** — belum dibangun |
 
 | Area | Web | Desktop | Catatan |
 |---|---|---|---|
@@ -1378,7 +1378,16 @@ ASVS mewajibkan hasil pengamanan lintas tenant; pola database/runtime terpisah m
 | Proxy/WAF/CDN | Jalur data siswa tidak diterminasi, dicache, atau direkam di luar Indonesia tanpa keputusan tertulis atas aliran tersebut |
 | Komputer sekolah | Di sekolah; hanya data minimum yang diperlukan untuk fungsi yang disetujui; bukan salinan penuh database server |
 
-Pemilihan provider belum dilakukan. Label "region Indonesia" saja bukan bukti lokasi semua backup, dukungan, telemetry, subprosesor, dan jalur replikasi. Sebelum produksi diperlukan daftar aliran data beserta bukti konfigurasi dan komitmen penyedia. Persyaratan ini menetapkan lokasi pemrosesan/penyimpanan yang dikelola layanan; tidak menjamin semua paket internet secara fisik selalu melewati jaringan domestik.
+**Keputusan P-23 — disetujui pemilik 14 November 2026:** server layanan online memakai **Amazon Web Services (AWS) dengan Paid Plan, region Asia Pacific (Jakarta, `ap-southeast-3`)**.
+- Database memakai Amazon RDS for PostgreSQL: satu instance dengan database terpisah per sekolah, sesuai pola database per sekolah (§21).
+- Multi-AZ (dua pusat data di Jakarta) wajib sebelum ada sekolah yang memakai data nyata; Single-AZ hanya untuk pengembangan dan uji.
+- Free Plan AWS tidak dipakai karena akun Free Plan ditutup otomatis setelah 6 bulan atau saat kredit habis. Kredit awal AWS boleh dipakai untuk masa uji coba.
+- Batas anggaran dan peringatan tagihan wajib dipasang sejak akun dibuat.
+- Tidak memakai salinan, backup atau fallback lintas region ke luar Indonesia (tabel di atas); cadangan hanya lintas pusat data di region Jakarta.
+- Pertimbangan (perkiraan November 2026, belum termasuk pajak): Biznet Gio ± Rp750–900 ribu/bulan dengan database, backup dan pemulihan dikelola sendiri; AWS ± Rp1,1 juta/bulan untuk 5 sekolah (RDS Multi-AZ) dengan backup dan pengalihan database dikelola AWS. Harga berasal dari situs pembanding pihak ketiga dan wajib dicek ulang di AWS Pricing Calculator sebelum pengadaan.
+- Masih terbuka di D-06: ukuran instance final, HSM/pengelolaan kunci (KMS), dan bukti lokasi B-01 (dukungan teknis, telemetry, log, tagihan dan subprosesor AWS).
+
+Label "region Indonesia" saja bukan bukti lokasi semua backup, dukungan, telemetry, subprosesor, dan jalur replikasi. Sebelum produksi diperlukan daftar aliran data beserta bukti konfigurasi dan komitmen penyedia. Persyaratan ini menetapkan lokasi pemrosesan/penyimpanan yang dikelola layanan; tidak menjamin semua paket internet secara fisik selalu melewati jaringan domestik.
 
 Notifikasi Telegram adalah aliran ke pihak ketiga. Mengirim nama/status siswa melalui Telegram tidak memenuhi klaim bahwa semua salinan data siswa hanya berada di Indonesia. Hal yang sama berlaku untuk WhatsApp. Pemilik menetapkan kedua kanal didukung (P-19), sedangkan pembahasan P-16 tentang verifikasi penautan Telegram tetap ditangguhkan. Penyedia WhatsApp, payload minimal dengan detail lewat portal atau pengecualian transfer harus diputuskan terlebih dahulu (§25, D-03). Tidak ada persetujuan alur verifikasi baru atau implementasi WhatsApp yang diaktifkan otomatis oleh catatan ini.
 
@@ -1657,7 +1666,7 @@ Target kapasitas, latensi, uptime, RPO/RTO dan retensi belum ditetapkan. Jumlah 
 
 | Gerbang | Hasil wajib | Batas tindakan |
 |---|---|---|
-| B-01 | Bukti lokasi Indonesia, HSM, perlindungan memori dan kelayakan kontrol L3 | Provider belum ditetapkan final tanpa bukti |
+| B-01 | Bukti lokasi Indonesia, HSM, perlindungan memori dan kelayakan kontrol L3 | Provider ditetapkan AWS Jakarta (P-23); bukti lokasi dan HSM/KMS belum dikumpulkan, produksi tidak boleh dimulai tanpa bukti |
 | B-02 | Dana awal, rutin, penggunaan, tambahan tenant, keamanan dan cadangan beserta penawaran bertanggal | Kebutuhan dana pemilik belum dianggap pasti tanpa rincian lengkap |
 | B-03 | Kebutuhan resource dan pengeluaran penyedia pada skenario beban yang disepakati | Tidak menjanjikan kapasitas tanpa hasil ukur |
 | B-04 | Batas dana dan rencana pengeluaran disetujui pemilik | Tidak melakukan pengadaan berbayar atau deploy tanpa instruksi |
@@ -1752,7 +1761,7 @@ Ketentuan arsitektur dan C# yang telah disepakati tidak dibuka ulang oleh tabel 
 | D-03 | P-19 menetapkan dua kanal: Telegram dan WhatsApp. P-20 menetapkan satu kanal per siswa pilihan orang tua dan WhatsApp memakai nomor HP orang tua langsung. P-16 tentang verifikasi penautan Telegram ditangguhkan. Penyedia/API WhatsApp, kanal untuk wali kelas/guru, isi pesan, batas data keluar, biaya per pesan serta aliran pihak ketiga masih harus diputuskan | Pilihan dua kanal tidak dibuka ulang; tidak mengimplementasikan WhatsApp atau usulan P-16 sebelum rincian diputuskan; tidak mengklaim semua salinan data siswa hanya di Indonesia sambil mengirim detail lewat pihak ketiga |
 | D-04 | Model komersial/tarif/kontrak, masa aktif, akses saat menunggak/berakhir, ekspor dan bantuan | Tidak menetapkan harga atau menjalankan suspend/penghapusan otomatis |
 | D-05 | Retensi per kelas data, audit/log, cache lokal, laporan sementara, backup dan pascakontrak; dasar dan prosedur pemusnahan | Tidak mengaktifkan penghapusan; konflik retensi "selamanya" belum ditutup |
-| D-06 | Provider Indonesia, pembagian VM/cluster/instance, HSM, perlindungan memori, biaya dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
+| D-06 | Provider ditetapkan P-23 (AWS Jakarta, RDS PostgreSQL). Masih terbuka: pembagian instance, ukuran final, HSM/KMS, perlindungan memori, biaya final dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
 | D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
 | D-08 | Teknologi frontend web dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
 | D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
@@ -1911,6 +1920,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - **P-08 ditegaskan ulang:** tap wajib tetap terekam saat internet sekolah putus; rincian teknis tetap terbuka di D-01.
 - Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
 - Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
+
+**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). Bentuk akses sekolah masih dibahas; opsi yang sedang ditimbang: desktop saja, desktop + portal web terkunci perangkat, atau desktop + aplikasi Android terdaftar untuk wali kelas.
 
 ### 25.6 Referensi primer
 

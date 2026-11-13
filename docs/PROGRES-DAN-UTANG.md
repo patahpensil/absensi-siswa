@@ -517,3 +517,16 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Web tidak meminta penyimpanan tetap (`navigator.storage.persist()`); tidak ada keluar otomatis; teks sisa mode uji masih tampil di mode nyata (`MasterImportDialog.razor:252`, BelumDibangun, SchoolAudit, Dasbor).
 
 **Keputusan yang menunggu Edgar:** apakah sekolah hanya memakai aplikasi desktop atau juga portal browser/HP (bertentangan dengan rancangan portal sekolah §20–§21), dan apakah satu sekolah boleh memasang aplikasi di banyak PC.
+
+## 30. Keputusan server P-23 — 14 November 2026
+
+**Instruksi pemilik:** tetapkan server memakai AWS Paid Plan.
+
+**Selesai (dokumen):** PRD §0 (tabel bentuk aplikasi), §21.6 (P-23), §25.1 (D-06 dan B-01 dipersempit), §25.5 (riwayat).
+
+**Belum terbukti / utang:**
+- Akun AWS belum dibuat; belum ada infrastruktur atau kode server.
+- Harga di P-23 berasal dari situs pembanding pihak ketiga (region Jakarta), belum dicek di AWS Pricing Calculator; penyimpanan RDS, IP publik dan pajak belum dihitung pasti.
+- Bukti lokasi AWS (dukungan teknis, telemetry, log, tagihan, subprosesor) dan KMS/HSM di Jakarta belum diperiksa (B-01).
+
+**Keputusan yang menunggu Edgar:** bentuk akses sekolah (desktop saja / desktop + portal web terkunci perangkat / desktop + aplikasi Android wali kelas), jumlah PC per sekolah, iPhone atau Android saja, dan cara distribusi aplikasi HP.
