@@ -575,3 +575,12 @@ Kartu guru (baru dan pengganti) gratis.
 **Selesai (dokumen):** PRD §21.9 P-30 butir 1–7, §25.1 D-02, §25.5. Batas "12.00" diterapkan sebagai batas akhir tap masuk sesuai jadwal sekolah (Jumat 10.00 di sekolah rujukan).
 
 **Belum terbukti / utang:** belum ada server, sinyal hidup PC, penundaan rekap, penjadwalan ulang tugas, maupun pesan ralat. Isi pesan ralat belum dirumuskan.
+
+## 36. Aturan tambahan penulisan kode P-31 — 14 November 2026
+
+**Selesai (dokumen):** PRD §24.2 butir 1 disesuaikan, §24.7 (P-31) baru, §25.5.
+
+**Belum terbukti / utang:**
+- CI belum menjalankan pemeriksa ejaan otomatis dan belum menjadikan semua peringatan analyzer galat build; perlu dicek dan ditambahkan.
+- Belum ada tes dua permintaan bersamaan maupun pemantauan memori untuk Layar gerbang/worker.
+- Referensi tampilan dari GitHub (skill) belum ditambahkan pemilik.

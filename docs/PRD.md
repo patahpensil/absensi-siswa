@@ -1756,7 +1756,7 @@ HTML/CSS untuk tampilan, SQL untuk penyimpanan, serta konfigurasi/build script d
 
 ### 24.2 Penamaan dan keterbacaan
 
-1. Identifier kode baru menggunakan bahasa Inggris yang jelas dan konsisten dengan konvensi C#; teks pengguna menggunakan bahasa Indonesia yang alami. Nama lama berbahasa Indonesia tidak diganti massal tanpa lingkup migrasi yang disetujui.
+1. Identifier kode baru menggunakan bahasa Inggris yang jelas dan konsisten dengan konvensi C#; teks pengguna menggunakan bahasa Indonesia yang alami. Nama lama berbahasa Indonesia tidak diganti massal; penggantiannya bertahap menurut P-31 butir 1 (§24.7).
 2. Setiap kelas/metode memiliki tanggung jawab yang jelas. Hindari service serba guna, fungsi terlalu bercabang, parameter berlebihan dan abstraksi tanpa kebutuhan nyata.
 3. Nama menjelaskan maksud bisnis, bukan sekadar tipe atau nama generik seperti `ProcessData`, `Manager2`, atau `DoStuff`.
 4. Komentar menjelaskan **alasan, batas keamanan, dan rujukan aturan** yang tidak jelas dari kode. Tidak menarasikan setiap baris, menumpuk slogan, atau menyalin percakapan/prompt.
@@ -1806,6 +1806,23 @@ Perubahan harus terbatas pada kebutuhan yang diberikan. Refactor dilakukan untuk
 | Kapasitas/pemulihan | Hasil ukur dan restore sesuai target yang kelak disetujui; tidak mengklaim hasil dari jumlah unit test |
 
 Tes harus membuktikan perilaku atau batas keamanan yang bermakna. Tidak menambah test yang hanya mengulang implementasi demi jumlah/coverage. Klaim "lulus" harus menyebut perintah, lingkungan, build/commit, waktu dan hasil yang benar-benar dijalankan. Angka 592 dari checkpoint lama merupakan laporan historis, bukan hasil pengujian revisi online ini.
+
+### 24.7 Aturan tambahan pemilik — P-31
+
+**Keputusan P-31 — disetujui pemilik 14 November 2026:**
+
+1. **Bahasa kode.** Semua nama di kode baru (kelas, metode, variabel, file, tabel/kolom baru) memakai bahasa Inggris; teks untuk pengguna tetap bahasa Indonesia. Nama lama berbahasa Indonesia diganti **bertahap**, hanya ketika file tersebut disentuh untuk pekerjaan fitur, dalam commit terpisah yang tidak mengubah perilaku dan tetap lulus seluruh tes.
+2. **Pemeriksaan wajib setiap selesai satu fitur.** Fitur belum boleh dinyatakan selesai sebelum seluruh pemeriksaan berikut lulus di CI dan hasilnya dicatat di PROGRES-DAN-UTANG.md. Pemeriksaan ini menurunkan risiko; tidak ada klaim bahwa kode pasti bebas cacat.
+   - Tes kasus normal dan kasus batas (unit dan integrasi).
+   - Simulasi kasus nyata: alur pengguna dijalankan dari awal sampai akhir (tes Chromium atau tes alur desktop) dengan data contoh.
+   - Async dan deadlock: tidak ada `.Result`/`.Wait()` pada operasi async; I/O memakai async dengan batas waktu dan pembatalan.
+   - Race condition dan TOCTOU: operasi periksa-lalu-ubah dijalankan dalam satu transaksi atau dijaga indeks unik; ada tes dua permintaan bersamaan.
+   - Loop: setiap perulangan dan percobaan ulang memiliki batas yang jelas.
+   - Memory leak: event handler dilepas dan `IDisposable` dibuang dengan benar; proses berjalan lama (Layar gerbang, worker) diuji atau dipantau pemakaian memorinya.
+   - Parameter kurang: nullable diaktifkan dan peringatan analyzer dijadikan galat build.
+   - Typo: pemeriksa ejaan otomatis untuk nama di kode dan teks pengguna.
+3. **Tanpa watermark AI.** Mempertegas §24.5: tidak ada tulisan atau atribusi AI di kode, komentar, aplikasi, dokumen pengguna, commit maupun PR.
+4. **Tampilan tanpa "AI slop".** Tampilan wajib mengikuti PANDUAN-UI-UX.md. Dilarang: gradasi, bayangan dan efek hiasan tanpa fungsi; emoji dan ikon hiasan tanpa makna; teks basa-basi atau kalimat pemasaran; teks contoh atau lorem ipsum yang tertinggal; data palsu yang tampil seolah nyata; jarak, ukuran huruf dan warna yang tidak konsisten dengan panduan; tombol atau fitur yang tampil tetapi tidak berfungsi. Setiap layar baru diperiksa lewat tangkapan layar tes Chromium sebelum dinyatakan selesai. Pemilik akan menambahkan referensi tampilan dari GitHub sebagai skill untuk agen; setelah ditambahkan, referensi itu ikut menjadi acuan butir ini.
 
 ---
 
@@ -1989,6 +2006,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **Keputusan teknis (14 November 2026):** **P-29** rincian antrean offline D-01 (ambang 5 menit, batas 72 jam, Perlu pemeriksaan ringan setelah restart, sahkan massal, buku wajah terenkripsi di PC gerbang; §21.8).
 
 **P-30** (14 November 2026) rincian penahanan notifikasi D-02: offline 5 menit, tunda rekap, tidak kirim Alpa bila offline sampai batas akhir tap masuk, pesan basi >1 hari tidak dikirim, pesan ralat (§21.9).
+
+**P-31** (14 November 2026) aturan tambahan penulisan kode (§24.7): kode baru wajib bahasa Inggris dengan penggantian nama lama bertahap, pemeriksaan wajib setiap fitur (async, deadlock, race/TOCTOU, loop, memory leak, parameter, typo), tanpa watermark AI, tampilan tanpa AI slop.
 
 **Koreksi isi data uji coba (14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01). Kalimat lama "data sekolah sungguhan" di §25.5 dan §20 diganti.
 
