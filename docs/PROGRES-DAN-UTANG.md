@@ -558,6 +558,8 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Ditetapkan kemudian (14 November 2026):** tenggang 14 hari, hanya-lihat 30 hari, beku sampai kontrak berakhir/dibayar, ekspor 30 hari setelah kontrak berakhir.
 
-**Belum ditetapkan / menunggu Edgar:** biaya kartu guru; angka retensi per kelas data; template kontrak (perlu ahli hukum).
+Kartu guru (baru dan pengganti) gratis.
+
+**Belum ditetapkan / menunggu Edgar:** angka retensi per kelas data; template kontrak (perlu ahli hukum).
 
 **Belum terbukti:** aturan retensi daftar hadir SMP yang berlaku (Permendikbud 45/2016 telah dicabut Permendikbudriset 20/2022; isi pengganti belum dibaca). Belum ada kode untuk penagihan, status langganan, atau penolakan PC sekolah yang menunggak.
