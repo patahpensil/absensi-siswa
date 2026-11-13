@@ -595,9 +595,14 @@ Pemilik mengganti nama repo `patahpensil/absensi-smp1` menjadi `patahpensil/abse
 
 Pemilik memilih B: `absensi-uji` dan `absensi-uji-real` dibangun dari satu hasil publish di repo ini. `web-deploy.yml` kini mendeploy salinan `"Mode": "nyata"` ke proyek `absensi-uji-real` (cabang produksi `main`) setelah deploy mode uji, lalu memeriksanya di Chromium dengan `HANYA_MODE_NYATA=1`.
 
-- Proyek mode nyata sengaja **tidak dibuat otomatis**. Bila tidak ada di akun Cloudflare yang dipakai secret repo ini, langkah gagal dengan pesan jelas, karena proyek itu dahulu dibuat dari secret repo `Absensi-Uji-Real` (akun Patahpensil01) dan belum terbukti akunnya sama.
-- **Belum terbukti** sampai run deploy pertama setelah commit ini hijau.
+- Proyek mode nyata sengaja **tidak dibuat otomatis**, karena nama subdomain bisa berubah bila proyek dibuat di akun lain.
+- **Terbukti:** [run 43526181025](https://github.com/patahpensil/absensi-siswa/actions/runs/43526181025) memperbarui `absensi-uji` dan lulus Chromium, tetapi proyek `absensi-uji-real` **tidak ada** di akun Cloudflare secret repo ini (HTTP 404). Proyek itu berada di akun Patahpensil01 (dibuat dari secret repo `Absensi-Uji-Real`).
+- Perbaikan: langkah mode nyata kini memakai pasangan secret tersendiri `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`. Sampai secret itu diisi, run deploy berakhir merah di langkah mode nyata; situs `absensi-uji` tetap diperbarui lebih dulu.
+- **Belum terbukti:** deploy mode nyata dari repo ini.
 - Repo `Absensi-Uji-Real` tidak lagi dipakai. Workflow-nya masih aktif dan akan menimpa situs dengan kode lama bila ada push ke `main` di sana.
 
-**Yang harus dilakukan Edgar:** setelah deploy di repo ini terbukti hijau, arsipkan repo `patahpensil/Absensi-Uji-Real` (Settings → General → Danger Zone → Archive this repository). Bila langkah "Pastikan proyek Pages mode nyata ada" gagal karena beda akun, pilih salah satu: samakan secret `CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_API_TOKEN` repo ini dengan akun Patahpensil01, atau izinkan agen membuat proyek baru di akun yang sekarang.
-
+**Yang harus dilakukan Edgar:**
+1. Di Cloudflare akun Patahpensil01, buat API token baru berizin Cloudflare Pages: Edit, dan catat Account ID akun itu.
+2. Di repo `patahpensil/absensi-siswa`: Settings → Secrets and variables → Actions → New repository secret. Isi `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`. Jangan kirim nilainya ke chat.
+3. Jalankan ulang workflow "Web uji - deploy Cloudflare Pages" (tab Actions → Run workflow), atau beri tahu agen.
+4. Setelah deploy mode nyata hijau, arsipkan repo `Absensi-Uji-Real`: Settings → Danger Zone → Archive this repository. Arsip juga mematikan workflow-nya.
