@@ -590,3 +590,14 @@ Kartu guru (baru dan pengganti) gratis.
 Pemilik mengganti nama repo `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Rujukan aktif di PRD (kepala dokumen, §25.5) diperbarui. Tautan bukti historis di dokumen ini sengaja tidak diubah karena GitHub mengalihkan alamat lama.
 
 **Yang harus dilakukan Edgar:** perbarui instruksi proyek Claude (bagian ACUAN dan TUJUAN) yang masih menyebut `absensi-smp1`; jangan membuat repo baru bernama `absensi-smp1`. Deskripsi "About" repo masih menyebut satu sekolah dan SQLite; dapat diperbarui lewat ikon pengaturan di samping "About".
+
+## 38. Satu repo, dua situs uji (pilihan B) — 14 November 2026
+
+Pemilik memilih B: `absensi-uji` dan `absensi-uji-real` dibangun dari satu hasil publish di repo ini. `web-deploy.yml` kini mendeploy salinan `"Mode": "nyata"` ke proyek `absensi-uji-real` (cabang produksi `main`) setelah deploy mode uji, lalu memeriksanya di Chromium dengan `HANYA_MODE_NYATA=1`.
+
+- Proyek mode nyata sengaja **tidak dibuat otomatis**. Bila tidak ada di akun Cloudflare yang dipakai secret repo ini, langkah gagal dengan pesan jelas, karena proyek itu dahulu dibuat dari secret repo `Absensi-Uji-Real` (akun Patahpensil01) dan belum terbukti akunnya sama.
+- **Belum terbukti** sampai run deploy pertama setelah commit ini hijau.
+- Repo `Absensi-Uji-Real` tidak lagi dipakai. Workflow-nya masih aktif dan akan menimpa situs dengan kode lama bila ada push ke `main` di sana.
+
+**Yang harus dilakukan Edgar:** setelah deploy di repo ini terbukti hijau, arsipkan repo `patahpensil/Absensi-Uji-Real` (Settings → General → Danger Zone → Archive this repository). Bila langkah "Pastikan proyek Pages mode nyata ada" gagal karena beda akun, pilih salah satu: samakan secret `CLOUDFLARE_ACCOUNT_ID`/`CLOUDFLARE_API_TOKEN` repo ini dengan akun Patahpensil01, atau izinkan agen membuat proyek baru di akun yang sekarang.
+

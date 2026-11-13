@@ -1,5 +1,8 @@
 # Deploy web uji ke Cloudflare Pages (akun khusus uji, di luar Indonesia).
-# Hanya data sintetis (utang D-12). Kredensial hanya dari GitHub Secrets:
+# Satu hasil publish dikirim ke dua proyek (pilihan B, 14 November 2026):
+#   absensi-uji      -> mode uji, data sintetis (utang D-12)
+#   absensi-uji-real -> mode nyata, data hanya di browser pengguna
+# Kredensial hanya dari GitHub Secrets:
 # CLOUDFLARE_API_TOKEN (izin Cloudflare Pages: Edit) dan CLOUDFLARE_ACCOUNT_ID.
 name: Web uji - deploy Cloudflare Pages
 
@@ -25,6 +28,7 @@ concurrency:
 
 env:
   PAGES_PROJECT: absensi-uji
+  PAGES_PROJECT_REAL: absensi-uji-real
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
@@ -127,3 +131,46 @@ jobs:
           [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy tidak dikembalikan oleh wrangler-action."; exit 1; }
           echo "::notice::Alamat deploy: ${DEPLOYMENT_URL}"
           node check.mjs "${DEPLOYMENT_URL}/"
+
+      # Proyek mode nyata tidak dibuat otomatis: kalau tidak ada di akun ini,
+      # Cloudflare bisa memberi nama subdomain lain dan tautan lama tidak
+      # ikut diperbarui. Lebih baik gagal dengan pesan jelas.
+      - name: Siapkan salinan mode nyata
+        run: |
+          rm -rf publish-nyata && cp -r publish/wwwroot publish-nyata
+          printf '{\n  "Mode": "nyata"\n}\n' > publish-nyata/appsettings.json
+          rm -f publish-nyata/appsettings.json.br publish-nyata/appsettings.json.gz
+
+      - name: Pastikan proyek Pages mode nyata ada
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
+          code=$(curl -sS -o /tmp/project-real.json -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${api}/${PAGES_PROJECT_REAL}")
+          if [ "$code" != "200" ]; then
+            echo "::error::Proyek ${PAGES_PROJECT_REAL} tidak ditemukan di akun Cloudflare ini (HTTP ${code}). Proyek itu mungkin berada di akun lain; samakan akun sebelum deploy."
+            exit 1
+          fi
+          subdomain=$(python3 -c 'import json;print(json.load(open("/tmp/project-real.json"))["result"]["subdomain"])')
+          echo "::notice::Subdomain proyek mode nyata: ${subdomain}"
+          [ "$subdomain" = "${PAGES_PROJECT_REAL}.pages.dev" ] || { echo "::error::Subdomain tidak sesuai harapan (${subdomain})."; exit 1; }
+
+      - name: Deploy mode nyata ke Cloudflare Pages
+        id: deploy_real
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy publish-nyata --project-name=${{ env.PAGES_PROJECT_REAL }} --branch=main --commit-dirty=true
+
+      - name: Periksa hasil deploy mode nyata di Chromium
+        working-directory: tests/web-browser
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy_real.outputs.deployment-url }}
+        run: |
+          [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy mode nyata tidak dikembalikan oleh wrangler-action."; exit 1; }
+          echo "::notice::Alamat deploy mode nyata: ${DEPLOYMENT_URL}"
+          # Pemeriksaan memakai browser robot sendiri; data pengguna tidak tersentuh.
+          HANYA_MODE_NYATA=1 node check.mjs "${DEPLOYMENT_URL}/" "${DEPLOYMENT_URL}/"
