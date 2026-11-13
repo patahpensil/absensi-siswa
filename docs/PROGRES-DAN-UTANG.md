@@ -556,6 +556,8 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 
 **Selesai (dokumen):** PRD §21.10 (P-25 harga, P-26 menunggak/berhenti, P-27 retensi dan arsip, P-28 pengendali/prosesor), §25.1 (B-04, D-04, D-05, D-11), §25.5.
 
-**Belum ditetapkan / menunggu Edgar:** jumlah hari masa tenggang, tahap hanya-lihat dan masa ekspor; biaya kartu guru; angka retensi per kelas data; template kontrak (perlu ahli hukum).
+**Ditetapkan kemudian (14 November 2026):** tenggang 14 hari, hanya-lihat 30 hari, beku sampai kontrak berakhir/dibayar, ekspor 30 hari setelah kontrak berakhir.
+
+**Belum ditetapkan / menunggu Edgar:** biaya kartu guru; angka retensi per kelas data; template kontrak (perlu ahli hukum).
 
 **Belum terbukti:** aturan retensi daftar hadir SMP yang berlaku (Permendikbud 45/2016 telah dicabut Permendikbudriset 20/2022; isi pengganti belum dibaca). Belum ada kode untuk penagihan, status langganan, atau penolakan PC sekolah yang menunggak.
