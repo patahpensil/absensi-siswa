@@ -60,7 +60,7 @@ Layanan absensi siswa dan guru menggunakan kartu RFID untuk banyak sekolah pelan
 | Model layanan | SaaS multi sekolah dengan isolasi per tenant |
 | Desktop | C# dan WPF; RFID, gerbang dan pekerjaan operator melalui API |
 | Backend | C# dan ASP.NET Core; lingkungan eksekusi per sekolah, satu basis kode produk |
-| Frontend web | Website publik, portal pemilik dan portal sekolah; proyek/deployment terpisah dari backend; teknologi web rinci belum dipilih |
+| Frontend web | Website publik dan portal pemilik; **tidak ada portal sekolah pada rilis pertama (P-24)**; proyek/deployment terpisah dari backend; teknologi web rinci belum dipilih |
 | Database utama | PostgreSQL privat, database dan identitas akses per sekolah |
 | Lokasi data | Database, replika, foto, laporan, audit/log sensitif, backup dan pengelolaan kunci yang dikelola layanan di Indonesia |
 | Keamanan | Target verifikasi OWASP ASVS v5.0.0 Level 3; desktop/infrastruktur juga diverifikasi sesuai lingkupnya |
@@ -1265,7 +1265,19 @@ Detail yang masih memerlukan keputusan ada pada **§25.1 D-01–D-11**. Detail i
 
 > **Status aplikasi (13 November 2026):** Aplikasi web mode nyata dipakai untuk uji coba data asli atas keputusan pemilik 12 November 2026 (§25.5); itu bukan rilis produksi layanan online.
 
-Masuk lingkup rancangan online: website publik, portal pemilik layanan, portal sekolah yang dapat diakses browser termasuk HP, desktop RFID, backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
+Masuk lingkup rancangan online: website publik, portal pemilik layanan, desktop RFID (satu-satunya jalur akses sekolah, P-24), backend terpisah, PostgreSQL per sekolah, pengelolaan perangkat, keamanan, audit dan pemulihan server. Daftar fitur dan urutan pilot/rilis belum seluruhnya diputuskan (D-08/D-09).
+
+**Keputusan P-24 — bentuk akses sekolah: desktop saja, disetujui pemilik 14 November 2026:**
+1. **Jalur akses.** Sekolah hanya mengakses layanan lewat aplikasi desktop Windows resmi yang terpasang dan terdaftar. Tidak ada portal sekolah lewat browser atau HP. Website publik berisi informasi dan pendaftaran sekolah; unduhan aplikasi hanya tersedia setelah login dengan akun sekolah yang langganannya aktif. Website tidak membuka data siswa. Portal pemilik layanan khusus untuk penyedia (§21.10).
+2. **Kartu akses perangkat.** Saat didaftarkan, setiap PC membuat sepasang kunci digital. Kunci rahasia disimpan di penyimpanan aman Windows, tidak dapat disalin dan tidak pernah dikirim. Server menerbitkan sertifikat perangkat berisi ID PC dan ID sekolah. Server menolak setiap koneksi tanpa sertifikat yang sah dan kunci yang cocok sebelum memeriksa username dan sandi. Pengguna hanya melihat kode aktivasi/pendaftaran sekali pakai dengan masa berlaku singkat.
+3. **PC sekolah dan Layar gerbang.** Hanya ada satu jenis PC terdaftar. Layar gerbang dapat dibuka di PC terdaftar mana pun, hanya oleh Kepala Sekolah atau Admin, dan terbuka di jendela terpisah yang dapat dipindah ke monitor kedua atau TV dengan pilihan layar penuh. Jendela gerbang berjalan terpisah dari sesi login: bila pengguna jendela kerja keluar atau keluar otomatis, jendela gerbang dan antrean offline (P-08) tetap berjalan; menutup jendela gerbang wajib login Kepala Sekolah atau Admin. Tap dibaca langsung dari perangkat reader, bukan dari jendela yang sedang aktif, sehingga mengetik di jendela kerja tidak mengganggu atau menelan tap; metode teknis ditetapkan saat perancangan.
+4. **Pendaftaran PC.** PC pertama didaftarkan dengan kode aktivasi sekali pakai dari penyedia. PC berikutnya didaftarkan oleh Kepala Sekolah atau Admin memakai kode pendaftaran yang berlaku singkat. Kepala Sekolah atau Admin dapat mencabut PC kapan saja. Pendaftaran dan pencabutan tercatat di audit.
+5. **Login dan sesi.** Satu akun untuk satu orang, tidak boleh dipakai bersama; jendela kerja keluar otomatis saat tidak dipakai. MFA dan pemulihan mengikuti D-10.
+6. **Pembaruan aplikasi.** Pembaruan ditandatangani secara digital dan diperiksa sebelum dipasang. PC yang sedang menjalankan Layar gerbang hanya diperbarui di luar jam tap. Aplikasi dapat kembali ke versi sebelumnya bila versi baru bermasalah. Versi yang terlalu lama ditolak setelah masa transisi. Alat teknis ditetapkan saat perancangan.
+7. **Tahap pengembangan berikutnya.** Aplikasi HP untuk wali kelas dengan HP yang didaftarkan seperti PC. Platform (Android/iPhone) dan cara distribusi diputuskan nanti.
+8. **Belum ditetapkan:** batas jumlah PC per sekolah, lama waktu sebelum keluar otomatis, dan masa berlaku sertifikat perangkat.
+
+Ketentuan "portal sekolah" pada §21 berikut tidak berlaku untuk rilis pertama; dipertahankan sebagai rancangan bila kelak pemilik memutuskan lain.
 
 Lingkup pembaruan ini adalah commit/push dokumen PRD dan catatan utang yang diperintahkan pemilik. Implementasi kode online, pengadaan hosting/layanan berbayar, migrasi data nyata dan deployment berada di luar otorisasi pembaruan dokumen ini. Telegram dan WhatsApp ditetapkan sebagai dua kanal notifikasi yang didukung (P-19); implementasi WhatsApp menunggu rincian D-03 dan tetap di luar otorisasi pembaruan dokumen ini (P-16 ditangguhkan). Fitur cetak kartu dan absensi per mata pelajaran tidak ditambahkan.
 
@@ -1277,7 +1289,7 @@ Pembaruan desktop otomatis dapat dinilai pada desain rilis; belum diputuskan. Ja
 
 ## 21. Arsitektur Layanan Online Multi Sekolah
 
-> **Status aplikasi (13 November 2026):** **[Rencana]** seluruh bab; belum ada server, tenant, PostgreSQL atau sinkronisasi offline.
+> **Status aplikasi (13 November 2026):** **[Rencana]** seluruh bab; belum ada server, tenant, PostgreSQL atau sinkronisasi offline. Sejak P-24 (14 November 2026, §20) sekolah hanya mengakses lewat desktop terdaftar; baris "Portal sekolah" di bab ini tidak berlaku untuk rilis pertama.
 
 ### 21.1 Kedudukan pemilik dan pelanggan
 
@@ -1763,7 +1775,7 @@ Ketentuan arsitektur dan C# yang telah disepakati tidak dibuka ulang oleh tabel 
 | D-05 | Retensi per kelas data, audit/log, cache lokal, laporan sementara, backup dan pascakontrak; dasar dan prosedur pemusnahan | Tidak mengaktifkan penghapusan; konflik retensi "selamanya" belum ditutup |
 | D-06 | Provider ditetapkan P-23 (AWS Jakarta, RDS PostgreSQL). Masih terbuka: pembagian instance, ukuran final, HSM/KMS, perlindungan memori, biaya final dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
 | D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
-| D-08 | Teknologi frontend web dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
+| D-08 | Teknologi frontend web (website publik dan portal pemilik saja sejak P-24) dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
 | D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
 | D-10 | Pendaftaran hardware MFA, autentikator cadangan, pemulihan, posture perangkat, nilai umur sesi dan tata kelola bantuan | Tidak membuat login password saja sebagai pengecualian otomatis L3 |
 | D-11 | Tanggung jawab penyedia/sekolah, kewenangan pihak sekolah, pengaturan privasi/aliran data, dan proses permintaan data | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
@@ -1921,7 +1933,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 - Barcode orang tua pada kartu dicatat sebagai saran pengembangan, di luar lingkup rilis (§20).
 - Perubahan ini hanya dokumen. Kode belum disesuaikan dengan P-21/P-22 (lihat PROGRES-DAN-UTANG §29). Pertanyaan bentuk akses sekolah (hanya aplikasi desktop atau juga portal browser, §20–§21) dan jumlah PC per sekolah masih dibahas dan belum diputuskan.
 
-**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). Bentuk akses sekolah masih dibahas; opsi yang sedang ditimbang: desktop saja, desktop + portal web terkunci perangkat, atau desktop + aplikasi Android terdaftar untuk wali kelas.
+**Keputusan 14 November 2026 — disetujui pemilik:** **P-23** server layanan online memakai AWS Paid Plan region Jakarta dengan RDS PostgreSQL (§21.6, §25.1 D-06, B-01). **P-24** (hari yang sama) menetapkan bentuk akses sekolah: desktop saja dengan sertifikat perangkat, Layar gerbang di jendela terpisah, unduhan hanya untuk pelanggan aktif; aplikasi HP wali kelas masuk tahap pengembangan berikutnya (§20). Portal sekolah tidak ada pada rilis pertama.
 
 ### 25.6 Referensi primer
 

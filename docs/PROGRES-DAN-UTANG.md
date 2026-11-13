@@ -530,3 +530,16 @@ Deploy selesai pukul **12.45.05 WITA** pada `https://c1e4bd7b.absensi-uji.pages.
 - Bukti lokasi AWS (dukungan teknis, telemetry, log, tagihan, subprosesor) dan KMS/HSM di Jakarta belum diperiksa (B-01).
 
 **Keputusan yang menunggu Edgar:** bentuk akses sekolah (desktop saja / desktop + portal web terkunci perangkat / desktop + aplikasi Android wali kelas), jumlah PC per sekolah, iPhone atau Android saja, dan cara distribusi aplikasi HP.
+
+## 31. Keputusan bentuk akses P-24 — 14 November 2026
+
+**Instruksi pemilik:** kunci bentuk akses sekolah: desktop saja.
+
+**Selesai (dokumen):** PRD §1 (frontend web), §20 (P-24 poin 1–8), catatan status §21, §25.1 (D-08), §25.5.
+
+**Belum terbukti / utang:**
+- Tidak ada kode untuk sertifikat perangkat, pendaftaran/pencabutan PC, jendela gerbang yang terpisah dari sesi login, pembacaan reader langsung dari perangkat, atau pembaruan bertanda tangan.
+- Desktop sekarang: perlu dicek apakah Layar gerbang ikut tertutup saat pengguna keluar dan apakah reader model keyboard bisa menelan tap ke jendela kerja.
+- Web uji (`absensi-uji`, `absensi-uji-real`) tetap alat uji, bukan produk.
+
+**Keputusan yang menunggu Edgar (P-24 poin 8):** batas jumlah PC per sekolah, lama waktu keluar otomatis, masa berlaku sertifikat perangkat.
