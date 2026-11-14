@@ -133,6 +133,12 @@ jobs:
         run: |
           [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy tidak dikembalikan oleh wrangler-action."; exit 1; }
           echo "::notice::Alamat deploy: ${DEPLOYMENT_URL}"
+          # Proyek Pages yang baru dibuat butuh beberapa menit sampai sertifikat
+          # TLS-nya siap (ERR_SSL_VERSION_OR_CIPHER_MISMATCH, run 43571431709).
+          for attempt in $(seq 1 30); do
+            curl -sSfo /dev/null "${DEPLOYMENT_URL}/" && break
+            echo "Menunggu sertifikat ${DEPLOYMENT_URL} (percobaan ${attempt})"; sleep 20
+          done
           node check.mjs "${DEPLOYMENT_URL}/"
 
       # Proyek mode nyata tidak dibuat otomatis: kalau tidak ada di akun ini,
@@ -179,5 +185,11 @@ jobs:
         run: |
           [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy mode nyata tidak dikembalikan oleh wrangler-action."; exit 1; }
           echo "::notice::Alamat deploy mode nyata: ${DEPLOYMENT_URL}"
+          # Proyek Pages yang baru dibuat butuh beberapa menit sampai sertifikat
+          # TLS-nya siap (ERR_SSL_VERSION_OR_CIPHER_MISMATCH, run 43571431709).
+          for attempt in $(seq 1 30); do
+            curl -sSfo /dev/null "${DEPLOYMENT_URL}/" && break
+            echo "Menunggu sertifikat ${DEPLOYMENT_URL} (percobaan ${attempt})"; sleep 20
+          done
           # Pemeriksaan memakai browser robot sendiri; data pengguna tidak tersentuh.
           HANYA_MODE_NYATA=1 node check.mjs "${DEPLOYMENT_URL}/" "${DEPLOYMENT_URL}/"
