@@ -40,15 +40,13 @@ public partial class MainWindow : Window
             }
         };
         _idleTimer.Start();
-        // App keeps the single gate window and returns the running one when it
-        // is already open. No handler is attached to the gate here: the gate
-        // outlives this window, and a handler would keep every signed-out
-        // working window alive for as long as the gate runs.
+        Window? gate = null;
         viewModel.BukaGerbangDiminta += (_, _) =>
         {
-            var gate = bukaGerbang();
+            if (gate is not null) { gate.Activate(); return; }
+            gate = bukaGerbang();
+            gate.Closed += (_, _) => gate = null;
             gate.Show();
-            gate.Activate();
         };
 
         // Dialog modal (bukan fullscreen seperti gerbang) — pengguna
