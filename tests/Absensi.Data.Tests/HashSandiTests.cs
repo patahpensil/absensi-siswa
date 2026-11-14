@@ -7,15 +7,15 @@ public sealed class HashSandiTests
     [Fact]
     public void Verifikasi_SandiBenar_MengembalikanTrue()
     {
-        var hash = HashSandi.Buat("Rahasia123!");
+        var hash = HashSandi.Buat("Rahasia#2026");
 
-        Assert.True(HashSandi.Verifikasi("Rahasia123!", hash));
+        Assert.True(HashSandi.Verifikasi("Rahasia#2026", hash));
     }
 
     [Fact]
     public void Verifikasi_SandiSalah_MengembalikanFalse()
     {
-        var hash = HashSandi.Buat("Rahasia123!");
+        var hash = HashSandi.Buat("Rahasia#2026");
 
         Assert.False(HashSandi.Verifikasi("SandiLain!", hash));
     }
@@ -23,8 +23,8 @@ public sealed class HashSandiTests
     [Fact]
     public void Buat_DipanggilDuaKaliDenganSandiSama_MenghasilkanHashBerbeda()
     {
-        var hashPertama = HashSandi.Buat("Rahasia123!");
-        var hashKedua = HashSandi.Buat("Rahasia123!");
+        var hashPertama = HashSandi.Buat("Rahasia#2026");
+        var hashKedua = HashSandi.Buat("Rahasia#2026");
 
         Assert.NotEqual(hashPertama, hashKedua);
     }
@@ -40,6 +40,6 @@ public sealed class HashSandiTests
     [InlineData("")]
     public void Verifikasi_HashRusak_MengembalikanFalseTanpaException(string hashRusak)
     {
-        Assert.False(HashSandi.Verifikasi("Rahasia123!", hashRusak));
+        Assert.False(HashSandi.Verifikasi("Rahasia#2026", hashRusak));
     }
 }

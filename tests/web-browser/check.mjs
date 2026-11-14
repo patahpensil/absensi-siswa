@@ -73,7 +73,7 @@ await langkah('Ikon mata menampilkan dan menyembunyikan sandi tanpa mengubah isi
 });
 
 await langkah('Kepala Sekolah masuk: dashboard tampil, menu Audit tersedia (P-21)', async () => {
-  await masuk('kepsek', 'contoh123');
+  await masuk('kepsek', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   tegas((await page.textContent('#akun-aktif')).includes('Kepala Sekolah'), 'akun aktif salah');
   tegas((await page.$('#menu-audit')) !== null, 'menu Audit tidak tampil untuk Kepala Sekolah');
@@ -433,7 +433,7 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   await page.click('#gate-confirm-submit');
   await page.waitForSelector('#gate-confirm-error');
   tegas((await page.textContent('#gate-receiving-state')).includes('aktif'), 'sandi salah menghentikan penerimaan');
-  await page.fill('#gate-confirm-password', 'contoh123');
+  await page.fill('#gate-confirm-password', 'Contoh#2026ab');
   await page.click('#gate-confirm-submit');
   await page.waitForFunction(() => document.querySelector('#gate-receiving-state')?.textContent?.includes('dihentikan'));
   tegas(!tv.isClosed(), 'Hentikan tap ikut menutup TV');
@@ -446,7 +446,7 @@ await langkah('Layar gerbang: TV terpisah, fullscreen, foto siswa/guru dan reade
   await tv.waitForFunction(() => document.querySelector('#gate-reader')?.disabled === false);
 
   await page.click('#gate-close');
-  await page.fill('#gate-confirm-password', 'contoh123');
+  await page.fill('#gate-confirm-password', 'Contoh#2026ab');
   const closed = tv.waitForEvent('close');
   await page.click('#gate-confirm-submit');
   await closed;
@@ -557,7 +557,7 @@ await langkah('Keluar akun menutup TV dan kembali ke layar login', async () => {
 });
 
 await langkah('Admin melihat menu Audit', async () => {
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#menu-audit');
   tegas(await page.locator('#menu-layar-gerbang').count() === 1, 'admin tidak mendapat menu gerbang');
   await page.click('#menu-layar-gerbang');
@@ -577,7 +577,7 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.waitForSelector('#tombol-masuk', { timeout: 120_000 });
   // Reload resets the in-memory scenario clock; restore the same school date
   // before checking persisted attendance. Opening the day is idempotent.
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await setClock('2026-11-04T13:10:00');
   await page.click('#menu-guru');
@@ -589,7 +589,7 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.click('#close-person-detail');
   await page.click('#tombol-keluar');
   await page.waitForSelector('#tombol-masuk');
-  await masuk('wali7a', 'contoh123');
+  await masuk('wali7a', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   tegas(await page.locator('#menu-layar-gerbang, #dashboard-open-tv').count() === 0, 'wali mendapat pengendali gerbang');
   await page.fill('#workspace-command', 'Layar gerbang');
@@ -685,7 +685,7 @@ const closeImport = () => page.getByRole('button', { name: 'Tutup impor Excel' }
 await langkah('Admin mengubah master siswa dan guru tanpa mengganti identitas atau kartu', async () => {
   await page.click('#tombol-keluar');
   await page.waitForSelector('#tombol-masuk');
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await setClock('2026-11-05T07:29:00');
   await page.click('#menu-siswa');
@@ -819,7 +819,7 @@ await langkah('Impor guru menolak kartu milik siswa dan menyimpan satu batch val
 await langkah('Perubahan master dan kartu hasil impor bertahan setelah halaman dimuat ulang', async () => {
   await page.reload();
   await page.waitForSelector('#tombol-masuk', { timeout: 120_000 });
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-siswa');
   tegas((await page.textContent('#tabel-siswa')).includes('Siswa hasil ubah'), 'edit siswa hilang');
@@ -890,14 +890,14 @@ await langkah('Admin membuat kelas, mengganti wali dan melihat riwayat penugasan
   await page.getByRole('button', { name: 'Tutup formulir kelas' }).click();
   await page.click('#tombol-keluar');
   await page.waitForSelector('#tombol-masuk');
-  await masuk('wali7a', 'contoh123');
+  await masuk('wali7a', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-siswa');
   await page.waitForSelector('#tabel-siswa');
   tegas(await baris('#tabel-siswa') === 0, 'wali lama masih melihat siswa kelas 7A');
   await page.click('#tombol-keluar');
   await page.waitForSelector('#tombol-masuk');
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
 });
 
@@ -1047,20 +1047,24 @@ await langkah('Akun: admin membuat wali kelas, sandi wali diatur ulang, akun kep
   await page.selectOption('#account-teacher', { label: 'Ibu Lina (contoh)' });
   await page.click('#account-create');
   await page.waitForSelector('#account-message.danger');
-  tegas((await page.textContent('#account-message')).includes('minimal 8'), 'sandi pendek tidak ditolak');
-  await page.fill('#account-password', 'sandiwali8a');
+  tegas((await page.textContent('#account-message')).includes('minimal 12'), 'sandi pendek tidak ditolak');
+  tegas((await page.textContent('#account-password-hint')).includes('huruf kapital'), 'panduan sandi tidak tampil di bawah kolom sandi');
+  await page.fill('#account-password', 'sandiwalipanjang');
+  await page.click('#account-create');
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('huruf kapital, angka, simbol'));
+  await page.fill('#account-password', 'SandiWali#8a2026');
   await page.click('#account-create');
   await page.waitForSelector('#account-message.positive');
   const account = page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' });
   tegas((await account.textContent()).includes('Ibu Lina'), 'akun wali tidak tertaut ke guru');
   await page.fill('#account-username', 'wali8a');
-  await page.fill('#account-password', 'sandiwali8a');
+  await page.fill('#account-password', 'SandiWali#8a2026');
   await page.selectOption('#account-teacher', { label: 'Ibu Lina (contoh)' });
   await page.click('#account-create');
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('sudah dipakai'));
 
   await account.locator('[id^=account-reset-]').click();
-  await page.fill('#account-reset-password', 'sandibaru123');
+  await page.fill('#account-reset-password', 'SandiBaru#2026');
   await page.click('#account-reset-confirm');
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun wali8a diatur ulang'));
   // P-21 (revisi): Admin tidak dapat mengatur ulang sandi maupun menonaktifkan Kepala Sekolah.
@@ -1069,11 +1073,11 @@ await langkah('Akun: admin membuat wali kelas, sandi wali diatur ulang, akun kep
   await page.click('#tombol-keluar');
 
   // Sandi hasil atur ulang langsung berlaku tanpa langkah tambahan (P-21 revisi 14 November 2026).
-  await masuk('wali8a', 'sandibaru123');
+  await masuk('wali8a', 'SandiBaru#2026');
   await page.waitForSelector('#akun-aktif');
   await page.click('#tombol-keluar');
 
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-pengaturan');
   await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).locator('[id^=account-deactivate-]').click();
@@ -1081,10 +1085,10 @@ await langkah('Akun: admin membuat wali kelas, sandi wali diatur ulang, akun kep
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('dinonaktifkan'));
   tegas((await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).textContent()).includes('Nonaktif'), 'status akun tidak berubah');
   await page.click('#tombol-keluar');
-  await masuk('wali8a', 'sandibaru123');
+  await masuk('wali8a', 'SandiBaru#2026');
   await page.waitForSelector('#galat-masuk');
 
-  await masuk('kepsek', 'contoh123');
+  await masuk('kepsek', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-pengaturan');
   tegas(await page.locator('#account-role option').count() === 2, 'kepala sekolah tidak bisa memilih peran Admin');
@@ -1158,7 +1162,7 @@ await langkah('Kehadiran guru (§16.17, P-21): kepala sekolah menandai Dinas lua
   await page.click('#tombol-keluar');
   await page.waitForSelector('#login-logo');
   tegas((await page.textContent('#status-lisensi')).trim() === 'Lisensi: Aktif', 'status lisensi tidak tampil di layar masuk');
-  await masuk('admin', 'contoh123');
+  await masuk('admin', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   await page.click('#menu-guru');
   await page.fill('#teacher-attendance-date', '2027-01-08');
@@ -1199,19 +1203,19 @@ await langkah('Wizard instalasi web: mulai kosong, isian salah ditolak, akun kep
   await page.fill('#wizard-password', 'pendek');
   await page.fill('#wizard-password-confirm', 'pendek');
   await page.click('#wizard-finish');
-  await page.waitForFunction(() => document.querySelector('#wizard-error')?.textContent?.includes('minimal 8'));
-  await page.fill('#wizard-password', 'sandibaru123');
-  await page.fill('#wizard-password-confirm', 'sandibaru123');
+  await page.waitForFunction(() => document.querySelector('#wizard-error')?.textContent?.includes('minimal 12'));
+  await page.fill('#wizard-password', 'SandiBaru#2026');
+  await page.fill('#wizard-password-confirm', 'SandiBaru#2026');
   await page.click('#wizard-finish');
   await page.waitForSelector('#wizard-done');
   await page.click('#wizard-to-login');
-  await masuk('kepala.baru', 'sandibaru123');
+  await masuk('kepala.baru', 'SandiBaru#2026');
   await page.waitForSelector('#ringkasan');
   tegas((await page.textContent('#judul-sekolah')).trim() === 'SMP Wizard (contoh)', 'nama sekolah dari wizard tidak dipakai');
   await page.reload();
   await page.waitForSelector('#tombol-masuk');
   tegas((await page.textContent('#nama-sekolah')).trim() === 'SMP Wizard (contoh)', 'hasil wizard hilang setelah muat ulang');
-  await masuk('kepala.baru', 'sandibaru123');
+  await masuk('kepala.baru', 'SandiBaru#2026');
   await page.waitForSelector('#ringkasan');
 });
 
@@ -1221,7 +1225,7 @@ await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset da
     await stale.goto(baseUrl);
     await stale.waitForSelector('#tombol-masuk');
     await stale.fill('#username', 'kepala.baru');
-    await stale.fill('#sandi', 'sandibaru123');
+    await stale.fill('#sandi', 'SandiBaru#2026');
     await stale.click('#tombol-masuk');
     await stale.click('#menu-pengaturan');
     await stale.waitForSelector('#school-identity');
@@ -1242,7 +1246,7 @@ await langkah('Perubahan tab lama ditolak tanpa menimpa database atau mereset da
     await page.reload();
     await page.waitForSelector('#tombol-masuk');
     tegas((await page.textContent('#nama-sekolah')).trim() === 'SMP Audit Antartab (contoh)', 'penyimpanan dari tab baru hilang');
-    await masuk('kepala.baru', 'sandibaru123');
+    await masuk('kepala.baru', 'SandiBaru#2026');
     await page.click('#menu-pengaturan');
     tegas((await page.inputValue('#school-address')) !== 'Alamat sintetis dari tab lama', 'perubahan tab lama ikut tersimpan');
   } finally {
@@ -1284,7 +1288,7 @@ await langkah('Cadangan web: unduh .zip, berkas salah ditolak, pulihkan mengemba
   await page.waitForSelector('#tombol-masuk');
   tegas((await page.textContent('#nama-sekolah')).trim() === nameBefore, 'hasil pemulihan hilang setelah muat ulang');
   await page.waitForSelector('#login-logo');
-  await masuk('kepala.baru', 'sandibaru123');
+  await masuk('kepala.baru', 'SandiBaru#2026');
   await page.waitForSelector('#ringkasan');
 });
 
@@ -1301,7 +1305,7 @@ await langkah('Tap setelah tengah malam tanpa muat ulang tersimpan di hari baru'
     await night.goto(baseUrl);
     await night.waitForSelector('#tombol-masuk', { timeout: 120_000 });
     await night.fill('#username', 'kepsek');
-    await night.fill('#sandi', 'contoh123');
+    await night.fill('#sandi', 'Contoh#2026ab');
     await night.click('#tombol-masuk');
     await night.waitForSelector('#ringkasan');
     tegas((await night.textContent('#jam-simulasi')).includes('05/11/2026 23:59'), `jam aplikasi tidak mengikuti jam browser: ${await night.textContent('#jam-simulasi')}`);
@@ -1328,7 +1332,7 @@ await langkah('Tap setelah tengah malam tanpa muat ulang tersimpan di hari baru'
     await night.reload();
     await night.waitForSelector('#tombol-masuk', { timeout: 120_000 });
     await night.fill('#username', 'kepsek');
-    await night.fill('#sandi', 'contoh123');
+    await night.fill('#sandi', 'Contoh#2026ab');
     await night.click('#tombol-masuk');
     await night.click('#menu-absensi');
     await night.waitForSelector('#attendance-table');

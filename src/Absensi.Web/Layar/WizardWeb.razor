@@ -1,6 +1,7 @@
 @using System.Globalization
 @using Absensi.Data.Repositori
 @using Absensi.Data.Wizard
+@using Absensi.Domain.Akun
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 
@@ -72,6 +73,7 @@
                     <input id="wizard-username" autocomplete="off" maxlength="32" @bind="username" />
                     <label for="wizard-password">Sandi</label>
                     <PasswordField Id="wizard-password" @bind-Value="password" AutoComplete="new-password" />
+                    <p class="field-help" id="wizard-password-hint">@PasswordPolicy.Hint</p>
                     <label for="wizard-password-confirm">Ulangi sandi</label>
                     <PasswordField Id="wizard-password-confirm" @bind-Value="confirm" AutoComplete="new-password" />
                     break;

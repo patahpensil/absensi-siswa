@@ -144,7 +144,7 @@ public sealed class LayananAkunTests
         database.Execute("INSERT INTO guru (id, nip, nama) VALUES (1, '111', 'Guru Satu');");
         var admin = _layananAkun.Autentikasi(database.Connection, "admin1", MigratedDatabase.SandiKepsek)!;
 
-        var waliKelas = _layananAkun.BuatAkun(database.Connection, admin, Waktu, "wali_baru", "SandiWali1!", PeranAkun.WaliKelas, guruId: 1);
+        var waliKelas = _layananAkun.BuatAkun(database.Connection, admin, Waktu, "wali_baru", "SandiWali#2026", PeranAkun.WaliKelas, guruId: 1);
 
         Assert.Equal(PeranAkun.WaliKelas, waliKelas.Peran);
         Assert.Equal(1, waliKelas.GuruId);
@@ -221,7 +221,7 @@ public sealed class LayananAkunTests
         database.SeedAkunUntukUji();
         var waliA = new AkunTersimpan(2, "wali_a", "x", PeranAkun.WaliKelas, GuruId: 1, Aktif: true);
 
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, waliA, Waktu, akunIdTarget: 3, "SandiBaru1!"));
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, waliA, Waktu, akunIdTarget: 3, "SandiBaru#2026"));
     }
 
     [Fact]
@@ -296,7 +296,7 @@ public sealed class LayananAkunTests
         database.SeedAkunUntukUji();
         var admin = BuatAdmin(database);
 
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru1!"));
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru#2026"));
         Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
     }
 
@@ -325,9 +325,9 @@ public sealed class LayananAkunTests
         var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
         var otherAdmin = _layananAkun.BuatAkun(database.Connection, kepsek, Waktu, "admin2", "SandiAdmin2!", PeranAkun.Admin, null);
 
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, otherAdmin.Id, "SandiBaru1!"));
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, admin.Id, "SandiBaru1!"));
-        var self = Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, kepsek.Id, "SandiBaru1!"));
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, otherAdmin.Id, "SandiBaru#2026"));
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, admin.Id, "SandiBaru#2026"));
+        var self = Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, kepsek.Id, "SandiBaru#2026"));
         // P-21 revised: there is no own-password menu, so the message must not point to one.
         Assert.Equal("Sandi akun sendiri tidak dapat diatur ulang dari akun ini.", self.Message);
     }
@@ -382,6 +382,6 @@ public sealed class LayananAkunTests
         database.SeedAkunUntukUji();
         var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
 
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, akunIdTarget: 999, "SandiBaru1!"));
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, akunIdTarget: 999, "SandiBaru#2026"));
     }
 }

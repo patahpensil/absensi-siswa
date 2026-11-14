@@ -131,7 +131,7 @@ internal sealed class MigratedDatabase : IDisposable
         command.ExecuteNonQuery();
     }
 
-    public const string SandiUji = "Rahasia123!";
+    public const string SandiUji = "Rahasia#2026";
 
     // guruId hanya relevan untuk peran wali_kelas (akun.guru_id, dibandingkan
     // terhadap kelas.wali_guru_id — PRD §3).

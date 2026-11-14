@@ -135,7 +135,7 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         MajukanSampaiAkun(viewModel);
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
         viewModel.KonfirmasiSandi = "Beda!";
 
         Assert.False(viewModel.SelesaikanCommand.CanExecute(null));
@@ -149,8 +149,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         MajukanSampaiAkun(viewModel);
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
-        viewModel.KonfirmasiSandi = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
+        viewModel.KonfirmasiSandi = "Rahasia#2026";
 
         AkunTersimpan? akunDariEvent = null;
         viewModel.WizardSelesai += (_, akun) => akunDariEvent = akun;
@@ -178,8 +178,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         viewModel.JadwalHarian[0].JamMasuk = "bukan-jam";
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
-        viewModel.KonfirmasiSandi = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
+        viewModel.KonfirmasiSandi = "Rahasia#2026";
 
         viewModel.SelesaikanCommand.Execute(null);
 
@@ -200,8 +200,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         viewModel.JadwalHarian[0].JamMasuk = "   "; // Senin — hari sekolah bawaan
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
-        viewModel.KonfirmasiSandi = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
+        viewModel.KonfirmasiSandi = "Rahasia#2026";
 
         viewModel.SelesaikanCommand.Execute(null);
 
@@ -228,8 +228,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         viewModel.JadwalHarian[0].MulaiPulang = null;
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
-        viewModel.KonfirmasiSandi = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
+        viewModel.KonfirmasiSandi = "Rahasia#2026";
 
         viewModel.SelesaikanCommand.Execute(null);
 
@@ -248,8 +248,8 @@ public sealed class WizardInstalasiViewModelTests : IDisposable
         MajukanSampaiAkun(viewModel);
 
         viewModel.UsernameKepalaSekolah = "kepsek";
-        viewModel.SandiKepalaSekolah = "Rahasia123!";
-        viewModel.KonfirmasiSandi = "Rahasia123!";
+        viewModel.SandiKepalaSekolah = "Rahasia#2026";
+        viewModel.KonfirmasiSandi = "Rahasia#2026";
 
         viewModel.SelesaikanCommand.Execute(null);
         Assert.Equal(LangkahWizard.Selesai, viewModel.LangkahSaatIni);

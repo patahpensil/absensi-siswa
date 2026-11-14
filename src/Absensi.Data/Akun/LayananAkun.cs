@@ -206,9 +206,10 @@ public sealed class LayananAkun
 
     internal static void PastikanSandiValid(string? sandi)
     {
-        if (sandi is null || sandi.Length < 8)
+        var missing = PasswordPolicy.MissingRequirements(sandi);
+        if (missing.Count > 0)
         {
-            throw new InvalidOperationException("Sandi minimal 8 karakter.");
+            throw new InvalidOperationException($"Sandi belum memenuhi syarat: {string.Join(", ", missing)}.");
         }
     }
 

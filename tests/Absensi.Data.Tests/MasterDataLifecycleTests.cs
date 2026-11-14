@@ -80,7 +80,22 @@ public sealed class MasterDataLifecycleTests
         var error = Assert.Throws<InvalidOperationException>(() =>
             new LayananAkun().BuatAkun(database.Connection, kepsek, Waktu, "admin_baru", "pendek", PeranAkun.Admin, null));
 
-        Assert.Contains("minimal 8", error.Message);
+        Assert.Contains("minimal 12", error.Message);
+    }
+
+    // P-35: a long password still needs upper case, lower case, digit and symbol;
+    // the message names what is missing.
+    [Fact]
+    public void BuatAkun_SandiPanjangTanpaKombinasi_DitolakDenganSyaratYangKurang()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedAkunUntukUji();
+        var kepsek = new LayananAkun().Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            new LayananAkun().BuatAkun(database.Connection, kepsek, Waktu, "admin_baru", "sekolahpagi2026", PeranAkun.Admin, null));
+
+        Assert.Equal("Sandi belum memenuhi syarat: huruf kapital, simbol.", error.Message);
     }
 
     [Fact]

@@ -34,7 +34,7 @@ public sealed class LayananWizardTests
                 MulaiPulang: hari == 7 ? null : hari == 5 ? new TimeOnly(11, 30) : new TimeOnly(13, 10)))
             .ToList(),
         UsernameKepalaSekolah: "kepsek",
-        SandiKepalaSekolah: "Rahasia123!");
+        SandiKepalaSekolah: "Rahasia#2026");
 
     [Fact]
     public void Selesaikan_MengembalikanAkunKepalaSekolahAktif()
@@ -46,7 +46,7 @@ public sealed class LayananWizardTests
         Assert.Equal("kepsek", akun.Username);
         Assert.Equal(PeranAkun.KepalaSekolah, akun.Peran);
         Assert.True(akun.Aktif);
-        Assert.True(HashSandi.Verifikasi("Rahasia123!", akun.SandiHash));
+        Assert.True(HashSandi.Verifikasi("Rahasia#2026", akun.SandiHash));
     }
 
     [Fact]

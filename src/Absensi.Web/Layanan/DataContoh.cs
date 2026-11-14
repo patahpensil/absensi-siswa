@@ -14,7 +14,7 @@ public sealed record AkunContoh(string Username, string Sandi, string Peran);
 // dan jejak audit yang diuji sama dengan aplikasi sebenarnya.
 public static class DataContoh
 {
-    public const string SandiContoh = "contoh123";
+    public const string SandiContoh = "Contoh#2026ab";
 
     public static IReadOnlyList<AkunContoh> Akun { get; } = new[]
     {

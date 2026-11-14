@@ -115,7 +115,7 @@ internal sealed class MigratedDatabase : IDisposable
     // wali kelas masing-masing wali satu kelas berbeda, satu kelas tanpa
     // wali, dan akun kepala sekolah/admin dengan sandi sungguhan supaya
     // Autentikasi bisa diuji ujung ke ujung.
-    public const string SandiKepsek = "Rahasia123!";
+    public const string SandiKepsek = "Rahasia#2026";
 
     public void SeedAkunUntukUji()
     {
