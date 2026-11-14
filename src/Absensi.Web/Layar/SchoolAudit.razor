@@ -59,7 +59,7 @@
             return;
         }
 
-        try { rows = new LayananAudit().ReadActive(Status.Koneksi!, Status.Akun, from.ToDateTime(TimeOnly.MinValue), to.ToDateTime(TimeOnly.MaxValue)); }
+        try { rows = new LayananAudit().ReadActive(Status.Koneksi!, Status.Akun!, from.ToDateTime(TimeOnly.MinValue), to.ToDateTime(TimeOnly.MaxValue)); }
         catch (InvalidOperationException ex) { error = ex.Message; }
         catch (SqliteException) { error = "Jejak audit belum dapat dibaca."; }
     }

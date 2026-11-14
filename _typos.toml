@@ -1,0 +1,74 @@
+# Pemeriksa ejaan otomatis (PRD §24.7 P-31). typos mencari salah ketik bahasa
+# Inggris pada nama di kode dan teks. Kata bahasa Indonesia yang kebetulan mirip
+# salah ketik bahasa Inggris didaftarkan di bawah sebagai kata yang benar.
+[files]
+extend-exclude = ["arsip/"]
+
+[default]
+# Hash commit (mis. "commit ba68604") bukan kata.
+extend-ignore-re = ["\\b[0-9a-f]{7,40}\\b"]
+
+[default.extend-words]
+# Bahasa Indonesia
+absolut = "absolut"
+analisis = "analisis"
+argumen = "argumen"
+atribut = "atribut"
+blok = "blok"
+elemen = "elemen"
+faktor = "faktor"
+fase = "fase"
+foto = "foto"
+grup = "grup"
+hipotesis = "hipotesis"
+histori = "histori"
+implementasi = "implementasi"
+inisial = "inisial"
+jaring = "jaring"
+juli = "juli"
+juni = "juni"
+lokal = "lokal"
+maka = "maka"
+makin = "makin"
+maks = "maks"
+mata = "mata"
+mis = "mis"
+modul = "modul"
+momen = "momen"
+oktober = "oktober"
+operasional = "operasional"
+padam = "padam"
+paket = "paket"
+paralel = "paralel"
+parsial = "parsial"
+performa = "performa"
+periode = "periode"
+persisten = "persisten"
+poin = "poin"
+portabel = "portabel"
+profesional = "profesional"
+progres = "progres"
+reguler = "reguler"
+respons = "respons"
+samping = "samping"
+seret = "seret"
+simbol = "simbol"
+sintaks = "sintaks"
+sistem = "sistem"
+skalar = "skalar"
+staf = "staf"
+standar = "standar"
+statis = "statis"
+tabel = "tabel"
+tak = "tak"
+tema = "tema"
+tipe = "tipe"
+varian = "varian"
+variabel = "variabel"
+vertikal = "vertikal"
+# Nama orang dan singkatan
+muh = "muh"
+rto = "rto"
+# Nama API pihak ketiga (WriteableBitmap WPF, JSInvokable Blazor)
+writeable = "writeable"
+invokable = "invokable"

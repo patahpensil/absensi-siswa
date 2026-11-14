@@ -15,6 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ejaan:
+    name: Pemeriksa ejaan (typos)
+    # PRD §24.7 P-31: salah ketik pada nama di kode dan teks. Daftar kata bahasa
+    # Indonesia yang dianggap benar ada di _typos.toml.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Periksa ejaan
+        uses: crate-ci/typos@v1.52.2
+
   build-dan-tes:
     name: Build dan seluruh tes (Windows)
     # WPF (net10.0-windows) hanya dapat dibangun dan diuji penuh di Windows.

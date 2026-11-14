@@ -725,3 +725,10 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Keterbatasan sampai versi online:** belum ada jalur pemulihan sandi Kepala Sekolah. Di situs uji jalan keluarnya pulihkan cadangan atau mulai ulang dari wizard; pekerjaan sekolah tetap bisa dilakukan Admin.
 
+## 48. Langkah 1g — utang P-31: peringatan jadi galat dan pemeriksa ejaan — 14 November 2026
+
+- `Directory.Build.props` di akar repo menyalakan `TreatWarningsAsErrors` untuk semua proyek. Sebelumnya CI hanya punya satu peringatan compiler (CS8604, kemungkinan null di `SchoolAudit.razor`), sudah diperbaiki. Peringatan `WASM0001` dari pustaka SQLite WebAssembly berasal dari MSBuild, bukan compiler, sehingga tidak ikut menjadi galat; peringatan itu dari pihak ketiga dan tidak bisa diperbaiki di repo ini.
+- CI punya job baru "Pemeriksa ejaan (typos)" (`crate-ci/typos` v1.52.2). Kata bahasa Indonesia yang mirip salah ketik bahasa Inggris (mis. tabel, foto, lokal) dan nama API pihak ketiga didaftarkan di `_typos.toml`; folder `arsip/` dikecualikan. Pemeriksaan lokal dengan typos 1.52.2: 0 temuan.
+
+**Batas yang perlu diketahui:** typos memeriksa salah ketik bahasa Inggris. Ejaan **bahasa Indonesia** pada teks pengguna belum diperiksa otomatis; itu butuh kamus bahasa Indonesia dan daftar pengecualian untuk nama lama di kode. Belum dikerjakan.
+

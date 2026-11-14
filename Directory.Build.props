@@ -1,0 +1,7 @@
+<Project>
+  <!-- PRD §24.7 P-31: peringatan compiler dan analyzer dijadikan galat build,
+       supaya parameter null, variabel tak terpakai dan sejenisnya tidak lolos. -->
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
