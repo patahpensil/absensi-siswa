@@ -829,3 +829,20 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 - Batas anggaran bulanan setelah tagihan nyata satu bulan pilot.
 - Memasang alarm tagihan Rp800 ribu saat akun AWS dibuat.
 - Keputusan terbuka lain: D-01/D-02 (bukti pengujian), D-03, D-05, D-06, D-08, D-10, D-11.
+
+## 56. Ikon mata pada kolom sandi (web dan desktop) — 15 November 2026
+
+**Permintaan Edgar:** ikon mata di samping kolom sandi saat login dan saat mengisi sandi, dan aturan sandi wajib gabungan huruf kapital, huruf kecil, dan angka.
+
+**Selesai — ikon mata:**
+- Web: `PasswordField.razor` dipakai di login, wizard (sandi dan ulangi sandi), tambah akun, atur ulang sandi, dan konfirmasi Layar gerbang. Id kolom tetap sama; tombol `<id>-toggle` dengan `aria-pressed` dan label "Tampilkan sandi"/"Sembunyikan sandi".
+- Desktop: `KolomSandiStyle` memuat kolom teks terlihat dan tombol mata; `Perilaku/PasswordReveal.cs` menjaga isinya tetap sama dengan PasswordBox, sehingga handler `PasswordChanged` di lima jendela (Login, Wizard, Tambah akun, Reset sandi, Konfirmasi tutup gerbang) tidak berubah.
+- Dasar: ASVS 5.0 6.2.6 mengizinkan pengguna melihat sementara seluruh sandi yang disamarkan.
+
+**Bukti:** CI `35f815d` lulus ([run 43635297283](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297283)), termasuk `PasswordRevealTests` pada LoginWindow sungguhan. Chromium ([run 43635297292](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297292)) lulus, termasuk langkah "Ikon mata menampilkan dan menyembunyikan sandi tanpa mengubah isinya". Deploy mode nyata lulus ([run 43635297281](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297281)).
+
+**Pemeriksaan P-31:** semua handler terpasang pada PasswordBox dan bagian templatnya sendiri, umurnya sama dengan kontrol (tidak ada event statis). Penjaga `syncing` mencegah perulangan TextChanged ↔ PasswordChanged. Saat disembunyikan, teks terlihat dikosongkan. Pemasangan menunggu `Loaded` karena setter gaya berjalan sebelum templat dipasang.
+
+**Belum terbukti:** tampilan ikon di desktop belum dilihat lewat tangkapan layar; perlu dicoba Edgar di PC Windows. Layar "Buat sandi baru" pada tangkapan layar Edgar (17.11 WITA, 14 November) adalah fitur wajib ganti sandi yang sudah dihapus pukul 17.51 di `b581aee`.
+
+**Menunggu Edgar — aturan gabungan huruf kapital, huruf kecil, angka:** belum dikerjakan karena bertentangan dengan PRD §22 (target ASVS L3). ASVS 5.0 6.2.5 (Level 1) melarang aturan komposisi sandi: sandi berisi karakter apa pun harus diterima, tanpa kewajiban huruf besar/kecil, angka, atau simbol. Usulan pengganti: panjang minimal dinaikkan (ASVS 6.2.1: minimal 8, sangat disarankan 15) dan sandi umum ditolak memakai daftar sandi bocor (ASVS 6.2.4).
