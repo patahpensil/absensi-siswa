@@ -32,7 +32,7 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Area | Web | Desktop | Catatan |
 |---|---|---|---|
 | Wizard instalasi, login, akun dan peran | Ada | Ada | Login sandi lokal; MFA dan undangan akun = Rencana |
-| Master tahun ajaran, kelas, siswa, guru, impor Excel | Ada | Sebagian | Desktop belum punya layar Tahun ajaran (siapkan periode, naik kelas massal, kelulusan, aktifkan periode, ubah rentang); periode desktop hanya dibuat lewat wizard. Impor foto massal tidak tersedia (dihapus atas instruksi pemilik) |
+| Master tahun ajaran, kelas, siswa, guru, impor Excel | Ada | Ada | Desktop: layar Kelas → Tahun ajaran (sejak 14 November 2026). Impor foto massal tidak tersedia (dihapus atas instruksi pemilik) |
 | Registrasi dan penggantian kartu RFID | Ada | Ada | Satu kartu aktif per orang, unik lintas siswa/guru |
 | Tap gerbang, layar TV, aturan status | Ada | Ada | Web: reader keyboard-emulation saja. Desktop: juga mode serial/COM opsional |
 | Koreksi, kalender, kunci bulan, jadwal berlaku mulai | Ada | Ada | |

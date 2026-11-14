@@ -767,3 +767,13 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Keputusan yang menunggu Edgar:** membangun layar Tahun ajaran di desktop (memakai layanan yang sudah ada dan teruji di web).
 
+## 53. Desktop: layar Tahun ajaran (PRD §16.14) — 14 November 2026
+
+**Persetujuan pemilik:** dikerjakan karena wajib di PRD dan tanpa fitur tambahan.
+
+- Layar Kelas desktop: pilihan **Periode** di atas tabel (untuk membuat kelas periode berikutnya) dan tombol **Tahun ajaran** (hanya Kepala Sekolah/Admin).
+- Jendela **Tahun ajaran** (`AcademicPeriodWindow`/`AcademicPeriodViewModel`): siapkan periode baru, naik kelas massal (centang siswa), tetapkan lulus (kelas 9, dengan persetujuan), aktifkan periode (dengan persetujuan), ubah rentang. Semua aturan tetap di `AcademicPeriodService` yang sama dengan web; tidak ada aturan baru. Setelah mengaktifkan periode, pesan meminta keluar lalu masuk lagi agar seluruh layar memakai periode baru.
+- Tes: `AcademicPeriodViewModelTests` (siapkan lalu ubah rentang, naik kelas hanya siswa yang dicentang, aktifkan butuh persetujuan).
+
+**Belum terbukti:** tampilan jendela belum diperiksa lewat tangkapan layar; perlu dicoba Edgar di PC Windows.
+

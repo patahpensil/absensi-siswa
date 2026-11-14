@@ -13,6 +13,17 @@
         <DockPanel Grid.Column="0">
             <TextBlock DockPanel.Dock="Top" Text="Kelas" Style="{StaticResource JudulHalamanStyle}" Margin="0,0,0,16" />
 
+            <!-- PRD §16.14: pilih periode untuk menyiapkan kelas periode berikutnya;
+                 tindakan tahun ajaran di jendela terpisah. -->
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Content="Tahun ajaran" Style="{StaticResource TombolTeksStyle}"
+                        Command="{Binding OpenAcademicPeriodsCommand}"
+                        Visibility="{Binding CanManagePeriods, Converter={StaticResource BoolKeVisibilitas}}" />
+                <TextBlock Text="Periode" Style="{StaticResource LabelKolomStyle}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <ComboBox ItemsSource="{Binding Periods}" DisplayMemberPath="Label" SelectedItem="{Binding SelectedPeriod}"
+                          Height="{StaticResource TinggiKontrol}" MaxWidth="460" HorizontalAlignment="Left" />
+            </DockPanel>
+
             <TextBlock DockPanel.Dock="Top" Text="Belum ada kelas untuk tahun ajaran ini. Isi formulir di kanan untuk menambah kelas." Foreground="{StaticResource AbuTulisBrush}" TextWrapping="Wrap" Margin="0,0,0,8">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource TeksUtamaStyle}">

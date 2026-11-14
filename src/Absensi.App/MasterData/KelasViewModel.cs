@@ -4,6 +4,7 @@ using Absensi.Data.Akun;
 using Absensi.Data.MasterData;
 using Absensi.Data.Repositori;
 using Absensi.Domain;
+using Absensi.Domain.Akun;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.MasterData;
@@ -15,7 +16,8 @@ public sealed class KelasViewModel : ObservableObject
     private readonly SqliteConnection _connection;
     private readonly AkunTersimpan _akun;
     private readonly IPenyediaWaktu _penyediaWaktu;
-    private readonly int _tahunAjaranId;
+    private int _tahunAjaranId;
+    private PeriodOption? _selectedPeriod;
     private readonly LayananKelas _layananKelas = new();
     private readonly RepositoriKelas _repositoriKelas = new();
 
@@ -36,6 +38,8 @@ public sealed class KelasViewModel : ObservableObject
         SimpanCommand = new RelayCommand(Simpan, () => !string.IsNullOrWhiteSpace(_nama));
         EditCommand = new RelayCommand<KelasDaftar>(MulaiEdit);
         BatalEditCommand = new RelayCommand(BatalEdit);
+        OpenAcademicPeriodsCommand = new RelayCommand(OpenAcademicPeriods, () => CanManagePeriods);
+        ReloadPeriods();
 
         foreach (var guru in new RepositoriGuru().DaftarAktifRingkas(connection))
         {
@@ -46,6 +50,29 @@ public sealed class KelasViewModel : ObservableObject
     }
 
     public ObservableCollection<KelasDaftar> Daftar { get; } = new();
+
+    // PRD §16.14: classes for the next period are created here before promoting.
+    public ObservableCollection<PeriodOption> Periods { get; } = new();
+
+    public PeriodOption? SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set
+        {
+            if (!SetField(ref _selectedPeriod, value) || value is null) return;
+            _tahunAjaranId = value.Id;
+            BatalEdit();
+            MuatUlang();
+        }
+    }
+
+    public bool CanManagePeriods => _akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin;
+
+    public RelayCommand OpenAcademicPeriodsCommand { get; }
+
+    // Overridable in tests; opens the dialog modally and reports when it closed.
+    internal Action<AcademicPeriodViewModel> ShowAcademicPeriods { get; set; } =
+        viewModel => new AcademicPeriodWindow(viewModel) { Owner = System.Windows.Application.Current?.MainWindow }.ShowDialog();
 
     // PRD §5.2: tingkat = pilihan 1-9 (bukan ketikan bebas — ketikan bukan angka
     // sebelumnya gagal tanpa pesan apa pun).
@@ -166,6 +193,26 @@ public sealed class KelasViewModel : ObservableObject
         BatalEdit();
         MuatUlang();
         PesanStatus = $"Kelas {nama} tersimpan.";
+    }
+
+    private void OpenAcademicPeriods()
+    {
+        ShowAcademicPeriods(new AcademicPeriodViewModel(_connection, _akun, _penyediaWaktu));
+        ReloadPeriods();
+        MuatUlang();
+    }
+
+    private void ReloadPeriods()
+    {
+        var selectedId = _tahunAjaranId;
+        Periods.Clear();
+        foreach (var period in new RepositoriTahunAjaran().ListPeriods(_connection))
+        {
+            Periods.Add(new PeriodOption(period));
+        }
+
+        _selectedPeriod = Periods.FirstOrDefault(option => option.Id == selectedId);
+        OnPropertyChanged(nameof(SelectedPeriod));
     }
 
     private void MuatUlang()
