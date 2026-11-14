@@ -663,5 +663,7 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 **Pembaruan 14 November 2026 ±15.50 WITA.** Pemilik mengganti secret `_REAL` dengan token dan Account ID akun Cloudflare Patah Pensil. [Run 43571431709](https://github.com/patahpensil/absensi-siswa/actions/runs/43571431709) membuat proyek `absensi-uji` baru di akun itu. Karena nama `absensi-uji.pages.dev` masih dipegang proyek di akun simulasi, Cloudflare memberi alamat **`https://absensi-uji-ck2.pages.dev/`**. Uji Chromium sebelum deploy lulus semua langkah; pemeriksaan sesudah deploy gagal karena sertifikat TLS proyek baru belum siap (`ERR_SSL_VERSION_OR_CIPHER_MISMATCH`), sehingga deploy mode nyata belum berjalan. Workflow kini menunggu sertifikat siap (maksimal ±10 menit) sebelum pemeriksaan Chromium sesudah deploy.
 
+**Terbukti:** [run 43572709477](https://github.com/patahpensil/absensi-siswa/actions/runs/43572709477) (commit `bb17d1c`) hijau seluruhnya: kedua situs diperbarui dari satu akun dan lulus pemeriksaan Chromium sebelum dan sesudah deploy — `https://absensi-uji-ck2.pages.dev/` (mode uji) dan `https://absensi-uji-real.pages.dev/` (mode nyata, alamat tetap).
+
 **Yang harus dilakukan Edgar:** hapus proyek `absensi-uji` di akun simulasi, karena `absensi-uji.pages.dev` masih menampilkan versi lama. Alamat uji yang berlaku sekarang `absensi-uji-ck2.pages.dev`.
 
