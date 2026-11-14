@@ -732,3 +732,12 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Batas yang perlu diketahui:** typos memeriksa salah ketik bahasa Inggris. Ejaan **bahasa Indonesia** pada teks pengguna belum diperiksa otomatis; itu butuh kamus bahasa Indonesia dan daftar pengecualian untuk nama lama di kode. Belum dikerjakan.
 
+## 49. Tap pemilik kartu yang belum ada di daftar hadir — 14 November 2026
+
+**Keputusan pemilik:** siswa atau guru yang ditambahkan setelah hari dibuka tetap tercatat pada tap pertamanya; daftar hadir dilengkapi saat itu juga.
+
+- `PemrosesTap` memeriksa baris absensi pemilik kartu sebelum transaksi tap; bila belum ada, `PembukaanHari` dijalankan lagi (aturan sama persis: siswa aktif di kelas periode aktif, bukan libur, bulan tidak dikunci, hari belum ditutup; idempoten). Berlaku untuk desktop dan web.
+- `RepositoriAbsensi.SimpanKeputusanSiswa/Guru` kini gagal bila tidak ada baris yang berubah (mis. siswa aktif tanpa kelas). Transaksi tap dibatalkan dan layar menampilkan "Tap belum tercatat", tidak lagi "Hadir" tanpa tersimpan.
+- Tes: `PemrosesTapTests` (siswa pindahan tercatat Terlambat 09.05; siswa tanpa kelas ditolak tanpa tap_log), `CurrentDayGuardTests` disesuaikan.
+- Pemeriksaan: pengecekan baris dan pembukaan hari terjadi di luar transaksi tap; dua tap bersamaan aman karena pembukaan hari memakai INSERT OR IGNORE dan penulisan tap tetap di transaksi IMMEDIATE.
+

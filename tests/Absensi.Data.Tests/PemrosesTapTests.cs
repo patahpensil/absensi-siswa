@@ -400,4 +400,52 @@ public sealed class PemrosesTapTests
         Assert.Equal(pemilikId, reader.IsDBNull(2) ? null : reader.GetInt32(2));
         Assert.False(reader.Read());
     }
+
+    // Keputusan pemilik 14 November 2026: siswa yang didaftarkan setelah hari
+    // dibuka tetap tercatat pada tap pertamanya.
+    [Fact]
+    public void Proses_SiswaDitambahkanSetelahHariDibuka_BarisDibuatDanTapTersimpan()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+        database.Execute("""
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (3, '0003', 'Siswa Pindahan', 'P', 1);
+            INSERT INTO siswa_kelas (siswa_id, kelas_id, tahun_ajaran_id) VALUES (3, 1, 1);
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-SISWA-3', 'siswa', 3, 1, '2026-09-17T09:00:00');
+            """);
+
+        var keputusan = _pemrosesTap.Proses(database.Connection, "UID-SISWA-3", Waktu(9, 5), modeRegistrasiAktif: false);
+
+        Assert.Equal(Absensi.Domain.Kehadiran.JenisTindakanTap.IsiJamMasuk, keputusan.Tindakan);
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status, jam_masuk FROM absensi_siswa WHERE siswa_id = 3 AND tanggal = '2026-09-17';";
+        using var reader = command.ExecuteReader();
+        Assert.True(reader.Read());
+        Assert.Equal("terlambat", reader.GetString(0));
+        Assert.StartsWith("09:05", reader.GetString(1));
+    }
+
+    // Siswa aktif tanpa kelas pada periode aktif tidak masuk daftar hadir: tap
+    // ditolak dengan galat, bukan tampil berhasil tanpa tersimpan.
+    [Fact]
+    public void Proses_SiswaTanpaKelas_DitolakTanpaMenulisApaPun()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukTap();
+        _pembukaanHari.Jalankan(database.Connection, HariKamis);
+        database.Execute("""
+            INSERT INTO siswa (id, nisn, nama, jenis_kelamin, aktif) VALUES (4, '0004', 'Siswa Tanpa Kelas', 'L', 1);
+            INSERT INTO kartu (uid, pemilik_tipe, pemilik_id, aktif, didaftar_pada)
+            VALUES ('UID-SISWA-4', 'siswa', 4, 1, '2026-09-17T09:00:00');
+            """);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            _pemrosesTap.Proses(database.Connection, "UID-SISWA-4", Waktu(7, 10), modeRegistrasiAktif: false));
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM tap_log WHERE uid = 'UID-SISWA-4';";
+        Assert.Equal(0L, command.ExecuteScalar());
+    }
 }

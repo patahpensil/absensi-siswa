@@ -30,10 +30,15 @@ public sealed class PemrosesTap
 
     public KeputusanTap Proses(SqliteConnection connection, string uid, DateTime waktu, bool modeRegistrasiAktif)
     {
+        var tanggal = DateOnly.FromDateTime(waktu);
+        if (!modeRegistrasiAktif)
+        {
+            EnsureAttendanceRow(connection, uid, tanggal);
+        }
+
         // PRD §8.3: koreksi tidak boleh disela oleh tap dengan konteks yang sudah usang.
         using var transaction = connection.BeginTransaction(deferred: false);
 
-        var tanggal = DateOnly.FromDateTime(waktu);
         var tahunAjaranId = _repositoriTahunAjaran.CariIdAktif(connection)
             ?? throw new InvalidOperationException("Tidak ada tahun ajaran aktif; tap tidak bisa diproses.");
 
@@ -193,6 +198,28 @@ public sealed class PemrosesTap
         }
 
         return new KonteksTap(waktu, modeRegistrasiAktif, jenisHari, PemilikTerdaftar: null);
+    }
+
+    // Keputusan pemilik 14 November 2026: siswa/guru yang ditambahkan setelah
+    // hari dibuka (mis. siswa pindahan didaftarkan pukul 09.00) belum punya
+    // baris absensi hari itu. Pembukaan hari dijalankan lagi untuk melengkapi
+    // daftar hadir dengan aturan yang sama persis (idempoten: INSERT OR IGNORE,
+    // libur/bulan terkunci/hari ditutup tetap tidak membuat baris).
+    private void EnsureAttendanceRow(SqliteConnection connection, string uid, DateOnly tanggal)
+    {
+        var kartu = _repositoriKartu.CariAktifBerdasarkanUid(connection, uid);
+        if (kartu is null || _repositoriTahunAjaran.CariIdAktif(connection) is null)
+        {
+            return;
+        }
+
+        var hasRow = kartu.PemilikTipe == JenisPemilikKartu.Siswa
+            ? _repositoriAbsensi.CariHariIniSiswa(connection, tanggal, kartu.PemilikId) is not null
+            : _repositoriAbsensi.CariHariIniGuru(connection, tanggal, kartu.PemilikId) is not null;
+        if (!hasRow)
+        {
+            new PembukaanHari().Jalankan(connection, tanggal);
+        }
     }
 
     private void SimpanKeputusan(

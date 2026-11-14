@@ -11,7 +11,9 @@ public sealed class CurrentDayGuardTests
     private static readonly DateTime FridayMorning = Friday.ToDateTime(new TimeOnly(7, 0));
 
     [Fact]
-    public void TapAfterMidnight_WithoutOpeningTheDay_IsNotStored()
+    // Since 14 November 2026 the tap itself completes a missing attendance list,
+    // so even without the guard the first tap of the new day is stored.
+    public void TapAfterMidnight_WithoutGuard_TapOpensTheDayItself()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukTap();
@@ -19,7 +21,8 @@ public sealed class CurrentDayGuardTests
 
         new PemrosesTap().Proses(database.Connection, "UID-SISWA-1", FridayMorning, modeRegistrasiAktif: false);
 
-        Assert.Equal(0, CountStudentRows(database, Friday));
+        Assert.Equal(1, CountStudentRows(database, Friday));
+        Assert.Equal("hadir", StudentStatus(database, Friday));
     }
 
     [Fact]

@@ -124,24 +124,24 @@ public sealed class RepositoriAbsensi
         switch (keputusan.Tindakan)
         {
             case JenisTindakanTap.IsiJamMasuk:
-                Eksekusi(connection, transaction, """
+                EnsureRowChanged(Eksekusi(connection, transaction, """
                     UPDATE absensi_siswa SET status = $status, jam_masuk = $jam
                     WHERE tanggal = $tanggal AND siswa_id = $siswaId;
                     """,
                     ("$status", PemetaanEnum.TeksDariStatusSiswa(keputusan.StatusSiswaBaru!.Value)),
                     ("$jam", JamTeks(waktu)),
                     ("$tanggal", TanggalTeks(tanggal)),
-                    ("$siswaId", siswaId));
+                    ("$siswaId", siswaId)));
                 break;
 
             case JenisTindakanTap.IsiJamPulang:
-                Eksekusi(connection, transaction, """
+                EnsureRowChanged(Eksekusi(connection, transaction, """
                     UPDATE absensi_siswa SET jam_pulang = $jam
                     WHERE tanggal = $tanggal AND siswa_id = $siswaId;
                     """,
                     ("$jam", JamTeks(waktu)),
                     ("$tanggal", TanggalTeks(tanggal)),
-                    ("$siswaId", siswaId));
+                    ("$siswaId", siswaId)));
                 break;
         }
     }
@@ -157,25 +157,25 @@ public sealed class RepositoriAbsensi
         switch (keputusan.Tindakan)
         {
             case JenisTindakanTap.IsiJamMasuk:
-                Eksekusi(connection, transaction, """
+                EnsureRowChanged(Eksekusi(connection, transaction, """
                     UPDATE absensi_guru SET status = $status, jam_masuk = $jam
                     WHERE tanggal = $tanggal AND guru_id = $guruId;
                     """,
                     ("$status", PemetaanEnum.TeksDariStatusGuru(keputusan.StatusGuruBaru!.Value)),
                     ("$jam", JamTeks(waktu)),
                     ("$tanggal", TanggalTeks(tanggal)),
-                    ("$guruId", guruId));
+                    ("$guruId", guruId)));
                 break;
 
             case JenisTindakanTap.IsiJamPulang:
-                Eksekusi(connection, transaction, """
+                EnsureRowChanged(Eksekusi(connection, transaction, """
                     UPDATE absensi_guru SET status = $status, jam_pulang = $jam
                     WHERE tanggal = $tanggal AND guru_id = $guruId;
                     """,
                     ("$status", PemetaanEnum.TeksDariStatusGuru(keputusan.StatusGuruBaru!.Value)),
                     ("$jam", JamTeks(waktu)),
                     ("$tanggal", TanggalTeks(tanggal)),
-                    ("$guruId", guruId));
+                    ("$guruId", guruId)));
                 break;
         }
     }
@@ -487,7 +487,7 @@ public sealed class RepositoriAbsensi
         return daftar;
     }
 
-    private static void Eksekusi(
+    private static int Eksekusi(
         SqliteConnection connection,
         SqliteTransaction transaction,
         string sql,
@@ -501,7 +501,18 @@ public sealed class RepositoriAbsensi
             command.Parameters.AddWithValue(nama, nilai);
         }
 
-        command.ExecuteNonQuery();
+        return command.ExecuteNonQuery();
+    }
+
+    // A tap that should change attendance but finds no row for that day must
+    // not report success; the caller's transaction is rolled back.
+    private static void EnsureRowChanged(int changed)
+    {
+        if (changed == 0)
+        {
+            throw new InvalidOperationException(
+                "Tap belum tercatat: pemilik kartu belum ada di daftar hadir hari ini. Periksa keanggotaan kelas dan tanggal mulai bersekolah.");
+        }
     }
 
     private static string TanggalTeks(DateOnly tanggal) => tanggal.ToString("yyyy-MM-dd");
