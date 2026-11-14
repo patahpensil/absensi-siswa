@@ -606,3 +606,16 @@ Pemilik memilih B: `absensi-uji` dan `absensi-uji-real` dibangun dari satu hasil
 2. Di repo `patahpensil/absensi-siswa`: Settings → Secrets and variables → Actions → New repository secret. Isi `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`. Jangan kirim nilainya ke chat.
 3. Jalankan ulang workflow "Web uji - deploy Cloudflare Pages" (tab Actions → Run workflow), atau beri tahu agen.
 4. Setelah deploy mode nyata hijau, arsipkan repo `Absensi-Uji-Real`: Settings → Danger Zone → Archive this repository. Arsip juga mematikan workflow-nya.
+
+## 39. Langkah 1a — bug tengah malam (web) — 14 November 2026
+
+Memperbaiki temuan §29: halaman web yang dibiarkan terbuka melewati tengah malam tidak membuka hari baru, sehingga tap pertama hari itu tampil berhasil tetapi tidak tersimpan.
+
+- Kelas baru `Absensi.Data.CurrentDayGuard` mencatat hari terakhir yang dibuka dan menjalankan `PembukaanHari` hanya bila tanggal jam berbeda. Web memanggilnya sebelum setiap tap (Layar gerbang dan meja Absensi) dan setiap detik lewat jam `GateHost`, yang terpasang selama sesi login. Daftar absensi dimuat ulang saat hari baru dibuka.
+- Tes: `CurrentDayGuardTests` (5 kasus, termasuk bukti bahwa tap tanpa pembukaan hari tidak tersimpan) dan langkah Chromium "Tap setelah tengah malam tanpa muat ulang tersimpan di hari baru". Langkah Chromium memakai jam browser Playwright (`clock.setFixedTime`), bukan jam skenario aplikasi, karena jam skenario selalu membuka hari secara eksplisit dan menutupi bug ini.
+- Pemeriksaan: tidak ada `await` di dalam `CurrentDayGuard`; `OpenedDay` diisi sebelum `SimpanAsync` ditunggu, jadi tap dan detak jam yang berjalan bergantian tidak membuka hari dua kali (dan `PembukaanHari` tetap idempoten). Galat pembukaan hari di detak jam ditampilkan di Layar gerbang, tidak mematikan detak.
+
+**Utang:**
+- Desktop masih punya celah sampai 30 detik setelah 00.00 (penjadwal berdetak tiap 30 detik); tap pada celah itu hilang dengan cara yang sama. Usulan: desktop memakai `CurrentDayGuard` sebelum `PemrosesTap`, dikerjakan bersama perubahan desktop berikutnya.
+- Akar masalah tetap ada: `SimpanKeputusanSiswa/Guru` hanya `UPDATE`, jadi tap untuk siswa tanpa baris absensi hari itu tidak tersimpan tanpa galat. Usulan: tolak tap bila tidak ada baris yang berubah. Belum dikerjakan karena mengubah perilaku layanan bersama; perlu dibahas.
+

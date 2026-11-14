@@ -58,6 +58,7 @@ public sealed class GateController(StatusAplikasi state)
         Authorize();
         if (!Receiving || string.IsNullOrWhiteSpace(uid) || uid.Length > 64) return false;
         uid = uid.Trim();
+        await state.EnsureCurrentDayAsync();
         var owner = new RepositoriKartu().CariAktifBerdasarkanUid(state.Koneksi!, uid);
         var now = state.Jam.Sekarang;
         var decision = new PemrosesTap().Proses(state.Koneksi!, uid, now, false);

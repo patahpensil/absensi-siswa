@@ -88,9 +88,28 @@
         try
         {
             while (await timer.WaitForNextTickAsync(cancellation.Token))
-                await InvokeAsync(PublishAsync);
+                await InvokeAsync(TickOnceAsync);
         }
         catch (OperationCanceledException) { }
+    }
+
+    // GateHost stays mounted for the whole session, so this clock also opens the
+    // new attendance day for every other screen after midnight (PRD §16.7).
+    private async Task TickOnceAsync()
+    {
+        if (disposed) return;
+        if (await OpenNewDayAsync()) await OnTapRecorded.InvokeAsync();
+        await PublishAsync();
+    }
+
+    private async Task<bool> OpenNewDayAsync()
+    {
+        try { return await Status.EnsureCurrentDayAsync(); }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            gate.Error = "Hari absensi baru belum dapat dibuka. Muat ulang halaman sebelum menerima tap.";
+            return false;
+        }
     }
 
     private async Task OpenDisplayAsync()

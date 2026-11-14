@@ -20,6 +20,7 @@ public sealed partial class StatusAplikasi
 
     private readonly IJSRuntime _js;
     private readonly LayananAkun _layananAkun = new();
+    private readonly CurrentDayGuard _currentDay = new();
 
     public StatusAplikasi(IJSRuntime js, JamBrowser jam, ModeAplikasi mode)
     {
@@ -152,8 +153,19 @@ public sealed partial class StatusAplikasi
 
     public async Task OpenCurrentDayAsync()
     {
-        new PembukaanHari().Jalankan(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
+        _currentDay.Open(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
         await SimpanAsync();
+    }
+
+    // Called before every tap and by the gate clock: opens the new day when the
+    // application stayed open past midnight (PRD §16.7). Returns true when a day
+    // was opened, so screens can reload their attendance lists.
+    public async Task<bool> EnsureCurrentDayAsync()
+    {
+        if (Koneksi is null || NeedsInstallation || StorageConflict) return false;
+        if (!_currentDay.EnsureOpened(Koneksi, DateOnly.FromDateTime(Jam.Sekarang))) return false;
+        await SimpanAsync();
+        return true;
     }
 
     public async Task RefreshAttendanceDayAsync()
@@ -188,6 +200,7 @@ public sealed partial class StatusAplikasi
             }
 
             Akun = null;
+            _currentDay.Forget();
             Koneksi?.Dispose();
             Koneksi = null;
             SqliteConnection.ClearAllPools();
@@ -232,6 +245,6 @@ public sealed partial class StatusAplikasi
         TahunAjaran = repoTahun.CariNamaAktif(Koneksi!) ?? "";
 
         // PRD §16.7: hari dibuka saat aplikasi dibuka (idempoten).
-        new PembukaanHari().Jalankan(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
+        _currentDay.Open(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
     }
 }

@@ -1241,6 +1241,57 @@ await langkah('Cadangan web: unduh .zip, berkas salah ditolak, pulihkan mengemba
   await page.waitForSelector('#ringkasan');
 });
 
+// Aplikasi dibiarkan terbuka melewati tengah malam tanpa muat ulang (PRD §16.7).
+// Jam browser dikendalikan Playwright, bukan jam skenario, karena jam skenario
+// selalu membuka hari secara eksplisit dan menutupi bug ini.
+await langkah('Tap setelah tengah malam tanpa muat ulang tersimpan di hari baru', async () => {
+  const nightContext = await browser.newContext();
+  const night = await nightContext.newPage();
+  night.on('pageerror', (e) => consoleErrors.push(String(e)));
+  try {
+    // Kamis 05/11/2026 23.59.50 WITA (UTC+8).
+    await night.clock.setFixedTime(new Date('2026-11-05T15:59:50Z'));
+    await night.goto(baseUrl);
+    await night.waitForSelector('#tombol-masuk', { timeout: 120_000 });
+    await night.fill('#username', 'kepsek');
+    await night.fill('#sandi', 'contoh123');
+    await night.click('#tombol-masuk');
+    await night.waitForSelector('#ringkasan');
+    tegas((await night.textContent('#jam-simulasi')).includes('05/11/2026 23:59'), `jam aplikasi tidak mengikuti jam browser: ${await night.textContent('#jam-simulasi')}`);
+
+    await night.click('#menu-siswa');
+    await night.click('#register-card-1');
+    await night.fill('#registration-uid', '0000333301');
+    await night.click('#save-registration');
+    await night.waitForSelector('#registration-success');
+    await night.getByRole('button', { name: 'Tutup registrasi', exact: true }).click();
+    await night.click('#menu-absensi');
+    await night.waitForSelector('#tap-uid');
+
+    // Jumat 06/11/2026 07.00 WITA, halaman tetap sama.
+    await night.clock.setFixedTime(new Date('2026-11-05T23:00:00Z'));
+    await night.waitForTimeout(2_500);
+    await night.locator('#tap-uid').pressSequentially('0000333301');
+    await night.press('#tap-uid', 'Enter');
+    await night.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Hadir ·'));
+    const row = night.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-1' });
+    tegas(await row.count() === 1, `baris Siswa 7A-1 hari baru = ${await row.count()}`);
+    tegas((await row.textContent()).includes('07:00:00'), `jam masuk hari baru tidak tersimpan: ${(await row.textContent()).replace(/\s+/g, ' ')}`);
+
+    await night.reload();
+    await night.waitForSelector('#tombol-masuk', { timeout: 120_000 });
+    await night.fill('#username', 'kepsek');
+    await night.fill('#sandi', 'contoh123');
+    await night.click('#tombol-masuk');
+    await night.click('#menu-absensi');
+    await night.waitForSelector('#attendance-table');
+    const saved = night.locator('#attendance-table tbody tr').filter({ hasText: 'Siswa 7A-1' });
+    tegas((await saved.textContent()).includes('07:00:00'), 'tap hari baru hilang setelah muat ulang');
+  } finally {
+    await nightContext.close();
+  }
+});
+
 if (realUrl) {
   await langkah('Mode nyata: mulai dari wizard, tanpa akun contoh dan jam skenario, label uji coba data asli', async () => {
     const realContext = await browser.newContext();

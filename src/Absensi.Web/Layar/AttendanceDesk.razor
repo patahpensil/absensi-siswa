@@ -65,6 +65,7 @@
         try
         {
             var value = uid.Trim();
+            await Status.EnsureCurrentDayAsync();
             var owner = new RepositoriKartu().CariAktifBerdasarkanUid(Status.Koneksi!, value);
             var decision = new PemrosesTap().Proses(Status.Koneksi!, value, Status.Jam.Sekarang, false);
             var name = owner is null ? "Kartu tidak dikenal" : owner.PemilikTipe == JenisPemilikKartu.Siswa
