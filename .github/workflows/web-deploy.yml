@@ -2,9 +2,9 @@
 # Satu hasil publish dikirim ke dua proyek (pilihan B, 14 November 2026):
 #   absensi-uji      -> mode uji, data sintetis (utang D-12)
 #   absensi-uji-real -> mode nyata, data hanya di browser pengguna
-# Kredensial hanya dari GitHub Secrets (izin token: Cloudflare Pages: Edit):
-# CLOUDFLARE_API_TOKEN dan CLOUDFLARE_ACCOUNT_ID untuk absensi-uji;
-# CLOUDFLARE_API_TOKEN_REAL dan CLOUDFLARE_ACCOUNT_ID_REAL untuk absensi-uji-real.
+# Kedua proyek berada di satu akun Cloudflare (Patahpensil01, pilihan B
+# lanjutan, 14 November 2026). Kredensial hanya dari GitHub Secrets
+# CLOUDFLARE_API_TOKEN_REAL dan CLOUDFLARE_ACCOUNT_ID_REAL (izin Cloudflare Pages: Edit).
 name: Web uji - deploy Cloudflare Pages
 
 on:
@@ -46,12 +46,12 @@ jobs:
 
       - name: Periksa secret Cloudflare tersedia
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_REAL }}
         run: |
           missing=0
-          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::Secret CLOUDFLARE_API_TOKEN belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
-          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::Secret CLOUDFLARE_ACCOUNT_ID belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::Secret CLOUDFLARE_API_TOKEN_REAL belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || { echo "::error::Secret CLOUDFLARE_ACCOUNT_ID_REAL belum diisi di GitHub (Settings > Secrets and variables > Actions)."; missing=1; }
           exit $missing
 
       - name: Pasang .NET 10 SDK
@@ -85,8 +85,8 @@ jobs:
 
       - name: Pastikan proyek Pages ada
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_REAL }}
         run: |
           set -euo pipefail
           api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
@@ -113,13 +113,15 @@ jobs:
             echo "::error::Gagal memeriksa proyek Pages (HTTP ${code}): $(head -c 600 /tmp/project.json). Periksa izin token (Cloudflare Pages: Edit) dan Account ID."
             exit 1
           fi
+          curl -sS -o /tmp/project.json -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${api}/${PAGES_PROJECT}"
+          echo "::notice::Alamat tetap proyek ${PAGES_PROJECT}: https://$(python3 -c 'import json;print(json.load(open("/tmp/project.json"))["result"]["subdomain"])')/"
 
       - name: Deploy ke Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_REAL }}
           command: pages deploy publish/wwwroot --project-name=${{ env.PAGES_PROJECT }} --branch=master --commit-dirty=true
 
       # Memastikan Cloudflare benar-benar menyajikan aplikasi (tipe berkas .wasm,
@@ -142,9 +144,6 @@ jobs:
           printf '{\n  "Mode": "nyata"\n}\n' > publish-nyata/appsettings.json
           rm -f publish-nyata/appsettings.json.br publish-nyata/appsettings.json.gz
 
-      # Proyek absensi-uji-real berada di akun Cloudflare lain (run 43526181025:
-      # HTTP 404 dengan secret akun absensi-uji), jadi memakai pasangan secret
-      # tersendiri.
       - name: Pastikan proyek Pages mode nyata ada
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
@@ -152,7 +151,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::Secret CLOUDFLARE_API_TOKEN_REAL dan CLOUDFLARE_ACCOUNT_ID_REAL (akun Cloudflare proyek absensi-uji-real) belum diisi. Situs absensi-uji tetap sudah diperbarui."
+            echo "::error::Secret CLOUDFLARE_API_TOKEN_REAL dan CLOUDFLARE_ACCOUNT_ID_REAL belum diisi."
             exit 1
           fi
           api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"

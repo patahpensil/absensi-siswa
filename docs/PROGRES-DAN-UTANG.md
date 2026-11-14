@@ -648,3 +648,15 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 **Utang:** keluar otomatis saat tidak dipakai (temuan §29) belum dibuat untuk web; desktop memakai aturan P-24 (10 menit).
 
+## 42. Satu repo dan satu akun Cloudflare — 14 November 2026
+
+**Keputusan pemilik:** karena produk hanya desktop, cukup satu repo, `patahpensil/absensi-siswa`. Repo `Absensi-Uji-Real` dihapus oleh pemilik. Sebelum dihapus, isinya dibandingkan: tidak ada berkas yang hanya ada di sana, dan tidak ada issue, PR, rilis, atau cabang lain. Pemilik juga menghapus secret akun Cloudflare lama dan memilih menyatukan kedua situs uji di akun Patahpensil01.
+
+- `web-deploy.yml` kini memakai satu pasang secret, `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`, untuk kedua proyek.
+- Proyek `absensi-uji` belum ada di akun Patahpensil01, jadi dibuat otomatis pada deploy pertama. Alamatnya bisa berbeda dari `absensi-uji.pages.dev`, karena nama itu masih dipegang proyek di akun lama. Alamat yang berlaku dicatat sebagai anotasi di run deploy.
+- `absensi-uji-real.pages.dev` tetap di proyek yang sama.
+
+**Peringatan:** `absensi-smp1` adalah nama lama repo ini, bukan repo lain. Alamatnya dialihkan ke `absensi-siswa`; jangan menghapus apa pun lewat alamat itu.
+
+**Yang harus dilakukan Edgar:** setelah alamat baru `absensi-uji` terbukti jalan, hapus proyek Pages `absensi-uji` di akun Cloudflare lama.
+

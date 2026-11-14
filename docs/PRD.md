@@ -25,8 +25,8 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Bentuk | Teknologi | Penyimpanan data | Tempat berjalan |
 |---|---|---|---|
 | Desktop Windows | .NET 10, WPF/MVVM | SQLite di folder `data/` PC sekolah | PC gerbang sekolah |
-| Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | `absensi-uji.pages.dev` (Cloudflare Pages, berkas statis) |
-| Web — mode nyata | sama dengan mode uji, `"Mode": "nyata"` di `wwwroot/appsettings.json` | IndexedDB browser perangkat yang dipakai; tidak ada server | `absensi-uji-real.pages.dev`, dibangun dari repo ini oleh `web-deploy.yml` (pilihan B, 14 November 2026); repo `patahpensil/Absensi-Uji-Real` tidak lagi dipakai |
+| Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | proyek Cloudflare Pages `absensi-uji` di akun Patahpensil01 (alamat dibuat ulang 14 November 2026, lihat PROGRES §42) |
+| Web — mode nyata | sama dengan mode uji, `"Mode": "nyata"` di `wwwroot/appsettings.json` | IndexedDB browser perangkat yang dipakai; tidak ada server | `absensi-uji-real.pages.dev`, dibangun dari repo ini oleh `web-deploy.yml`; repo `patahpensil/Absensi-Uji-Real` dihapus pemilik (satu repo, 14 November 2026) |
 | Layanan online multi sekolah | C#/ASP.NET Core, PostgreSQL (rancangan) | AWS region Jakarta (P-23, §21.6) | **[Rencana]** — belum dibangun |
 
 | Area | Web | Desktop | Catatan |
@@ -45,7 +45,7 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Lisensi | Kunci apa pun diterima (belum ada server lisensi) | sama | Rencana |
 | Sinkronisasi offline P-08 | — | — | Rencana (versi online) |
 
-**Isi data uji coba (koreksi pemilik 14 November 2026):** Uji coba di `Absensi-Uji-Real` memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01).
+**Isi data uji coba (koreksi pemilik 14 November 2026):** Uji coba di situs mode nyata (`absensi-uji-real`) memakai **data pribadi pemilik sendiri atau nama karangan**, bukan data siswa dan guru sekolah dari Dapodik. Data siswa asli tetap dilarang di kedua situs uji (instruksi proyek §4, D-12) sampai layanan online dengan keamanan dan lokasi data yang disetujui siap (P-23, B-01).
 
 **Batas yang harus diketahui pemakai uji coba (keputusan pemilik 12 November 2026):** data web mode nyata hanya ada di satu browser; hilang bila data situs dihapus, kecuali dipulihkan dari berkas cadangan. Berkas cadangan dan data di browser belum dienkripsi. Keamanan data dan lokasi server diselesaikan pemilik bersama versi online (VPS di Indonesia, PP 71/2019 Pasal 20 untuk lingkup publik; data anak termasuk data pribadi spesifik menurut UU 27/2022 Pasal 4).
 
