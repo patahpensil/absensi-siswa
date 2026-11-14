@@ -1360,8 +1360,8 @@ if (realUrl) {
       await real.waitForSelector('#wizard-schedule');
       await real.click('#wizard-next');
       await real.fill('#wizard-username', 'kepala.nyata');
-      await real.fill('#wizard-password', 'sandinyata123');
-      await real.fill('#wizard-password-confirm', 'sandinyata123');
+      await real.fill('#wizard-password', 'SandiNyata#2026');
+      await real.fill('#wizard-password-confirm', 'SandiNyata#2026');
       await real.click('#wizard-finish');
       await real.waitForSelector('#wizard-done');
       await real.click('#wizard-to-login');
@@ -1369,7 +1369,7 @@ if (realUrl) {
       tegas(await real.locator('.test-accounts').count() === 0, 'akun contoh tampil di mode nyata');
       tegas((await real.textContent('.login-card .environment-tag')).includes('Uji coba data asli'), 'label mode nyata tidak tampil di login');
       await real.fill('#username', 'kepala.nyata');
-      await real.fill('#sandi', 'sandinyata123');
+      await real.fill('#sandi', 'SandiNyata#2026');
       await real.click('#tombol-masuk');
       await real.waitForSelector('#ringkasan');
       tegas((await real.textContent('.topbar .environment-tag')).includes('Uji coba data asli'), 'label mode nyata tidak tampil');
