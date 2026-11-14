@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Absensi.App.Shell;
 using Absensi.Data.Backup;
+using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 
 namespace Absensi.App.Tests;
