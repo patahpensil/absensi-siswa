@@ -146,7 +146,8 @@ public sealed class MainWindowViewModel : ObservableObject
             "Dashboard", "Absensi", "Siswa", "Guru", "Kelas", "Koreksi",
             "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan",
         };
-        return peran == PeranAkun.Admin ? semua : semua.Where(m => m != "Audit");
+        // P-21: Audit terbuka untuk Kepala Sekolah dan Admin.
+        return peran is PeranAkun.Admin or PeranAkun.KepalaSekolah ? semua : semua.Where(m => m != "Audit");
     }
 
     public RelayCommand BukaGerbangCommand { get; }

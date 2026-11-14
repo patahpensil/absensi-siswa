@@ -33,9 +33,10 @@ public sealed class LayananStatusGuru
         StatusAbsensiGuru status,
         string? keterangan)
     {
-        if (akun.Peran != PeranAkun.KepalaSekolah)
+        // P-21 / PRD §17.10: Kepala Sekolah dan Admin sama-sama berwenang.
+        if (akun.Peran is not (PeranAkun.KepalaSekolah or PeranAkun.Admin))
         {
-            throw new InvalidOperationException("Hanya kepala sekolah yang berwenang menetapkan status kehadiran guru.");
+            throw new InvalidOperationException("Hanya Kepala Sekolah dan Admin yang berwenang menetapkan status kehadiran guru.");
         }
 
         if (BulanTerkunci(connection, tanggal))

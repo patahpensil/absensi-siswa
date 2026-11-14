@@ -112,18 +112,18 @@ public sealed class MainWindowViewModelTests
         Assert.Null(exception);
     }
 
-    // A-40 (keputusan pemilik proyek 2026-09-25): HANYA Admin boleh
-    // melihat menu Audit di rilis awal. Item menu LAIN (mis. Koreksi,
+    // P-21 (13 November 2026, menggantikan A-40): Kepala Sekolah dan Admin
+    // melihat menu Audit; Wali Kelas tidak. Item menu LAIN (mis. Koreksi,
     // Kalender) sengaja TETAP tampil untuk semua peran di sini -- itu A-18,
     // belum diputuskan, di luar cakupan perubahan ini.
     [Fact]
-    public void MenuItems_Admin_MenyertakanAudit()
+    public void MenuItems_AdminDanKepsek_MenyertakanAudit()
     {
         using var database = new MigratedDatabase();
         database.SeedKelasUntukRegistrasiKartu();
-        var viewModel = BuatViewModel(database, Admin, "SMP Contoh", logoPath: null);
 
-        Assert.Contains("Audit", viewModel.MenuItems);
+        Assert.Contains("Audit", BuatViewModel(database, Admin, "SMP Contoh", logoPath: null).MenuItems);
+        Assert.Contains("Audit", BuatViewModel(database, Kepsek, "SMP Contoh", logoPath: null).MenuItems);
     }
 
     [Theory]
@@ -140,7 +140,7 @@ public sealed class MainWindowViewModelTests
         Assert.Contains("Kalender", viewModel.MenuItems);
     }
 
-    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { Kepsek, WaliKelas };
+    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { WaliKelas };
 
     // Penanda akun di header (mis. "Admin · admin1") -- diambil dari sesi
     // login aktif. Setiap peran diuji supaya label Indonesia-nya benar,

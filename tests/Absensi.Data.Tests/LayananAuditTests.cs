@@ -39,7 +39,20 @@ public sealed class LayananAuditTests : IDisposable
             _layananAudit.Baca(database.Connection, bukanAdmin, _folderArsip, DateTime.MinValue, DateTime.MaxValue));
     }
 
-    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { Kepsek, WaliKelas };
+    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { WaliKelas };
+
+    // P-21: Kepala Sekolah membuka Audit seperti Admin.
+    [Fact]
+    public void Baca_KepalaSekolah_Diizinkan()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedMasterDataUntukUji();
+
+        var error = Record.Exception(() =>
+            _layananAudit.Baca(database.Connection, Kepsek, _folderArsip, DateTime.MinValue, DateTime.MaxValue));
+
+        Assert.Null(error);
+    }
 
     [Fact]
     public void Baca_BarisAktifDalamRentangTanggal_Tampil_DiLuarRentang_TidakTampil()

@@ -14,7 +14,7 @@
     <div class="panel-toolbar">
         <label for="teacher-attendance-date">Tanggal</label>
         <input id="teacher-attendance-date" type="date" value="@date.ToString("yyyy-MM-dd")" @onchange="ChangeDate" />
-        <span class="muted">@(IsHead ? (IsFuture ? "Tanggal mendatang: tandai Izin, Dinas luar atau Cuti di muka." : "Ubah status setelah laporan datang.") : "Hanya kepala sekolah yang dapat menetapkan status guru.")</span>
+        <span class="muted">@(IsHead ? (IsFuture ? "Tanggal mendatang: tandai Izin, Dinas luar atau Cuti di muka." : "Ubah status setelah laporan datang.") : "Hanya Kepala Sekolah dan Admin yang dapat menetapkan status guru.")</span>
     </div>
     @if (locked) { <p class="notice">Bulan @date.ToString("MM/yyyy") sudah dikunci. Status tidak dapat diubah.</p> }
     <div class="table-wrap">
@@ -81,7 +81,7 @@
     private bool busy, ok, locked;
     private string? message;
 
-    private bool IsHead => Status.Akun?.Peran == PeranAkun.KepalaSekolah;
+    private bool IsHead => WorkspaceView.CanManage(Status);
     private bool IsFuture => date > DateOnly.FromDateTime(Status.Jam.Sekarang);
     private bool CanEdit => IsHead && !locked;
     private StatusAbsensiGuru[] Options => IsFuture ? InAdvance : Afterwards;

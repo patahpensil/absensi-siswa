@@ -69,7 +69,7 @@
     private IEnumerable<string> MenuItems()
     {
         var items = new[] { "Dashboard", "Absensi", "Layar gerbang", "Siswa", "Guru", "Kelas", "Koreksi", "Kalender", "Laporan", "Notifikasi", "Audit", "Pengaturan" };
-        return items.Where(m => (m != "Audit" || Status.Akun!.Peran == PeranAkun.Admin)
+        return items.Where(m => (m != "Audit" || WorkspaceView.CanManage(Status))
             && (m is not ("Layar gerbang" or "Notifikasi") || WorkspaceView.CanManage(Status)));
     }
     protected override void OnInitialized() => Status.StorageConflictDetected += OnStorageConflict;

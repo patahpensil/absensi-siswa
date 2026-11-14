@@ -678,3 +678,12 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 1. Hapus proyek Pages `absensi-uji` di akun Cloudflare Patah Pensil (alamat `absensi-uji-ck2.pages.dev`) dan di akun simulasi.
 2. Instruksi proyek bagian 2: ganti "absensi-uji, absensi-uji-real" menjadi "absensi-uji-real (mode nyata)".
 
+## 44. Langkah 1d — P-21 bagian 1: Audit dan status guru — 14 November 2026
+
+- Kepala Sekolah kini membuka Audit (layanan `LayananAudit`, menu web dan desktop).
+- Admin kini dapat menetapkan status kehadiran guru (`LayananStatusGuru`, panel Kehadiran guru di web, `StatusGuruViewModel` di desktop). Perubahannya tetap tercatat di audit.
+- Wali Kelas tetap tidak melihat Audit dan tidak dapat menetapkan status guru.
+- Tes yang sebelumnya memastikan perilaku lama (Kepala Sekolah ditolak Audit, Admin ditolak status guru) diubah mengikuti P-21; langkah Chromium terkait diperbarui.
+
+**Belum:** reset sandi timbal balik Kepala Sekolah–Admin dengan wajib ganti sandi, ganti sandi sendiri, dan laporan kelas untuk wali kelas (P-22).
+

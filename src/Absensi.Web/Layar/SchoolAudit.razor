@@ -5,7 +5,7 @@
 @inject StatusAplikasi Status
 
 <div class="page-heading"><div><h1>Jejak audit</h1><p>Pelaku dan perubahan yang tercatat di browser ini.</p></div></div>
-@if (Status.Akun?.Peran == PeranAkun.Admin)
+@if (WorkspaceView.CanManage(Status))
 {
     <section class="panel" id="school-audit">
         <header class="panel-header"><h2>Riwayat perubahan</h2></header>
@@ -50,7 +50,7 @@
 
     private void Load()
     {
-        if (Status.Akun?.Peran != PeranAkun.Admin) return;
+        if (!WorkspaceView.CanManage(Status)) return;
         rows = [];
         error = null;
         if (to < from)

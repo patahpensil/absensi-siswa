@@ -38,8 +38,9 @@ public sealed class LayananAudit
 
     private static void EnsureAdmin(AkunTersimpan account)
     {
-        if (account.Peran != PeranAkun.Admin)
-            throw new InvalidOperationException("Hanya Admin yang dapat membuka layar Audit.");
+        // P-21: Kepala Sekolah dan Admin setara, termasuk membuka Audit.
+        if (account.Peran is not (PeranAkun.KepalaSekolah or PeranAkun.Admin))
+            throw new InvalidOperationException("Hanya Kepala Sekolah dan Admin yang dapat membuka layar Audit.");
     }
 
     public HasilAudit Baca(

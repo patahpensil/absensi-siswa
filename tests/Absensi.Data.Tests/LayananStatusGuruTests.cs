@@ -79,14 +79,20 @@ public sealed class LayananStatusGuruTests
     }
 
     [Fact]
-    public void TetapkanStatus_Admin_Ditolak()
+    public void TetapkanStatus_Admin_DiizinkanDanTercatatDiAudit()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukKoreksi();
         var layanan = new LayananStatusGuru();
 
-        Assert.Throws<InvalidOperationException>(() =>
-            layanan.TetapkanStatus(database.Connection, Admin, Waktu, guruId: 3, HariIni, StatusAbsensiGuru.Sakit, "x"));
+        layanan.TetapkanStatus(database.Connection, Admin, Waktu, guruId: 3, HariIni, StatusAbsensiGuru.Sakit, "Demam");
+
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT status FROM absensi_guru WHERE guru_id = 3 AND tanggal = '2026-09-17';";
+        Assert.Equal("sakit", command.ExecuteScalar());
+        using var audit = database.Connection.CreateCommand();
+        audit.CommandText = "SELECT COUNT(*) FROM audit WHERE akun_id = 1;";
+        Assert.True(Convert.ToInt32(audit.ExecuteScalar()) > 0);
     }
 
     [Fact]

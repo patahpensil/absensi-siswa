@@ -60,11 +60,11 @@ await langkah('Sandi salah ditolak dengan pesan', async () => {
   tegas((await page.textContent('#galat-masuk')).includes('salah'), 'pesan galat tidak sesuai');
 });
 
-await langkah('Kepala Sekolah masuk: dashboard tampil, menu Audit tersembunyi', async () => {
+await langkah('Kepala Sekolah masuk: dashboard tampil, menu Audit tersedia (P-21)', async () => {
   await masuk('kepsek', 'contoh123');
   await page.waitForSelector('#ringkasan');
   tegas((await page.textContent('#akun-aktif')).includes('Kepala Sekolah'), 'akun aktif salah');
-  tegas((await page.$('#menu-audit')) === null, 'menu Audit terlihat oleh Kepala Sekolah');
+  tegas((await page.$('#menu-audit')) !== null, 'menu Audit tidak tampil untuk Kepala Sekolah');
   tegas((await page.$('#menu-siswa')) !== null, 'menu Siswa tidak ada');
 });
 
@@ -1110,7 +1110,7 @@ await langkah('Jadwal berlaku mulai besok (P-15): hari ini tetap jadwal lama, ta
   await page.waitForFunction(() => document.querySelector('#tap-result')?.textContent?.includes('Terlambat ·'));
 });
 
-await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di muka, admin hanya melihat', async () => {
+await langkah('Kehadiran guru (§16.17, P-21): kepala sekolah menandai Dinas luar di muka, admin juga dapat menetapkan status', async () => {
   await page.click('#menu-guru');
   await page.waitForSelector('#teacher-attendance');
   await page.fill('#teacher-attendance-date', '2027-01-08');
@@ -1136,7 +1136,7 @@ await langkah('Kehadiran guru (§16.17): kepala sekolah menandai Dinas luar di m
   await page.fill('#teacher-attendance-date', '2027-01-08');
   const adminRow = page.locator('#teacher-attendance-table tbody tr').filter({ hasText: 'Ibu Lina (contoh)' });
   await page.waitForFunction(() => document.querySelector('#teacher-attendance-table')?.textContent?.includes('Dinas luar'));
-  tegas(await adminRow.locator('[id^=teacher-status-]').count() === 0, 'admin masih bisa menetapkan status guru');
+  tegas(await adminRow.locator('[id^=teacher-status-]').count() === 1, 'admin tidak dapat menetapkan status guru (P-21)');
 });
 
 await langkah('Audit (admin) mencatat identitas sekolah, jadwal berlaku mulai, dan status guru; saringan akun bekerja', async () => {

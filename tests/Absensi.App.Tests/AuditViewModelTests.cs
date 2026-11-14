@@ -20,13 +20,13 @@ public sealed class AuditViewModelTests
     private static string FolderArsipSementara() => Path.Combine(Path.GetTempPath(), $"absensi-audit-vm-{Guid.NewGuid():N}");
 
     [Fact]
-    public void BolehAkses_Admin_True_PeranLain_False()
+    public void BolehAkses_AdminDanKepsek_True_WaliKelas_False()
     {
         using var database = new MigratedDatabase();
         database.SeedKelasUntukRegistrasiKartu();
 
         Assert.True(new AuditViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu), FolderArsipSementara()).BolehAkses);
-        Assert.False(new AuditViewModel(database.Connection, Kepsek, new PenyediaWaktuUji(Waktu), FolderArsipSementara()).BolehAkses);
+        Assert.True(new AuditViewModel(database.Connection, Kepsek, new PenyediaWaktuUji(Waktu), FolderArsipSementara()).BolehAkses);
         Assert.False(new AuditViewModel(database.Connection, WaliKelas, new PenyediaWaktuUji(Waktu), FolderArsipSementara()).BolehAkses);
     }
 

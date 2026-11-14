@@ -42,7 +42,7 @@ public sealed class AuditViewModel : ObservableObject
         }
         else
         {
-            PesanGalat = "Hanya Admin yang dapat membuka layar Audit.";
+            PesanGalat = "Hanya Kepala Sekolah dan Admin yang dapat membuka layar Audit.";
         }
     }
 
@@ -50,7 +50,7 @@ public sealed class AuditViewModel : ObservableObject
     // properti ini cuma menyembunyikan konten DI DALAM layar ini sendiri.
     // Menu "Audit" di sidebar sudah difilter terpisah di MainWindowViewModel
     // supaya non-Admin tidak sampai membuka layar ini sama sekali.
-    public bool BolehAkses => _akun.Peran == PeranAkun.Admin;
+    public bool BolehAkses => _akun.Peran is PeranAkun.Admin or PeranAkun.KepalaSekolah;
 
     public ObservableCollection<BarisAuditGabungan> Baris { get; } = new();
 

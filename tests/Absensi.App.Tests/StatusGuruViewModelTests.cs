@@ -39,14 +39,14 @@ public sealed class StatusGuruViewModelTests
     }
 
     [Fact]
-    public void BolehMengubah_Admin_False()
+    public void BolehMengubah_Admin_True()
     {
         using var database = new MigratedDatabase();
         SeedDasar(database);
         var viewModel = new StatusGuruViewModel(database.Connection, Admin, new PenyediaWaktuUji(Waktu));
 
-        Assert.False(viewModel.BolehMengubah);
-        Assert.True(viewModel.TidakBolehMengubah);
+        Assert.True(viewModel.BolehMengubah);
+        Assert.False(viewModel.TidakBolehMengubah);
     }
 
     [Fact]

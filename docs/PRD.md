@@ -89,8 +89,8 @@ Nama sekolah, identitas, kalender, kelas, jadwal dan tahun ajaran merupakan konf
 ## 3. Pengguna dan Hak Akses
 
 > **Status aplikasi (13 November 2026):** **[Sebagian]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak di aplikasi saat ini (terbukti di tes) **belum mengikuti keputusan P-21 dan P-22** di bawah; penyesuaian kode dicatat sebagai utang:
-> - Kepala Sekolah: semua menu kecuali Audit; satu-satunya yang membuat akun Admin/TU dan menetapkan status kehadiran guru.
-> - Admin/TU: semua menu termasuk Audit; membuat dan mengelola akun Wali Kelas, tidak dapat membuat Admin; melihat status guru tanpa mengubahnya.
+> - Kepala Sekolah: semua menu termasuk Audit (P-21, diterapkan 14 November 2026); satu-satunya yang membuat akun Admin/TU; menetapkan status kehadiran guru.
+> - Admin/TU: semua menu termasuk Audit; membuat dan mengelola akun Wali Kelas, tidak dapat membuat Admin; menetapkan status kehadiran guru (P-21, diterapkan 14 November 2026).
 > - Wali Kelas: tanpa menu Layar gerbang, Notifikasi dan Audit; hanya melihat siswa kelasnya; tidak dapat mengubah master, kartu, foto, kalender, laporan atau data guru; koreksi hanya untuk kelasnya tanpa kolom "atas permintaan".
 > - Pemeriksaan hak dijalankan layanan `Absensi.Data` (bukan hanya tampilan); "backend" pada bab ini berarti layanan tersebut sampai versi online dibangun.
 
@@ -612,7 +612,7 @@ Migrasi database server dijalankan oleh proses deployment yang dikendalikan, ber
 
 ### 14.2 Layar Admin
 
-> **Status aplikasi (13 November 2026):** **[Sebagian]** Menu sesuai daftar (Layar gerbang dan Notifikasi hanya Kepala Sekolah/Admin; Audit hanya Admin — P-21 membuka Audit juga untuk Kepala Sekolah, kode belum disesuaikan). Header memuat nama sekolah, logo dan tahun ajaran aktif. Dashboard web berisi: Pusat kendali kehadiran (ringkasan harian, tombol Layar gerbang TV dan Buka absensi), Pantauan kedatangan, Tindak lanjut siswa (belum tap) dan Kesiapan data. Status rekap notifikasi dan peringatan pairing belum ada di dashboard web.
+> **Status aplikasi (13 November 2026):** **[Sebagian]** Menu sesuai daftar (Layar gerbang dan Notifikasi hanya Kepala Sekolah/Admin; Audit untuk Kepala Sekolah dan Admin sesuai P-21). Header memuat nama sekolah, logo dan tahun ajaran aktif. Dashboard web berisi: Pusat kendali kehadiran (ringkasan harian, tombol Layar gerbang TV dan Buka absensi), Pantauan kedatangan, Tindak lanjut siswa (belum tap) dan Kesiapan data. Status rekap notifikasi dan peringatan pairing belum ada di dashboard web.
 
 Menu: Dashboard, Absensi, **Layar gerbang** (kepala sekolah/admin saja), Siswa, Guru, Kelas, Koreksi, Kalender, Laporan, Notifikasi (kepala sekolah/admin saja), Audit (admin saja), Pengaturan.
 
@@ -1108,7 +1108,7 @@ Pagi    Guru tap → status MASUK, jam tap dicatat
 
 ### 16.17 Penetapan Status Guru oleh Kepala Sekolah atau Admin
 
-> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web: menu **Guru** → panel **Kehadiran guru** → **Tetapkan status**; di muka pilihan Izin/Dinas luar/Cuti, sesudahnya Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib; Admin hanya melihat (P-21 memberi Admin wewenang yang sama; kode belum disesuaikan). Status Dinas luar di muka ketika harinya tiba tanpa tap belum dibuktikan tes.
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** web: menu **Guru** → panel **Kehadiran guru** → **Tetapkan status**; di muka pilihan Izin/Dinas luar/Cuti, sesudahnya Hadir/Izin/Sakit/Dinas luar/Cuti/Alpa; keterangan wajib; Kepala Sekolah dan Admin sama-sama dapat menetapkan (P-21). Status Dinas luar di muka ketika harinya tiba tanpa tap belum dibuktikan tes.
 
 ```
 1. Kepala Sekolah membuka menu Guru → Kehadiran
@@ -1218,7 +1218,7 @@ Guru memakai **reader yang sama** dengan siswa di gerbang. Aplikasi membedakan k
 |---|---|---|---|
 | Kelola master guru | Ya | Ya | Tidak |
 | Registrasi kartu guru | Ya | Ya | Tidak |
-| Ubah status kehadiran guru | **Ya** (P-21; kode belum disesuaikan) | **Ya** | Tidak |
+| Ubah status kehadiran guru | **Ya** (P-21) | **Ya** | Tidak |
 | Lihat laporan guru | Ya | Ya | Tidak |
 
 ---

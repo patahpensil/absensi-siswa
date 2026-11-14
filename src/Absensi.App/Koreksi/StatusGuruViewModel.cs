@@ -52,7 +52,7 @@ public sealed class StatusGuruViewModel : ObservableObject
         MuatDaftar();
     }
 
-    public bool BolehMengubah => _akun.Peran == PeranAkun.KepalaSekolah;
+    public bool BolehMengubah => _akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin;
 
     public bool TidakBolehMengubah => !BolehMengubah;
 
