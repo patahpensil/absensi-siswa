@@ -60,6 +60,18 @@ await langkah('Sandi salah ditolak dengan pesan', async () => {
   tegas((await page.textContent('#galat-masuk')).includes('salah'), 'pesan galat tidak sesuai');
 });
 
+await langkah('Ikon mata menampilkan dan menyembunyikan sandi tanpa mengubah isinya', async () => {
+  await page.fill('#sandi', 'Rahasia123');
+  tegas((await page.getAttribute('#sandi', 'type')) === 'password', 'sandi tidak tertutup di awal');
+  await page.click('#sandi-toggle');
+  tegas((await page.getAttribute('#sandi', 'type')) === 'text', 'sandi tidak tampil setelah ikon mata ditekan');
+  tegas((await page.getAttribute('#sandi-toggle', 'aria-pressed')) === 'true', 'aria-pressed tidak berubah');
+  tegas((await page.inputValue('#sandi')) === 'Rahasia123', 'isi sandi berubah saat ditampilkan');
+  await page.click('#sandi-toggle');
+  tegas((await page.getAttribute('#sandi', 'type')) === 'password', 'sandi tidak tertutup lagi');
+  await page.fill('#sandi', '');
+});
+
 await langkah('Kepala Sekolah masuk: dashboard tampil, menu Audit tersedia (P-21)', async () => {
   await masuk('kepsek', 'contoh123');
   await page.waitForSelector('#ringkasan');

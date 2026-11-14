@@ -2077,3 +2077,10 @@ img.detail-avatar {
 .wizard-card .settings-body > input, .wizard-card .settings-body > select { display:block; width:100%; max-width:420px; margin:4px 0 12px }
 #wizard-schedule input[type=time] { width:100%; min-width:92px }
 .wizard-actions { margin-top:16px }
+
+/* Password field with show/hide toggle (PasswordField.razor) */
+.password-field { position:relative }
+.password-field input { padding-right:44px }
+.password-toggle { position:absolute; top:0; right:0; height:100%; min-width:40px; min-height:0; padding:0; border:0; background:transparent; box-shadow:none; color:var(--muted) }
+.password-toggle:hover { background:transparent; color:var(--navy) }
+.wizard-card .settings-body > .password-field { max-width:420px; margin:4px 0 12px }

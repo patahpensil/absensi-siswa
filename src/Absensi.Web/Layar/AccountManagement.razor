@@ -42,7 +42,7 @@
         {
             <form class="account-inline" @onsubmit="ResetPassword" @onsubmit:preventDefault>
                 <label for="account-reset-password">Sandi baru untuk <strong>@resetTarget.Username</strong></label>
-                <input id="account-reset-password" type="password" autocomplete="new-password" minlength="8" @bind="resetPassword" disabled="@busy" />
+                <PasswordField Id="account-reset-password" @bind-Value="resetPassword" AutoComplete="new-password" MinLength="8" Disabled="busy" />
                 <div class="button-row">
                     <button type="button" disabled="@busy" @onclick="CancelAction">Batal</button>
                     <button id="account-reset-confirm" type="submit" class="primary" disabled="@busy">Simpan sandi baru</button>
@@ -71,7 +71,7 @@
                 </div>
                 <div>
                     <label for="account-password">Sandi awal</label>
-                    <input id="account-password" type="password" autocomplete="new-password" @bind="password" />
+                    <PasswordField Id="account-password" @bind-Value="password" AutoComplete="new-password" Disabled="busy" />
                     <p class="field-help">Minimal 8 karakter. Sampaikan langsung kepada pemilik akun.</p>
                 </div>
                 <div>

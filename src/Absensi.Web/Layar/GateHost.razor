@@ -51,7 +51,7 @@
                 <p>@(confirmation == "stop" ? "Kartu yang ditap setelah dihentikan tidak akan dicatat oleh gerbang. Tampilan TV tetap terbuka." : "Tampilan pada TV akan ditutup. Penerimaan tap tetap aktif pada PC pengendali.")</p>
                 <p>Konfirmasikan dengan sandi akun @Status.Akun?.Username.</p>
                 <form @onsubmit="ConfirmAsync" @onsubmit:preventDefault>
-                    <label for="gate-confirm-password">Sandi akun</label><input id="gate-confirm-password" type="password" @bind="password" @bind:event="oninput" autocomplete="current-password" />
+                    <label for="gate-confirm-password">Sandi akun</label><PasswordField Id="gate-confirm-password" @bind-Value="password" AutoComplete="current-password" />
                     @if (confirmationError is not null) { <p id="gate-confirm-error" class="message danger" role="alert">@confirmationError</p> }
                     <div class="dialog-actions"><button id="gate-confirm-cancel" type="button" @onclick="CancelConfirmation">Batal</button><button id="gate-confirm-submit" class="primary" type="submit" disabled="@(string.IsNullOrEmpty(password))">Konfirmasi</button></div>
                 </form>

@@ -71,9 +71,9 @@
                     <label for="wizard-username">Username kepala sekolah</label>
                     <input id="wizard-username" autocomplete="off" maxlength="32" @bind="username" />
                     <label for="wizard-password">Sandi</label>
-                    <input id="wizard-password" type="password" autocomplete="new-password" @bind="password" />
+                    <PasswordField Id="wizard-password" @bind-Value="password" AutoComplete="new-password" />
                     <label for="wizard-password-confirm">Ulangi sandi</label>
-                    <input id="wizard-password-confirm" type="password" autocomplete="new-password" @bind="confirm" />
+                    <PasswordField Id="wizard-password-confirm" @bind-Value="confirm" AutoComplete="new-password" />
                     break;
                 default:
                     <div class="message positive" id="wizard-done" role="status">
