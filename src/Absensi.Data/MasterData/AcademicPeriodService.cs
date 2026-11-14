@@ -60,6 +60,39 @@ public sealed class AcademicPeriodService
         });
     }
 
+    // Corrects the date range of a period after it was created (for example a
+    // wizard default that does not match the school calendar). Days that
+    // already have attendance must stay inside the range, and the active period
+    // must keep covering today so the current attendance day stays valid.
+    public void ChangeDates(SqliteConnection connection, AkunTersimpan account, DateTime time,
+        int periodId, DateOnly start, DateOnly end)
+    {
+        AuthorizationGuard.EnsureFullAuthority(account, "mengubah rentang tahun ajaran");
+        if (end < start)
+            throw new InvalidOperationException("Tanggal berakhir tidak boleh sebelum tanggal mulai.");
+
+        _changes.JalankanDenganCatatan(connection, account, time, "ubah_rentang_tahun_ajaran", "tahun_ajaran", transaction =>
+        {
+            var periods = _years.ListPeriods(connection, transaction);
+            var target = periods.SingleOrDefault(period => period.Id == periodId)
+                ?? throw new InvalidOperationException("Tahun ajaran tidak ditemukan.");
+            if (target.Start == start && target.End == end)
+                throw new InvalidOperationException("Rentang tanggal tidak berubah.");
+            if (periods.Any(period => period.Id != periodId && start <= period.End && end >= period.Start))
+                throw new InvalidOperationException("Rentang bertumpang tindih dengan periode yang sudah ada.");
+
+            var today = DateOnly.FromDateTime(time);
+            if (target.Active && (today < start || today > end))
+                throw new InvalidOperationException("Periode aktif harus tetap mencakup hari ini.");
+            if (_years.FindRecordedDayOutside(connection, transaction, periodId, start, end) is { } recorded)
+                throw new InvalidOperationException(
+                    $"Absensi sudah tercatat pada {recorded:dd/MM/yyyy}. Rentang baru harus tetap mencakup tanggal itu.");
+
+            _years.UpdateRange(connection, transaction, periodId, start, end);
+            return new CatatanPerubahan(target.Id, RangeLabel(target, target.Start, target.End), RangeLabel(target, start, end));
+        });
+    }
+
     public void Promote(SqliteConnection connection, AkunTersimpan account, DateTime time, int sourceClassId,
         int targetClassId, IReadOnlyCollection<int> studentIds)
     {
@@ -169,4 +202,7 @@ public sealed class AcademicPeriodService
     }
 
     private static string Label(AcademicPeriod period) => $"{period.Name} · {period.Semester}";
+
+    private static string RangeLabel(AcademicPeriod period, DateOnly start, DateOnly end) =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Label(period)} · {start:yyyy-MM-dd} – {end:yyyy-MM-dd}");
 }

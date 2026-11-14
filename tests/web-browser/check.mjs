@@ -963,6 +963,25 @@ await langkah('Naik kelas massal mempertahankan kartu dan laporan periode sebelu
 });
 
 
+await langkah('Rentang periode dapat diperbaiki; tanggal yang sudah tercatat tetap terlindungi', async () => {
+  await page.click('#menu-kelas');
+  await page.click('#academic-open');
+  await page.selectOption('#academic-action', 'ChangeDates');
+  await page.selectOption('#academic-edit-year', '2');
+  tegas(await page.inputValue('#academic-edit-end') === '2027-06-30', 'tanggal akhir periode tidak terisi');
+  await page.fill('#academic-edit-end', '2027-06-26');
+  await page.click('#academic-submit');
+  await page.waitForSelector('#academic-result[role=status]');
+  tegas((await page.textContent('#academic-result')).includes('26/06/2027'), 'hasil ubah rentang tidak tampil');
+
+  await page.selectOption('#academic-edit-year', '1');
+  await page.fill('#academic-edit-end', '2026-11-01');
+  await page.click('#academic-submit');
+  await page.waitForSelector('#academic-result[role=alert]');
+  tegas((await page.textContent('#academic-result')).includes('Absensi sudah tercatat'), 'tanggal tercatat tidak dilindungi');
+  await page.getByRole('button', { name: 'Tutup tahun ajaran' }).click();
+});
+
 await langkah('Mutasi siswa dan nonaktif guru: data tetap, kartu siswa dinonaktifkan, tercatat di audit', async () => {
   await page.click('#menu-siswa');
   const studentRow = page.locator('#tabel-siswa tbody tr').filter({ hasText: 'Siswa Excel RFID' });

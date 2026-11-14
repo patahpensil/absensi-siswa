@@ -43,6 +43,7 @@
                     <input id="wizard-start" type="date" value="@start.ToString("yyyy-MM-dd")" @onchange="e => start = ParseDate(e, start)" />
                     <label for="wizard-end">Tanggal selesai</label>
                     <input id="wizard-end" type="date" value="@end.ToString("yyyy-MM-dd")" @onchange="e => end = ParseDate(e, end)" />
+                    <p class="field-help">Isi sesuai kalender pendidikan. Rentang dapat diperbaiki kemudian di Kelas → Tahun ajaran.</p>
                     break;
                 case 3:
                     <p>Jadwal harian dapat diubah kemudian di Pengaturan (berlaku mulai tanggal tertentu).</p>
@@ -106,9 +107,14 @@
     protected override void OnInitialized()
     {
         var today = DateOnly.FromDateTime(Status.Jam.Sekarang);
+        // Semester ganjil runs July–December, genap January–June. The end date is
+        // only a starting value: schools set it from their education calendar,
+        // and it can be corrected later under Kelas > Tahun ajaran.
+        var odd = today.Month >= 7;
+        semester = odd ? "ganjil" : "genap";
         start = today;
-        end = today.AddMonths(5);
-        periodName = $"{today.Year}/{today.Year + 1}";
+        end = odd ? new DateOnly(today.Year, 12, 31) : new DateOnly(today.Year, 6, 30);
+        periodName = odd ? $"{today.Year}/{today.Year + 1}" : $"{today.Year - 1}/{today.Year}";
         // Isian awal sama dengan sekolah rujukan PRD §7; semua dapat diubah.
         days = Enumerable.Range(1, 7).Select(day => day == 7
             ? new DayRow { Day = 7 }

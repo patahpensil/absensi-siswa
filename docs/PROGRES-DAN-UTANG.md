@@ -619,3 +619,22 @@ Memperbaiki temuan §29: halaman web yang dibiarkan terbuka melewati tengah mala
 - Desktop masih punya celah sampai 30 detik setelah 00.00 (penjadwal berdetak tiap 30 detik); tap pada celah itu hilang dengan cara yang sama. Usulan: desktop memakai `CurrentDayGuard` sebelum `PemrosesTap`, dikerjakan bersama perubahan desktop berikutnya.
 - Akar masalah tetap ada: `SimpanKeputusanSiswa/Guru` hanya `UPDATE`, jadi tap untuk siswa tanpa baris absensi hari itu tidak tersimpan tanpa galat. Usulan: tolak tap bila tidak ada baris yang berubah. Belum dikerjakan karena mengubah perilaku layanan bersama; perlu dibahas.
 
+## 40. Langkah 1b — rentang periode akademik dapat diperbaiki — 14 November 2026
+
+Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan rentang periode tidak bisa diubah sesudahnya, sehingga semester berikutnya bisa tertolak karena tumpang tindih.
+
+- Wizard web kini mengisi semester dan rentang awal mengikuti bulan: Juli–Desember → ganjil, akhir 31 Desember, nama tahun berjalan/berikutnya; Januari–Juni → genap, akhir 30 Juni, nama tahun sebelumnya/berjalan. Isian tetap dapat diubah dan diberi petunjuk agar disesuaikan dengan kalender pendidikan.
+- Layanan baru `AcademicPeriodService.ChangeDates` (Kepala Sekolah/Admin, tercatat di audit `ubah_rentang_tahun_ajaran` dengan nilai lama dan baru). Aturan, diperiksa di dalam satu transaksi:
+  - tanggal berakhir tidak boleh sebelum tanggal mulai, dan rentang harus berubah;
+  - tidak boleh tumpang tindih dengan periode lain;
+  - periode aktif harus tetap mencakup hari ini;
+  - hari yang sudah punya catatan absensi (hari dibuka atau baris absensi siswa periode itu) harus tetap di dalam rentang.
+- Web: Kelas → Tahun ajaran → tindakan "Ubah rentang periode".
+- Tes: `AcademicPeriodDateChangeTests` (7 kasus) dan langkah Chromium "Rentang periode dapat diperbaiki; tanggal yang sudah tercatat tetap terlindungi".
+
+**Keputusan yang saya ambil dan perlu Edgar ketahui (bukan D-xx, tetapi aturan baru):** periode aktif tidak boleh dipersingkat sampai tidak mencakup hari ini, dan hari yang sudah tercatat tidak boleh dikeluarkan dari periode. Keduanya mencegah absensi yang sudah ada kehilangan periodenya. Bila sekolah perlu mengakhiri semester lebih awal, caranya mengaktifkan periode berikutnya.
+
+**Utang:**
+- Desktop belum punya layar untuk mengubah rentang periode; layanannya sudah ada di lapisan Data.
+- Baris absensi guru tidak terikat periode, jadi status guru yang ditetapkan di muka pada tanggal yang dikeluarkan dari rentang tetap tersimpan tanpa periode.
+

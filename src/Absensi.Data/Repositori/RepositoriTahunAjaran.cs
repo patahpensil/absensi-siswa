@@ -122,6 +122,41 @@ public sealed class RepositoriTahunAjaran
         commandId.CommandText = "SELECT last_insert_rowid();";
         return Convert.ToInt32(commandId.ExecuteScalar());
     }
+
+    internal void UpdateRange(SqliteConnection connection, SqliteTransaction transaction, int id, DateOnly start, DateOnly end)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "UPDATE tahun_ajaran SET tgl_mulai = $start, tgl_selesai = $end WHERE id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$start", start.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$end", end.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        if (command.ExecuteNonQuery() != 1)
+            throw new InvalidOperationException("Tahun ajaran tidak ditemukan.");
+    }
+
+    // Earliest day of the period with attendance already recorded (an opened
+    // school day or a student attendance row) that lies outside [start, end].
+    internal DateOnly? FindRecordedDayOutside(SqliteConnection connection, SqliteTransaction transaction, int id, DateOnly start, DateOnly end)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT MIN(day) FROM (
+                SELECT date AS day FROM opened_school_day
+                WHERE academic_period_id = $id AND (date < $start OR date > $end)
+                UNION ALL
+                SELECT a.tanggal FROM absensi_siswa a JOIN kelas k ON k.id = a.kelas_id
+                WHERE k.tahun_ajaran_id = $id AND (a.tanggal < $start OR a.tanggal > $end)
+            );
+            """;
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$start", start.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$end", end.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+        return command.ExecuteScalar() is string day
+            ? DateOnly.ParseExact(day, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)
+            : null;
+    }
 }
 
 public sealed record AcademicPeriod(int Id, string Name, string Semester, DateOnly Start, DateOnly End, bool Active);
