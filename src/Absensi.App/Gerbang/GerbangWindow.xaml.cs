@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Gerbang;
 
-public partial class GerbangWindow : Window
+public partial class GerbangWindow : Window, IKeepsRunningDuringDialogs
 {
     private readonly GerbangViewModel _viewModel;
     private readonly SqliteConnection _connection;
