@@ -79,6 +79,13 @@
             const request = store.get(key);
             request.onsuccess = () => done(request.result ?? null);
         }),
+        // Asks the browser not to evict this origin's data when disk space runs
+        // low. Browsers decide on their own; the answer is shown in Pengaturan.
+        requestPersistence: async () => {
+            if (!navigator.storage?.persist || !navigator.storage?.persisted) return 'unsupported';
+            if (await navigator.storage.persisted()) return 'granted';
+            return (await navigator.storage.persist()) ? 'granted' : 'denied';
+        },
         keys: prefix => transaction('readonly', (store, done) => {
             const request = store.getAllKeys();
             request.onsuccess = () => done(request.result.filter(key => String(key).startsWith(prefix)));

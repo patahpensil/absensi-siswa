@@ -249,7 +249,7 @@
             catch (Exception ex) when (ex is InvalidOperationException or SqliteException)
             {
                 await Status.SimpanAsync();
-                error = "Data master sudah diproses. Hari absensi belum dapat disegarkan. Buka Pengaturan lalu terapkan kembali waktu uji.";
+                error = "Data master sudah diproses, tetapi hari absensi belum dapat disegarkan. Muat ulang halaman untuk membukanya kembali.";
             }
             await OnSaved.InvokeAsync();
         }

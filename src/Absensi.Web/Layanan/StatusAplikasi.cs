@@ -53,6 +53,11 @@ public sealed partial class StatusAplikasi
 
     public bool StorageConflict { get; private set; }
 
+    // "granted", "denied" or "unsupported"; null until the browser has answered.
+    public string? StoragePersistence { get; private set; }
+
+    private Task? _persistenceRequest;
+
     public event Action? StorageConflictDetected;
 
     public async Task MulaiAsync()
@@ -92,6 +97,7 @@ public sealed partial class StatusAplikasi
             NeedsInstallation = false;
             MuatIdentitas();
             await LoadPhotosAsync();
+            StartPersistenceRequest();
         }
         catch (Exception ex)
         {
@@ -151,6 +157,23 @@ public sealed partial class StatusAplikasi
         StorageConflictDetected?.Invoke();
     }
 
+    // Not awaited: some browsers (Firefox) ask the user first, and the answer
+    // must not hold back the login screen. Pengaturan shows the result once known.
+    private void StartPersistenceRequest()
+    {
+        if (StoragePersistence == "granted" || _persistenceRequest is { IsCompleted: false }) return;
+        _persistenceRequest = RequestPersistenceAsync();
+    }
+
+    private async Task RequestPersistenceAsync()
+    {
+        try { StoragePersistence = await _js.InvokeAsync<string>("absensiStorage.requestPersistence"); }
+        catch (Exception ex) when (ex is JSException or TaskCanceledException or InvalidOperationException)
+        {
+            StoragePersistence = "unsupported";
+        }
+    }
+
     public async Task OpenCurrentDayAsync()
     {
         _currentDay.Open(Koneksi!, DateOnly.FromDateTime(Jam.Sekarang));
@@ -183,6 +206,7 @@ public sealed partial class StatusAplikasi
     {
         MuatIdentitas();
         await SimpanAsync();
+        StartPersistenceRequest();
         NeedsInstallation = StorageFailed;
         if (!StorageFailed) CatatanPenyimpanan = "Instalasi selesai; data tersimpan di browser ini.";
     }

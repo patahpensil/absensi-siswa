@@ -54,7 +54,7 @@
             else
             {
                 <p id="calendar-lock-readiness">@(readiness ?? "Semua hari sekolah di bulan ini sudah ditutup.")</p>
-                <p class="field-help">Pemeriksaan ini mencakup catatan pada browser uji. Sinkronisasi perangkat sekolah belum digunakan.</p>
+                <p class="field-help">Pemeriksaan ini mencakup catatan pada browser ini. Sinkronisasi perangkat sekolah belum digunakan.</p>
                 @if (readiness is null)
                 {
                     <label><input id="calendar-lock-consent" type="checkbox" @bind="confirmLock" disabled="@busy" /> Saya sudah memeriksa laporan bulan ini.</label>

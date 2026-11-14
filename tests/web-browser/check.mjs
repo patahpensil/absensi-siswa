@@ -1344,9 +1344,18 @@ if (realUrl) {
       await real.click('#menu-absensi');
       await real.waitForSelector('#tap-uid');
       tegas(!(await real.textContent('#isi')).includes('waktu uji'), 'petunjuk waktu uji tampil di mode nyata');
+      for (const menu of ['dashboard', 'siswa', 'guru', 'kelas', 'kalender', 'laporan', 'notifikasi', 'pengaturan']) {
+        if (await real.locator(`#menu-${menu}`).count() === 0) continue;
+        await real.click(`#menu-${menu}`);
+        await real.waitForTimeout(300);
+        const text = await real.textContent('#isi');
+        const leftover = text.match(/web uji|browser uji|waktu uji|data contoh/i);
+        tegas(!leftover, `teks mode uji "${leftover?.[0]}" tampil di menu ${menu} mode nyata`);
+      }
       await real.click('#menu-pengaturan');
       await real.waitForSelector('#backup-download');
       tegas(!(await real.textContent('#isi')).includes('selesaikan wizard'), 'catatan penyimpanan masih menyuruh wizard');
+      await real.waitForSelector('#storage-persistence');
       tegas(await real.locator('#scenario-time').count() === 0, 'jam skenario tampil di mode nyata');
       await real.click('#reset-data');
       tegas(await real.locator('#confirm-reset-data').count() === 0, 'pilihan data contoh tampil di mode nyata');

@@ -63,7 +63,7 @@
                         </select>
                         <button type="button" id="person-channel-save" disabled="@(savingChannel || channelChoice == detail.ParentChannel.Channel)" @onclick="SaveChannel">@(savingChannel ? "Menyimpan…" : "Simpan kanal")</button>
                     </div>
-                    <p class="field-help">Satu kanal per siswa. WhatsApp memakai nomor HP orang tua pada data siswa secara langsung. Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
+                    <p class="field-help">Satu kanal per siswa. WhatsApp memakai nomor HP orang tua pada data siswa secara langsung. Versi web hanya mengantre pesan; belum ada pesan yang dikirim.</p>
                     @if (channelMessage is not null) { <p id="person-channel-message" class="message @(channelOk ? "positive" : "danger")" role="@(channelOk ? "status" : "alert")">@channelMessage</p> }
                 </section>
             }
