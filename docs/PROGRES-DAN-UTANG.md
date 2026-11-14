@@ -860,6 +860,8 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Tes baru:** `PasswordPolicyTests` (sah, tiap syarat yang kurang, kosong, emoji), `MasterDataLifecycleTests.BuatAkun_SandiPanjangTanpaKombinasi_DitolakDenganSyaratYangKurang`, langkah Chromium akun memeriksa panduan dan penolakan sandi panjang tanpa kombinasi.
 
+**Bukti:** commit `7ac441f` lulus CI ([run 43637842038](https://github.com/patahpensil/absensi-siswa/actions/runs/43637842038)), Chromium ([run 43637842008](https://github.com/patahpensil/absensi-siswa/actions/runs/43637842008)), dan deploy mode nyata ([run 43637842021](https://github.com/patahpensil/absensi-siswa/actions/runs/43637842021)). Commit `5ac5416` sempat gagal: satu sandi wizard mode nyata di tes Chromium belum memenuhi aturan baru, dan catatan §57 memuat kata yang ditolak typos; keduanya diperbaiki di `7ac441f`.
+
 **Belum terbukti / belum diputuskan:** tampilan panduan di desktop belum dilihat lewat tangkapan layar. Penolakan sandi umum (ASVS 6.2.4) belum diputuskan Edgar.
 
 **Catatan:** commit `05a3d12` (dokumen §56) menggagalkan job typos karena satu kata Indonesia yang dianggap salah eja; diperbaiki di commit berikutnya.
