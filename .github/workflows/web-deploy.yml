@@ -1,11 +1,9 @@
-# Deploy web uji ke Cloudflare Pages (akun khusus uji, di luar Indonesia).
-# Satu hasil publish dikirim ke dua proyek (pilihan B, 14 November 2026):
-#   absensi-uji      -> mode uji, data sintetis (utang D-12)
-#   absensi-uji-real -> mode nyata, data hanya di browser pengguna
-# Kedua proyek berada di satu akun Cloudflare (Patahpensil01, pilihan B
-# lanjutan, 14 November 2026). Kredensial hanya dari GitHub Secrets
-# CLOUDFLARE_API_TOKEN_REAL dan CLOUDFLARE_ACCOUNT_ID_REAL (izin Cloudflare Pages: Edit).
-name: Web uji - deploy Cloudflare Pages
+# Satu situs web: absensi-uji-real (mode nyata, data hanya di browser
+# pengguna), keputusan pemilik 14 November 2026. Mode uji (data contoh, jam
+# skenario) tetap dibangun dan diuji di Chromium sebelum deploy, tetapi tidak
+# diterbitkan. Kredensial hanya dari GitHub Secrets CLOUDFLARE_API_TOKEN_REAL
+# dan CLOUDFLARE_ACCOUNT_ID_REAL (akun Cloudflare Patah Pensil, izin Pages: Edit).
+name: Web - deploy mode nyata
 
 on:
   push:
@@ -28,7 +26,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PAGES_PROJECT: absensi-uji
   PAGES_PROJECT_REAL: absensi-uji-real
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -71,7 +68,7 @@ jobs:
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
 
-      - name: Uji alur browser sebelum memperbarui tautan Cloudflare
+      - name: Uji alur browser (mode uji dan mode nyata) sebelum deploy
         working-directory: tests/web-browser
         run: |
           python3 -m http.server 8080 --directory ../../publish/wwwroot &
@@ -82,64 +79,6 @@ jobs:
           python3 -m http.server 8081 --directory /tmp/web-nyata &
           sleep 2
           node check.mjs http://127.0.0.1:8080/ http://127.0.0.1:8081/
-
-      - name: Pastikan proyek Pages ada
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_REAL }}
-        run: |
-          set -euo pipefail
-          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects"
-          code=$(curl -sS -o /tmp/project.json -w '%{http_code}' -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${api}/${PAGES_PROJECT}")
-          if [ "$code" = "200" ]; then
-            echo "Proyek ${PAGES_PROJECT} sudah ada."
-          elif [ "$code" = "404" ]; then
-            echo "Proyek ${PAGES_PROJECT} belum ada, membuat..."
-            # Galat 5xx dari Cloudflare dicoba ulang (setiap percobaan tercatat);
-            # galat lain langsung dilaporkan.
-            for attempt in 1 2 3; do
-              code=$(curl -sS -o /tmp/create.json -w '%{http_code}' -X POST \
-                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" \
-                --data "{\"name\":\"${PAGES_PROJECT}\",\"production_branch\":\"master\"}" "${api}")
-              echo "Percobaan ${attempt}: HTTP ${code}"
-              [ "$code" = "200" ] && break
-              case "$code" in 5*) [ "$attempt" -lt 3 ] && sleep 20 ;; *) break ;; esac
-            done
-            if [ "$code" != "200" ]; then
-              echo "::error::Gagal membuat proyek Pages (HTTP ${code}): $(tr -d '\n' < /tmp/create.json | head -c 600)"
-              exit 1
-            fi
-          else
-            echo "::error::Gagal memeriksa proyek Pages (HTTP ${code}): $(head -c 600 /tmp/project.json). Periksa izin token (Cloudflare Pages: Edit) dan Account ID."
-            exit 1
-          fi
-          curl -sS -o /tmp/project.json -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${api}/${PAGES_PROJECT}"
-          echo "::notice::Alamat tetap proyek ${PAGES_PROJECT}: https://$(python3 -c 'import json;print(json.load(open("/tmp/project.json"))["result"]["subdomain"])')/"
-
-      - name: Deploy ke Cloudflare Pages
-        id: deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN_REAL }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID_REAL }}
-          command: pages deploy publish/wwwroot --project-name=${{ env.PAGES_PROJECT }} --branch=master --commit-dirty=true
-
-      # Memastikan Cloudflare benar-benar menyajikan aplikasi (tipe berkas .wasm,
-      # jalur _framework), bukan hanya bahwa unggahan berhasil.
-      - name: Periksa hasil deploy di Chromium
-        working-directory: tests/web-browser
-        env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: |
-          [ -n "$DEPLOYMENT_URL" ] || { echo "::error::Alamat deploy tidak dikembalikan oleh wrangler-action."; exit 1; }
-          echo "::notice::Alamat deploy: ${DEPLOYMENT_URL}"
-          # Proyek Pages yang baru dibuat butuh beberapa menit sampai sertifikat
-          # TLS-nya siap (ERR_SSL_VERSION_OR_CIPHER_MISMATCH, run 43571431709).
-          for attempt in $(seq 1 30); do
-            curl -sSfo /dev/null "${DEPLOYMENT_URL}/" && break
-            echo "Menunggu sertifikat ${DEPLOYMENT_URL} (percobaan ${attempt})"; sleep 20
-          done
-          node check.mjs "${DEPLOYMENT_URL}/"
 
       # Proyek mode nyata tidak dibuat otomatis: kalau tidak ada di akun ini,
       # Cloudflare bisa memberi nama subdomain lain dan tautan lama tidak

@@ -25,7 +25,7 @@ Bab ini ditambahkan pada revisi 2.0 dan tidak menggeser nomor bab lain.
 | Bentuk | Teknologi | Penyimpanan data | Tempat berjalan |
 |---|---|---|---|
 | Desktop Windows | .NET 10, WPF/MVVM | SQLite di folder `data/` PC sekolah | PC gerbang sekolah |
-| Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | `absensi-uji.pages.dev` (Cloudflare Pages, berkas statis) |
+| Web — mode uji | .NET 10, Blazor WebAssembly, SQLite di memori browser | IndexedDB browser; data contoh sintetis | tidak diterbitkan; hanya dipakai tes otomatis di GitHub Actions (keputusan pemilik 14 November 2026) |
 | Web — mode nyata | sama dengan mode uji, `"Mode": "nyata"` di `wwwroot/appsettings.json` | IndexedDB browser perangkat yang dipakai; tidak ada server | `absensi-uji-real.pages.dev`, dibangun dari repo ini oleh `web-deploy.yml`; repo `patahpensil/Absensi-Uji-Real` dihapus pemilik (satu repo, 14 November 2026) |
 | Layanan online multi sekolah | C#/ASP.NET Core, PostgreSQL (rancangan) | AWS region Jakarta (P-23, §21.6) | **[Rencana]** — belum dibangun |
 

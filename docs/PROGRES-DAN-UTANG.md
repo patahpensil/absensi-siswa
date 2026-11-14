@@ -667,3 +667,14 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 **Yang harus dilakukan Edgar:** hapus proyek `absensi-uji` di akun simulasi, karena `absensi-uji.pages.dev` masih menampilkan versi lama. Alamat uji yang berlaku sekarang `absensi-uji-ck2.pages.dev`.
 
+## 43. Satu situs web: mode nyata saja — 14 November 2026
+
+**Keputusan pemilik:** cukup satu situs, `https://absensi-uji-real.pages.dev/` (mode nyata). Situs mode uji tidak lagi diterbitkan.
+
+- `web-deploy.yml` hanya men-deploy mode nyata. Mode uji tetap dibangun dan seluruh langkah Chromium (data contoh, jam skenario, tengah malam) tetap dijalankan sebelum deploy dan di workflow bukti browser.
+- README dan PRD §0 diperbarui.
+
+**Yang harus dilakukan Edgar:**
+1. Hapus proyek Pages `absensi-uji` di akun Cloudflare Patah Pensil (alamat `absensi-uji-ck2.pages.dev`) dan di akun simulasi.
+2. Instruksi proyek bagian 2: ganti "absensi-uji, absensi-uji-real" menjadi "absensi-uji-real (mode nyata)".
+

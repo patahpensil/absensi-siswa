@@ -2,7 +2,7 @@
 
 Proyek layanan absensi RFID untuk sekolah. Rancangan produksi mengikuti SaaS multi sekolah pada PRD: desktop C#/WPF, backend C#/ASP.NET Core terpisah, dan penyimpanan resmi di Indonesia. Implementasi desktop yang ada masih memakai SQLite; backend online dan kelulusan ASVS L3 belum tersedia.
 
-**Web uji sementara:** https://absensi-uji.pages.dev/ — dipakai pemilik selama pengembangan untuk meninjau tampilan dan mencoba fitur. Setiap pembaruan mempertahankan tautan yang sama. Hanya data sintetis; bukan lingkungan produksi. Data web uji tersimpan di browser masing-masing melalui IndexedDB, tidak dibagikan antarperangkat.
+**Situs web untuk mencoba fitur:** https://absensi-uji-real.pages.dev/ (mode nyata). Isi hanya data pribadi pemilik atau nama karangan; data tersimpan di browser perangkat yang dipakai dan tidak dibagikan antarperangkat. Produk sebenarnya adalah aplikasi desktop; situs ini bukan lingkungan produksi. Mode uji (data contoh dan jam skenario) hanya dipakai pengujian otomatis di GitHub Actions.
 
 Acuan kerja satu-satunya: `docs/PRD.md` (termasuk standar penulisan kode §24). Baca bagian yang relevan sebelum mengerjakan tugas apa pun.
 
