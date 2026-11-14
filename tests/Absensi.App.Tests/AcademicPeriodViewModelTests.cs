@@ -24,8 +24,6 @@ public sealed class AcademicPeriodViewModelTests
     {
         using var database = Prepare();
         var viewModel = new AcademicPeriodViewModel(database.Connection, Admin, new PenyediaWaktuUji(Now));
-        var changes = 0;
-        viewModel.PeriodsChanged += (_, _) => changes++;
 
         viewModel.Name = "2026/2027";
         viewModel.Semester = "genap";
@@ -44,7 +42,7 @@ public sealed class AcademicPeriodViewModelTests
 
         Assert.True(viewModel.Succeeded, viewModel.Message);
         Assert.Contains(new RepositoriTahunAjaran().ListPeriods(database.Connection), p => p.End == new DateOnly(2027, 6, 26));
-        Assert.Equal(2, changes);
+        Assert.Contains(viewModel.Periods, p => p.Period.End == new DateOnly(2027, 6, 26));
     }
 
     [Fact]

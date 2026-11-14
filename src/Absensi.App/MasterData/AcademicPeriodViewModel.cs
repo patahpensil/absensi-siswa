@@ -82,8 +82,6 @@ public sealed class AcademicPeriodViewModel : ObservableObject
         _end = latestEnd.AddDays(1).AddMonths(6).AddDays(-1).ToDateTime(TimeOnly.MinValue);
     }
 
-    public event EventHandler? PeriodsChanged;
-
     public IReadOnlyList<AcademicPeriodActionOption> Actions { get; } =
     [
         new(AcademicPeriodAction.Prepare, "Siapkan periode baru"),
@@ -330,7 +328,6 @@ public sealed class AcademicPeriodViewModel : ObservableObject
         if (_action is AcademicPeriodAction.Prepare or AcademicPeriodAction.Activate or AcademicPeriodAction.ChangeDates)
         {
             ReloadPeriods();
-            PeriodsChanged?.Invoke(this, EventArgs.Empty);
         }
 
         if (_action is AcademicPeriodAction.Promote or AcademicPeriodAction.Graduate)
