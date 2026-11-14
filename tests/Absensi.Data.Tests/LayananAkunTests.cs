@@ -289,24 +289,19 @@ public sealed class LayananAkunTests
     }
 
     [Fact]
-    // P-21: Admin boleh mereset sandi Kepala Sekolah; sandi baru langsung berlaku dan tercatat di audit.
-    public void ResetSandi_AdminKeKepalaSekolah_LangsungBerlakuDanTercatatDiAudit()
+    // P-21 (revisi 14 November 2026): Admin tidak dapat mengatur ulang sandi Kepala Sekolah.
+    public void ResetSandi_AdminKeKepalaSekolah_Ditolak()
     {
         using var database = new MigratedDatabase();
         database.SeedAkunUntukUji();
         var admin = BuatAdmin(database);
 
-        _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru1!");
-
-        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", "SandiBaru1!"));
-        Assert.Null(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
-        using var command = database.Connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'reset_sandi_akun' AND akun_id = 9 AND entitas_id = 1;";
-        Assert.Equal(1L, command.ExecuteScalar());
+        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru1!"));
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
     }
 
     [Fact]
-    public void ResetSandi_KepalaSekolahKeAdmin_Berhasil()
+    public void ResetSandi_KepalaSekolahKeAdmin_LangsungBerlakuDanTercatatDiAudit()
     {
         using var database = new MigratedDatabase();
         database.SeedAkunUntukUji();
@@ -316,6 +311,9 @@ public sealed class LayananAkunTests
         _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, 9, "SandiAdminBaru1!");
 
         Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "admin_tu", "SandiAdminBaru1!"));
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'reset_sandi_akun' AND akun_id = 1 AND entitas_id = 9;";
+        Assert.Equal(1L, command.ExecuteScalar());
     }
 
     [Fact]

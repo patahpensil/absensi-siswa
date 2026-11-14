@@ -721,3 +721,7 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Catatan cara kerja:** agen hanya membangun yang tertulis di PRD atau disetujui di chat; usulan tambahan ditanyakan dulu.
 
+**Revisi lanjutan (14 November 2026, keputusan pemilik):** Admin tidak lagi dapat mengatur ulang sandi Kepala Sekolah. Kepala Sekolah mengatur ulang sandi Admin dan Wali Kelas; Admin hanya Wali Kelas (`LayananAkun.EnsureMayResetPassword`, tombol di Akun pengguna web mengikuti aturan yang sama dengan Nonaktifkan). Sandi Kepala Sekolah yang lupa dipulihkan penyedia setelah verifikasi, bersama P-32 di versi online. Risiko "Admin mengetahui sandi Kepala Sekolah" dari catatan di atas tidak berlaku lagi.
+
+**Keterbatasan sampai versi online:** belum ada jalur pemulihan sandi Kepala Sekolah. Di situs uji jalan keluarnya pulihkan cadangan atau mulai ulang dari wizard; pekerjaan sekolah tetap bisa dilakukan Admin.
+

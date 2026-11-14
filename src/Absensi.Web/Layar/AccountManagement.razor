@@ -128,9 +128,8 @@
     private bool CanTouch(AkunDaftar account) =>
         account.Id != Status.Akun!.Id && (IsHead || account.Peran == PeranAkun.WaliKelas);
 
-    // P-21: Kepala Sekolah and Admin reset each other's password; Admin never resets another Admin.
-    private bool CanReset(AkunDaftar account) =>
-        account.Id != Status.Akun!.Id && (IsHead || account.Peran != PeranAkun.Admin);
+    // P-21 (revised): Admin resets Wali Kelas passwords only; same rule as deactivation.
+    private bool CanReset(AkunDaftar account) => CanTouch(account);
 
     private static string RoleText(PeranAkun role) => role switch
     {

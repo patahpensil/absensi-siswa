@@ -1026,7 +1026,7 @@ await langkah('Mutasi siswa dan nonaktif guru: data tetap, kartu siswa dinonakti
   tegas((await page.textContent('#audit-table')).includes('kartu_aktif'), 'penonaktifan kartu tidak tercatat di audit');
 });
 
-await langkah('Akun: admin membuat wali kelas, sandi diatur ulang termasuk sandi kepala sekolah (P-21), akun dinonaktifkan tidak bisa masuk', async () => {
+await langkah('Akun: admin membuat wali kelas, sandi wali diatur ulang, akun kepala sekolah tidak tersentuh admin (P-21), akun dinonaktifkan tidak bisa masuk', async () => {
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#account-management');
   tegas(await page.locator('#account-role option').count() === 1, 'admin masih bisa memilih peran Admin');
@@ -1051,22 +1051,14 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang termasuk sandi
   await page.fill('#account-reset-password', 'sandibaru123');
   await page.click('#account-reset-confirm');
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun wali8a diatur ulang'));
-  // P-21: Admin dapat mengatur ulang sandi Kepala Sekolah, tetapi tidak menonaktifkannya.
+  // P-21 (revisi): Admin tidak dapat mengatur ulang sandi maupun menonaktifkan Kepala Sekolah.
   const headRow = page.locator('#account-table tbody tr').filter({ hasText: 'Kepala Sekolah' }).first();
-  tegas(await headRow.locator('[id^=account-reset-]').count() === 1, 'admin tidak dapat mengatur ulang sandi kepala sekolah');
-  tegas(await headRow.locator('[id^=account-deactivate-]').count() === 0, 'admin dapat menonaktifkan kepala sekolah');
-  await headRow.locator('[id^=account-reset-]').click();
-  await page.fill('#account-reset-password', 'sementara123');
-  await page.click('#account-reset-confirm');
-  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun kepsek diatur ulang'));
+  tegas(await headRow.locator('[id^=account-reset-], [id^=account-deactivate-]').count() === 0, 'admin mendapat tindakan atas akun kepala sekolah');
   await page.click('#tombol-keluar');
 
   // Sandi hasil atur ulang langsung berlaku tanpa langkah tambahan (P-21 revisi 14 November 2026).
   await masuk('wali8a', 'sandibaru123');
   await page.waitForSelector('#akun-aktif');
-  await page.click('#tombol-keluar');
-  await masuk('kepsek', 'sementara123');
-  await page.waitForSelector('#ringkasan');
   await page.click('#tombol-keluar');
 
   await masuk('admin', 'contoh123');
@@ -1076,10 +1068,6 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang termasuk sandi
   await page.click('#account-deactivate-confirm');
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('dinonaktifkan'));
   tegas((await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).textContent()).includes('Nonaktif'), 'status akun tidak berubah');
-  await page.locator('#account-table tbody tr').filter({ hasText: 'Kepala Sekolah' }).first().locator('[id^=account-reset-]').click();
-  await page.fill('#account-reset-password', 'contoh123');
-  await page.click('#account-reset-confirm');
-  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun kepsek diatur ulang'));
   await page.click('#tombol-keluar');
   await masuk('wali8a', 'sandibaru123');
   await page.waitForSelector('#galat-masuk');

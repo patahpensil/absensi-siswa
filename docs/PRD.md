@@ -109,12 +109,12 @@ Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem 
 **Keputusan P-21 — disetujui pemilik 13 November 2026:** Kepala Sekolah dan Admin/TU **setara untuk seluruh pekerjaan sekolah**: keduanya membuka semua menu termasuk Audit dan dapat menetapkan status kehadiran guru (§16.17, §17.10); seluruh perubahan tercatat di audit (§12). Perbedaan hanya pada pengelolaan akun:
 - Hanya Kepala Sekolah yang membuat dan menonaktifkan akun Admin.
 - Admin tidak dapat menonaktifkan akun Kepala Sekolah.
-- Kepala Sekolah dan Admin boleh saling mengatur ulang sandi agar sekolah tidak buntu bila salah satu lupa sandi. Sandi baru langsung berlaku tanpa langkah tambahan saat masuk. Setiap pengaturan ulang tercatat di Audit (siapa, kapan, akun mana), sehingga Kepala Sekolah dapat memeriksa bila sandinya diatur ulang tanpa sepengetahuannya. Admin tetap tidak dapat mengatur ulang sandi Admin lain, dan tidak ada yang mengatur ulang sandi akun sendiri. Tidak ada menu ganti sandi sendiri; pengguna yang ingin mengganti sandi meminta Kepala Sekolah atau Admin mengaturnya ulang. *(Revisi pemilik 14 November 2026: kewajiban ganti sandi saat masuk berikutnya dihapus; perlindungan akun Kepala Sekolah dan Admin dipindahkan ke OTP, P-32.)*
+- Kepala Sekolah dapat mengatur ulang sandi Admin dan Wali Kelas; Admin hanya dapat mengatur ulang sandi Wali Kelas. Sandi baru langsung berlaku dan tercatat di Audit. Tidak ada yang mengatur ulang sandi akun sendiri, dan tidak ada menu ganti sandi sendiri. Bila Kepala Sekolah lupa sandi, pekerjaan sekolah tetap berjalan lewat Admin, dan sandi Kepala Sekolah dipulihkan oleh penyedia layanan setelah verifikasi (bersama P-32, versi online). *(Revisi pemilik 14 November 2026, dua tahap: kewajiban ganti sandi saat masuk dihapus, lalu Admin tidak lagi dapat mengatur ulang sandi Kepala Sekolah.)*
 - Akun Kepala Sekolah pengganti (mutasi atau pergantian jabatan) dibuat lewat verifikasi penyedia layanan, bukan oleh Admin; rincian verifikasi dan pemulihan mengikuti D-10.
 
 Alasan pembedaan (saran agen, disetujui pemilik): bila seluruh urusan akun disamakan, satu Admin dapat menonaktifkan Kepala Sekolah lalu menguasai data sekolah; bila terlalu dibedakan, sekolah buntu saat Kepala Sekolah lupa sandi.
 
-**Keputusan P-32 — disetujui pemilik 14 November 2026:** akun Kepala Sekolah dan Admin memakai **kode OTP dari aplikasi authenticator** (mis. Google Authenticator atau Microsoft Authenticator): QR dipindai sekali, lalu kode 6 angka yang berganti tiap 30 detik diminta saat masuk. OTP lewat SMS/WhatsApp tidak dipakai (§22). Bila HP hilang atau diganti, pemulihan OTP **hanya lewat verifikasi penyedia layanan**, tidak oleh Admin atau Kepala Sekolah lain. Dengan OTP, sandi hasil atur ulang yang diketahui pihak lain tidak cukup untuk masuk. Dibangun bersama versi online (§21, P-23); sampai itu, risiko sandi Kepala Sekolah yang diatur ulang Admin hanya diawasi lewat Audit. Wali kelas dan target akhir faktor hardware §22 tetap mengikuti D-10.
+**Keputusan P-32 — disetujui pemilik 14 November 2026:** akun Kepala Sekolah dan Admin memakai **kode OTP dari aplikasi authenticator** (mis. Google Authenticator atau Microsoft Authenticator): QR dipindai sekali, lalu kode 6 angka yang berganti tiap 30 detik diminta saat masuk. OTP lewat SMS/WhatsApp tidak dipakai (§22). Bila HP hilang atau diganti, pemulihan OTP **hanya lewat verifikasi penyedia layanan**, tidak oleh Admin atau Kepala Sekolah lain. Dengan OTP, sandi yang diketahui pihak lain tidak cukup untuk masuk. Dibangun bersama versi online (§21, P-23). Wali kelas dan target akhir faktor hardware §22 tetap mengikuti D-10.
 
 **Keputusan P-22 — disetujui pemilik 13 November 2026:** wali kelas boleh melihat dan mengunduh laporan kehadiran (Excel/PDF) untuk kelas yang sedang ditugaskan kepadanya saja (§3.3). Laporan kelas lain dan laporan guru tetap tertutup bagi wali kelas.
 
@@ -127,7 +127,7 @@ Kepala Sekolah / Admin    →  akun Wali Kelas
 Verifikasi penyedia       →  akun Kepala Sekolah pengganti
 ```
 
-Kepala sekolah dan admin sama-sama berwenang penuh atas pekerjaan sekolah (P-21), sehingga tidak terjadi kebuntuan bila salah satu berhalangan atau dimutasi. Keduanya boleh saling mereset sandi dengan kewajiban ganti sandi saat login berikutnya; Admin tidak dapat menonaktifkan Kepala Sekolah.
+Kepala sekolah dan admin sama-sama berwenang penuh atas pekerjaan sekolah (P-21), sehingga tidak terjadi kebuntuan bila salah satu berhalangan atau dimutasi. Kepala Sekolah dapat mengatur ulang sandi Admin; sandi Kepala Sekolah hanya dipulihkan penyedia layanan. Admin tidak dapat menonaktifkan Kepala Sekolah.
 
 ### 3.2 Koreksi Langsung Wali Kelas dan Bantuan Admin
 
@@ -2011,7 +2011,7 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 
 **P-31** (14 November 2026) aturan tambahan penulisan kode (§24.7): kode baru wajib bahasa Inggris dengan penggantian nama lama bertahap, pemeriksaan wajib setiap fitur (async, deadlock, race/TOCTOU, loop, memory leak, parameter, typo), tanpa watermark AI, tampilan tanpa AI slop.
 
-**P-32** (14 November 2026) OTP aplikasi authenticator untuk Kepala Sekolah dan Admin, pemulihan hanya lewat penyedia, dibangun bersama versi online (§3). Bersamaan, butir reset sandi P-21 direvisi: sandi hasil atur ulang langsung berlaku, tanpa kewajiban ganti sandi dan tanpa menu ganti sandi sendiri.
+**P-32** (14 November 2026) OTP aplikasi authenticator untuk Kepala Sekolah dan Admin, pemulihan hanya lewat penyedia, dibangun bersama versi online (§3). Bersamaan, butir reset sandi P-21 direvisi: sandi hasil atur ulang langsung berlaku, tanpa kewajiban ganti sandi dan tanpa menu ganti sandi sendiri; Admin hanya mengatur ulang sandi Wali Kelas, dan sandi Kepala Sekolah yang lupa dipulihkan penyedia.
 
 **Ganti nama repo (14 November 2026):** pemilik mengganti nama `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Tautan lama dialihkan GitHub; tautan bukti historis di PROGRES-DAN-UTANG.md tidak diubah.
 

@@ -129,11 +129,11 @@ public sealed class LayananAkun
     // menampilkan sandi lama (memang tidak tersimpan sebagai teks biasa,
     // hanya hash-nya — Absensi.Data.Akun.HashSandi).
     //
-    // P-21 (revised 14 November 2026): Kepala Sekolah and Admin may reset each
-    // other's password so the school is never locked out; the new password
-    // works immediately and the reset is audited. Admin still cannot reset
-    // another Admin, and nobody resets their own account here. One-time codes
-    // for Kepala Sekolah/Admin come with the online version (P-32).
+    // P-21 (revised 14 November 2026): Kepala Sekolah resets Admin and Wali
+    // Kelas passwords; Admin resets Wali Kelas passwords only, so no Admin ever
+    // knows the Kepala Sekolah password. The new password works immediately and
+    // the reset is audited. A forgotten Kepala Sekolah password is recovered by
+    // the service provider after verification (online version, P-32).
     public void ResetSandi(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget, string sandiBaru)
     {
         PastikanBolehMengelolaAkun(pembuat);
@@ -164,9 +164,9 @@ public sealed class LayananAkun
             throw new InvalidOperationException("Gunakan Ganti sandi untuk mengubah sandi akun sendiri.");
         }
 
-        if (actor.Peran == PeranAkun.Admin && target.Peran == PeranAkun.Admin)
+        if (actor.Peran == PeranAkun.Admin && target.Peran != PeranAkun.WaliKelas)
         {
-            throw new InvalidOperationException("Admin tidak berwenang mereset sandi Admin lain.");
+            throw new InvalidOperationException("Admin hanya dapat mengatur ulang sandi Wali Kelas.");
         }
     }
 
