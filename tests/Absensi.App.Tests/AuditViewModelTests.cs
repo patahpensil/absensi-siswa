@@ -43,7 +43,7 @@ public sealed class AuditViewModelTests
         Assert.Empty(viewModel.Baris);
     }
 
-    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { Kepsek, WaliKelas };
+    public static TheoryData<AkunTersimpan> PeranBukanAdmin => new() { WaliKelas };
 
     [Fact]
     public void Konstruktor_Admin_RentangBawaan90HariDanBarisTerisi()

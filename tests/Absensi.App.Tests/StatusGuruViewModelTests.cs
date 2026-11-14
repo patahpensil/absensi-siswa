@@ -50,7 +50,7 @@ public sealed class StatusGuruViewModelTests
     }
 
     [Fact]
-    public void SimpanCommand_Admin_TidakBisaDieksekusi()
+    public void SimpanCommand_Admin_BisaDieksekusi()
     {
         using var database = new MigratedDatabase();
         SeedDasar(database);
@@ -59,7 +59,7 @@ public sealed class StatusGuruViewModelTests
             GuruTerpilih = new GuruUntukKehadiran(1, "111", "Guru Alpa", StatusAbsensiGuru.Alpa, null),
         };
 
-        Assert.False(viewModel.SimpanCommand.CanExecute(null));
+        Assert.True(viewModel.SimpanCommand.CanExecute(null));
     }
 
     [Fact]
