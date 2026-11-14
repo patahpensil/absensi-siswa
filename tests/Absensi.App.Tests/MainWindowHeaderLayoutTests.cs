@@ -82,14 +82,8 @@ public sealed class MainWindowHeaderLayoutTests
         }
         finally
         {
-            // BUKAN window.Close(): MainWindow.xaml.cs menyambungkan Closed
-            // ke Application.Current.Shutdown() (Tugas 14, perilaku produksi
-            // yang benar -- App.xaml ShutdownMode="OnExplicitShutdown"). Di
-            // proses uji, Application dibagi oleh semua kasus lewat thread
-            // StaHost yang sama, jadi Close() di sini mematikannya untuk
-            // KASUS BERIKUTNYA juga (baru ditemukan: kasus kedua teori ini
-            // gagal dengan "The Application object is being shut down" saat
-            // membangun MainWindow baru). Hide() cukup untuk uji tata letak.
+            // Hide() cukup untuk uji tata letak. (Sejak P-24 menutup MainWindow
+            // tidak lagi mematikan aplikasi; App yang membuka login kembali.)
             window.Hide();
         }
     });
