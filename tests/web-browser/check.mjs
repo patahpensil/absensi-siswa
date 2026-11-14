@@ -610,7 +610,8 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.click('#attendance-detail-1');
   await page.waitForSelector('#person-detail');
   tegas((await page.locator('#person-history tbody tr').filter({ hasText: '04/11' }).textContent()).includes('13:10:00'), 'wali tidak melihat riwayat siswanya');
-  tegas(await page.locator('#person-detail-recap-note').count() === 1, 'wali mendapat rekap laporan');
+  // P-22: rekap bulanan siswa kelasnya sendiri tersedia untuk wali kelas.
+  tegas(await page.locator('#person-detail-recap').count() === 1, 'wali tidak mendapat rekap siswa kelasnya');
   await page.click('#history-correct-20261104');
   await page.waitForSelector('#correction-form');
   tegas(await page.locator('#correction-requester').count() === 0, 'wali mendapat kolom atas permintaan');
