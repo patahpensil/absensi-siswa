@@ -12,10 +12,11 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         DataContext = viewModel;
+        // Shown without ShowDialog (App.ShowLogin), so no DialogResult: App reads
+        // AkunLogin when the window closes.
         viewModel.LoginBerhasil += (_, akun) =>
         {
             AkunLogin = akun;
-            DialogResult = true;
             Close();
         };
     }

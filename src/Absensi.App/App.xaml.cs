@@ -41,6 +41,12 @@ public partial class App : Application
     private Penjadwal? _penjadwal;
     private DispatcherTimer? _penjadwalTimer;
     private LayananBackup? _layananBackup;
+    private SekolahTersimpan? _sekolah;
+    private string _nomorVersi = "?";
+    private Window? _gateWindow;
+    private MainWindow? _mainWindow;
+    private bool _loginOpen;
+    private bool _exiting;
 
     // docs/INVESTIGASI-CRASH-2026-09-21.md §4.3 langkah 4: mencegah dialog
     // galat bertumpuk/rekursi kalau MessageBox.Show di
@@ -91,7 +97,7 @@ public partial class App : Application
             sekolah = JalankanWizardInstalasi();
             if (sekolah is null)
             {
-                Shutdown();
+                ExitApplication();
                 return;
             }
         }
@@ -101,33 +107,81 @@ public partial class App : Application
 
         JalankanPembukaanHariBilaSudahDikonfigurasi();
 
-        var nomorVersi = Assembly.GetExecutingAssembly()
+        _nomorVersi = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "?";
-        var statusLisensi = new RepositoriLisensi().BacaStatus(_connection);
+        _sekolah = sekolah;
 
-        var loginViewModel = new LoginViewModel(_connection, nomorVersi, sekolah.Nama, sekolah.LogoPath, statusLisensi);
-        var loginWindow = new LoginWindow(loginViewModel);
+        ShowLogin();
+    }
 
-        if (loginWindow.ShowDialog() != true || loginWindow.AkunLogin is null)
+    // P-24: Keluar, closing the window and the 10-minute idle limit all sign
+    // the user out and return to the login window. The login window is not
+    // modal: ShowDialog would disable every other window of the application,
+    // including a running gate window. The application ends when the login
+    // window is closed without signing in and no gate window is running.
+    // Every exit goes through here so window Closed handlers do not reopen
+    // the login window while the application is shutting down.
+    private void ExitApplication()
+    {
+        _exiting = true;
+        Shutdown();
+    }
+
+    private void ShowLogin()
+    {
+        var statusLisensi = new RepositoriLisensi().BacaStatus(_connection!);
+        var loginWindow = new LoginWindow(new LoginViewModel(_connection!, _nomorVersi, _sekolah!.Nama, _sekolah.LogoPath, statusLisensi));
+        _loginOpen = true;
+        loginWindow.Closed += (_, _) =>
         {
-            Shutdown();
-            return;
-        }
+            _loginOpen = false;
+            if (loginWindow.AkunLogin is { } account)
+            {
+                OpenMain(account);
+            }
+            else if (_gateWindow is null && !_exiting)
+            {
+                ExitApplication();
+            }
+        };
+        MainWindow = loginWindow;
+        loginWindow.Show();
+    }
 
-        _akunLogin = loginWindow.AkunLogin;
+    private void OpenMain(AkunTersimpan account)
+    {
+        _akunLogin = account;
 
+        // Re-read on every login: the school name, logo or active period may
+        // have changed during the previous session.
+        _sekolah = new RepositoriSekolah().CariSatuSatunya(_connection!) ?? _sekolah!;
         var repositoriTahunAjaran = new RepositoriTahunAjaran();
-        _tahunAjaranId = repositoriTahunAjaran.CariIdAktif(_connection);
-        var tahunAjaranAktif = repositoriTahunAjaran.CariNamaAktif(_connection);
+        _tahunAjaranId = repositoriTahunAjaran.CariIdAktif(_connection!);
+        var tahunAjaranAktif = repositoriTahunAjaran.CariNamaAktif(_connection!);
         var mainWindowViewModel = new MainWindowViewModel(
-            _connection, _akunLogin, _penyediaWaktu, _statusModeRegistrasi,
-            sekolah.Nama, sekolah.LogoPath, tahunAjaranAktif, _tahunAjaranId, _layananBackup!);
-        var mainWindow = new MainWindow(mainWindowViewModel, BukaGerbang, BukaRegistrasiKartu, SelesaikanRestoreDanTutup);
+            _connection!, account, _penyediaWaktu, _statusModeRegistrasi,
+            _sekolah.Nama, _sekolah.LogoPath, tahunAjaranAktif, _tahunAjaranId, _layananBackup!);
+        var mainWindow = new MainWindow(mainWindowViewModel, BukaGerbang, BukaRegistrasiKartu, SelesaikanRestoreDanTutup, _penyediaWaktu);
+        mainWindow.Closed += (_, _) =>
+        {
+            _mainWindow = null;
+            _akunLogin = null;
+            if (!_exiting)
+            {
+                ShowLogin();
+            }
+        };
 
+        _mainWindow = mainWindow;
         MainWindow = mainWindow;
         mainWindow.Show();
 
-        MulaiPenjadwal();
+        // The scheduler (Telegram batches, day opening) runs for the whole
+        // application lifetime once someone has signed in, not per session.
+        if (_penjadwal is null)
+        {
+            MulaiPenjadwal();
+        }
     }
 
     // RENCANA-TUGAS.md Tugas 10 — rekap 08.00/batas akhir tap/finalisasi
@@ -164,9 +218,27 @@ public partial class App : Application
     private Window BukaGerbang()
     {
         new Absensi.Data.Gerbang.GateAccess().EnsureAuthorized(_connection!, _akunLogin);
+        // P-24: one gate window per application; it survives sign-out, so a
+        // later session re-activates the running window instead of a second one.
+        if (_gateWindow is not null)
+        {
+            return _gateWindow;
+        }
+
         var cache = CacheTampilanGerbang.Muat(_connection!);
         var gerbangViewModel = new GerbangViewModel(_connection!, _penyediaWaktu, new PemutarBunyiSistem(), cache, _statusModeRegistrasi);
-        return new GerbangWindow(gerbangViewModel, _connection!);
+        var gate = new GerbangWindow(gerbangViewModel, _connection!);
+        _gateWindow = gate;
+        gate.Closed += (_, _) =>
+        {
+            _gateWindow = null;
+            // Gate was the last window: nobody signed in and no login waiting.
+            if (_mainWindow is null && !_loginOpen && !_exiting)
+            {
+                ExitApplication();
+            }
+        };
+        return gate;
     }
 
     // RENCANA-TUGAS.md Tugas 8 — PRD §14.3 tombol "Registrasi". Tombol
@@ -197,6 +269,12 @@ public partial class App : Application
 
         var viewModel = new RegistrasiKartuViewModel(_connection!, _akunLogin!, _penyediaWaktu, _statusModeRegistrasi, tahunAjaranId);
         return new RegistrasiKartuWindow(viewModel);
+    }
+
+    protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
+    {
+        _exiting = true;
+        base.OnSessionEnding(e);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -351,7 +429,7 @@ public partial class App : Application
             "Restore selesai. Buka kembali aplikasi untuk melanjutkan.",
             "Restore", MessageBoxButton.OK, MessageBoxImage.Information);
 
-        Shutdown();
+        ExitApplication();
     }
 }
 

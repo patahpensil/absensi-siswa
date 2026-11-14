@@ -741,3 +741,14 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 - Tes: `PemrosesTapTests` (siswa pindahan tercatat Terlambat 09.05; siswa tanpa kelas ditolak tanpa tap_log), `CurrentDayGuardTests` disesuaikan.
 - Pemeriksaan: pengecekan baris dan pembukaan hari terjadi di luar transaksi tap; dua tap bersamaan aman karena pembukaan hari memakai INSERT OR IGNORE dan penulisan tap tetap di transaksi IMMEDIATE.
 
+## 50. Desktop: keluar otomatis 10 menit, Layar gerbang tetap berjalan (P-24 poin 3 dan 8) — 14 November 2026
+
+- `IdleTimeout` (batas 10 menit, P-24) dan `WindowActivity` (class handler masukan keyboard, mouse, sentuh untuk semua jendela kecuali `GerbangWindow`, jadi dialog dari jendela kerja dihitung sebagai pemakaian, sedangkan reader yang mengetik ke Layar gerbang tidak memperpanjang sesi).
+- `MainWindow` memeriksa tiap 15 detik; bila lewat 10 menit, dialog miliknya ditutup lalu jendela kerja ditutup. Handler dilepas saat jendela ditutup (tidak ada kebocoran memori lewat event statis).
+- `App`: Keluar, tombol X, dan batas 10 menit kini kembali ke layar Masuk, bukan menutup aplikasi. Layar Masuk tidak lagi modal, karena `ShowDialog` menonaktifkan semua jendela lain termasuk Layar gerbang. Layar gerbang satu per aplikasi dan tetap berjalan setelah keluar; sesi berikutnya mengaktifkan jendela yang sama. Aplikasi berakhir bila layar Masuk ditutup tanpa masuk dan tidak ada Layar gerbang yang berjalan, atau saat Layar gerbang ditutup ketika tidak ada yang masuk. Penjadwal berjalan sekali untuk seluruh umur aplikasi.
+- Tes: `IdleTimeoutTests` (tepat 10 menit, aktivitas memulai ulang hitungan, jam mundur).
+
+**Belum terbukti:** alur jendela (keluar, masuk lagi, Layar gerbang tetap menerima tap) belum diuji otomatis; perlu dicoba Edgar di PC Windows. Dialog yang tidak dibuka dengan `Owner = jendela kerja` tidak ikut ditutup saat keluar otomatis.
+
+**Utang untuk butir 2 (Layar gerbang terpisah):** dialog modal dari jendela kerja (mis. Registrasi kartu) memakai `ShowDialog`, yang menonaktifkan Layar gerbang selama dialog terbuka; tap di gerbang tertahan selama itu.
+

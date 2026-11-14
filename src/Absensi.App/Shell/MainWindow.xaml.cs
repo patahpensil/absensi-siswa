@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Threading;
+using Absensi.Domain;
 
 namespace Absensi.App.Shell;
 
@@ -7,16 +9,37 @@ public partial class MainWindow : Window
     // Roda mouse diteruskan ke ScrollViewer halaman bila kontrol di bawah kursor
     // (tabel tanpa luapan, kolom isian, ComboBox tertutup) tidak bisa menggulir —
     // lihat PenerusRodaMouse. Idempoten; dipasang juga di App.OnStartup.
-    static MainWindow() => Absensi.App.Perilaku.PenerusRodaMouse.Pasang();
+    static MainWindow()
+    {
+        Absensi.App.Perilaku.PenerusRodaMouse.Pasang();
+        WindowActivity.Install();
+    }
+
+    private readonly IdleTimeout _idle;
+    private readonly DispatcherTimer _idleTimer = new() { Interval = TimeSpan.FromSeconds(15) };
+
+    // True when the window closed because of the 10-minute idle limit (P-24).
+    public bool SignedOutForIdle { get; private set; }
 
     public MainWindow(
         MainWindowViewModel viewModel,
         Func<Window> bukaGerbang,
         Func<Window?> bukaRegistrasiKartu,
-        Action<byte[]> restoreSelesaiPerluTutupAplikasi)
+        Action<byte[]> restoreSelesaiPerluTutupAplikasi,
+        IPenyediaWaktu? clock = null)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _idle = new IdleTimeout(clock ?? new PenyediaWaktuSistem());
+        WindowActivity.Input += _idle.RecordActivity;
+        _idleTimer.Tick += (_, _) =>
+        {
+            if (_idle.IsExpired)
+            {
+                SignOutForIdle();
+            }
+        };
+        _idleTimer.Start();
         Window? gate = null;
         viewModel.BukaGerbangDiminta += (_, _) =>
         {
@@ -63,10 +86,26 @@ public partial class MainWindow : Window
 
         viewModel.KeluarDiminta += (_, _) => Close();
 
-        // Tugas 14: App.xaml ShutdownMode="OnExplicitShutdown" — menutup
-        // jendela utama (lewat tombol Keluar DI ATAS maupun tombol X bawaan
-        // Windows) tidak lagi otomatis mematikan aplikasi, jadi harus
-        // dipicu eksplisit di sini.
-        Closed += (_, _) => Application.Current.Shutdown();
+        // P-24: closing the working window signs the user out and App shows
+        // the login window again; the gate window, if open, keeps running.
+        Closed += (_, _) =>
+        {
+            _idleTimer.Stop();
+            WindowActivity.Input -= _idle.RecordActivity;
+        };
+    }
+
+    private void SignOutForIdle()
+    {
+        _idleTimer.Stop();
+        SignedOutForIdle = true;
+        // Dialogs opened from this window close first so their ShowDialog
+        // calls return before the owner closes.
+        foreach (var owned in OwnedWindows.Cast<Window>().ToList())
+        {
+            owned.Close();
+        }
+
+        Close();
     }
 }

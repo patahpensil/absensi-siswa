@@ -86,12 +86,9 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public event EventHandler? BukaRegistrasiKartuDiminta;
 
-    // Tugas 14 — App.xaml sekarang ShutdownMode="OnExplicitShutdown" (lihat
-    // catatan di App.xaml.cs), jadi menutup jendela utama TIDAK LAGI
-    // otomatis mematikan aplikasi. MainWindow.xaml.cs memanggil
-    // Application.Current.Shutdown() dari event Closed-nya sendiri (jadi
-    // berlaku juga saat jendela ditutup lewat tombol X, tidak hanya lewat
-    // tombol Keluar ini).
+    // P-24 (14 November 2026): Keluar menutup jendela kerja; App menampilkan
+    // layar Masuk lagi dan Layar gerbang yang sedang berjalan tidak ikut
+    // tertutup (lihat App.ShowLogin).
     public event EventHandler? KeluarDiminta;
 
     // RENCANA-TUGAS.md Tugas 13 — PRD §18.4: diteruskan dari PengaturanViewModel.
