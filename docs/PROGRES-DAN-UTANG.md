@@ -846,3 +846,20 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 **Belum terbukti:** tampilan ikon di desktop belum dilihat lewat tangkapan layar; perlu dicoba Edgar di PC Windows. Layar "Buat sandi baru" pada tangkapan layar Edgar (17.11 WITA, 14 November) adalah fitur wajib ganti sandi yang sudah dihapus pukul 17.51 di `b581aee`.
 
 **Menunggu Edgar — aturan gabungan huruf kapital, huruf kecil, angka:** belum dikerjakan karena bertentangan dengan PRD §22 (target ASVS L3). ASVS 5.0 6.2.5 (Level 1) melarang aturan komposisi sandi: sandi berisi karakter apa pun harus diterima, tanpa kewajiban huruf besar/kecil, angka, atau simbol. Usulan pengganti: panjang minimal dinaikkan (ASVS 6.2.1: minimal 8, sangat disarankan 15) dan sandi umum ditolak memakai daftar sandi bocor (ASVS 6.2.4).
+
+## 57. Aturan sandi P-35 dan panduan di bawah kolom sandi — 15 November 2026
+
+**Keputusan Edgar:** sandi minimal 12 karakter, wajib huruf kapital, huruf kecil, angka, dan simbol, dengan panduan kecil di bawah kolom sandi. Agen sudah menyampaikan bahwa aturan komposisi bertentangan dengan ASVS 5.0 6.2.5 dan mengusulkan panjang minimal + penolakan sandi umum; Edgar memilih aturan komposisi. Dicatat sebagai pengecualian di PRD §22.2 (P-35).
+
+**Selesai:**
+- `Absensi.Domain/Akun/PasswordPolicy.cs`: satu sumber aturan dan teks panduan. Panjang dihitung per karakter yang terlihat (emoji dihitung satu). Simbol = karakter selain huruf, angka, spasi, dan karakter kontrol; spasi boleh dipakai tetapi tidak dihitung sebagai simbol.
+- `LayananAkun.PastikanSandiValid` memakai aturan itu untuk akun baru, atur ulang sandi, dan wizard. Pesan galat menyebut syarat yang kurang, mis. "Sandi belum memenuhi syarat: huruf kapital, simbol."
+- Panduan di bawah kolom sandi: web (tambah akun, atur ulang sandi, wizard) dan desktop (Tambah akun, Reset sandi, Wizard).
+- Sandi lama tetap dapat dipakai masuk; aturan hanya diperiksa saat sandi dibuat atau diatur ulang.
+- Sandi akun contoh mode uji diganti `Contoh#2026ab`; sandi di tes disesuaikan.
+
+**Tes baru:** `PasswordPolicyTests` (sah, tiap syarat yang kurang, kosong, emoji), `MasterDataLifecycleTests.BuatAkun_SandiPanjangTanpaKombinasi_DitolakDenganSyaratYangKurang`, langkah Chromium akun memeriksa panduan dan penolakan sandi panjang tanpa kombinasi.
+
+**Belum terbukti / belum diputuskan:** tampilan panduan di desktop belum dilihat lewat tangkapan layar. Penolakan sandi umum (ASVS 6.2.4) belum diputuskan Edgar.
+
+**Catatan:** commit `05a3d12` (dokumen §56) menggagalkan job typos karena kata "templat"; diperbaiki di commit berikutnya.

@@ -1569,6 +1569,7 @@ Setiap kontrol diberi status **Belum dinilai / Lulus / Gagal / Tidak berlaku**. 
 3. Kebijakan berlaku untuk akun penyedia, kepala sekolah, admin, wali kelas, dan petugas bantuan yang masuk dalam lingkup. MFA hanya untuk pemilik atau admin tidak memenuhi target penuh tersebut.
 4. Email tidak digunakan sebagai faktor autentikasi; OTP telepon/SMS tidak menjadi opsi autentikasi L3. Email dapat dipakai sebagai pemberitahuan sesuai klasifikasi data; bukan faktor untuk melewati MFA.
 5. Jika password digunakan, password disimpan memakai KDF/password hashing yang disetujui, salt dan parameter terukur; bukan plaintext, enkripsi yang dapat dibalik, atau hash cepat tunggal. Kebijakan panjang, daftar password bocor dan konteks, serta kapasitas KDF didokumentasikan terhadap persyaratan versi standar.
+   **Keputusan P-35 — ditetapkan pemilik 15 November 2026 (pengecualian tercatat):** sandi baru (akun baru, atur ulang sandi, wizard) minimal **12 karakter** dan wajib berisi **huruf kapital, huruf kecil, angka, dan simbol**. Panduan aturan ditampilkan di bawah kolom sandi; pesan galat menyebut syarat yang belum terpenuhi. Sandi lama tetap dapat dipakai masuk. Aturan komposisi ini **bertentangan dengan ASVS 5.0 6.2.5** (Level 1) yang melarang kewajiban jenis karakter; agen telah menyampaikan pertentangan dan alternatifnya (panjang minimal + penolakan sandi umum, ASVS 6.2.4), dan pemilik memilih aturan komposisi. Pada audit ASVS (U-13), butir 6.2.5 dicatat sebagai pengecualian keputusan pemilik, bukan lulus. Penolakan sandi umum (6.2.4) belum diputuskan.
 6. Pemulihan akun dan penggantian faktor tidak boleh menjadi jalur lebih lemah. Admin hanya memulai proses reset; tidak memilih/mengetahui password baru pengguna (v5.0.0-6.4.6). Kehilangan faktor memerlukan verifikasi identitas dengan kekuatan sesuai pendaftaran dan bukti audit.
 7. Semua jalur login/undangan/reset/perangkat/pemulihan diinventarisasi, dibatasi percobaan, dilindungi dari enumerasi akun, dan dipantau. Akun default universal dinonaktifkan/tidak dibuat.
 8. Pendaftaran awal, autentikator cadangan, pemulihan kepala sekolah, dan kondisi petugas tidak memiliki hardware yang sesuai harus diselesaikan dalam desain identitas sebelum rilis. Agen tidak boleh membuat pengecualian password saja sebagai jalan pintas operasional.
@@ -2033,6 +2034,8 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **P-33** (15 November 2026) transisi dan pilot D-09: tanpa migrasi versi 0.9, pilot di SMPN 1 Pancarijang minimal 2 bulan, server satu-satunya data resmi, rollback ke absen manual, perluasan bertahap sampai 7 sekolah (§25.1).
 
 **P-34** (15 November 2026) target D-07: 5 tap/detik per sekolah, tap p95 ≤ 1 detik dan p99 ≤ 2 detik, ketersediaan 99,5% pada jam sekolah, RPO 5 menit, RTO 4 jam; pilot memakai kredit AWS dan batas anggaran ditetapkan setelah tagihan nyata; alarm tagihan diturunkan menjadi Rp800 ribu/bulan (§25.1, §23.5).
+
+**P-35** (15 November 2026) aturan sandi: minimal 12 karakter dengan huruf kapital, huruf kecil, angka, dan simbol, panduan di bawah kolom sandi; pengecualian tercatat terhadap ASVS 5.0 6.2.5 (§22.2).
 
 **Ganti nama repo (14 November 2026):** pemilik mengganti nama `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Tautan lama dialihkan GitHub; tautan bukti historis di PROGRES-DAN-UTANG.md tidak diubah.
 
