@@ -650,7 +650,7 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 ## 42. Satu repo dan satu akun Cloudflare — 14 November 2026
 
-**Keputusan pemilik:** karena produk hanya desktop, cukup satu repo, `patahpensil/absensi-siswa`. Repo `Absensi-Uji-Real` dihapus oleh pemilik. Sebelum dihapus, isinya dibandingkan: tidak ada berkas yang hanya ada di sana, dan tidak ada issue, PR, rilis, atau cabang lain. Pemilik juga menghapus secret lama dan memilih memakai satu akun Cloudflare dengan secret `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`.
+**Keputusan pemilik:** karena produk hanya desktop, cukup satu repo, `patahpensil/absensi-siswa`. Repo `Absensi-Uji-Real` dihapus oleh pemilik (dicek agen 14 November 2026 ±15.20 WITA: API GitHub menjawab 404, `absensi-siswa` utuh). Sebelum dihapus, isinya dibandingkan: tidak ada berkas yang hanya ada di sana, dan tidak ada issue, PR, rilis, atau cabang lain. Pemilik juga menghapus secret lama dan memilih memakai satu akun Cloudflare dengan secret `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`.
 
 - `web-deploy.yml` kini memakai satu pasang secret itu untuk kedua proyek.
 - **Terbukti** ([run 43568697989](https://github.com/patahpensil/absensi-siswa/actions/runs/43568697989), commit `2f40fe9`): akun secret baru ternyata akun yang memegang proyek `absensi-uji`. Situs `https://absensi-uji.pages.dev/` diperbarui dengan alamat tetap, dan pemeriksaan Chromium sebelum dan sesudah deploy lulus.
