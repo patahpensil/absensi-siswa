@@ -754,9 +754,8 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 ## 51. Desktop: Layar gerbang tetap aktif saat dialog jendela kerja terbuka (P-24 poin 3) — 14 November 2026
 
-- `GateStaysEnabled`: saat sebuah jendela modal (mis. Registrasi kartu, Atur ulang sandi) dimuat, Layar gerbang diaktifkan kembali lewat `EnableWindow`, sehingga tap tetap diproses selama dialog terbuka. WPF mengaktifkan kembali jendela lain sendiri saat dialog ditutup. `GerbangWindow` ditandai `IKeepsRunningDuringDialogs`.
-- Tes: `GateStaysEnabledTests` dengan jendela WPF sungguhan (gerbang tetap aktif, jendela lain tetap dinonaktifkan selama dialog, aktif lagi sesudahnya).
-- Batas: kotak pesan Windows (`MessageBox`) tetap menonaktifkan Layar gerbang selama terbuka; kotak pesan biasanya singkat.
+- `GateStaysEnabled.Attach`: Layar gerbang memantau pesan Windows `WM_ENABLE`; setiap kali dinonaktifkan oleh dialog modal jendela kerja (mis. Registrasi kartu, Atur ulang sandi) atau kotak pesan Windows, jendela itu mengaktifkan dirinya lagi, sehingga tap tetap diproses selama dialog terbuka.
+- Tes: `GateStaysEnabledTests` dengan jendela WPF sungguhan (jendela gerbang tetap aktif, jendela lain tetap dinonaktifkan selama dialog, keduanya aktif sesudahnya). Percobaan pertama (`0f42aab`, mendeteksi dialog lewat `Loaded`) gagal di CI dan diganti pendekatan ini.
 
 **Masih terbuka (P-24 poin 3, "tap dibaca langsung dari perangkat reader"):** aplikasi sudah mendukung reader mode port COM (`SerialGateReaders`, berkas konfigurasi), yang tidak terpengaruh jendela aktif. Reader mode keyboard (USB HID) mengetik ke jendela yang sedang aktif; tap bisa masuk ke isian di jendela kerja. Metode teknisnya menunggu jenis reader yang dipakai Edgar.
 

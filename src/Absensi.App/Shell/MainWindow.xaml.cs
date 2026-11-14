@@ -13,7 +13,6 @@ public partial class MainWindow : Window
     {
         Absensi.App.Perilaku.PenerusRodaMouse.Pasang();
         WindowActivity.Install();
-        Absensi.App.Gerbang.GateStaysEnabled.Install();
     }
 
     private readonly IdleTimeout _idle;

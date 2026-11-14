@@ -1,57 +1,43 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace Absensi.App.Gerbang;
 
-// Windows that keep receiving input while a dialog of the working window is
-// open (PRD §20 P-24 point 3: the gate window runs separately from the login
-// session).
-internal interface IKeepsRunningDuringDialogs;
-
-// WPF's ShowDialog disables every other top-level window of the thread, which
-// would freeze the gate window (and hold back card taps) while, for example,
-// the card registration dialog is open. When a modal window loads, the gate
-// window is enabled again. WPF re-enables the windows it disabled when the
-// dialog closes, so nothing has to be restored. Win32 MessageBox dialogs are
-// not covered.
+// PRD §20 P-24 point 3: the gate window runs separately from the working
+// window. WPF's ShowDialog (and Win32 message boxes) disable every other
+// top-level window of the thread, which would freeze the gate window and hold
+// back card taps while, for example, the card registration dialog is open.
+// The gate window therefore enables itself again whenever Windows disables it.
 internal static class GateStaysEnabled
 {
-    private static bool _installed;
+    private const int WmEnable = 0x000A;
 
-    public static void Install()
+    // Call once the window handle exists (SourceInitialized).
+    public static void Attach(Window window)
     {
-        if (_installed)
+        var handle = new WindowInteropHelper(window).Handle;
+        var source = HwndSource.FromHwnd(handle)
+            ?? throw new InvalidOperationException("Jendela belum memiliki handle.");
+        source.AddHook((IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled) =>
         {
-            return;
-        }
+            if (message == WmEnable && wParam == IntPtr.Zero)
+            {
+                window.Dispatcher.BeginInvoke(DispatcherPriority.Send, () =>
+                {
+                    if (window.IsLoaded)
+                    {
+                        EnableWindow(hwnd, true);
+                    }
+                });
+            }
 
-        _installed = true;
-        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnWindowLoaded));
+            return IntPtr.Zero;
+        });
     }
 
     public static bool IsEnabled(Window window) => IsWindowEnabled(new WindowInteropHelper(window).Handle);
-
-    private static void OnWindowLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is IKeepsRunningDuringDialogs || !System.Windows.Interop.ComponentDispatcher.IsThreadModal)
-        {
-            return;
-        }
-
-        if (Application.Current is null)
-        {
-            return;
-        }
-
-        foreach (Window window in Application.Current.Windows)
-        {
-            if (window is IKeepsRunningDuringDialogs && window.IsVisible)
-            {
-                EnableWindow(new WindowInteropHelper(window).Handle, true);
-            }
-        }
-    }
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

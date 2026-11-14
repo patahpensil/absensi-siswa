@@ -8,7 +8,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Gerbang;
 
-public partial class GerbangWindow : Window, IKeepsRunningDuringDialogs
+public partial class GerbangWindow : Window
 {
     private readonly GerbangViewModel _viewModel;
     private readonly SqliteConnection _connection;
@@ -37,6 +37,8 @@ public partial class GerbangWindow : Window, IKeepsRunningDuringDialogs
         };
         _timer.Start();
 
+        // P-24: dialogs of the working window must not freeze the gate.
+        SourceInitialized += (_, _) => GateStaysEnabled.Attach(this);
         Loaded += (_, _) => StartReaders();
         Activated += (_, _) => RefreshReaderStatus();
         Deactivated += (_, _) =>

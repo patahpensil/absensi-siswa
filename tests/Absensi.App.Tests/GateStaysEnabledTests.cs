@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Absensi.App.Gerbang;
 
 namespace Absensi.App.Tests;
@@ -7,24 +8,22 @@ namespace Absensi.App.Tests;
 // gate window. Real WPF windows on the shared STA thread (StaHost).
 public sealed class GateStaysEnabledTests
 {
-    private sealed class FakeGate : Window, IKeepsRunningDuringDialogs;
-
     [Fact]
-    public void ModalDialog_GateWindowStaysEnabled_OtherWindowsAreDisabled() => StaHost.Jalankan(() =>
+    public void ModalDialog_AttachedWindowStaysEnabled_OtherWindowsAreDisabled() => StaHost.Jalankan(() =>
     {
-        GateStaysEnabled.Install();
-        var gate = OffScreen(new FakeGate());
+        var gate = OffScreen(new Window());
+        gate.SourceInitialized += (_, _) => GateStaysEnabled.Attach(gate);
         var other = OffScreen(new Window());
         gate.Show();
         other.Show();
         bool? gateEnabled = null, otherEnabled = null;
         var dialog = OffScreen(new Window());
-        dialog.Loaded += (_, _) =>
+        dialog.Loaded += (_, _) => dialog.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
         {
             gateEnabled = GateStaysEnabled.IsEnabled(gate);
             otherEnabled = GateStaysEnabled.IsEnabled(other);
             dialog.Close();
-        };
+        });
 
         try
         {
@@ -33,6 +32,7 @@ public sealed class GateStaysEnabledTests
             Assert.True(gateEnabled);
             Assert.False(otherEnabled);
             Assert.True(GateStaysEnabled.IsEnabled(other));
+            Assert.True(GateStaysEnabled.IsEnabled(gate));
         }
         finally
         {
@@ -41,7 +41,7 @@ public sealed class GateStaysEnabledTests
         }
     });
 
-    private static T OffScreen<T>(T window) where T : Window
+    private static Window OffScreen(Window window)
     {
         window.ShowInTaskbar = false;
         window.WindowStartupLocation = WindowStartupLocation.Manual;
