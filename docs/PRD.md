@@ -1734,7 +1734,7 @@ Target kapasitas, latensi, uptime, RPO/RTO dan retensi belum ditetapkan. Jumlah 
 | B-01 | Bukti lokasi Indonesia, HSM, perlindungan memori dan kelayakan kontrol L3 | Provider ditetapkan AWS Jakarta (P-23); bukti lokasi dan HSM/KMS belum dikumpulkan, produksi tidak boleh dimulai tanpa bukti |
 | B-02 | Dana awal, rutin, penggunaan, tambahan tenant, keamanan dan cadangan beserta penawaran bertanggal | Kebutuhan dana pemilik belum dianggap pasti tanpa rincian lengkap |
 | B-03 | Kebutuhan resource dan pengeluaran penyedia pada skenario beban yang disepakati | Tidak menjanjikan kapasitas tanpa hasil ukur |
-| B-04 | Batas dana dan rencana pengeluaran disetujui pemilik. Batas awal: alarm tagihan AWS Rp1,5 juta/bulan; kredit akun baru dipakai lebih dulu (14 November 2026) | Tidak melakukan pengadaan berbayar atau deploy tanpa instruksi |
+| B-04 | Batas dana dan rencana pengeluaran disetujui pemilik. Alarm tagihan AWS Rp800 ribu/bulan (P-34, 15 November 2026; sebelumnya Rp1,5 juta); kredit akun baru dipakai lebih dulu; batas bulanan ditetapkan setelah tagihan nyata satu bulan pilot | Tidak melakukan pengadaan berbayar atau deploy tanpa instruksi |
 
 PRD ini tidak mengotorisasi pengujian berbayar, pembelian atau provisioning. Jika kebutuhan dana melampaui anggaran pemilik, opsi perubahan harus dijelaskan beserta dampaknya. Isolasi atau keamanan tidak diturunkan diam-diam; kekurangan dana juga tidak otomatis dialihkan menjadi tagihan sekolah.
 
@@ -1844,11 +1844,28 @@ Ketentuan arsitektur dan C# yang telah disepakati tidak dibuka ulang oleh tabel 
 | D-04 | Harga ditetapkan P-25, tahapan menunggak/berhenti P-26 (§21.10). Masih terbuka: isi kontrak dan bantuan | Tidak menjalankan penghapusan otomatis |
 | D-05 | Prinsip ditetapkan P-27 (retensi ditetapkan sekolah di kontrak, arsip di AWS Jakarta, tidak di PC pribadi). Masih terbuka: angka retensi per kelas data, audit/log, cache lokal dan prosedur pemusnahan | Tidak mengaktifkan penghapusan |
 | D-06 | Provider ditetapkan P-23 (AWS Jakarta, RDS PostgreSQL). Masih terbuka: pembagian instance, ukuran final, HSM/KMS, perlindungan memori, biaya final dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
-| D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
+| D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan (target diputuskan P-34; batas anggaran akhir menunggu tagihan nyata masa pilot) | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti; target P-34 harus dibuktikan U-11 dan U-14 |
 | D-08 | Teknologi frontend web (website publik dan portal pemilik saja sejak P-24) dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
-| D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
+| D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback (diputuskan P-33) | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
 | D-10 | Pendaftaran hardware MFA, autentikator cadangan, pemulihan, posture perangkat, nilai umur sesi dan tata kelola bantuan (sebagian diputuskan P-32: OTP aplikasi authenticator untuk Kepala Sekolah dan Admin, pemulihan lewat penyedia) | Tidak membuat login password saja sebagai pengecualian otomatis L3 |
 | D-11 | Pola pengendali (sekolah) dan prosesor (penyedia) ditetapkan P-28. Masih terbuka: template kontrak yang diperiksa ahli hukum, kewenangan pihak sekolah, aliran data pihak ketiga | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
+
+**Keputusan P-33 (D-09) — disetujui pemilik 15 November 2026:**
+1. **Tanpa migrasi versi 0.9.** Versi 0.9 belum pernah dipakai sekolah dengan data siswa asli, jadi tidak ada database lama yang dikonversi. Sekolah pilot mulai baru di server: impor Excel Dapodik, lalu registrasi kartu (§16.3, §16.5).
+2. **Pilot satu sekolah:** UPT SMP Negeri 1 Pancarijang (sekitar 400 siswa dan guru), minimal 2 bulan, dimulai pada hari sekolah pertama suatu bulan. Bulan pertama untuk pemakaian penuh; bulan kedua untuk tutup bulan, kunci bulan, laporan, dan latihan internet putus (U-07).
+3. **Satu sumber data resmi sejak hari pertama: server.** Buku absen kelas boleh tetap diisi selama pilot hanya sebagai pembanding, bukan data resmi.
+4. **Rollback:** bila terjadi kehilangan data, kebocoran data, atau tap gagal berulang yang tidak dapat diperbaiki pada hari itu, pilot dihentikan; sekolah kembali ke absen manual dan datanya diekspor ke sekolah. Tidak kembali ke versi 0.9.
+5. **Syarat lanjut ke produksi:** U-01–U-28 lulus, tidak ada tap yang hilang, laporan bulan pilot cocok dengan buku absen, dan tidak ada temuan keamanan berat.
+6. **Perluasan bertahap** setelah evaluasi pilot, sampai sekitar 5 dan paling banyak 7 sekolah pada tahun pertama.
+
+**Keputusan P-34 (D-07) — disetujui pemilik 15 November 2026:**
+- **Skala tahun pertama:** sekitar 5, paling banyak 7 sekolah; rata-rata sekitar 250 siswa dan guru per sekolah, sekolah pilot sekitar 400 (total sekitar 1.900 orang).
+- **Beban rancangan:** 5 tap/detik per sekolah (empat reader lama sekaligus ditambah cadangan). Perkiraan puncak nyata jauh di bawahnya: sekitar 0,3 tap/detik untuk sekolah pilot dan sekitar 1,5 tap/detik bila tujuh sekolah tiba bersamaan (70% siswa dalam 15 menit). Perkiraan ini bukan hasil ukur.
+- **Kecepatan tap ke server:** p95 ≤ 1 detik, p99 ≤ 2 detik. Bila jawaban server lebih dari 3 detik, tap disimpan ke antrean offline (P-08, P-29).
+- **Ketersediaan:** 99,5% per bulan, dihitung pada jam sekolah setiap zona waktu sekolah pelanggan.
+- **RPO 5 menit, RTO 4 jam** untuk database server. Selama server pulih, gerbang tetap mencatat secara offline. RPO 5 menit mengikuti pengiriman log transaksi RDS tiap lima menit dan dapat lebih lama; kedua angka wajib dibuktikan lewat uji pemulihan (U-11).
+- **Anggaran:** pilot memakai kredit awal AWS lebih dulu. Batas anggaran bulanan ditetapkan pemilik setelah tagihan nyata satu bulan pilot diketahui. Pemilik menyebut Rp1 juta/bulan sebagai angka awal; perkiraan dari situs pembanding pihak ketiga menunjukkan RDS Multi-AZ di Jakarta saja sudah mendekati angka itu, sehingga angka tersebut belum dijadikan batas sampai dihitung di AWS Pricing Calculator. Keamanan (Multi-AZ, P-23) tidak diturunkan untuk mengejar batas.
+- **Alarm tagihan AWS Rp800 ribu/bulan** (menggantikan Rp1,5 juta di B-04).
 
 Dokumen ini bukan nasihat hukum atau penetapan bahwa penyedia/sekolah otomatis memiliki peran hukum tertentu. Pengaturan data anak dan kontrak harus dievaluasi sesuai operasi nyata oleh pihak yang berwenang sebelum produksi.
 
@@ -2012,6 +2029,10 @@ Catatan P-01–P-18 di bawah merekam tahap pembahasan sebelum penerapan dokumen.
 **P-31** (14 November 2026) aturan tambahan penulisan kode (§24.7): kode baru wajib bahasa Inggris dengan penggantian nama lama bertahap, pemeriksaan wajib setiap fitur (async, deadlock, race/TOCTOU, loop, memory leak, parameter, typo), tanpa watermark AI, tampilan tanpa AI slop.
 
 **P-32** (14 November 2026) OTP aplikasi authenticator untuk Kepala Sekolah dan Admin, pemulihan hanya lewat penyedia, dibangun bersama versi online (§3). Bersamaan, butir reset sandi P-21 direvisi: sandi hasil atur ulang langsung berlaku, tanpa kewajiban ganti sandi dan tanpa menu ganti sandi sendiri; Admin hanya mengatur ulang sandi Wali Kelas, dan sandi Kepala Sekolah yang lupa dipulihkan penyedia.
+
+**P-33** (15 November 2026) transisi dan pilot D-09: tanpa migrasi versi 0.9, pilot di SMPN 1 Pancarijang minimal 2 bulan, server satu-satunya data resmi, rollback ke absen manual, perluasan bertahap sampai 7 sekolah (§25.1).
+
+**P-34** (15 November 2026) target D-07: 5 tap/detik per sekolah, tap p95 ≤ 1 detik dan p99 ≤ 2 detik, ketersediaan 99,5% pada jam sekolah, RPO 5 menit, RTO 4 jam; pilot memakai kredit AWS dan batas anggaran ditetapkan setelah tagihan nyata; alarm tagihan diturunkan menjadi Rp800 ribu/bulan (§25.1, §23.5).
 
 **Ganti nama repo (14 November 2026):** pemilik mengganti nama `patahpensil/absensi-smp1` menjadi `patahpensil/absensi-siswa`. Tautan lama dialihkan GitHub; tautan bukti historis di PROGRES-DAN-UTANG.md tidak diubah.
 

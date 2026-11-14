@@ -77,9 +77,9 @@ Tabel ini mencatat keputusan yang masih harus dibahas atau dibuktikan. Prinsip y
 | D-04 | Model komersial/tarif/kontrak, masa aktif, akses saat menunggak/berakhir, ekspor dan bantuan | Tidak menetapkan harga atau menjalankan suspend/penghapusan otomatis |
 | D-05 | Retensi per kelas data, audit/log, cache lokal, laporan sementara, backup dan pascakontrak; dasar dan prosedur pemusnahan | Tidak mengaktifkan penghapusan; konflik retensi "selamanya" belum ditutup |
 | D-06 | Provider Indonesia, pembagian VM/cluster/instance, HSM, perlindungan memori, biaya dan pihak pengelola | Tidak membeli atau menyediakan infrastruktur; tidak mengklaim kelayakan L3 |
-| D-07 | Target beban, latensi p95/p99, throughput, uptime, RPO/RTO dan batas anggaran pemilik layanan | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
+| D-07 | Target diputuskan P-34 (15 November 2026); batas anggaran bulanan menunggu tagihan nyata satu bulan pilot | Tidak menjanjikan kapasitas, SLA atau kecukupan dana pemilik tanpa bukti |
 | D-08 | Teknologi frontend web dan model hosting/autentikasi, domain/subdomain serta daftar fitur pilot | Tidak mengganti bahasa backend/desktop atau menambah fitur web di luar kebutuhan yang ditinjau |
-| D-09 | Strategi transisi versi 0.9, keberadaan data nyata, migrasi satu kali, pilot, cutover dan rollback | Tidak mengonversi database sekolah atau meninggalkan dua sumber kebenaran |
+| D-09 | **Diputuskan P-33** (15 November 2026): tanpa migrasi 0.9, pilot SMPN 1 Pancarijang | — |
 | D-10 | Pendaftaran hardware MFA, autentikator cadangan, pemulihan, posture perangkat, nilai umur sesi dan tata kelola bantuan | Tidak membuat login password saja sebagai pengecualian otomatis L3 |
 | D-11 | Tanggung jawab penyedia/sekolah, kewenangan pihak sekolah, pengaturan privasi/aliran data, dan proses permintaan data | Tidak menganggap hosting Indonesia atau ASVS membuktikan seluruh kepatuhan hukum |
 | D-12 | **Lingkungan uji sementara di GitHub** (Actions/runner di luar Indonesia) dipakai untuk menguji tooling dan kinerja aplikasi atas instruksi pemilik, 4 November 2026. Pemilik juga memutuskan seluruh kode tetap di GitHub, sedangkan uji tampilan dan fitur lewat browser memakai **Cloudflare Pages** (akun khusus uji, di luar Indonesia) — lihat §10. Kebijakan data dan keamanan data lingkungan uji, serta pemindahan ke lingkungan uji di Indonesia, **belum dibahas** | Hanya data sintetis yang jelas ditandai. Tidak ada data siswa/guru nyata, kredensial produksi, atau token bot sungguhan di repo, log CI, maupun artefak. Bukan bukti kelayakan lokasi data, ASVS, atau kinerja produksi |
@@ -812,3 +812,20 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 - Di Layar gerbang desktop, alasan rinci tap yang gagal (mis. "pemilik kartu belum ada di daftar hadir") hanya masuk log; layar menampilkan "Tap belum tercatat".
 - Pada hari libur, tap kartu yang sah menjalankan ulang pembukaan hari setiap kali, karena memang tidak ada baris yang dibuat. `PembukaanHari` berhenti sebelum INSERT pada hari libur, jadi biayanya hanya `FinalizeMissedDays` dan beberapa query pemeriksaan per tap; belum diukur pada data sekolah penuh.
 - Utang §45 ("desktop belum punya tombol Ganti sandi sukarela") **gugur** oleh keputusan §47 (tidak ada menu ganti sandi sendiri).
+
+## 55. Keputusan P-33 (D-09) dan P-34 (D-07) — 15 November 2026
+
+**Selesai (dokumen saja, kode tidak berubah):** PRD §25.1 memuat P-33 dan P-34; baris D-07/D-09 di PRD dan §6.1 diperbarui; B-04 di PRD §23.5 kini memuat alarm tagihan Rp800 ribu/bulan (sebelumnya Rp1,5 juta); riwayat revisi §25.5 ditambah.
+
+- **P-33:** versi 0.9 belum pernah dipakai dengan data asli (keterangan pemilik), jadi tanpa migrasi. Pilot SMPN 1 Pancarijang sekitar 400 siswa dan guru, minimal 2 bulan; server satu-satunya data resmi; rollback ke absen manual; perluasan sampai 7 sekolah.
+- **P-34:** sekitar 5–7 sekolah, rata-rata sekitar 250 orang per sekolah; 5 tap/detik per sekolah; p95 ≤ 1 detik, p99 ≤ 2 detik; 99,5% pada jam sekolah; RPO 5 menit, RTO 4 jam; pilot memakai kredit AWS.
+
+**Belum terbukti:**
+- Semua target P-34 belum diukur; pembuktian lewat U-11 (pemulihan) dan U-14 (beban) setelah server dibangun.
+- Jumlah siswa dan guru masih perkiraan pemilik.
+- Biaya bulanan AWS belum dihitung dari harga resmi. Akses agen ke data harga AWS ditolak jaringan; perkiraan dari situs pembanding pihak ketiga (RDS db.t4g.micro PostgreSQL Jakarta sekitar US$18/bulan, Multi-AZ dua kali lipat) menunjukkan angka awal pemilik Rp1 juta/bulan (sekitar US$55 pada kurs tengah BI 11 November 2026) kemungkinan tidak cukup bila ditambah server aplikasi, penyimpanan, kunci dan log.
+
+**Menunggu Edgar:**
+- Batas anggaran bulanan setelah tagihan nyata satu bulan pilot.
+- Memasang alarm tagihan Rp800 ribu saat akun AWS dibuat.
+- Keputusan terbuka lain: D-01/D-02 (bukti pengujian), D-03, D-05, D-06, D-08, D-10, D-11.
