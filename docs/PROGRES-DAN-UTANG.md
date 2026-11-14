@@ -841,7 +841,7 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Bukti:** CI `35f815d` lulus ([run 43635297283](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297283)), termasuk `PasswordRevealTests` pada LoginWindow sungguhan. Chromium ([run 43635297292](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297292)) lulus, termasuk langkah "Ikon mata menampilkan dan menyembunyikan sandi tanpa mengubah isinya". Deploy mode nyata lulus ([run 43635297281](https://github.com/patahpensil/absensi-siswa/actions/runs/43635297281)).
 
-**Pemeriksaan P-31:** semua handler terpasang pada PasswordBox dan bagian templatnya sendiri, umurnya sama dengan kontrol (tidak ada event statis). Penjaga `syncing` mencegah perulangan TextChanged ↔ PasswordChanged. Saat disembunyikan, teks terlihat dikosongkan. Pemasangan menunggu `Loaded` karena setter gaya berjalan sebelum templat dipasang.
+**Pemeriksaan P-31:** semua handler terpasang pada PasswordBox dan bagian template-nya sendiri, umurnya sama dengan kontrol (tidak ada event statis). Penjaga `syncing` mencegah perulangan TextChanged ↔ PasswordChanged. Saat disembunyikan, teks terlihat dikosongkan. Pemasangan menunggu `Loaded` karena setter gaya berjalan sebelum template dipasang.
 
 **Belum terbukti:** tampilan ikon di desktop belum dilihat lewat tangkapan layar; perlu dicoba Edgar di PC Windows. Layar "Buat sandi baru" pada tangkapan layar Edgar (17.11 WITA, 14 November) adalah fitur wajib ganti sandi yang sudah dihapus pukul 17.51 di `b581aee`.
 
