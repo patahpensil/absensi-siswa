@@ -777,3 +777,41 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Belum terbukti:** tampilan jendela belum diperiksa lewat tangkapan layar; perlu dicoba Edgar di PC Windows.
 
+
+## 54. Pemeriksaan kode menyeluruh (P-31) atas perubahan §38–§53 — 14 November 2026
+
+**Cakupan:** 68 berkas yang berubah sejak `5c5b713` (src, tests, workflow, `Directory.Build.props`, `_typos.toml`), ditambah pemindaian seluruh `src` untuk `.Result`, `.Wait(`, `GetAwaiter().GetResult()`, `async void`, `while (true)`, `Thread.Sleep`, dan langganan event ke objek yang umurnya lebih panjang.
+
+**Temuan yang diperbaiki:**
+
+1. **Kebocoran memori (desktop):** setiap jendela kerja memasang handler `Closed` pada Layar gerbang. Karena Layar gerbang tetap berjalan setelah keluar (§50), setiap sesi yang sudah keluar tetap tertahan di memori selama gerbang hidup. Sesi berikutnya juga tidak memunculkan gerbang ke depan. Diperbaiki di `d3449dd`: `MainWindow` hanya menampilkan dan mengaktifkan gerbang tunggal milik `App`. Tes baru `MainWindowGateTests` (dua sesi masuk-keluar dengan gerbang tetap terbuka; kedua jendela kerja harus bisa dibersihkan GC).
+2. **Pesan menyesatkan dan beda perilaku desktop–web (P-21):** reset sandi akun sendiri menampilkan "Gunakan Ganti sandi…", padahal menu itu sudah dihapus (§47). Desktop juga menampilkan tombol Reset sandi dan Nonaktifkan di semua baris, termasuk akun sendiri dan akun Kepala Sekolah bagi Admin; layanan menolaknya, tetapi tombolnya tidak seharusnya ada. Diperbaiki di `f738efd`: `LayananAkun.MayManageAccount` dipakai web dan desktop; pesan diganti "Sandi akun sendiri tidak dapat diatur ulang dari akun ini." Tes: `AkunViewModelTests.CanManage_FollowsP21_ForHeadAndAdmin`, `LayananAkunTests` memeriksa teks pesan.
+3. **Kode mati:** event `AcademicPeriodViewModel.PeriodsChanged` hanya dipakai tes. Dihapus di `b3f00c6`.
+4. Komentar usang di `MainWindowHeaderLayoutTests` (masih menyebut menutup MainWindow mematikan aplikasi) diperbarui.
+
+**Diperiksa, tidak ada masalah:**
+
+- Async/deadlock: web `StartPersistenceRequest` sengaja tidak di-await, galatnya ditangkap di dalam `RequestPersistenceAsync`. `GateHost.TickOnceAsync` berhenti bila komponen sudah dibuang; satu detak per detik, tidak menumpuk karena `WaitForNextTickAsync` menunggu detak sebelumnya.
+- Race/TOCTOU: desktop dan web memakai satu thread UI per koneksi. `PemrosesTap.EnsureAttendanceRow` berjalan di luar transaksi tap tetapi idempoten (INSERT OR IGNORE); keputusan tap tetap dalam transaksi IMMEDIATE dan gagal bila baris tidak berubah. Pemeriksaan peran pada reset sandi di luar transaksi aman karena peran akun tidak pernah diubah (hanya `aktif` dan `sandi_hash` yang di-UPDATE). `ChangeDates` memeriksa tumpang tindih dan hari tercatat di dalam transaksi yang sama dengan UPDATE.
+- Loop: `CurrentDayGuard.EnsureOpened` hanya membuka hari sekali per tanggal; bila pembukaan gagal, percobaan diulang paling banyak sekali per detik dan layar gerbang menampilkan galat.
+- Memory leak lain: `WindowActivity.Input` dilepas saat `MainWindow` ditutup; `StudentChoice.PropertyChanged` dilepas sebelum daftar diganti; hook `GateStaysEnabled` seumur jendela gerbang.
+- Parameter dan null: `TreatWarningsAsErrors` aktif; build Release CI tanpa peringatan compiler.
+- Ejaan: typos 1.52.2 lokal dan CI, 0 temuan.
+
+**Bukti:**
+
+- CI `cfde051` lulus: [run 43598191513](https://github.com/patahpensil/absensi-siswa/actions/runs/43598191513). Jumlah per proyek tes: 83, 11, 32, dan sisanya; 0 gagal; job typos lulus.
+- Tes Chromium dan deploy mode nyata lulus pada `b3f00c6`, yang memuat perubahan web (`AccountManagement`).
+- Commit `b3f00c6` gagal build karena satu `using` kurang di tes baru; diperbaiki di `cfde051`.
+
+**Belum terbukti:**
+
+- `MainWindowGateTests` belum dijalankan terhadap kode lama untuk membuktikan tes itu memang gagal sebelum perbaikan.
+- Alur jendela desktop (keluar, masuk lagi, gerbang tetap menerima tap, keluar otomatis saat dialog terbuka) tetap perlu dicoba Edgar di PC Windows (§50, §53).
+
+**Utang tercatat dari pemeriksaan ini:**
+
+- `WizardInstalasiViewModel.PulihkanDariPcLama` memanggil `UnduhTerakhirAsync(...).GetAwaiter().GetResult()` di thread UI (kode lama, bukan dari §38–§53). Implementasi sekarang (`PenyimpanCloudBackupLokal`) sinkron sehingga aman. Penyimpanan cloud sungguhan di versi online bisa membuat deadlock; perintahnya harus dibuat async saat itu dikerjakan.
+- Di Layar gerbang desktop, alasan rinci tap yang gagal (mis. "pemilik kartu belum ada di daftar hadir") hanya masuk log; layar menampilkan "Tap belum tercatat".
+- Pada hari libur, tap kartu yang sah menjalankan ulang pembukaan hari setiap kali, karena memang tidak ada baris yang dibuat. Biayanya satu kali INSERT OR IGNORE untuk semua siswa per tap; belum diukur pada data sekolah penuh.
+- Utang §45 ("desktop belum punya tombol Ganti sandi sukarela") **gugur** oleh keputusan §47 (tidak ada menu ganti sandi sendiri).
