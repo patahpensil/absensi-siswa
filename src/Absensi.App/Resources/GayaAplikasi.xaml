@@ -478,6 +478,7 @@
         <Setter Property="BorderBrush" Value="{StaticResource GarisBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="perilaku:PasswordReveal.IsEnabled" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="PasswordBox">
@@ -487,12 +488,69 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{StaticResource RadiusKecil}"
                             Effect="{StaticResource BayanganTingkat1}">
-                        <ScrollViewer x:Name="PART_ContentHost"
-                                      Margin="{TemplateBinding Padding}"
-                                      VerticalAlignment="Center" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center" />
+                            <!-- Visible copy for the show/hide toggle (Perilaku/PasswordReveal.cs). -->
+                            <TextBox x:Name="PART_RevealText"
+                                     Visibility="Collapsed"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="{TemplateBinding Padding}"
+                                     VerticalContentAlignment="Center"
+                                     FontFamily="{TemplateBinding FontFamily}"
+                                     FontSize="{TemplateBinding FontSize}"
+                                     Foreground="{TemplateBinding Foreground}"
+                                     AutomationProperties.Name="Sandi" />
+                            <ToggleButton x:Name="PART_RevealToggle"
+                                          Grid.Column="1"
+                                          Width="36"
+                                          Cursor="Hand">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton">
+                                        <Setter Property="ToolTip" Value="Tampilkan sandi" />
+                                        <Setter Property="AutomationProperties.Name" Value="Tampilkan sandi" />
+                                    </Style>
+                                </ToggleButton.Style>
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent">
+                                            <Grid Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Path x:Name="IkonMata"
+                                                      Data="M1,9 C3,4.5 6,3 9,3 C12,3 15,4.5 17,9 C15,13.5 12,15 9,15 C6,15 3,13.5 1,9 Z M9,6.5 A2.5,2.5 0 1 1 9,11.5 A2.5,2.5 0 1 1 9,6.5 Z"
+                                                      Stroke="{StaticResource AbuTulisBrush}" StrokeThickness="1.4" />
+                                                <Path x:Name="GarisCoret"
+                                                      Data="M2,2 L16,16"
+                                                      Stroke="{StaticResource AbuTulisBrush}" StrokeThickness="1.4"
+                                                      Visibility="Collapsed" />
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="GarisCoret" Property="Visibility" Value="Visible" />
+                                                <Setter Property="ToolTip" Value="Sembunyikan sandi" />
+                                                <Setter Property="AutomationProperties.Name" Value="Sembunyikan sandi" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="IkonMata" Property="Stroke" Value="{StaticResource BiruSeragamBrush}" />
+                                                <Setter TargetName="GarisCoret" Property="Stroke" Value="{StaticResource BiruSeragamBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsFocused" Value="True">
+                        <Trigger SourceName="PART_RevealText" Property="Visibility" Value="Visible">
+                            <Setter TargetName="PART_ContentHost" Property="Visibility" Value="Hidden" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
                             <Setter TargetName="BingkaiKolom" Property="BorderBrush" Value="{StaticResource BiruSeragamBrush}" />
                             <Setter TargetName="BingkaiKolom" Property="BorderThickness" Value="2" />
                         </Trigger>
