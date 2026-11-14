@@ -759,3 +759,11 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Masih terbuka (P-24 poin 3, "tap dibaca langsung dari perangkat reader"):** aplikasi sudah mendukung reader mode port COM (`SerialGateReaders`, berkas konfigurasi), yang tidak terpengaruh jendela aktif. Reader mode keyboard (USB HID) mengetik ke jendela yang sedang aktif; tap bisa masuk ke isian di jendela kerja. Metode teknisnya menunggu jenis reader yang dipakai Edgar.
 
+## 52. Sisa butir 3 dan temuan status desktop — 14 November 2026
+
+- **Celah 30 detik setelah tengah malam di desktop: tertutup** oleh §49. Tap pertama hari baru yang belum punya baris kini menjalankan pembukaan hari sendiri, jadi tidak perlu `CurrentDayGuard` terpisah di desktop.
+- **Temuan:** tabel status PRD §0 menyatakan master tahun ajaran "Ada" di desktop, padahal desktop sama sekali belum punya layar Tahun ajaran (siapkan periode, naik kelas massal, kelulusan, aktifkan periode, ubah rentang); `AcademicPeriodService` hanya dipakai web. Di desktop, periode hanya dibuat lewat wizard, sehingga pergantian semester belum bisa dilakukan. Tabel PRD dikoreksi menjadi "Sebagian".
+- Pembacaan reader mode keyboard (P-24 poin 3) ditunda atas instruksi pemilik sampai ia memeriksa reader-nya.
+
+**Keputusan yang menunggu Edgar:** membangun layar Tahun ajaran di desktop (memakai layanan yang sudah ada dan teruji di web).
+
