@@ -813,5 +813,5 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 - `WizardInstalasiViewModel.PulihkanDariPcLama` memanggil `UnduhTerakhirAsync(...).GetAwaiter().GetResult()` di thread UI (kode lama, bukan dari §38–§53). Implementasi sekarang (`PenyimpanCloudBackupLokal`) sinkron sehingga aman. Penyimpanan cloud sungguhan di versi online bisa membuat deadlock; perintahnya harus dibuat async saat itu dikerjakan.
 - Di Layar gerbang desktop, alasan rinci tap yang gagal (mis. "pemilik kartu belum ada di daftar hadir") hanya masuk log; layar menampilkan "Tap belum tercatat".
-- Pada hari libur, tap kartu yang sah menjalankan ulang pembukaan hari setiap kali, karena memang tidak ada baris yang dibuat. Biayanya satu kali INSERT OR IGNORE untuk semua siswa per tap; belum diukur pada data sekolah penuh.
+- Pada hari libur, tap kartu yang sah menjalankan ulang pembukaan hari setiap kali, karena memang tidak ada baris yang dibuat. `PembukaanHari` berhenti sebelum INSERT pada hari libur, jadi biayanya hanya `FinalizeMissedDays` dan beberapa query pemeriksaan per tap; belum diukur pada data sekolah penuh.
 - Utang §45 ("desktop belum punya tombol Ganti sandi sukarela") **gugur** oleh keputusan §47 (tidak ada menu ganti sandi sendiri).
