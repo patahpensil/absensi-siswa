@@ -327,7 +327,9 @@ public sealed class LayananAkunTests
 
         Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, otherAdmin.Id, "SandiBaru1!"));
         Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, admin.Id, "SandiBaru1!"));
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, kepsek.Id, "SandiBaru1!"));
+        var self = Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, kepsek.Id, "SandiBaru1!"));
+        // P-21 revised: there is no own-password menu, so the message must not point to one.
+        Assert.Equal("Sandi akun sendiri tidak dapat diatur ulang dari akun ini.", self.Message);
     }
 
     [Fact]

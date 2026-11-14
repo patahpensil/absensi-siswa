@@ -126,7 +126,7 @@
     // Mirrors LayananAkun's own checks so the screen does not offer actions
     // the service would refuse; the service remains the authority.
     private bool CanTouch(AkunDaftar account) =>
-        account.Id != Status.Akun!.Id && (IsHead || account.Peran == PeranAkun.WaliKelas);
+        LayananAkun.MayManageAccount(Status.Akun!, account.Id, account.Peran);
 
     // P-21 (revised): Admin resets Wali Kelas passwords only; same rule as deactivation.
     private bool CanReset(AkunDaftar account) => CanTouch(account);

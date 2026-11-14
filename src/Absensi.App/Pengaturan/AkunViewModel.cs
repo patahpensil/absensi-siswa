@@ -62,7 +62,8 @@ public sealed class AkunViewModel : ObservableObject
         DaftarAkun.Clear();
         foreach (var akun in _layananAkun.DaftarAkun(_connection, _akun))
         {
-            DaftarAkun.Add(new AkunDaftarTampilan(akun));
+            DaftarAkun.Add(new AkunDaftarTampilan(akun,
+                akun.Aktif && LayananAkun.MayManageAccount(_akun, akun.Id, akun.Peran)));
         }
     }
 

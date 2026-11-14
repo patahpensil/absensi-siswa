@@ -155,13 +155,22 @@ public sealed class LayananAkun
             });
     }
 
+    // P-21 (revised): who may reset the password of or deactivate an account.
+    // Kepala Sekolah manages every other account; Admin manages Wali Kelas
+    // accounts only; nobody manages their own account. Screens use this to
+    // offer only actions the service accepts; the service still checks.
+    public static bool MayManageAccount(AkunTersimpan actor, int targetId, PeranAkun targetRole) =>
+        actor.Id != targetId
+        && (actor.Peran == PeranAkun.KepalaSekolah
+            || (actor.Peran == PeranAkun.Admin && targetRole == PeranAkun.WaliKelas));
+
     private void EnsureMayResetPassword(SqliteConnection connection, AkunTersimpan actor, int targetId)
     {
         var target = _repositoriAkun.CariBerdasarkanId(connection, targetId)
             ?? throw new InvalidOperationException("Akun yang dituju tidak ditemukan.");
         if (actor.Id == targetId)
         {
-            throw new InvalidOperationException("Gunakan Ganti sandi untuk mengubah sandi akun sendiri.");
+            throw new InvalidOperationException("Sandi akun sendiri tidak dapat diatur ulang dari akun ini.");
         }
 
         if (actor.Peran == PeranAkun.Admin && target.Peran != PeranAkun.WaliKelas)

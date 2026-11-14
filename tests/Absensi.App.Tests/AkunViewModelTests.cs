@@ -75,4 +75,24 @@ public sealed class AkunViewModelTests
         Assert.False(viewModel.NonaktifkanCommand.CanExecute(null));
         Assert.False(viewModel.ResetSandiCommand.CanExecute(null));
     }
+
+    // P-21 (revised): the row offers Reset sandi and Nonaktifkan only when the
+    // service would accept them, the same rule as the web screen.
+    [Fact]
+    public void CanManage_FollowsP21_ForHeadAndAdmin()
+    {
+        using var database = BuatDatabaseDenganWaliKelas();
+        var admin = new AkunTersimpan(3, "admin2", "x", PeranAkun.Admin, null, true);
+
+        var head = new AkunViewModel(database.Connection, Kepsek, new PenyediaWaktuUji(Waktu));
+        Assert.False(head.DaftarAkun.Single(a => a.Username == "admin1").CanManage);
+        Assert.True(head.DaftarAkun.Single(a => a.Username == "wali_a").CanManage);
+
+        var byAdmin = new AkunViewModel(database.Connection, admin, new PenyediaWaktuUji(Waktu));
+        Assert.False(byAdmin.DaftarAkun.Single(a => a.Username == "admin1").CanManage);
+        Assert.True(byAdmin.DaftarAkun.Single(a => a.Username == "wali_a").CanManage);
+
+        head.NonaktifkanCommand.Execute(head.DaftarAkun.Single(a => a.Username == "wali_a"));
+        Assert.False(head.DaftarAkun.Single(a => a.Username == "wali_a").CanManage);
+    }
 }

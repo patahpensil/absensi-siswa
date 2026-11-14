@@ -31,12 +31,13 @@
                                         Style="{StaticResource TombolTeksStyle}"
                                         Command="{Binding DataContext.ResetSandiCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                         CommandParameter="{Binding}"
+                                        Visibility="{Binding CanManage, Converter={StaticResource BoolKeVisibilitas}}"
                                         Margin="0,0,8,0" />
                                 <Button Content="Nonaktifkan"
                                         Style="{StaticResource TombolTeksStyle}"
                                         Command="{Binding DataContext.NonaktifkanCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                         CommandParameter="{Binding}"
-                                        Visibility="{Binding Aktif, Converter={StaticResource BoolKeVisibilitas}}" />
+                                        Visibility="{Binding CanManage, Converter={StaticResource BoolKeVisibilitas}}" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
