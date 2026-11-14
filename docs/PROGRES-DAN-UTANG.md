@@ -806,7 +806,7 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Utang tercatat dari pemeriksaan ini:**
 
-- **Belum terbukti:** `MainWindowGateTests` belum dijalankan terhadap kode lama, jadi belum terbukti tes itu gagal sebelum perbaikan `d3449dd`. Pelunasan: jalankan tes itu sekali dengan perbaikan dibatalkan sementara (tanpa cabang baru), lalu pastikan tes gagal.
+- ~~`MainWindowGateTests` belum dijalankan terhadap kode lama.~~ **Lunas:** perbaikan `d3449dd` dibatalkan sementara di `0463e95`; CI [run 43607384854](https://github.com/patahpensil/absensi-siswa/actions/runs/43607384854) gagal hanya pada tes ini, dengan pesan "Jendela kerja sesi pertama masih tertahan oleh jendela gerbang." Perbaikan dipasang kembali di commit berikutnya.
 - **Belum terbukti:** alur jendela desktop (keluar, masuk lagi, Layar gerbang tetap menerima tap, keluar otomatis saat dialog terbuka) belum dicoba di PC Windows sungguhan (§50, §53). Pelunasan: dicoba Edgar dengan reader dan hasilnya dicatat di sini.
 - `WizardInstalasiViewModel.PulihkanDariPcLama` memanggil `UnduhTerakhirAsync(...).GetAwaiter().GetResult()` di thread UI (kode lama, bukan dari §38–§53). Implementasi sekarang (`PenyimpanCloudBackupLokal`) sinkron sehingga aman. Penyimpanan cloud sungguhan di versi online bisa membuat deadlock; perintahnya harus dibuat async saat itu dikerjakan.
 - Di Layar gerbang desktop, alasan rinci tap yang gagal (mis. "pemilik kartu belum ada di daftar hadir") hanya masuk log; layar menampilkan "Tap belum tercatat".
