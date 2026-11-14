@@ -9,7 +9,7 @@
     <section class="panel" id="school-notifications">
         <header class="panel-header"><h2>Pratinjau jadwal</h2><span class="badge info">Simulasi</span></header>
         <div class="settings-body">
-            <p>Waktu @(Status.Jam.IsScenario ? "uji" : "sekolah") @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Kanal orang tua mengikuti pilihan per siswa: Telegram atau WhatsApp. Web uji hanya mengantre pesan; tidak ada pesan yang dikirim.</p>
+            <p>Waktu @(Status.Jam.IsScenario ? "uji" : "sekolah") @Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm") WITA. Pratinjau menggunakan data kehadiran saat ini. Kanal orang tua mengikuti pilihan per siswa: Telegram atau WhatsApp. Versi web hanya mengantre pesan; belum ada pesan yang dikirim.</p>
             @if (schedule is null)
             {
                 <p class="notice">Jadwal notifikasi tidak berlaku untuk tanggal ini.</p>

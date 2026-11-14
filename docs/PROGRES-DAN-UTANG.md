@@ -641,7 +641,7 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 ## 41. Langkah 1c — penyimpanan browser tetap dan teks sisa mode uji — 14 November 2026
 
 - Web meminta penyimpanan tetap (`navigator.storage.persist()`) setelah data dimuat dan setelah wizard selesai. Permintaan tidak ditunggu, karena Firefox bisa bertanya dulu ke pengguna dan layar login tidak boleh tertahan. Hasilnya tampil di Pengaturan → Penyimpanan data (`#storage-persistence`). Browser yang menolak tetap dipakai seperti biasa, dengan anjuran mengunduh cadangan.
-- Teks yang menyebut "web uji", "browser uji", "waktu uji", atau "data contoh" di halaman yang juga tampil pada mode nyata diganti dengan teks netral: Belum tersedia, Audit, Detail siswa (kanal pesan), Kalender, Impor master, dan Dasbor.
+- Teks yang menyebut "web uji", "browser uji", "waktu uji", atau "data contoh" di halaman yang juga tampil pada mode nyata diganti dengan teks netral: Belum tersedia, Audit, Detail siswa (kanal pesan), Notifikasi, Kalender, Impor master, dan Dasbor. Run bukti browser pertama (commit `00575f1`) menangkap teks "Web uji" yang tertinggal di Notifikasi.
 - Tes Chromium mode nyata kini membuka setiap menu yang tersedia dan gagal bila salah satu teks itu muncul, serta memastikan status penyimpanan tetap tampil di Pengaturan.
 
 **Belum terbukti:** apakah Chrome di perangkat sekolah memberi penyimpanan tetap. Chrome memutuskan sendiri, antara lain dari seberapa sering situs dipakai. Hasilnya baru terlihat di Pengaturan pada perangkat itu.
