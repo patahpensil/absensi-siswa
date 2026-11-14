@@ -128,10 +128,15 @@ public sealed class LayananAkun
     // Sandi baru diisi langsung oleh Kepala Sekolah/Admin — tidak pernah
     // menampilkan sandi lama (memang tidak tersimpan sebagai teks biasa,
     // hanya hash-nya — Absensi.Data.Akun.HashSandi).
+    //
+    // P-21: Kepala Sekolah and Admin may reset each other's password so the
+    // school is never locked out; the owner must choose a new password at the
+    // next login. Admin still cannot reset another Admin, and nobody resets
+    // their own account here (ChangeOwnPassword verifies the current password).
     public void ResetSandi(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget, string sandiBaru)
     {
         PastikanBolehMengelolaAkun(pembuat);
-        PastikanBerwenangAtasTarget(connection, pembuat, akunIdTarget);
+        EnsureMayResetPassword(connection, pembuat, akunIdTarget);
         PastikanSandiValid(sandiBaru);
 
         var sandiHash = HashSandi.Buat(sandiBaru);
@@ -145,14 +150,70 @@ public sealed class LayananAkun
             perubahan: transaction =>
             {
                 _repositoriAkun.PerbaruiSandi(connection, transaction, akunIdTarget, sandiHash);
+                _repositoriAkun.SetPasswordChangeRequired(connection, transaction, akunIdTarget, required: true);
                 return akunIdTarget;
             });
     }
 
+    public bool RequiresPasswordChange(SqliteConnection connection, AkunTersimpan account) =>
+        _repositoriAkun.IsPasswordChangeRequired(connection, account.Id);
+
+    // Any active account may change its own password after proving the current
+    // one. Clears the "must change" flag set by a reset.
+    public void ChangeOwnPassword(SqliteConnection connection, AkunTersimpan account, DateTime time,
+        string currentPassword, string newPassword)
+    {
+        var stored = _repositoriAkun.CariBerdasarkanId(connection, account.Id);
+        if (stored is null || !stored.Aktif)
+        {
+            throw new InvalidOperationException("Akun tidak aktif.");
+        }
+
+        if (!HashSandi.Verifikasi(currentPassword ?? string.Empty, stored.SandiHash))
+        {
+            throw new InvalidOperationException("Sandi saat ini salah.");
+        }
+
+        PastikanSandiValid(newPassword);
+        if (newPassword == currentPassword)
+        {
+            throw new InvalidOperationException("Sandi baru harus berbeda dari sandi saat ini.");
+        }
+
+        var hash = HashSandi.Buat(newPassword);
+        _jalurPerubahanData.Jalankan(
+            connection,
+            stored,
+            time,
+            aksi: "ganti_sandi_sendiri",
+            entitas: "akun",
+            perubahan: transaction =>
+            {
+                _repositoriAkun.PerbaruiSandi(connection, transaction, stored.Id, hash);
+                _repositoriAkun.SetPasswordChangeRequired(connection, transaction, stored.Id, required: false);
+                return stored.Id;
+            });
+    }
+
+    private void EnsureMayResetPassword(SqliteConnection connection, AkunTersimpan actor, int targetId)
+    {
+        var target = _repositoriAkun.CariBerdasarkanId(connection, targetId)
+            ?? throw new InvalidOperationException("Akun yang dituju tidak ditemukan.");
+        if (actor.Id == targetId)
+        {
+            throw new InvalidOperationException("Gunakan Ganti sandi untuk mengubah sandi akun sendiri.");
+        }
+
+        if (actor.Peran == PeranAkun.Admin && target.Peran == PeranAkun.Admin)
+        {
+            throw new InvalidOperationException("Admin tidak berwenang mereset sandi Admin lain.");
+        }
+    }
+
     // PRD §3.1: Kepala Sekolah → akun Admin (dan Wali Kelas); Admin → akun
-    // Wali Kelas SAJA. Wewenang mereset/menonaktifkan mengikuti wewenang
-    // membuat, jadi Admin tidak boleh menyentuh akun Kepala Sekolah, Admin
-    // lain, maupun dirinya sendiri lewat jalur ini.
+    // Wali Kelas SAJA. Wewenang menonaktifkan mengikuti wewenang membuat, jadi
+    // Admin tidak boleh menonaktifkan Kepala Sekolah, Admin lain, maupun
+    // dirinya sendiri. Reset sandi punya aturan sendiri (P-21, EnsureMayResetPassword).
     private void PastikanBerwenangAtasTarget(SqliteConnection connection, AkunTersimpan pembuat, int akunIdTarget)
     {
         var target = _repositoriAkun.CariBerdasarkanId(connection, akunIdTarget)

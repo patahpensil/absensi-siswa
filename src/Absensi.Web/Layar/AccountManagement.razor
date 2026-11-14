@@ -23,9 +23,12 @@
                             <td>@(account.NamaGuru ?? "—")</td>
                             <td><span class="badge @(account.Aktif ? "positive" : "neutral")">@(account.Aktif ? "Aktif" : "Nonaktif")</span></td>
                             <td><div class="master-row-actions">
-                                @if (account.Aktif && CanTouch(account))
+                                @if (account.Aktif && CanReset(account))
                                 {
                                     <button type="button" class="text-button" id="account-reset-@account.Id" @onclick="() => StartReset(account)">Atur ulang sandi</button>
+                                }
+                                @if (account.Aktif && CanTouch(account))
+                                {
                                     <button type="button" class="text-button" id="account-deactivate-@account.Id" @onclick="() => StartDeactivate(account)">Nonaktifkan</button>
                                 }
                             </div></td>
@@ -125,6 +128,10 @@
     private bool CanTouch(AkunDaftar account) =>
         account.Id != Status.Akun!.Id && (IsHead || account.Peran == PeranAkun.WaliKelas);
 
+    // P-21: Kepala Sekolah and Admin reset each other's password; Admin never resets another Admin.
+    private bool CanReset(AkunDaftar account) =>
+        account.Id != Status.Akun!.Id && (IsHead || account.Peran != PeranAkun.Admin);
+
     private static string RoleText(PeranAkun role) => role switch
     {
         PeranAkun.KepalaSekolah => "Kepala Sekolah",
@@ -153,7 +160,7 @@
         var target = resetTarget!;
         service.ResetSandi(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, target.Id, resetPassword);
         resetTarget = null; resetPassword = "";
-        return $"Sandi akun {target.Username} diganti.";
+        return $"Sandi akun {target.Username} diatur ulang. Pemilik akun wajib membuat sandi baru saat masuk berikutnya.";
     });
 
     private Task Deactivate() => Run(() =>

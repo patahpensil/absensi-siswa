@@ -1187,6 +1187,12 @@ tbody tr:hover {
   gap:8px
 }
 
+.password-change {
+  display:grid;
+  gap:8px;
+  max-width:360px
+}
+
 .account-form {
   margin-top:8px
 }

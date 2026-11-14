@@ -1,5 +1,7 @@
 using Absensi.App.Login;
+using Absensi.Data.Akun;
 using Absensi.Data.Lisensi;
+using Absensi.Data.Repositori;
 
 namespace Absensi.App.Tests;
 
@@ -47,5 +49,42 @@ public sealed class LoginViewModelTests
         var viewModel = BuatViewModel(logoPath: null, statusLisensi: null);
 
         Assert.Equal("Lisensi: (belum tersedia)", viewModel.TeksStatusLisensi);
+    }
+
+    // P-21: akun yang sandinya diatur ulang tidak masuk sebelum membuat sandi baru.
+    [Fact]
+    public void Login_SetelahResetSandi_WajibGantiSandiSebelumLoginBerhasil()
+    {
+        using var database = new MigratedDatabase();
+        database.TambahAkun(1, "kepsek", "kepala_sekolah", guruId: null);
+        database.TambahAkun(2, "admin1", "admin", guruId: null);
+        var admin = new LayananAkun().Autentikasi(database.Connection, "admin1", MigratedDatabase.SandiUji)!;
+        new LayananAkun().ResetSandi(database.Connection, admin, new DateTime(2026, 11, 14, 8, 0, 0), 1, "Sementara123");
+        var viewModel = new LoginViewModel(database.Connection, "1.0.0", "SMP Negeri Uji", null, null,
+            new PenyediaWaktuUji(new DateTime(2026, 11, 14, 9, 0, 0)));
+        AkunTersimpan? loggedIn = null;
+        viewModel.LoginBerhasil += (_, akun) => loggedIn = akun;
+
+        viewModel.Username = "kepsek";
+        viewModel.AturSandi("Sementara123");
+        viewModel.LoginCommand.Execute(null);
+
+        Assert.Null(loggedIn);
+        Assert.True(viewModel.MustChangePassword);
+        Assert.False(viewModel.ShowLogin);
+
+        viewModel.SetNewPassword("SandiBaruKepsek1");
+        viewModel.SetConfirmPassword("SandiBaruKepsekX");
+        viewModel.ChangePasswordCommand.Execute(null);
+        Assert.Null(loggedIn);
+        Assert.Equal("Ulangi sandi baru tidak sama.", viewModel.PesanGalat);
+
+        viewModel.SetConfirmPassword("SandiBaruKepsek1");
+        viewModel.ChangePasswordCommand.Execute(null);
+
+        Assert.NotNull(loggedIn);
+        Assert.False(viewModel.MustChangePassword);
+        Assert.False(new LayananAkun().RequiresPasswordChange(database.Connection, loggedIn!));
+        Assert.NotNull(new LayananAkun().Autentikasi(database.Connection, "kepsek", "SandiBaruKepsek1"));
     }
 }

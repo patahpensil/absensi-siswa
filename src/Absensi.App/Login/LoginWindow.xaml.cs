@@ -24,4 +24,14 @@ public partial class LoginWindow : Window
     {
         ((LoginViewModel)DataContext).AturSandi(KolomSandi.Password);
     }
+
+    private void KolomSandiBaru_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        ((LoginViewModel)DataContext).SetNewPassword(KolomSandiBaru.Password);
+    }
+
+    private void KolomUlangiSandiBaru_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        ((LoginViewModel)DataContext).SetConfirmPassword(KolomUlangiSandiBaru.Password);
+    }
 }

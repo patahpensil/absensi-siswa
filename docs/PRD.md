@@ -109,7 +109,7 @@ Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem 
 **Keputusan P-21 — disetujui pemilik 13 November 2026:** Kepala Sekolah dan Admin/TU **setara untuk seluruh pekerjaan sekolah**: keduanya membuka semua menu termasuk Audit dan dapat menetapkan status kehadiran guru (§16.17, §17.10); seluruh perubahan tercatat di audit (§12). Perbedaan hanya pada pengelolaan akun:
 - Hanya Kepala Sekolah yang membuat dan menonaktifkan akun Admin.
 - Admin tidak dapat menonaktifkan akun Kepala Sekolah.
-- Kepala Sekolah dan Admin boleh saling mereset sandi agar sekolah tidak buntu bila salah satu lupa sandi. Reset dicatat di audit, dan pemilik akun wajib mengganti sandi saat login berikutnya.
+- Kepala Sekolah dan Admin boleh saling mereset sandi agar sekolah tidak buntu bila salah satu lupa sandi. Reset dicatat di audit, dan pemilik akun wajib mengganti sandi saat login berikutnya. *(Diterapkan 14 November 2026: web dan desktop; Admin tetap tidak dapat mereset Admin lain, dan tidak ada yang mereset akun sendiri lewat jalur ini — akun sendiri memakai Ganti sandi.)*
 - Akun Kepala Sekolah pengganti (mutasi atau pergantian jabatan) dibuat lewat verifikasi penyedia layanan, bukan oleh Admin; rincian verifikasi dan pemulihan mengikuti D-10.
 
 Alasan pembedaan (saran agen, disetujui pemilik): bila seluruh urusan akun disamakan, satu Admin dapat menonaktifkan Kepala Sekolah lalu menguasai data sekolah; bila terlalu dibedakan, sekolah buntu saat Kepala Sekolah lupa sandi.

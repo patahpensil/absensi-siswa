@@ -3,6 +3,7 @@ using Absensi.App.Mvvm;
 using Absensi.Data.Akun;
 using Absensi.Data.Lisensi;
 using Absensi.Data.Repositori;
+using Absensi.Domain;
 using Microsoft.Data.Sqlite;
 
 namespace Absensi.App.Login;
@@ -11,13 +12,19 @@ public sealed class LoginViewModel : ObservableObject
 {
     private readonly LayananAkun _layananAkun = new();
     private readonly SqliteConnection _connection;
+    private readonly IPenyediaWaktu _clock;
     private string _username = string.Empty;
     private string _sandi = string.Empty;
+    private string _newPassword = string.Empty;
+    private string _confirmPassword = string.Empty;
     private string? _pesanGalat;
+    private AkunTersimpan? _pendingAccount;
 
-    public LoginViewModel(SqliteConnection connection, string nomorVersi, string? namaSekolah, string? logoPath, StatusLisensi? statusLisensi)
+    public LoginViewModel(SqliteConnection connection, string nomorVersi, string? namaSekolah, string? logoPath, StatusLisensi? statusLisensi,
+        IPenyediaWaktu? clock = null)
     {
         _connection = connection;
+        _clock = clock ?? new PenyediaWaktuSistem();
         NomorVersi = nomorVersi;
         NamaSekolah = string.IsNullOrWhiteSpace(namaSekolah) ? "Nama sekolah belum diatur" : namaSekolah;
         // PANDUAN-UI-UX.md §9 (layar Login): "Logo, nama sekolah, ... status
@@ -26,6 +33,27 @@ public sealed class LoginViewModel : ObservableObject
         Logo = PemuatGambar.MuatDariFolder(LokasiData.FolderData, logoPath);
         TeksStatusLisensi = statusLisensi is { Aktif: true } ? "Lisensi: Aktif" : "Lisensi: (belum tersedia)";
         LoginCommand = new RelayCommand(Login, BisaLogin);
+        ChangePasswordCommand = new RelayCommand(ChangePassword, CanChangePassword);
+    }
+
+    // P-21: after a reset by Kepala Sekolah/Admin the owner sets a new password
+    // before the main window opens.
+    public bool MustChangePassword => _pendingAccount is not null;
+
+    public bool ShowLogin => !MustChangePassword;
+
+    public RelayCommand ChangePasswordCommand { get; }
+
+    public void SetNewPassword(string value)
+    {
+        _newPassword = value;
+        ChangePasswordCommand.RaiseCanExecuteChanged();
+    }
+
+    public void SetConfirmPassword(string value)
+    {
+        _confirmPassword = value;
+        ChangePasswordCommand.RaiseCanExecuteChanged();
     }
 
     public event EventHandler<AkunTersimpan>? LoginBerhasil;
@@ -81,6 +109,51 @@ public sealed class LoginViewModel : ObservableObject
         }
 
         PesanGalat = null;
+        if (_layananAkun.RequiresPasswordChange(_connection, akun))
+        {
+            _pendingAccount = akun;
+            OnPropertyChanged(nameof(MustChangePassword));
+            OnPropertyChanged(nameof(ShowLogin));
+            ChangePasswordCommand.RaiseCanExecuteChanged();
+            return;
+        }
+
         LoginBerhasil?.Invoke(this, akun);
+    }
+
+    private bool CanChangePassword() => _pendingAccount is not null && !string.IsNullOrEmpty(_newPassword);
+
+    private void ChangePassword()
+    {
+        if (_pendingAccount is not { } account)
+        {
+            return;
+        }
+
+        if (_newPassword != _confirmPassword)
+        {
+            PesanGalat = "Ulangi sandi baru tidak sama.";
+            return;
+        }
+
+        try
+        {
+            _layananAkun.ChangeOwnPassword(_connection, account, _clock.Sekarang, _sandi, _newPassword);
+        }
+        catch (InvalidOperationException ex)
+        {
+            PesanGalat = ex.Message;
+            return;
+        }
+        catch (SqliteException)
+        {
+            PesanGalat = "Sandi belum dapat disimpan. Coba kembali.";
+            return;
+        }
+
+        var refreshed = new RepositoriAkun().CariBerdasarkanId(_connection, account.Id) ?? account;
+        _pendingAccount = null;
+        PesanGalat = null;
+        LoginBerhasil?.Invoke(this, refreshed);
     }
 }

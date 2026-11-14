@@ -687,3 +687,16 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 **Belum:** reset sandi timbal balik Kepala Sekolah–Admin dengan wajib ganti sandi, ganti sandi sendiri, dan laporan kelas untuk wali kelas (P-22).
 
+## 45. Langkah 1e — P-21 bagian 2: reset sandi timbal balik dan wajib ganti sandi — 14 November 2026
+
+- Migrasi 010 menambah kolom `akun.must_change_password` (bawaan 0, akun lama tidak terdampak).
+- `LayananAkun.ResetSandi`: Kepala Sekolah ↔ Admin boleh saling mereset; Admin tetap hanya mereset Kepala Sekolah dan Wali Kelas, bukan Admin lain; reset akun sendiri ditolak. Reset menandai akun wajib ganti sandi, dalam transaksi yang sama dengan audit `reset_sandi_akun`.
+- `LayananAkun.ChangeOwnPassword`: memeriksa sandi saat ini, sandi baru minimal 8 karakter dan berbeda, menghapus tanda wajib ganti, audit `ganti_sandi_sendiri`.
+- Web: setelah masuk dengan akun yang diatur ulang, layar "Buat sandi baru" tampil sebelum aplikasi terbuka; Pengaturan punya panel Ganti sandi untuk semua peran; tombol "Atur ulang sandi" di daftar akun mengikuti aturan baru, tombol Nonaktifkan tidak berubah.
+- Desktop: jendela Masuk beralih ke isian sandi baru bila akun wajib ganti sandi; jendela utama baru terbuka setelah sandi baru tersimpan.
+- Tes: `LayananAkunTests` (5 kasus baru, 1 kasus lama diganti sesuai P-21), `LoginViewModelTests` (alur wajib ganti di desktop), langkah Chromium akun diperluas (Admin mereset Kepala Sekolah, wali kelas dan Kepala Sekolah dipaksa membuat sandi baru).
+
+**Pemeriksaan:** pengecekan sandi saat ini terjadi di luar transaksi tulis (`RepositoriAkun` membaca tanpa transaksi). Celahnya hanya bila dua sesi mengganti sandi akun yang sama bersamaan; desktop dan web memakai satu koneksi per aplikasi, jadi diterima untuk versi ini dan ditinjau ulang saat server online.
+
+**Utang:** desktop belum punya tombol Ganti sandi sukarela di Pengaturan (layanannya sudah ada).
+
