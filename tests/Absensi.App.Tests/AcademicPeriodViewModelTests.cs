@@ -62,7 +62,7 @@ public sealed class AcademicPeriodViewModelTests
         viewModel.SourcePeriod = viewModel.Periods.Single(p => p.Id == 1);
         viewModel.SourceClass = viewModel.SourceClasses.Single();
         Assert.Equal(5, viewModel.Students.Count);
-        viewModel.Students[0].Selected = false;
+        viewModel.Students.Single(s => s.Id == 1).Selected = false;
         viewModel.TargetPeriod = viewModel.TargetPeriods.Single();
         viewModel.TargetClass = viewModel.TargetClasses.Single(c => c.Id == targetClass);
         Assert.True(viewModel.SaveCommand.CanExecute(null));
