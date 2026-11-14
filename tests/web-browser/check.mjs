@@ -625,8 +625,18 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await page.click('#menu-koreksi');
   await page.waitForSelector('#correction-class');
   tegas(await page.locator('#correction-class option').count() === 1, 'wali melihat kelas lain di Koreksi');
+  // P-22: wali kelas membuka laporan siswa kelasnya saja; tanpa pilihan semua kelas atau laporan guru.
   await page.click('#menu-laporan');
-  await page.waitForSelector('#report-not-allowed');
+  await page.waitForSelector('#report-homeroom-scope');
+  tegas(await page.locator('#report-subject').count() === 0, 'wali dapat memilih laporan guru');
+  const homeroomClasses = await page.$$eval('#report-class option', (o) => o.map((x) => x.textContent.trim()));
+  tegas(homeroomClasses.length === 1 && homeroomClasses[0] === '7A', `kelas laporan wali: ${homeroomClasses.join(', ')}`);
+  await page.selectOption('#report-kind', 'Semester');
+  await page.click('#report-show');
+  await page.waitForSelector('#report-table');
+  tegas(await baris('#report-table') === 8, `laporan wali memuat ${await baris('#report-table')} siswa, bukan 8 siswa 7A`);
+  const homeroomExcel = await downloadBytes('#report-excel');
+  tegas(homeroomExcel.bytes.subarray(0, 2).toString() === 'PK', 'unduhan Excel wali bukan berkas xlsx');
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#reset-data');
   const catatan = await page.textContent('#isi');

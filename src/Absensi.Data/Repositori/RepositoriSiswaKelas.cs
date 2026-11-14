@@ -64,6 +64,15 @@ public sealed class RepositoriSiswaKelas
         return command.ExecuteScalar() as string;
     }
 
+    public int? FindClassId(SqliteConnection connection, int siswaId, int tahunAjaranId)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT kelas_id FROM siswa_kelas WHERE siswa_id = $siswaId AND tahun_ajaran_id = $tahunAjaranId;";
+        command.Parameters.AddWithValue("$siswaId", siswaId);
+        command.Parameters.AddWithValue("$tahunAjaranId", tahunAjaranId);
+        return command.ExecuteScalar() is long id ? checked((int)id) : null;
+    }
+
     // P-18: hari terakhir bersekolah pada keanggotaan periode itu.
     // Mengembalikan nilai lama (teks yyyy-MM-dd atau null) dan apakah ada
     // keanggotaan yang diubah — untuk jejak audit.

@@ -1,17 +1,23 @@
 @using Microsoft.JSInterop
+@using Absensi.Data.Laporan
 @using Absensi.Data.Repositori
+@using Absensi.Domain.Akun
 @using Absensi.Domain.Laporan
 @using Absensi.Web.Layanan
 @inject StatusAplikasi Status
 @inject IJSRuntime JS
 
 <div class="page-heading"><div><h1>Laporan</h1><p>Pilih jenis laporan, tampilkan pratinjau, lalu unduh Excel atau cetak (pilih Simpan sebagai PDF untuk berkas PDF).</p></div><span class="badge info">Excel · Cetak/PDF</span></div>
-@if (!WorkspaceView.CanManage(Status))
+@if (!CanUse)
 {
-    <p id="report-not-allowed" class="notice">Laporan tersedia untuk kepala sekolah dan admin. Riwayat siswa kelas Anda dapat dilihat dari menu Siswa atau Absensi.</p>
+    <p id="report-not-allowed" class="notice">Laporan tersedia untuk kepala sekolah, admin, dan wali kelas.</p>
 }
 else
 {
+    @if (IsHomeroom)
+    {
+        <p id="report-homeroom-scope" class="notice">Sebagai wali kelas, Anda dapat membuka dan mengunduh laporan siswa kelas yang sedang Anda walikan.</p>
+    }
     <section class="panel">
         <header class="panel-header"><h2><UiIcon Name="grid" /> Pengaturan laporan</h2></header>
         <div class="panel-toolbar report-toolbar">
@@ -21,10 +27,13 @@ else
             <label>Jenis<select id="report-kind" @bind="kind" @bind:after="Changed">
                 <option value="@ReportKind.Daily">Harian</option><option value="@ReportKind.Weekly">Mingguan</option><option value="@ReportKind.Monthly">Bulanan</option><option value="@ReportKind.PerPerson">Per orang</option><option value="@ReportKind.Semester">Semester</option>
             </select></label>
-            <label>Subjek<select id="report-subject" @bind="subject" @bind:after="Changed"><option value="@JenisSubjekLaporan.Siswa">Siswa</option><option value="@JenisSubjekLaporan.Guru">Guru</option></select></label>
+            @if (!IsHomeroom)
+            {
+                <label>Subjek<select id="report-subject" @bind="subject" @bind:after="Changed"><option value="@JenisSubjekLaporan.Siswa">Siswa</option><option value="@JenisSubjekLaporan.Guru">Guru</option></select></label>
+            }
             @if (subject == JenisSubjekLaporan.Siswa)
             {
-                <label>Kelas<select id="report-class" @bind="classId" @bind:after="Changed"><option value="0">Semua kelas</option>@foreach (var c in Classes()) { <option value="@c.Id">@c.Nama</option> }</select></label>
+                <label>Kelas<select id="report-class" @bind="classId" @bind:after="Changed">@if (!IsHomeroom) { <option value="0">Semua kelas</option> }@foreach (var c in Classes()) { <option value="@c.Id">@c.Nama</option> }</select></label>
             }
             @if (kind != ReportKind.Semester)
             {
@@ -37,7 +46,7 @@ else
             }
         </div>
         <div class="report-actions">
-            <button id="report-show" class="primary" @onclick="Show">Tampilkan</button>
+            <button id="report-show" class="primary" disabled="@(IsHomeroom && classId == 0)" @onclick="Show">Tampilkan</button>
             <button id="report-excel" disabled="@(busy || !shown)" @onclick="() => Export(true)">Unduh Excel</button>
             @* QuestPDF tidak mendukung WebAssembly sejak 2024.3; di browser PDF dibuat lewat dialog cetak. *@
             <button id="report-print" disabled="@(!shown)" @onclick="Print" title="Pilih printer, atau Simpan sebagai PDF">Cetak / Simpan PDF</button>
@@ -111,9 +120,26 @@ else
     {
         endDate = DateOnly.FromDateTime(Status.Jam.Sekarang);
         date = endDate;
-        if (!WorkspaceView.CanManage(Status)) return;
+        if (!CanUse) return;
         periods = new RepositoriTahunAjaran().ListPeriods(Status.Koneksi!);
         periodId = Status.TahunAjaranId ?? 0;
+        SelectHomeroomClass();
+    }
+
+    private bool IsHomeroom => Status.Akun?.Peran == PeranAkun.WaliKelas;
+    private bool CanUse => WorkspaceView.CanManage(Status) || IsHomeroom;
+
+    // P-22: a homeroom teacher always reports on one of their own classes.
+    private void SelectHomeroomClass()
+    {
+        if (!IsHomeroom) return;
+        subject = JenisSubjekLaporan.Siswa;
+        if (Classes().All(room => room.Id != classId)) classId = Classes().FirstOrDefault()?.Id ?? 0;
+        if (classId == 0)
+        {
+            messageOk = false;
+            message = "Belum ada kelas yang Anda walikan pada periode ini.";
+        }
     }
 
     private void Changed()
@@ -133,10 +159,16 @@ else
             endDate = period.End;
         }
         Changed();
+        SelectHomeroomClass();
     }
 
-    private IReadOnlyList<KelasDaftar> Classes() =>
-        new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, periodId);
+    private IReadOnlyList<KelasDaftar> Classes()
+    {
+        var classes = new RepositoriKelas().DaftarUntukTahunAjaran(Status.Koneksi!, periodId);
+        if (!IsHomeroom) return classes;
+        var reports = new LayananLaporan();
+        return classes.Where(room => reports.MayOpenClassReport(Status.Koneksi!, Status.Akun!, room.Id)).ToList();
+    }
 
     private IEnumerable<(int Id, string Name)> People()
     {

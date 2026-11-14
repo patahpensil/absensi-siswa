@@ -88,10 +88,10 @@ Nama sekolah, identitas, kalender, kelas, jadwal dan tahun ajaran merupakan konf
 
 ## 3. Pengguna dan Hak Akses
 
-> **Status aplikasi (13 November 2026):** **[Sebagian]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak di aplikasi saat ini (terbukti di tes) **belum mengikuti keputusan P-21 dan P-22** di bawah; penyesuaian kode dicatat sebagai utang:
+> **Status aplikasi (14 November 2026):** **[Sebagian]** tiga peran di bawah berjalan dengan login username dan sandi lokal (sandi minimal 8 karakter). MFA dan ASVS L3 **[Rencana]**. Pembagian hak di aplikasi sudah mengikuti P-21 dan P-22 (terbukti di tes); pembuatan akun Kepala Sekolah pengganti lewat verifikasi penyedia menunggu versi online (D-10):
 > - Kepala Sekolah: semua menu termasuk Audit (P-21, diterapkan 14 November 2026); satu-satunya yang membuat akun Admin/TU; menetapkan status kehadiran guru.
 > - Admin/TU: semua menu termasuk Audit; membuat dan mengelola akun Wali Kelas, tidak dapat membuat Admin; menetapkan status kehadiran guru (P-21, diterapkan 14 November 2026).
-> - Wali Kelas: tanpa menu Layar gerbang, Notifikasi dan Audit; hanya melihat siswa kelasnya; tidak dapat mengubah master, kartu, foto, kalender, laporan atau data guru; koreksi hanya untuk kelasnya tanpa kolom "atas permintaan".
+> - Wali Kelas: tanpa menu Layar gerbang, Notifikasi dan Audit; hanya melihat siswa kelasnya; tidak dapat mengubah master, kartu, foto, kalender atau data guru; koreksi hanya untuk kelasnya tanpa kolom "atas permintaan"; membuka dan mengunduh laporan siswa kelasnya (P-22).
 > - Pemeriksaan hak dijalankan layanan `Absensi.Data` (bukan hanya tampilan); "backend" pada bab ini berarti layanan tersebut sampai versi online dibangun.
 
 Satu akun per orang, terikat pada sekolah dan kewenangan yang sah. Untuk sistem online, autentikasi dan pemulihan wajib mengikuti MFA serta kontrol ASVS L3 pada §22; username/password saja bukan desain autentikasi final. Hak akses bisnis sekolah pada tabel berikut dipertahankan. Hak penyedia layanan diatur terpisah pada §21.10.
@@ -462,7 +462,7 @@ Riwayat notifikasi awal tetap tercatat dan dihubungkan dengan koreksi kalender b
 
 ## 11. Laporan
 
-> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jenis Harian, Mingguan, Bulanan, Per orang dan Semester untuk siswa dan guru, Excel dan PDF. Web membuat PDF lewat **Cetak / Simpan PDF** browser (pustaka PDF tidak berjalan di WebAssembly); desktop memakai QuestPDF. Di web, menu Laporan hanya untuk Kepala Sekolah dan Admin; wali kelas melihat riwayat siswanya dari menu Siswa atau Absensi. Keputusan P-22 (§3) memberi wali kelas laporan kelasnya sendiri; belum diterapkan di kode.
+> **Status aplikasi (13 November 2026):** **[Ada: web + desktop]** jenis Harian, Mingguan, Bulanan, Per orang dan Semester untuk siswa dan guru, Excel dan PDF. Web membuat PDF lewat **Cetak / Simpan PDF** browser (pustaka PDF tidak berjalan di WebAssembly); desktop memakai QuestPDF. Kepala Sekolah dan Admin membuka semua laporan; wali kelas membuka dan mengunduh laporan siswa kelas yang sedang ia walikan (P-22, diterapkan 14 November 2026 di web dan desktop).
 
 Keluaran: **Excel dan PDF**.
 

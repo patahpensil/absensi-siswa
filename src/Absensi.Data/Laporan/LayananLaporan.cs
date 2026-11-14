@@ -1,3 +1,4 @@
+using Absensi.Data.Akun;
 using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 using Absensi.Domain.Kehadiran;
@@ -12,11 +13,9 @@ namespace Absensi.Data.Laporan;
 // murni Absensi.Domain.Laporan; Absensi.Laporan yang mencetaknya ke
 // Excel/PDF, App/Laporan yang menampilkan pratinjaunya di layar.
 //
-// PRD §3: "laporan" ada di daftar "Kewenangan penuh mencakup" (Kepala
-// Sekolah/Admin) — berbeda dari Koreksi/Kalender, wali kelas TIDAK
-// disebutkan berwenang sama sekali di sini (bukan "kelasnya sendiri
-// saja"), jadi ditolak total, bukan difilter per kelas (PRD §24.3:
-// pemeriksaan peran di lapisan layanan).
+// PRD §3 P-22: Kepala Sekolah/Admin membuka semua laporan. Wali kelas hanya
+// laporan siswa untuk kelas yang sedang ia walikan; laporan guru, kelas lain,
+// dan "semua kelas" ditolak. Pemeriksaan ada di lapisan layanan (PRD §24.3).
 public sealed class LayananLaporan
 {
     private readonly RepositoriAbsensi _repositoriAbsensi = new();
@@ -32,7 +31,7 @@ public sealed class LayananLaporan
     public IReadOnlyList<BarisKejadian> Kejadian(
         SqliteConnection connection, AkunTersimpan akun, DateOnly tanggalAwal, DateOnly tanggalAkhir, int? kelasId, JenisSubjekLaporan subjek)
     {
-        PastikanBerwenang(akun);
+        EnsureReportAccess(connection, akun, subjek, kelasId);
 
         if (subjek == JenisSubjekLaporan.Guru)
         {
@@ -58,7 +57,7 @@ public sealed class LayananLaporan
     public LaporanBulanan Bulanan(
         SqliteConnection connection, AkunTersimpan akun, int tahunAjaranId, int tahun, int bulan, int? kelasId, JenisSubjekLaporan subjek)
     {
-        PastikanBerwenang(akun);
+        EnsureReportAccess(connection, akun, subjek, kelasId);
 
         var tanggalAwal = new DateOnly(tahun, bulan, 1);
         var tanggalAkhir = tanggalAwal.AddMonths(1).AddDays(-1);
@@ -103,7 +102,8 @@ public sealed class LayananLaporan
     public KartuOrang PerOrang(
         SqliteConnection connection, AkunTersimpan akun, int id, JenisSubjekLaporan subjek, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir)
     {
-        PastikanBerwenang(akun);
+        EnsureReportAccess(connection, akun, subjek,
+            subjek == JenisSubjekLaporan.Siswa ? _repositoriSiswaKelas.FindClassId(connection, id, tahunAjaranId) : null);
 
         var hariEfektif = HitungHariEfektif(connection, tahunAjaranId, tanggalAwal, tanggalAkhir);
 
@@ -131,7 +131,7 @@ public sealed class LayananLaporan
     public IReadOnlyList<KartuOrang> PerKelasAtauSemua(
         SqliteConnection connection, AkunTersimpan akun, JenisSubjekLaporan subjek, int? kelasId, int tahunAjaranId, DateOnly tanggalAwal, DateOnly tanggalAkhir)
     {
-        PastikanBerwenang(akun);
+        EnsureReportAccess(connection, akun, subjek, kelasId);
 
         var hariEfektif = HitungHariEfektif(connection, tahunAjaranId, tanggalAwal, tanggalAkhir);
 
@@ -160,7 +160,7 @@ public sealed class LayananLaporan
     // setahun penuh), jadi tidak perlu konsep batas semester terpisah.
     public IReadOnlyList<BarisSemester> Semester(SqliteConnection connection, AkunTersimpan akun, int tahunAjaranId, int? kelasId, JenisSubjekLaporan subjek)
     {
-        PastikanBerwenang(akun);
+        EnsureReportAccess(connection, akun, subjek, kelasId);
 
         var rentang = _repositoriTahunAjaran.CariRentang(connection, tahunAjaranId)
             ?? throw new InvalidOperationException($"Tahun ajaran {tahunAjaranId} tidak ditemukan.");
@@ -184,11 +184,32 @@ public sealed class LayananLaporan
             .ToList();
     }
 
-    private static void PastikanBerwenang(AkunTersimpan akun)
+    // Public so screens can offer only what the service will accept; the
+    // service still calls it on every report.
+    public bool MayOpenClassReport(SqliteConnection connection, AkunTersimpan akun, int kelasId) =>
+        akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin
+        || (akun.Peran == PeranAkun.WaliKelas && new LayananAkun().BolehMenyentuhKelas(connection, akun, kelasId));
+
+    private void EnsureReportAccess(SqliteConnection connection, AkunTersimpan akun, JenisSubjekLaporan subjek, int? kelasId)
     {
-        if (akun.Peran == PeranAkun.WaliKelas)
+        if (akun.Peran is PeranAkun.KepalaSekolah or PeranAkun.Admin)
         {
-            throw new InvalidOperationException("Wali kelas tidak berwenang mengakses laporan.");
+            return;
+        }
+
+        if (akun.Peran != PeranAkun.WaliKelas)
+        {
+            throw new InvalidOperationException("Akun ini tidak berwenang mengakses laporan.");
+        }
+
+        if (subjek != JenisSubjekLaporan.Siswa)
+        {
+            throw new InvalidOperationException("Wali kelas hanya dapat membuka laporan siswa kelasnya.");
+        }
+
+        if (kelasId is not { } classId || !MayOpenClassReport(connection, akun, classId))
+        {
+            throw new InvalidOperationException("Wali kelas hanya dapat membuka laporan kelas yang sedang diwalikannya.");
         }
     }
 

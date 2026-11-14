@@ -57,10 +57,28 @@ public sealed class LaporanViewModel : ObservableObject
         _tanggalAwal = penyediaWaktu.Sekarang.Date;
         _tanggalAkhir = penyediaWaktu.Sekarang.Date;
 
-        DaftarKelas.Add(new OpsiKelas(null, "Semua kelas"));
+        // P-22: wali kelas hanya melihat kelas yang sedang ia walikan dan
+        // hanya laporan siswa; LayananLaporan tetap memeriksa ulang.
+        var isHomeroom = akun.Peran == PeranAkun.WaliKelas;
+        DaftarSubjek = isHomeroom
+            ? new[] { new OpsiSubjekLaporan(JenisSubjekLaporan.Siswa, "Siswa") }
+            : new[] { new OpsiSubjekLaporan(JenisSubjekLaporan.Siswa, "Siswa"), new OpsiSubjekLaporan(JenisSubjekLaporan.Guru, "Guru") };
+        if (!isHomeroom)
+        {
+            DaftarKelas.Add(new OpsiKelas(null, "Semua kelas"));
+        }
+
         foreach (var kelas in new RepositoriKelas().DaftarUntukTahunAjaran(connection, tahunAjaranId))
         {
-            DaftarKelas.Add(new OpsiKelas(kelas.Id, kelas.Nama));
+            if (!isHomeroom || _layananLaporan.MayOpenClassReport(connection, akun, kelas.Id))
+            {
+                DaftarKelas.Add(new OpsiKelas(kelas.Id, kelas.Nama));
+            }
+        }
+
+        if (isHomeroom)
+        {
+            _kelasTerpilihId = DaftarKelas.FirstOrDefault()?.Id;
         }
 
         EksporExcelCommand = new RelayCommand(() => Ekspor(keExcel: true), () => BolehAkses);
@@ -74,16 +92,13 @@ public sealed class LaporanViewModel : ObservableObject
         }
         else
         {
-            PesanGalat = "Wali kelas tidak berwenang mengakses laporan.";
+            PesanGalat = "Belum ada kelas yang Anda walikan pada periode ini.";
         }
     }
 
-    // PRD §3: "laporan" ada di daftar kewenangan penuh Kepala Sekolah/Admin
-    // — wali kelas tidak disebutkan berwenang sama sekali di sini (beda
-    // dari Koreksi/Kalender yang membatasi per kelas). Diperiksa juga di
-    // LayananLaporan (PRD §24.3) — ini cuma menyembunyikan
-    // kontrol supaya wali kelas tidak perlu mencoba dulu baru ditolak.
-    public bool BolehAkses => _akun.Peran != PeranAkun.WaliKelas;
+    // PRD §3 P-22: Kepala Sekolah/Admin membuka semua laporan; wali kelas
+    // hanya laporan siswa kelasnya. Diperiksa juga di LayananLaporan (PRD §24.3).
+    public bool BolehAkses => _akun.Peran != PeranAkun.WaliKelas || _kelasTerpilihId is not null;
 
     public IReadOnlyList<OpsiJenisLaporan> DaftarJenis { get; } =
     [
@@ -94,11 +109,7 @@ public sealed class LaporanViewModel : ObservableObject
         new(JenisLaporan.Semester, "Semester"),
     ];
 
-    public IReadOnlyList<OpsiSubjekLaporan> DaftarSubjek { get; } =
-    [
-        new(JenisSubjekLaporan.Siswa, "Siswa"),
-        new(JenisSubjekLaporan.Guru, "Guru"),
-    ];
+    public IReadOnlyList<OpsiSubjekLaporan> DaftarSubjek { get; }
 
     public ObservableCollection<OpsiKelas> DaftarKelas { get; } = new();
 

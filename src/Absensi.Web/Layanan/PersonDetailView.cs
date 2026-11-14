@@ -101,7 +101,7 @@ public static class PersonDetailView
 
     private static (RekapKehadiran? Recap, string? Note) Recap(StatusAplikasi state, int id, JenisSubjekLaporan subject, DateOnly start, DateOnly end)
     {
-        if (!WorkspaceView.CanManage(state)) return (null, "Rekap mengikuti hak akses laporan: tersedia untuk kepala sekolah dan admin.");
+        // P-22: LayananLaporan decides; homeroom teachers get the recap for their own students.
         if (end < start) return (null, "Bulan ini belum berjalan.");
         try
         {

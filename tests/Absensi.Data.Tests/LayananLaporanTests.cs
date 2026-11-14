@@ -18,17 +18,41 @@ public sealed class LayananLaporanTests
 
     private readonly LayananLaporan _layanan = new();
 
-    // PRD §3: "laporan" ada di daftar kewenangan penuh Kepala Sekolah/
-    // Admin — wali kelas ditolak total, tidak seperti Koreksi/Kalender
-    // yang membatasi per kelas.
+    // PRD §3 P-22: wali kelas membuka laporan siswa kelas yang sedang ia walikan saja.
     [Fact]
-    public void Kejadian_WaliKelas_Ditolak()
+    public void WaliKelas_LaporanKelasnyaSendiri_Diizinkan()
     {
         using var database = new MigratedDatabase();
         database.SeedSekolahUntukLaporan();
 
+        var baris = _layanan.Kejadian(database.Connection, WaliKelas, Senin, Sabtu, kelasId: 1, JenisSubjekLaporan.Siswa);
+        var bulanan = _layanan.Bulanan(database.Connection, WaliKelas, 1, 2026, 9, kelasId: 1, JenisSubjekLaporan.Siswa);
+        var semester = _layanan.Semester(database.Connection, WaliKelas, 1, kelasId: 1, JenisSubjekLaporan.Siswa);
+        var kartu = _layanan.PerOrang(database.Connection, WaliKelas, 1, JenisSubjekLaporan.Siswa, 1, Senin, Sabtu);
+
+        Assert.Equal(10, baris.Count);
+        Assert.Equal(2, bulanan.Baris.Count);
+        Assert.Equal(2, semester.Count);
+        Assert.Equal("Siswa Satu", kartu.Nama);
+    }
+
+    [Fact]
+    public void WaliKelas_SemuaKelasLaporanGuruAtauKelasLain_Ditolak()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukLaporan();
+        var otherHomeroom = WaliKelas with { Id = 3, Username = "wali_lain", GuruId = 99 };
+
         Assert.Throws<InvalidOperationException>(() =>
-            _layanan.Kejadian(database.Connection, WaliKelas, Senin, Sabtu, kelasId: 1, JenisSubjekLaporan.Siswa));
+            _layanan.Kejadian(database.Connection, WaliKelas, Senin, Sabtu, kelasId: null, JenisSubjekLaporan.Siswa));
+        Assert.Throws<InvalidOperationException>(() =>
+            _layanan.Kejadian(database.Connection, WaliKelas, Senin, Sabtu, kelasId: null, JenisSubjekLaporan.Guru));
+        Assert.Throws<InvalidOperationException>(() =>
+            _layanan.PerOrang(database.Connection, WaliKelas, 1, JenisSubjekLaporan.Guru, 1, Senin, Sabtu));
+        Assert.Throws<InvalidOperationException>(() =>
+            _layanan.Kejadian(database.Connection, otherHomeroom, Senin, Sabtu, kelasId: 1, JenisSubjekLaporan.Siswa));
+        Assert.Throws<InvalidOperationException>(() =>
+            _layanan.PerOrang(database.Connection, otherHomeroom, 1, JenisSubjekLaporan.Siswa, 1, Senin, Sabtu));
     }
 
     [Fact]

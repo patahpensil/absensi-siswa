@@ -166,4 +166,34 @@ public sealed class LaporanViewModelTests
 
         Assert.Null(viewModel.PesanStatus);
     }
+
+    // P-22: wali kelas hanya mendapat laporan siswa kelas yang ia walikan.
+    [Fact]
+    public void WaliKelas_HanyaKelasnyaDanLaporanSiswa()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var homeroom = new AkunTersimpan(3, "wali_a", "x", PeranAkun.WaliKelas, 1, true);
+        var viewModel = new LaporanViewModel(database.Connection, homeroom, new PenyediaWaktuUji(TanggalBerdata), tahunAjaranId: 1, new LayananCetakPalsu());
+
+        Assert.True(viewModel.BolehAkses);
+        var kelas = Assert.Single(viewModel.DaftarKelas);
+        Assert.Equal(1, kelas.Id);
+        Assert.Single(viewModel.DaftarSubjek);
+        Assert.Equal(1, viewModel.KelasTerpilihId);
+        Assert.Null(viewModel.PesanGalat);
+    }
+
+    [Fact]
+    public void WaliKelas_TanpaKelasDiwalikan_TidakBolehAkses()
+    {
+        using var database = new MigratedDatabase();
+        database.SeedSekolahUntukGerbang();
+        var otherTeacher = new AkunTersimpan(4, "wali_b", "x", PeranAkun.WaliKelas, 99, true);
+        var viewModel = new LaporanViewModel(database.Connection, otherTeacher, new PenyediaWaktuUji(TanggalBerdata), tahunAjaranId: 1, new LayananCetakPalsu());
+
+        Assert.False(viewModel.BolehAkses);
+        Assert.Empty(viewModel.DaftarKelas);
+        Assert.Equal("Belum ada kelas yang Anda walikan pada periode ini.", viewModel.PesanGalat);
+    }
 }

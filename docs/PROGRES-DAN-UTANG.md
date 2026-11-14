@@ -700,3 +700,12 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 **Utang:** desktop belum punya tombol Ganti sandi sukarela di Pengaturan (layanannya sudah ada).
 
+## 46. Langkah 1f — P-22: laporan kelas untuk wali kelas — 14 November 2026
+
+- `LayananLaporan` mengganti penolakan total wali kelas dengan pemeriksaan per kelas: wali kelas hanya laporan **siswa** untuk kelas yang sedang ia walikan (`LayananAkun.BolehMenyentuhKelas`); "semua kelas", kelas lain, dan laporan guru ditolak. Per orang: kelas siswa pada periode itu yang diperiksa (`RepositoriSiswaKelas.FindClassId`).
+- Web: menu Laporan untuk wali kelas tanpa pilihan Subjek dan tanpa "Semua kelas"; daftar kelas hanya kelas yang ia walikan; unduh Excel dan Cetak/PDF memakai layanan yang sama. Rekap di panel detail siswa juga tampil untuk wali kelas.
+- Desktop: `LaporanViewModel` untuk wali kelas menampilkan kelasnya saja dan subjek Siswa saja; tanpa kelas yang diwalikan, laporan tertutup dengan pesan.
+- Tes: `LayananLaporanTests` (2 kasus menggantikan "wali ditolak total"), `LaporanViewModelTests` (2 kasus), langkah Chromium wali kelas membuka laporan semester 7A dan mengunduh Excel.
+
+Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Sekolah pengganti lewat verifikasi penyedia (menunggu versi online dan D-10).
+
