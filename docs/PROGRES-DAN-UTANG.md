@@ -650,13 +650,13 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 ## 42. Satu repo dan satu akun Cloudflare — 14 November 2026
 
-**Keputusan pemilik:** karena produk hanya desktop, cukup satu repo, `patahpensil/absensi-siswa`. Repo `Absensi-Uji-Real` dihapus oleh pemilik. Sebelum dihapus, isinya dibandingkan: tidak ada berkas yang hanya ada di sana, dan tidak ada issue, PR, rilis, atau cabang lain. Pemilik juga menghapus secret akun Cloudflare lama dan memilih menyatukan kedua situs uji di akun Patahpensil01.
+**Keputusan pemilik:** karena produk hanya desktop, cukup satu repo, `patahpensil/absensi-siswa`. Repo `Absensi-Uji-Real` dihapus oleh pemilik. Sebelum dihapus, isinya dibandingkan: tidak ada berkas yang hanya ada di sana, dan tidak ada issue, PR, rilis, atau cabang lain. Pemilik juga menghapus secret lama dan memilih memakai satu akun Cloudflare dengan secret `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`.
 
-- `web-deploy.yml` kini memakai satu pasang secret, `CLOUDFLARE_API_TOKEN_REAL` dan `CLOUDFLARE_ACCOUNT_ID_REAL`, untuk kedua proyek.
-- Proyek `absensi-uji` belum ada di akun Patahpensil01, jadi dibuat otomatis pada deploy pertama. Alamatnya bisa berbeda dari `absensi-uji.pages.dev`, karena nama itu masih dipegang proyek di akun lama. Alamat yang berlaku dicatat sebagai anotasi di run deploy.
-- `absensi-uji-real.pages.dev` tetap di proyek yang sama.
+- `web-deploy.yml` kini memakai satu pasang secret itu untuk kedua proyek.
+- **Terbukti** ([run 43568697989](https://github.com/patahpensil/absensi-siswa/actions/runs/43568697989), commit `2f40fe9`): akun secret baru ternyata akun yang memegang proyek `absensi-uji`. Situs `https://absensi-uji.pages.dev/` diperbarui dengan alamat tetap, dan pemeriksaan Chromium sebelum dan sesudah deploy lulus.
+- Proyek `absensi-uji-real` tidak ada di akun itu (HTTP 404). Proyek itu berada di akun Cloudflare lain (yang dahulu dipakai repo `Absensi-Uji-Real`), jadi situs mode nyata belum diperbarui.
+- Catatan §38 yang menyebut akun pemegang `absensi-uji-real` sebagai Patahpensil01 belum diverifikasi agen; nama akun tidak terlihat dari run.
 
 **Peringatan:** `absensi-smp1` adalah nama lama repo ini, bukan repo lain. Alamatnya dialihkan ke `absensi-siswa`; jangan menghapus apa pun lewat alamat itu.
 
-**Yang harus dilakukan Edgar:** setelah alamat baru `absensi-uji` terbukti jalan, hapus proyek Pages `absensi-uji` di akun Cloudflare lama.
-
+**Keputusan yang menunggu Edgar:** cara memindahkan situs mode nyata ke akun yang sama. Data mode nyata tersimpan di browser per alamat situs, jadi bila alamatnya berubah, data lama hanya bisa dibawa lewat berkas cadangan.
