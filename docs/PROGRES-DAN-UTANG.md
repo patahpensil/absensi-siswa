@@ -862,4 +862,4 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 
 **Belum terbukti / belum diputuskan:** tampilan panduan di desktop belum dilihat lewat tangkapan layar. Penolakan sandi umum (ASVS 6.2.4) belum diputuskan Edgar.
 
-**Catatan:** commit `05a3d12` (dokumen §56) menggagalkan job typos karena kata "templat"; diperbaiki di commit berikutnya.
+**Catatan:** commit `05a3d12` (dokumen §56) menggagalkan job typos karena satu kata Indonesia yang dianggap salah eja; diperbaiki di commit berikutnya.
