@@ -804,13 +804,10 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 - Tes Chromium dan deploy mode nyata lulus pada `b3f00c6`, yang memuat perubahan web (`AccountManagement`).
 - Commit `b3f00c6` gagal build karena satu `using` kurang di tes baru; diperbaiki di `cfde051`.
 
-**Belum terbukti:**
-
-- `MainWindowGateTests` belum dijalankan terhadap kode lama untuk membuktikan tes itu memang gagal sebelum perbaikan.
-- Alur jendela desktop (keluar, masuk lagi, gerbang tetap menerima tap, keluar otomatis saat dialog terbuka) tetap perlu dicoba Edgar di PC Windows (§50, §53).
-
 **Utang tercatat dari pemeriksaan ini:**
 
+- **Belum terbukti:** `MainWindowGateTests` belum dijalankan terhadap kode lama, jadi belum terbukti tes itu gagal sebelum perbaikan `d3449dd`. Pelunasan: jalankan tes itu sekali dengan perbaikan dibatalkan sementara (tanpa cabang baru), lalu pastikan tes gagal.
+- **Belum terbukti:** alur jendela desktop (keluar, masuk lagi, Layar gerbang tetap menerima tap, keluar otomatis saat dialog terbuka) belum dicoba di PC Windows sungguhan (§50, §53). Pelunasan: dicoba Edgar dengan reader dan hasilnya dicatat di sini.
 - `WizardInstalasiViewModel.PulihkanDariPcLama` memanggil `UnduhTerakhirAsync(...).GetAwaiter().GetResult()` di thread UI (kode lama, bukan dari §38–§53). Implementasi sekarang (`PenyimpanCloudBackupLokal`) sinkron sehingga aman. Penyimpanan cloud sungguhan di versi online bisa membuat deadlock; perintahnya harus dibuat async saat itu dikerjakan.
 - Di Layar gerbang desktop, alasan rinci tap yang gagal (mis. "pemilik kartu belum ada di daftar hadir") hanya masuk log; layar menampilkan "Tap belum tercatat".
 - Pada hari libur, tap kartu yang sah menjalankan ulang pembukaan hari setiap kali, karena memang tidak ada baris yang dibuat. `PembukaanHari` berhenti sebelum INSERT pada hari libur, jadi biayanya hanya `FinalizeMissedDays` dan beberapa query pemeriksaan per tap; belum diukur pada data sekolah penuh.
