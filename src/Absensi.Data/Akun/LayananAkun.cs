@@ -129,10 +129,11 @@ public sealed class LayananAkun
     // menampilkan sandi lama (memang tidak tersimpan sebagai teks biasa,
     // hanya hash-nya — Absensi.Data.Akun.HashSandi).
     //
-    // P-21: Kepala Sekolah and Admin may reset each other's password so the
-    // school is never locked out; the owner must choose a new password at the
-    // next login. Admin still cannot reset another Admin, and nobody resets
-    // their own account here (ChangeOwnPassword verifies the current password).
+    // P-21 (revised 14 November 2026): Kepala Sekolah and Admin may reset each
+    // other's password so the school is never locked out; the new password
+    // works immediately and the reset is audited. Admin still cannot reset
+    // another Admin, and nobody resets their own account here. One-time codes
+    // for Kepala Sekolah/Admin come with the online version (P-32).
     public void ResetSandi(SqliteConnection connection, AkunTersimpan pembuat, DateTime waktu, int akunIdTarget, string sandiBaru)
     {
         PastikanBolehMengelolaAkun(pembuat);
@@ -150,48 +151,7 @@ public sealed class LayananAkun
             perubahan: transaction =>
             {
                 _repositoriAkun.PerbaruiSandi(connection, transaction, akunIdTarget, sandiHash);
-                _repositoriAkun.SetPasswordChangeRequired(connection, transaction, akunIdTarget, required: true);
                 return akunIdTarget;
-            });
-    }
-
-    public bool RequiresPasswordChange(SqliteConnection connection, AkunTersimpan account) =>
-        _repositoriAkun.IsPasswordChangeRequired(connection, account.Id);
-
-    // Any active account may change its own password after proving the current
-    // one. Clears the "must change" flag set by a reset.
-    public void ChangeOwnPassword(SqliteConnection connection, AkunTersimpan account, DateTime time,
-        string currentPassword, string newPassword)
-    {
-        var stored = _repositoriAkun.CariBerdasarkanId(connection, account.Id);
-        if (stored is null || !stored.Aktif)
-        {
-            throw new InvalidOperationException("Akun tidak aktif.");
-        }
-
-        if (!HashSandi.Verifikasi(currentPassword ?? string.Empty, stored.SandiHash))
-        {
-            throw new InvalidOperationException("Sandi saat ini salah.");
-        }
-
-        PastikanSandiValid(newPassword);
-        if (newPassword == currentPassword)
-        {
-            throw new InvalidOperationException("Sandi baru harus berbeda dari sandi saat ini.");
-        }
-
-        var hash = HashSandi.Buat(newPassword);
-        _jalurPerubahanData.Jalankan(
-            connection,
-            stored,
-            time,
-            aksi: "ganti_sandi_sendiri",
-            entitas: "akun",
-            perubahan: transaction =>
-            {
-                _repositoriAkun.PerbaruiSandi(connection, transaction, stored.Id, hash);
-                _repositoriAkun.SetPasswordChangeRequired(connection, transaction, stored.Id, required: false);
-                return stored.Id;
             });
     }
 

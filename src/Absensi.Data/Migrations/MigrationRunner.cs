@@ -19,6 +19,7 @@ public sealed class MigrationRunner
         new Migration008ScheduleChange(),
         new Migration009StudentEnrollmentDates(),
         new Migration010PasswordChangeRequired(),
+        new Migration011DropPasswordChangeRequired(),
     };
 
     public void Run(SqliteConnection connection)

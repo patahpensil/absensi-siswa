@@ -1026,7 +1026,7 @@ await langkah('Mutasi siswa dan nonaktif guru: data tetap, kartu siswa dinonakti
   tegas((await page.textContent('#audit-table')).includes('kartu_aktif'), 'penonaktifan kartu tidak tercatat di audit');
 });
 
-await langkah('Akun: admin membuat wali kelas, sandi diatur ulang (P-21) lalu wajib diganti, akun dinonaktifkan tidak bisa masuk', async () => {
+await langkah('Akun: admin membuat wali kelas, sandi diatur ulang termasuk sandi kepala sekolah (P-21), akun dinonaktifkan tidak bisa masuk', async () => {
   await page.click('#menu-pengaturan');
   await page.waitForSelector('#account-management');
   tegas(await page.locator('#account-role option').count() === 1, 'admin masih bisa memilih peran Admin');
@@ -1050,8 +1050,8 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang (P-21) lalu wa
   await account.locator('[id^=account-reset-]').click();
   await page.fill('#account-reset-password', 'sandibaru123');
   await page.click('#account-reset-confirm');
-  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('wajib membuat sandi baru'));
-  // P-21: Admin dapat mengatur ulang sandi Kepala Sekolah, tetapi tidak Admin lain atau dirinya sendiri.
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun wali8a diatur ulang'));
+  // P-21: Admin dapat mengatur ulang sandi Kepala Sekolah, tetapi tidak menonaktifkannya.
   const headRow = page.locator('#account-table tbody tr').filter({ hasText: 'Kepala Sekolah' }).first();
   tegas(await headRow.locator('[id^=account-reset-]').count() === 1, 'admin tidak dapat mengatur ulang sandi kepala sekolah');
   tegas(await headRow.locator('[id^=account-deactivate-]').count() === 0, 'admin dapat menonaktifkan kepala sekolah');
@@ -1061,30 +1061,11 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang (P-21) lalu wa
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun kepsek diatur ulang'));
   await page.click('#tombol-keluar');
 
-  // Pemilik akun yang diatur ulang wajib membuat sandi baru sebelum masuk ke aplikasi.
+  // Sandi hasil atur ulang langsung berlaku tanpa langkah tambahan (P-21 revisi 14 November 2026).
   await masuk('wali8a', 'sandibaru123');
-  await page.waitForSelector('#password-change-required');
-  tegas(await page.locator('#akun-aktif').count() === 0, 'aplikasi terbuka sebelum sandi baru dibuat');
-  await page.fill('#password-current', 'sandibaru123');
-  await page.fill('#password-new', 'sandiwali8b');
-  await page.fill('#password-confirm', 'sandiwali8c');
-  await page.click('#password-change-save');
-  await page.waitForFunction(() => document.querySelector('#password-change-message')?.textContent?.includes('tidak sama'));
-  await page.fill('#password-confirm', 'sandiwali8b');
-  await page.click('#password-change-save');
   await page.waitForSelector('#akun-aktif');
   await page.click('#tombol-keluar');
-  await masuk('wali8a', 'sandiwali8b');
-  await page.waitForSelector('#akun-aktif');
-  tegas(await page.locator('#password-change-required').count() === 0, 'kewajiban ganti sandi muncul lagi');
-  await page.click('#tombol-keluar');
-
   await masuk('kepsek', 'sementara123');
-  await page.waitForSelector('#password-change-required');
-  await page.fill('#password-current', 'sementara123');
-  await page.fill('#password-new', 'contoh123');
-  await page.fill('#password-confirm', 'contoh123');
-  await page.click('#password-change-save');
   await page.waitForSelector('#ringkasan');
   await page.click('#tombol-keluar');
 
@@ -1095,8 +1076,12 @@ await langkah('Akun: admin membuat wali kelas, sandi diatur ulang (P-21) lalu wa
   await page.click('#account-deactivate-confirm');
   await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('dinonaktifkan'));
   tegas((await page.locator('#account-table tbody tr').filter({ hasText: 'wali8a' }).textContent()).includes('Nonaktif'), 'status akun tidak berubah');
+  await page.locator('#account-table tbody tr').filter({ hasText: 'Kepala Sekolah' }).first().locator('[id^=account-reset-]').click();
+  await page.fill('#account-reset-password', 'contoh123');
+  await page.click('#account-reset-confirm');
+  await page.waitForFunction(() => document.querySelector('#account-message')?.textContent?.includes('Sandi akun kepsek diatur ulang'));
   await page.click('#tombol-keluar');
-  await masuk('wali8a', 'sandiwali8b');
+  await masuk('wali8a', 'sandibaru123');
   await page.waitForSelector('#galat-masuk');
 
   await masuk('kepsek', 'contoh123');

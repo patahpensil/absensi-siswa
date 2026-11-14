@@ -117,24 +117,6 @@ public sealed class RepositoriAkun
         command.ExecuteNonQuery();
     }
 
-    public void SetPasswordChangeRequired(SqliteConnection connection, SqliteTransaction transaction, int id, bool required)
-    {
-        using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = "UPDATE akun SET must_change_password = $required WHERE id = $id;";
-        command.Parameters.AddWithValue("$required", required ? 1 : 0);
-        command.Parameters.AddWithValue("$id", id);
-        command.ExecuteNonQuery();
-    }
-
-    public bool IsPasswordChangeRequired(SqliteConnection connection, int id)
-    {
-        using var command = connection.CreateCommand();
-        command.CommandText = "SELECT must_change_password FROM akun WHERE id = $id;";
-        command.Parameters.AddWithValue("$id", id);
-        return command.ExecuteScalar() is long value && value == 1;
-    }
-
     private static AkunTersimpan Petakan(SqliteDataReader reader) => new(
         Id: reader.GetInt32(0),
         Username: reader.GetString(1),

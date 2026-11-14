@@ -50,7 +50,6 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,4" />
 
-                <StackPanel Visibility="{Binding ShowLogin, Converter={StaticResource BoolKeVisibilitas}}">
                 <TextBlock Text="Masuk untuk melanjutkan"
                            Style="{StaticResource LabelKecilStyle}"
                            HorizontalAlignment="Center"
@@ -76,43 +75,9 @@
                 <Button Content="Masuk"
                         Style="{StaticResource TombolUtamaStyle}"
                         Command="{Binding LoginCommand}"
-                        IsDefault="{Binding ShowLogin}"
+                        IsDefault="True"
                         HorizontalAlignment="Stretch"
                         Margin="0,8,0,24" />
-                </StackPanel>
-
-                <!-- PRD §3 P-21: sandi yang diatur ulang Kepala Sekolah/Admin
-                     wajib diganti sebelum jendela utama terbuka. -->
-                <StackPanel Visibility="{Binding MustChangePassword, Converter={StaticResource BoolKeVisibilitas}}">
-                    <TextBlock Text="Sandi akun ini baru saja diatur ulang. Buat sandi baru sebelum melanjutkan."
-                               Style="{StaticResource LabelKecilStyle}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,16" />
-
-                    <TextBlock Text="Sandi baru" Style="{StaticResource LabelKolomStyle}" />
-                    <PasswordBox x:Name="KolomSandiBaru"
-                                 Style="{StaticResource KolomSandiStyle}"
-                                 PasswordChanged="KolomSandiBaru_PasswordChanged"
-                                 Margin="0,0,0,16" />
-
-                    <TextBlock Text="Ulangi sandi baru" Style="{StaticResource LabelKolomStyle}" />
-                    <PasswordBox x:Name="KolomUlangiSandiBaru"
-                                 Style="{StaticResource KolomSandiStyle}"
-                                 PasswordChanged="KolomUlangiSandiBaru_PasswordChanged"
-                                 Margin="0,0,0,8" />
-
-                    <TextBlock Text="{Binding PesanGalat}"
-                               Style="{StaticResource PesanSalahKolomStyle}"
-                               Visibility="{Binding PesanGalat, Converter={StaticResource NullKeVisibilitas}}"
-                               Margin="0,0,0,8" />
-
-                    <Button Content="Simpan sandi baru"
-                            Style="{StaticResource TombolUtamaStyle}"
-                            Command="{Binding ChangePasswordCommand}"
-                            IsDefault="{Binding MustChangePassword}"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,8,0,24" />
-                </StackPanel>
 
                 <Separator Margin="0,0,0,12" Background="{StaticResource GarisBrush}" />
 

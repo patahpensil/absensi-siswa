@@ -160,7 +160,7 @@
         var target = resetTarget!;
         service.ResetSandi(Status.Koneksi!, Status.Akun!, Status.Jam.Sekarang, target.Id, resetPassword);
         resetTarget = null; resetPassword = "";
-        return $"Sandi akun {target.Username} diatur ulang. Pemilik akun wajib membuat sandi baru saat masuk berikutnya.";
+        return $"Sandi akun {target.Username} diatur ulang dan langsung berlaku. Sampaikan langsung kepada pemilik akun.";
     });
 
     private Task Deactivate() => Run(() =>

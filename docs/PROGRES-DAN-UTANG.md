@@ -709,3 +709,15 @@ Memperbaiki temuan §29: wizard mengisi akhir periode "hari ini + 5 bulan" dan r
 
 Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Sekolah pengganti lewat verifikasi penyedia (menunggu versi online dan D-10).
 
+## 47. Revisi P-21 dan keputusan P-32 (OTP) — 14 November 2026
+
+**Keputusan pemilik:** fitur wajib ganti sandi setelah diatur ulang dan panel Ganti sandi dinilai tidak berguna dan membingungkan. PRD P-21 direvisi: sandi hasil atur ulang langsung berlaku dan tercatat di Audit; tidak ada menu ganti sandi sendiri. Perlindungan akun Kepala Sekolah dan Admin dipindahkan ke **P-32**: OTP aplikasi authenticator, pemulihan hanya lewat penyedia, dibangun bersama versi online.
+
+- Dihapus dari kode: layar "Buat sandi baru" (web dan desktop), panel Ganti sandi di Pengaturan web, `LayananAkun.ChangeOwnPassword`/`RequiresPasswordChange`, dan penanda di `RepositoriAkun`. Migrasi 011 membuang kolom `akun.must_change_password` dari database yang sudah menjalankan migrasi 010.
+- Tetap: Kepala Sekolah ↔ Admin saling mengatur ulang sandi; Admin tidak mengatur ulang Admin lain; tidak ada yang mengatur ulang akun sendiri; Admin tidak menonaktifkan Kepala Sekolah.
+- Tes disesuaikan: `LayananAkunTests` (reset Kepala Sekolah langsung berlaku dan tercatat di audit), `LoginViewModelTests` kembali ke versi sebelum §45, langkah Chromium akun.
+
+**Risiko yang diterima pemilik sampai P-32 dibangun:** Admin yang mengatur ulang sandi Kepala Sekolah mengetahui sandi itu; pengawasannya hanya lewat Audit.
+
+**Catatan cara kerja:** agen hanya membangun yang tertulis di PRD atau disetujui di chat; usulan tambahan ditanyakan dulu.
+

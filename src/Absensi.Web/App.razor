@@ -23,17 +23,6 @@ else if (Status.Akun is null)
 {
     <Masuk OnMasuk="StateHasChanged" />
 }
-else if (Status.MustChangePassword)
-{
-    <main class="login-layout">
-        <section class="login-form-area">
-            <div class="login-card">
-                <h1>Buat sandi baru</h1>
-                <ChangePassword Forced="true" OnChanged="StateHasChanged" OnLogout="Logout" />
-            </div>
-        </section>
-    </main>
-}
 else
 {
     <Kerangka OnKeluar="StateHasChanged" />
@@ -41,12 +30,6 @@ else
 
 @code {
     private bool muatSelesai;
-
-    private void Logout()
-    {
-        Status.Keluar();
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {

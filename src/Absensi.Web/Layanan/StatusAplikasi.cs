@@ -108,27 +108,10 @@ public sealed partial class StatusAplikasi
     public AkunTersimpan? Masuk(string username, string sandi)
     {
         Akun = _layananAkun.Autentikasi(Koneksi!, username.Trim(), sandi);
-        MustChangePassword = Akun is not null && _layananAkun.RequiresPasswordChange(Koneksi!, Akun);
         return Akun;
     }
 
-    // True after a reset by Kepala Sekolah/Admin until the owner sets a new password (P-21).
-    public bool MustChangePassword { get; private set; }
-
-    public void Keluar()
-    {
-        Akun = null;
-        MustChangePassword = false;
-    }
-
-    public async Task ChangeOwnPasswordAsync(string currentPassword, string newPassword)
-    {
-        var account = Akun ?? throw new InvalidOperationException("Masuk terlebih dahulu.");
-        _layananAkun.ChangeOwnPassword(Koneksi!, account, Jam.Sekarang, currentPassword, newPassword);
-        Akun = new RepositoriAkun().CariBerdasarkanId(Koneksi!, account.Id);
-        MustChangePassword = false;
-        await SimpanAsync();
-    }
+    public void Keluar() => Akun = null;
 
     public Task SimpanAsync() => SaveSnapshotAsync();
 

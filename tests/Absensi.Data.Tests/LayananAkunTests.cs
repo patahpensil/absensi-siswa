@@ -289,8 +289,8 @@ public sealed class LayananAkunTests
     }
 
     [Fact]
-    // P-21: Admin boleh mereset sandi Kepala Sekolah; pemilik wajib ganti sandi.
-    public void ResetSandi_AdminKeKepalaSekolah_BerhasilDanWajibGantiSandi()
+    // P-21: Admin boleh mereset sandi Kepala Sekolah; sandi baru langsung berlaku dan tercatat di audit.
+    public void ResetSandi_AdminKeKepalaSekolah_LangsungBerlakuDanTercatatDiAudit()
     {
         using var database = new MigratedDatabase();
         database.SeedAkunUntukUji();
@@ -298,24 +298,24 @@ public sealed class LayananAkunTests
 
         _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiBaru1!");
 
-        var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", "SandiBaru1!");
-        Assert.NotNull(kepsek);
-        Assert.True(_layananAkun.RequiresPasswordChange(database.Connection, kepsek!));
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", "SandiBaru1!"));
         Assert.Null(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
+        using var command = database.Connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'reset_sandi_akun' AND akun_id = 9 AND entitas_id = 1;";
+        Assert.Equal(1L, command.ExecuteScalar());
     }
 
     [Fact]
-    public void ResetSandi_KepalaSekolahKeAdmin_WajibGantiSandi()
+    public void ResetSandi_KepalaSekolahKeAdmin_Berhasil()
     {
         using var database = new MigratedDatabase();
         database.SeedAkunUntukUji();
-        var admin = BuatAdmin(database);
+        BuatAdmin(database);
         var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
 
-        _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, admin.Id, "SandiAdminBaru1!");
+        _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, 9, "SandiAdminBaru1!");
 
-        Assert.True(_layananAkun.RequiresPasswordChange(database.Connection, admin));
-        Assert.False(_layananAkun.RequiresPasswordChange(database.Connection, kepsek));
+        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "admin_tu", "SandiAdminBaru1!"));
     }
 
     [Fact]
@@ -330,38 +330,6 @@ public sealed class LayananAkunTests
         Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, otherAdmin.Id, "SandiBaru1!"));
         Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, admin, Waktu, admin.Id, "SandiBaru1!"));
         Assert.Throws<InvalidOperationException>(() => _layananAkun.ResetSandi(database.Connection, kepsek, Waktu, kepsek.Id, "SandiBaru1!"));
-    }
-
-    [Fact]
-    public void ChangeOwnPassword_SetelahReset_MenghapusKewajibanDanTercatatDiAudit()
-    {
-        using var database = new MigratedDatabase();
-        database.SeedAkunUntukUji();
-        var admin = BuatAdmin(database);
-        _layananAkun.ResetSandi(database.Connection, admin, Waktu, akunIdTarget: 1, "SandiSementara1!");
-        var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", "SandiSementara1!")!;
-
-        _layananAkun.ChangeOwnPassword(database.Connection, kepsek, Waktu, "SandiSementara1!", "SandiPilihanKepsek1!");
-
-        Assert.False(_layananAkun.RequiresPasswordChange(database.Connection, kepsek));
-        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", "SandiPilihanKepsek1!"));
-        using var command = database.Connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM audit WHERE aksi = 'ganti_sandi_sendiri' AND akun_id = 1;";
-        Assert.Equal(1L, command.ExecuteScalar());
-    }
-
-    [Theory]
-    [InlineData("salah-sandi", "SandiBaru1!")]
-    [InlineData(MigratedDatabase.SandiKepsek, "pendek")]
-    [InlineData(MigratedDatabase.SandiKepsek, MigratedDatabase.SandiKepsek)]
-    public void ChangeOwnPassword_SandiLamaSalahBaruTerlaluPendekAtauSama_Ditolak(string current, string next)
-    {
-        using var database = new MigratedDatabase();
-        database.SeedAkunUntukUji();
-        var kepsek = _layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek)!;
-
-        Assert.Throws<InvalidOperationException>(() => _layananAkun.ChangeOwnPassword(database.Connection, kepsek, Waktu, current, next));
-        Assert.NotNull(_layananAkun.Autentikasi(database.Connection, "kepsek", MigratedDatabase.SandiKepsek));
     }
 
     [Fact]
