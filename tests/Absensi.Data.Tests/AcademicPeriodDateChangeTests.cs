@@ -1,4 +1,5 @@
 using Absensi.Data.MasterData;
+using Absensi.Data.Repositori;
 using Absensi.Domain.Akun;
 
 namespace Absensi.Data.Tests;
