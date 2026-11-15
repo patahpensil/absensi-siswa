@@ -101,13 +101,15 @@ await langkah('Pencarian siswa dan filter kelas bekerja tanpa mengubah data', as
   await page.selectOption('#student-class', '');
 });
 
-await langkah('Bilah perintah mencari NISN dan pintasan keyboard membuka menu', async () => {
-  await page.keyboard.press('Control+k');
-  tegas(await page.$eval('#workspace-command', el => el === document.activeElement), 'fokus bukan di bilah perintah');
-  await page.fill('#workspace-command', '9000000002');
-  await page.press('#workspace-command', 'Enter');
-  await page.waitForFunction(() => document.querySelectorAll('#tabel-siswa tbody tr').length === 1 && document.querySelector('#tabel-siswa').textContent.includes('9000000002'));
-  await page.locator('#workspace-command').blur();
+await langkah('Tanpa bilah perintah Ctrl K; pintasan F2 dan F3 tetap membuka menu', async () => {
+  tegas(await page.locator('#workspace-command, .command-strip').count() === 0, 'bilah perintah masih tampil');
+  tegas(!(await page.textContent('body')).includes('Ctrl K'), 'teks Ctrl K masih tampil');
+  await page.locator('#student-search').blur();
+  await page.keyboard.press('F2');
+  await page.waitForSelector('#tap-uid');
+  await page.locator('#tap-uid').blur();
+  await page.keyboard.press('F3');
+  await page.waitForSelector('#tabel-siswa');
   await page.keyboard.press('F2');
   await page.waitForSelector('#tap-uid');
 });
@@ -592,10 +594,7 @@ await langkah('Data bertahan setelah halaman dimuat ulang (IndexedDB)', async ()
   await masuk('wali7a', 'Contoh#2026ab');
   await page.waitForSelector('#ringkasan');
   tegas(await page.locator('#menu-layar-gerbang, #dashboard-open-tv').count() === 0, 'wali mendapat pengendali gerbang');
-  await page.fill('#workspace-command', 'Layar gerbang');
-  await page.press('#workspace-command', 'Enter');
-  tegas(await page.locator('#gate-controls, #gate-open').count() === 0, 'wali dapat membuka gerbang melalui perintah');
-  tegas((await page.textContent('#isi')).includes('tidak berwenang'), 'perintah gerbang wali tidak menjelaskan penolakan');
+  tegas(await page.locator('#gate-controls, #gate-open').count() === 0, 'wali dapat membuka gerbang');
   await page.click('#menu-siswa');
   await page.waitForSelector('#tabel-siswa');
   tegas(await baris('#tabel-siswa') === 8, 'wali melihat siswa di luar kelasnya');

@@ -47,9 +47,9 @@ Workflow GitHub membangun web dengan native SQLite WebAssembly, menjalankan `tes
 ## Mencoba web uji
 
 1. Pilih akun contoh pada layar login, lalu tekan Masuk.
-2. Periksa Dashboard, Siswa, Guru, dan Kelas. Gunakan pencarian/filter atau bilah perintah; Ctrl+K memfokuskan perintah, F2 membuka Absensi, F3 membuka Siswa.
+2. Periksa Dashboard, Siswa, Guru, dan Kelas. Gunakan pencarian/filter di tiap layar; F2 membuka Absensi, F3 membuka Siswa.
 3. Pada Siswa, pilih **Daftarkan kartu** untuk satu siswa. Masukkan UID contoh, lalu Simpan. Nomor nol di depan tetap dipertahankan. Akun wali kelas tidak memiliki tindakan ini.
 4. Pada Pengaturan, tetapkan tanggal/waktu uji dalam periode aktif. Waktu skenario berhenti agar batas detik dapat diuji.
 5. Pada Absensi, proses UID terdaftar. Keputusan dibuat oleh layanan C# yang sama dengan desktop. Tap 07.30.00 Hadir, setelahnya Terlambat sesuai jadwal; jeda 15 detik tetap berlaku.
 
-Tampilan mengadaptasi susunan panel Binance dan bilah perintah terminal Bloomberg, dengan palet biru/putih/abu-abu sekolah. Modul web yang belum tersedia ditandai jelas. Pengiriman notifikasi eksternal, backend produksi, sinkronisasi offline, dan pengujian reader fisik belum diaktifkan oleh web uji ini.
+Tampilan mengadaptasi susunan panel Binance, dengan palet biru/putih/abu-abu sekolah. Modul web yang belum tersedia ditandai jelas. Pengiriman notifikasi eksternal, backend produksi, sinkronisasi offline, dan pengujian reader fisik belum diaktifkan oleh web uji ini.

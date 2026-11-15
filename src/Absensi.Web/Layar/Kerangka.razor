@@ -24,20 +24,13 @@
         <div><strong id="judul-sekolah">@Status.NamaSekolah</strong><small>Absensi siswa dan guru</small></div>
         <div class="school-context"><span>Tahun ajaran<strong>@Status.TahunAjaran</strong></span><span>@(Status.Jam.IsScenario ? "Waktu uji · simulasi" : "Waktu sekolah")<strong id="jam-simulasi" class="mono">@Status.Jam.Sekarang.ToString("dd/MM/yyyy HH:mm:ss") WITA</strong></span></div>
     </div>
-    <div class="command-strip">
-        <form class="command-form" @onsubmit="RunCommand" @onsubmit:preventDefault>
-            <input id="workspace-command" aria-label="Perintah navigasi atau pencarian siswa" placeholder="Ketik menu atau cari nama / NISN…" @bind="command" autocomplete="off" /><kbd>Ctrl K</kbd>
-        </form>
-        <span class="command-hint">F2 Absensi <span>·</span> F3 Siswa</span>
-    </div>
     <main class="content" id="isi" tabindex="-1">
-        @if (commandMessage is not null) { <p class="notice" role="status">@commandMessage</p> }
         @if (Status.StorageFailed) { <p class="message danger" role="alert">@Status.CatatanPenyimpanan</p> }
         @switch (activePage)
         {
             case "Dashboard": <Dasbor @key="attendanceRevision" OnNavigate="Navigate" /> break;
             case "Absensi": <AttendanceDesk /> break;
-            case "Siswa": <DaftarSiswa Search="@studentSearch" /> break;
+            case "Siswa": <DaftarSiswa /> break;
             case "Guru": <DaftarGuru /> break;
             case "Kelas": <DaftarKelas OnPeriodChanged="RefreshAttendance" /> break;
             case "Koreksi": <KoreksiWeb /> break;
@@ -59,9 +52,6 @@
     private int attendanceRevision;
     private void RefreshAttendance() { attendanceRevision++; StateHasChanged(); }
     private string activePage = "Dashboard";
-    private string command = "";
-    private string studentSearch = "";
-    private string? commandMessage;
     private IJSObjectReference? module;
     private DotNetObjectReference<Kerangka>? reference;
     private string RoleLabel => Status.Akun!.Peran switch { PeranAkun.KepalaSekolah => "Kepala Sekolah", PeranAkun.Admin => "Admin", _ => "Wali Kelas" };
@@ -86,25 +76,6 @@
     {
         if (!MenuItems().Contains(page)) return;
         activePage = page;
-        commandMessage = null;
-        if (page != "Siswa") studentSearch = "";
-    }
-    private void RunCommand()
-    {
-        var query = command.Trim();
-        if (query.Length == 0) return;
-        if ((query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase) || query.Equals("Layar gerbang", StringComparison.OrdinalIgnoreCase)) && !WorkspaceView.CanManage(Status))
-        {
-            commandMessage = "Akun wali kelas tidak berwenang mengakses pengendali layar gerbang.";
-            command = "";
-            return;
-        }
-        var page = MenuItems().FirstOrDefault(m => m.Equals(query, StringComparison.OrdinalIgnoreCase));
-        if (query.Equals("GERBANG", StringComparison.OrdinalIgnoreCase)) page = WorkspaceView.CanManage(Status) ? "Layar gerbang" : null;
-        if (page is not null) Navigate(page);
-        else if (query.Equals("BANTUAN", StringComparison.OrdinalIgnoreCase)) commandMessage = "Ketik nama menu, GERBANG, atau nama/NISN siswa. Ctrl+K membuka perintah, F2 Absensi, F3 Siswa.";
-        else { Navigate("Siswa"); studentSearch = query; }
-        command = "";
     }
     private async Task Logout() { Status.Keluar(); await OnKeluar.InvokeAsync(); }
     public async ValueTask DisposeAsync()

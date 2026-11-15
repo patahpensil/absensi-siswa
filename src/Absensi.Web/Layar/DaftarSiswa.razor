@@ -66,8 +66,6 @@
     private void CloseEditor() { editId = null; addOpen = false; }
     private void CloseImport() => importOpen = false;
 
-    [Parameter] public string Search { get; set; } = "";
-    private string previousSearch = "";
     private string query = "";
     private string className = "";
     private IReadOnlyList<SiswaDaftar> students = Array.Empty<SiswaDaftar>();
@@ -82,7 +80,6 @@
     private ElementReference cardInput;
     private readonly LayananRegistrasiKartu cards = new();
     protected override void OnInitialized() => Reload();
-    protected override void OnParametersSet() { if (Search != previousSearch) { query = Search; previousSearch = Search; } }
     private void Reload() => students = WorkspaceView.Students(Status);
     private IEnumerable<SiswaDaftar> Filtered() => students.Where(s => (className.Length == 0 || s.KelasNama == className) && (s.Nama.Contains(query.Trim(), StringComparison.OrdinalIgnoreCase) || s.Nisn.Contains(query.Trim(), StringComparison.Ordinal)));
     private void OpenRegistration(SiswaDaftar student) { if (!WorkspaceView.CanManage(Status) || !student.Aktif) return; selectedStudent = student; replacementReason = "hilang"; pendingUid = ""; registrationError = null; registrationComplete = false; focusCard = true; }
