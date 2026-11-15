@@ -865,3 +865,11 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 **Belum terbukti / belum diputuskan:** tampilan panduan di desktop belum dilihat lewat tangkapan layar. Penolakan sandi umum (ASVS 6.2.4) belum diputuskan Edgar.
 
 **Catatan:** commit `05a3d12` (dokumen §56) menggagalkan job typos karena satu kata Indonesia yang dianggap salah eja; diperbaiki di commit berikutnya.
+
+## 58. Bilah perintah "Ketik menu atau cari nama / NISN… Ctrl K" dihapus (web) — 15 November 2026
+
+**Permintaan Edgar:** bilah perintah di bawah identitas sekolah dinilai tidak berguna (AI slop).
+
+**Selesai:** bilah perintah, teks Ctrl K, petunjuk "F2 Absensi · F3 Siswa" di bilah itu, kode perintah (`RunCommand`, GERBANG/BANTUAN), parameter pencarian `DaftarSiswa.Search`, pintasan Ctrl+K di `workspace.js`, dan gaya `.command-*` dihapus. Pencarian nama/NISN tetap ada di layar Siswa. Pintasan F2 (Absensi) dan F3 (Siswa) tetap jalan; label F2 pada tombol "Buka absensi" tidak diubah. Desktop tidak memiliki bilah ini. README diperbarui; `docs/ui-preview` (contoh tampilan lama) tidak diubah.
+
+**Tes:** langkah Chromium lama untuk bilah perintah diganti pemeriksaan bahwa bilah dan teks Ctrl K tidak ada, serta F2/F3 membuka menu. Pemeriksaan wali tidak bisa membuka gerbang tetap lewat ketiadaan menu Layar gerbang.
