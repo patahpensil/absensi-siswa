@@ -873,3 +873,11 @@ Dengan ini langkah 1 untuk P-21/P-22 selesai, kecuali pembuatan akun Kepala Seko
 **Selesai:** bilah perintah, teks Ctrl K, petunjuk "F2 Absensi · F3 Siswa" di bilah itu, kode perintah (`RunCommand`, GERBANG/BANTUAN), parameter pencarian `DaftarSiswa.Search`, pintasan Ctrl+K di `workspace.js`, dan gaya `.command-*` dihapus. Pencarian nama/NISN tetap ada di layar Siswa. Pintasan F2 (Absensi) dan F3 (Siswa) tetap jalan; label F2 pada tombol "Buka absensi" tidak diubah. Desktop tidak memiliki bilah ini. README diperbarui; `docs/ui-preview` (contoh tampilan lama) tidak diubah.
 
 **Tes:** langkah Chromium lama untuk bilah perintah diganti pemeriksaan bahwa bilah dan teks Ctrl K tidak ada, serta F2/F3 membuka menu. Pemeriksaan wali tidak bisa membuka gerbang tetap lewat ketiadaan menu Layar gerbang.
+
+## 59. Dasbor web dirapikan — 15 November 2026
+
+**Disetujui Edgar:** label "F2" di tombol "Buka absensi", angka hitungan dua digit ("00"), dan catatan kaki "Dasbor menampilkan inisial; foto siswa tampil di Layar gerbang." dihapus.
+
+**Selesai:** tombol tanpa label F2 (pintasan F2 tetap berfungsi); hitungan kehadiran ditulis apa adanya (0, 3, 12) di Dasbor dan Absensi; catatan kaki dihapus, tombol "Lihat absensi" tetap di kanan (`.panel-footer > :only-child`). Gaya `kbd` yang tidak terpakai dihapus. Desktop tidak memakai ketiganya.
+
+**Tes:** langkah Chromium §58 ditambah pemeriksaan ketiga hal di atas.
