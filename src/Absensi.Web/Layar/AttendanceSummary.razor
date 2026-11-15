@@ -4,7 +4,7 @@
     <div class="summary-context"><span class="eyebrow">Kehadiran hari ini</span><strong class="mono">@DateLabel</strong><small>@Students siswa aktif</small></div>
     @foreach (var metric in Metrics())
     {
-        <div class="metric @metric.Tone"><span><i class="dot"></i>@metric.Label</span><strong class="mono">@metric.Count.ToString("D2")</strong><small>@metric.Note</small></div>
+        <div class="metric @metric.Tone"><span><i class="dot"></i>@metric.Label</span><strong class="mono">@metric.Count</strong><small>@metric.Note</small></div>
     }
 </div>
 @code {

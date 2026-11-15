@@ -462,13 +462,6 @@ small {
   font-size:12px
 }
 
-.page-heading kbd {
-  font-size:12px;
-  border:1px solid rgba(255,255,255,0.25);
-  padding:0 4px;
-  border-radius:var(--radius-sm);
-  margin-left:8px
-}
 
 .page-total {
   font-size:12px;
@@ -606,6 +599,9 @@ small {
   font-size:12px
 }
 
+.panel-footer > :only-child {
+  margin-left:auto
+}
 .panel-footer {
   border-top:1px solid var(--line);
   padding:8px 16px;
@@ -1455,9 +1451,6 @@ tr.is-inactive td {
   .page-heading .primary {
     font-size:12px;
     padding:8px 8px
-  }
-  .page-heading .primary kbd {
-    display:none
   }
   .page-heading .eyebrow {
     font-size:12px

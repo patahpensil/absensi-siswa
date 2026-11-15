@@ -103,6 +103,13 @@ await langkah('Pencarian siswa dan filter kelas bekerja tanpa mengubah data', as
 
 await langkah('Tanpa bilah perintah Ctrl K; pintasan F2 dan F3 tetap membuka menu', async () => {
   tegas(await page.locator('#workspace-command, .command-strip').count() === 0, 'bilah perintah masih tampil');
+  await page.click('#menu-dashboard');
+  await page.waitForSelector('#dashboard-open-gate');
+  tegas(await page.locator('#dashboard-open-gate kbd').count() === 0, 'label F2 masih tampil di tombol Buka absensi');
+  tegas(!(await page.textContent('#isi')).includes('Dasbor menampilkan inisial'), 'catatan kaki inisial masih tampil');
+  tegas(!/\b0\d\b/.test(await page.locator('.metric strong').first().textContent()), 'hitungan kehadiran masih dua digit');
+  await page.click('#menu-siswa');
+  await page.waitForSelector('#tabel-siswa');
   tegas(!(await page.textContent('body')).includes('Ctrl K'), 'teks Ctrl K masih tampil');
   await page.locator('#student-search').blur();
   await page.keyboard.press('F2');
